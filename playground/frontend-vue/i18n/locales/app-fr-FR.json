@@ -1,0 +1,16 @@
+{
+	"app": {
+		"welcome": {
+			"form_title": "Contactez-nous",
+			"form_description": "Envoyez-nous un message et nous vous répondrons rapidement.",
+			"name_label": "Nom complet",
+			"name_placeholder": "Jeanne Dupont",
+			"email_label": "Adresse e-mail",
+			"email_placeholder": "jeanne{'@'}exemple.com",
+			"message_label": "Message",
+			"message_placeholder": "Comment pouvons-nous vous aider ?",
+			"submit": "Envoyer le message",
+			"success": "Votre message a été envoyé."
+		}
+	}
+}
