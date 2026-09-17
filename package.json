@@ -45,14 +45,14 @@
   "dependencies": {
     "@antelopejs/interface-api": "^0.0.13",
     "@antelopejs/interface-api-util": "^0.1.2",
-    "@antelopejs/interface-core": "^0.0.12",
+    "@antelopejs/interface-core": ">=0.0.13 <1.0.0",
     "@antelopejs/interface-dms": ">=0.0.1 <1.0.0"
   },
   "devDependencies": {
     "@antelopejs/core": "^1.5.1",
     "@antelopejs/dms": ">=0.0.1 <1.0.0",
     "@antelopejs/dms-frontend": ">=0.0.1 <1.0.0",
-    "@antelopejs/tooling-configs": "^0.0.4",
+    "@antelopejs/tooling-configs": ">=0.0.6 <1.0.0",
     "@types/chai": "^5.2.3",
     "@types/mocha": "^10.0.10",
     "@types/node": "^24.0.0",
