@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useDmsRoute } from '#dms-inertia/frontend-module'
+import { useDmsRoute } from '#dms/frontend-module'
 import TranslationMatrix from '../../build/components/pages/lang/TranslationMatrix.vue'
 import {
   type FlatTranslationRow,
