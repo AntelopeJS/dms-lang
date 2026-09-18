@@ -36,7 +36,7 @@
     "format": "oxfmt . && pnpm --dir frontend-vue format",
     "test": "pnpm run build && ajs module test .",
     "test:unit": "pnpm build && mocha dist/test/locale-discovery.test.js && node --test tests/*.test.mjs",
-    "test:frontend": "ajs-dms verify-source --layer node_modules/@antelopejs/dms/frontend-vue --module frontend-vue",
+    "test:frontend": "ajs dms verify-source --layer node_modules/@antelopejs/dms/frontend-vue --module frontend-vue",
     "release": "pnpm run lint && release-it",
     "prepack": "pnpm run build",
     "knip": "knip --dependencies",
@@ -49,9 +49,9 @@
     "@antelopejs/interface-dms": ">=0.0.1 <1.0.0"
   },
   "devDependencies": {
-    "@antelopejs/core": ">=1.7.0 <2",
+    "@antelopejs/core": "1.8.0",
     "@antelopejs/dms": ">=0.3.5 <1.0.0",
-    "@antelopejs/dms-frontend": ">=0.2.0 <1.0.0",
+    "@antelopejs/dms-frontend": "0.2.0",
     "@antelopejs/tooling-configs": ">=0.0.6 <1.0.0",
     "@types/chai": "^5.2.3",
     "@types/mocha": "^10.0.10",
