@@ -53,7 +53,7 @@ The module compiles against the published `@antelopejs/interface-dms` package, i
 
 `pnpm test:unit` checks locale discovery and fallback normalization. `pnpm test:frontend` compiles the module alongside the published core DMS frontend with the adapter's source verifier.
 
-Run `pnpm dev` for the backend and `pnpm frontend:dev` for the Inertia workspace. Use `pnpm typecheck` for the backend; run `pnpm typecheck` in the generated Vite workspace for frontend types. The adapter owns the generated aliases, auto-import declarations and Vue compiler configuration.
+Run `pnpm dev` for the backend and `pnpm frontend:dev` for the Inertia workspace. The frontend workspace uses the `ajs dms` commands for development, preparation and production builds. Use `pnpm typecheck` for the backend; run `pnpm typecheck` in the generated Vite workspace for frontend types. The adapter owns the generated aliases, auto-import declarations and Vue compiler configuration.
 
 ## Locale sources no longer require a frontend build
 
