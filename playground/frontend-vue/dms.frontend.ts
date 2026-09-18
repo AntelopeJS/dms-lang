@@ -1,4 +1,4 @@
-import type { DmsFrontendModule } from "#dms-inertia/frontend-module";
+import type { DmsFrontendModule } from "#dms/frontend-module";
 
 const frontendModule: DmsFrontendModule = {
   setup() {},

@@ -1,4 +1,4 @@
-import { defineDmsPlugin } from '#dms-inertia/frontend-module'
+import { defineDmsPlugin } from '#dms/frontend-module'
 
 const LANG_MODULE_ID = 'lang'
 

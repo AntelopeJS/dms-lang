@@ -6,7 +6,7 @@ const knipConfig = antelopeKnipConfig({
   entry: ["src/test/harness.ts"],
 });
 
-knipConfig.ignoreUnresolved = ["#dms-inertia/frontend-module"];
+knipConfig.ignoreUnresolved = ["#dms/frontend-module"];
 knipConfig.workspaces = {
   "frontend-vue": {
     entry: ["dms.frontend.ts"],

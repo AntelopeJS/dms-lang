@@ -1,4 +1,4 @@
-import { useDmsState } from '#dms-inertia/frontend-module'
+import { useDmsState } from '#dms/frontend-module'
 
 export interface WorkspaceLocale {
   code: string

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useDmsRuntimeConfig } from '#dms-inertia/frontend-module'
+import { useDmsRuntimeConfig } from '#dms/frontend-module'
 
 const { selectedWorkspace } = useI18nWorkspaces()
 const { isAdded } = useWorkspaceContext()
