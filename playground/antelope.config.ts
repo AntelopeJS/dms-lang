@@ -29,6 +29,9 @@ export default defineConfig({
       },
       config: {
         homepage: "/welcome",
+        auth: {
+          jwtSecret: "dev",
+        },
         meta: {
           title: "AntelopeJS Lang",
           description: "AntelopeJS DMS language playground",
@@ -87,6 +90,16 @@ export default defineConfig({
         version: "1.2.5",
       },
       config: {
+        cors: {
+          allowedOrigins: [
+            "http://localhost:3001",
+            "http://127.0.0.1:3001",
+            /^https:\/\/[^/]+\.onamp\.dev$/,
+            ...(process.env.DMS_CLIENT_BASE_URL
+              ? [process.env.DMS_CLIENT_BASE_URL]
+              : []),
+          ],
+        },
         servers: [
           {
             protocol: "http",
