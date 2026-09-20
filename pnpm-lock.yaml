@@ -144,8 +144,8 @@ importers:
         specifier: 1.8.0
         version: 1.8.0(@types/node@22.20.2)
       '@antelopejs/dms-frontend':
-        specifier: 0.2.0
-        version: 0.2.0(@antelopejs/core@1.8.0(@types/node@22.20.2))
+        specifier: 0.2.1
+        version: 0.2.1(@antelopejs/core@1.8.0(@types/node@22.20.2))
       '@types/node':
         specifier: ^22.14.1
         version: 22.20.2
@@ -171,6 +171,16 @@ packages:
 
   '@antelopejs/dms-frontend@0.2.0':
     resolution: {integrity: sha512-E1k+DCgFtOSJMnt6Ocxga5Dct30BjV6uo4BNJJ1wI9IauqAtgqOE32xeqd/YYQCCWa+sauUy21dfKNQiftR2Jw==}
+    engines: {node: '>=20.12.0'}
+    hasBin: true
+    peerDependencies:
+      '@antelopejs/core': '>=1.7.0 <2'
+    peerDependenciesMeta:
+      '@antelopejs/core':
+        optional: true
+
+  '@antelopejs/dms-frontend@0.2.1':
+    resolution: {integrity: sha512-hTujfIA6OJ1lTsi02f0EFDsFW46VI1pyJFRWj4KPPhB8WHXQQX+Rq0bYBOf/wuxNPoO5uM47SrTiMU5OBnxnBg==}
     engines: {node: '>=20.12.0'}
     hasBin: true
     peerDependencies:
@@ -4912,24 +4922,6 @@ snapshots:
     transitivePeerDependencies:
       - '@types/node'
 
-  '@antelopejs/dms-frontend@0.2.0(@antelopejs/core@1.8.0(@types/node@22.20.2))':
-    dependencies:
-      boxen: 5.1.2
-      chalk: 4.1.2
-      chokidar: 4.0.3
-      commander: 13.1.0
-      figlet: 1.11.0
-      ignore: 7.0.9
-      semver: 7.8.5
-      unzipper: 0.12.5
-    optionalDependencies:
-      '@antelopejs/core': 1.8.0(@types/node@22.20.2)
-      '@oxc-parser/binding-darwin-arm64': 0.95.0
-      '@oxc-parser/binding-darwin-x64': 0.95.0
-      '@oxc-parser/binding-linux-arm64-gnu': 0.95.0
-      '@oxc-parser/binding-linux-x64-gnu': 0.95.0
-      '@oxc-parser/binding-win32-x64-msvc': 0.95.0
-
   '@antelopejs/dms-frontend@0.2.0(@antelopejs/core@1.8.0(@types/node@24.13.3))':
     dependencies:
       boxen: 5.1.2
@@ -4942,6 +4934,24 @@ snapshots:
       unzipper: 0.12.5
     optionalDependencies:
       '@antelopejs/core': 1.8.0(@types/node@24.13.3)
+      '@oxc-parser/binding-darwin-arm64': 0.95.0
+      '@oxc-parser/binding-darwin-x64': 0.95.0
+      '@oxc-parser/binding-linux-arm64-gnu': 0.95.0
+      '@oxc-parser/binding-linux-x64-gnu': 0.95.0
+      '@oxc-parser/binding-win32-x64-msvc': 0.95.0
+
+  '@antelopejs/dms-frontend@0.2.1(@antelopejs/core@1.8.0(@types/node@22.20.2))':
+    dependencies:
+      boxen: 5.1.2
+      chalk: 4.1.2
+      chokidar: 4.0.3
+      commander: 13.1.0
+      figlet: 1.11.0
+      ignore: 7.0.9
+      semver: 7.8.5
+      unzipper: 0.12.5
+    optionalDependencies:
+      '@antelopejs/core': 1.8.0(@types/node@22.20.2)
       '@oxc-parser/binding-darwin-arm64': 0.95.0
       '@oxc-parser/binding-darwin-x64': 0.95.0
       '@oxc-parser/binding-linux-arm64-gnu': 0.95.0
