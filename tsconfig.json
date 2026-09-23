@@ -1,12 +1,14 @@
 {
   "compilerOptions": {
     "types": ["node", "mocha"],
-    "moduleResolution": "nodenext",
+    "moduleResolution": "bundler",
     "target": "esnext",
-    "module": "nodenext",
+    "module": "commonjs",
     "lib": ["esnext", "dom"],
     "allowJs": true,
     "outDir": "dist",
+    "incremental": true,
+    "tsBuildInfoFile": "dist/.tsbuildinfo",
     "strict": true,
     "noImplicitAny": true,
     "esModuleInterop": true,

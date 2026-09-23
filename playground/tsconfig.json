@@ -1,11 +1,14 @@
 {
   "compilerOptions": {
-    "moduleResolution": "nodenext",
+    "types": ["node"],
+    "moduleResolution": "bundler",
     "target": "esnext",
-    "module": "nodenext",
+    "module": "commonjs",
     "lib": ["ES2020"],
     "allowJs": true,
     "outDir": "dist",
+    "incremental": true,
+    "tsBuildInfoFile": "dist/.tsbuildinfo",
     "strict": true,
     "skipLibCheck": true,
     "noImplicitAny": true,
