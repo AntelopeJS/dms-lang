@@ -1,10 +1,9 @@
 {
   "compilerOptions": {
     "types": ["node", "mocha"],
-    "noEmit": true,
-    "moduleResolution": "bundler",
+    "moduleResolution": "nodenext",
     "target": "esnext",
-    "module": "preserve",
+    "module": "nodenext",
     "lib": ["esnext", "dom"],
     "allowJs": true,
     "outDir": "dist",
