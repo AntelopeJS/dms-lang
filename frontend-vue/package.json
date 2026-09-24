@@ -18,8 +18,8 @@
     "@vueuse/core": "^13.0.0"
   },
   "devDependencies": {
-    "@antelopejs/core": "1.8.0",
-    "@antelopejs/dms-frontend": "0.2.0",
+    "@antelopejs/core": "1.9.1",
+    "@antelopejs/dms-frontend": "0.2.6",
     "@eslint/js": "^9",
     "@typescript-eslint/eslint-plugin": "^8",
     "@typescript-eslint/parser": "^8",
