@@ -15,7 +15,7 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
-    "@vueuse/core": "^13.0.0"
+    "@vueuse/core": "^14.3.0"
   },
   "devDependencies": {
     "@antelopejs/core": "1.9.1",
