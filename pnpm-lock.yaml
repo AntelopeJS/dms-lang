@@ -28,8 +28,8 @@ importers:
         specifier: '>=0.4.3 <1.0.0'
         version: 0.4.3(@antelopejs/core@1.9.1(@types/node@24.13.3))(@antelopejs/interface-auth@0.0.6(@antelopejs/interface-api@0.0.14(@antelopejs/interface-core@0.1.1))(@antelopejs/interface-core@0.1.1))
       '@antelopejs/dms-frontend':
-        specifier: 0.3.0
-        version: 0.3.0(@antelopejs/core@1.9.1(@types/node@24.13.3))
+        specifier: 0.3.2
+        version: 0.3.2(@antelopejs/core@1.9.1(@types/node@24.13.3))
       '@antelopejs/tooling-configs':
         specifier: '>=0.0.6 <1.0.0'
         version: 0.0.6(knip@6.34.0)(oxfmt@0.66.0)(oxlint@1.81.0(oxlint-tsgolint@7.0.2001))
@@ -92,8 +92,8 @@ importers:
         specifier: 1.9.1
         version: 1.9.1(@types/node@24.13.3)
       '@antelopejs/dms-frontend':
-        specifier: 0.3.0
-        version: 0.3.0(@antelopejs/core@1.9.1(@types/node@24.13.3))
+        specifier: 0.3.2
+        version: 0.3.2(@antelopejs/core@1.9.1(@types/node@24.13.3))
       '@eslint/js':
         specifier: ^9
         version: 9.39.5
@@ -144,8 +144,8 @@ importers:
         specifier: 1.9.1
         version: 1.9.1(@types/node@22.20.2)
       '@antelopejs/dms-frontend':
-        specifier: 0.3.0
-        version: 0.3.0(@antelopejs/core@1.9.1(@types/node@22.20.2))
+        specifier: 0.3.2
+        version: 0.3.2(@antelopejs/core@1.9.1(@types/node@22.20.2))
       '@types/node':
         specifier: ^22.14.1
         version: 22.20.2
@@ -169,8 +169,8 @@ packages:
     resolution: {integrity: sha512-MPLJak0rPluV4lgsdsO5ba03sgTxIGSncajBcoaoppuppQmksdpaemojIHiVLJ4LiG0iiH21Roaed8XXy1XkYQ==}
     hasBin: true
 
-  '@antelopejs/dms-frontend@0.3.0':
-    resolution: {integrity: sha512-hCy9iBTUEdHkF0PSFOLkFrbtIf6qdbysQBVN+QHDVEAyEqDIAni3AJG2CEr7Ed1QIIuygKatxe1kF024ID597w==}
+  '@antelopejs/dms-frontend@0.3.2':
+    resolution: {integrity: sha512-BNqLqW3UbfeOMnd4RkEynr/1mMWFhwB8dt1JbggaGte8/KrJQ3MQ5TOovnACMmrqAD7FxsMLBsNqjzGjX4O4ZA==}
     engines: {node: '>=20.12.0'}
     hasBin: true
     peerDependencies:
@@ -4892,7 +4892,7 @@ snapshots:
     transitivePeerDependencies:
       - '@types/node'
 
-  '@antelopejs/dms-frontend@0.3.0(@antelopejs/core@1.9.1(@types/node@22.20.2))':
+  '@antelopejs/dms-frontend@0.3.2(@antelopejs/core@1.9.1(@types/node@22.20.2))':
     dependencies:
       boxen: 5.1.2
       chalk: 4.1.2
@@ -4910,7 +4910,7 @@ snapshots:
       '@oxc-parser/binding-linux-x64-gnu': 0.95.0
       '@oxc-parser/binding-win32-x64-msvc': 0.95.0
 
-  '@antelopejs/dms-frontend@0.3.0(@antelopejs/core@1.9.1(@types/node@24.13.3))':
+  '@antelopejs/dms-frontend@0.3.2(@antelopejs/core@1.9.1(@types/node@24.13.3))':
     dependencies:
       boxen: 5.1.2
       chalk: 4.1.2
