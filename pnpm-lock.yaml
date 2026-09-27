@@ -12,7 +12,7 @@ importers:
         specifier: '>=0.0.14 <1.0.0'
         version: 0.0.14(@antelopejs/interface-core@0.1.1)
       '@antelopejs/interface-api-util':
-        specifier: ^0.1.2
+        specifier: '>=0.1.2 <1.0.0'
         version: 0.1.2(@antelopejs/interface-api@0.0.14(@antelopejs/interface-core@0.1.1))(@antelopejs/interface-core@0.1.1)
       '@antelopejs/interface-core':
         specifier: '>=0.1.1 <1.0.0'
