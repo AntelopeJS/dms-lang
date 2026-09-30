@@ -1,6 +1,6 @@
 {
   "name": "@antelopejs/dms-lang",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -32,7 +32,7 @@
     "frontend:dev": "cd playground && pnpm frontend:dev",
     "dev": "ajs project run -w -p playground",
     "lint:fix": "oxlint --fix --max-warnings=1000000 && oxfmt . && pnpm --dir frontend-vue lint:fix",
-    "lint": "oxlint && oxfmt --check . && pnpm --dir frontend-vue lint",
+    "lint": "oxlint && oxfmt --check . && pnpm --dir frontend-vue lint && antelopejs-check-interface-ranges",
     "typecheck": "tsc --noEmit",
     "format": "oxfmt . && pnpm --dir frontend-vue format",
     "test": "pnpm run build && ajs module test .",
@@ -45,7 +45,7 @@
   },
   "dependencies": {
     "@antelopejs/interface-api": ">=0.0.14 <1.0.0",
-    "@antelopejs/interface-api-util": "^0.1.2",
+    "@antelopejs/interface-api-util": ">=0.1.2 <1.0.0",
     "@antelopejs/interface-core": ">=0.1.1 <1.0.0",
     "@antelopejs/interface-dms": ">=0.2.0 <1.0.0"
   },
@@ -53,7 +53,7 @@
     "@antelopejs/core": "1.9.1",
     "@antelopejs/dms": ">=0.4.3 <1.0.0",
     "@antelopejs/dms-frontend": "0.3.2",
-    "@antelopejs/tooling-configs": ">=0.0.6 <1.0.0",
+    "@antelopejs/tooling-configs": ">=0.0.7 <1.0.0",
     "@types/chai": "^5.2.3",
     "@types/mocha": "^10.0.10",
     "@types/node": "^24.0.0",
