@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.0.6
+
+[compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.0.5...v0.0.6)
+
+### 🩹 Fixes
+
+- **deps:** Accept compatible 0.x versions of the interface packages ([#20](https://github.com/AntelopeJS/dms-lang/pull/20))
+
+### ❤️ Contributors
+
+- Alessandro Aloisio ([@alessaloisio](http://github.com/alessaloisio))
+
 ## v0.0.5
 
 [compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.0.4...v0.0.5)
