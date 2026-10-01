@@ -81,7 +81,7 @@ export default defineConfig({
       source: {
         type: "package",
         package: "@antelopejs/api",
-        version: "1.3.0",
+        version: "1.3.1",
       },
       config: {
         publicBaseUrl: `http://127.0.0.1:${API_PORT}`,
