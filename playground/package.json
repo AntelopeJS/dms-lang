@@ -4,7 +4,7 @@
   "license": "Apache-2.0",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "ajs project run -w",
+    "dev": "ajs project dev -w",
     "build": "rimraf dist && tsc",
     "frontend:dev": "ajs dms dev"
   },
