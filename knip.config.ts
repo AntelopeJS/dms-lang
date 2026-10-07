@@ -6,13 +6,11 @@ const knipConfig = antelopeKnipConfig({
   entry: ["src/test/harness.ts"],
 });
 
-knipConfig.ignoreUnresolved = ["#dms/frontend-module"];
+knipConfig.ignoreUnresolved = ["#dms/frontend-module", "#dms/frontend-build"];
 knipConfig.workspaces = {
   "frontend-vue": {
-    entry: ["dms.frontend.ts"],
+    entry: ["dms.frontend.ts", "dms.frontend.build.ts"],
     project: ["app/**/*.{ts,vue}", "dms.frontend.ts"],
-    // Knip excludes build directories before applying project globs.
-    ignoreDependencies: ["@vueuse/core"],
   },
 };
 

@@ -9,13 +9,23 @@ import {
 } from "@antelopejs/interface-api";
 import { assert } from "@antelopejs/interface-api-util";
 import { AuthOwnerOnly } from "@antelopejs/interface-dms/auth";
+import type { User } from "@antelopejs/interface-dms/auth/db";
+import { AuthUserWithPermission } from "@antelopejs/interface-dms/guards";
+import {
+  createWorkspaceAction,
+  deleteWorkspaceAction,
+  editTranslationsAction,
+  manageKeysAction,
+  manageLanguagesAction,
+  renameWorkspaceAction,
+} from "../pages/actions";
+import { FALLBACK_LOCALE, listAllWorkspaces } from "../utils/catalog";
 import { getTranslationConfig } from "../utils/config";
+import { exportWorkspace } from "../utils/export";
 import { deleteKeyFor, renameKeyFor, upsertKeyFor } from "../utils/mutations";
-import { getLocaleCodes } from "../utils/registry";
 import {
   ALL_WORKSPACE,
   DEFAULT_WORKSPACE,
-  MODULES_WORKSPACE,
   resolveAggregatedFlat,
   resolveFlat,
   resolveTranslationData,
@@ -26,15 +36,12 @@ import {
   assertEditable,
   createWorkspace,
   deleteWorkspace,
-  listWorkspaces,
   removeLocale,
   renameWorkspace,
   setWorkspaceDefaultLocale,
   type WorkspaceLocale,
-  type WorkspaceSummary,
 } from "../utils/workspaces";
-
-const FALLBACK_LOCALE = "en";
+import { summarizeWorkspaces } from "../utils/summary";
 
 interface WorkspaceCreateBody {
   id: string;
@@ -92,24 +99,21 @@ export class TranslationsController extends Controller(
   @Get("/workspaces")
   workspaces() {
     const { editable } = getTranslationConfig();
-    const workspaces: WorkspaceSummary[] = [
-      {
-        id: DEFAULT_WORKSPACE,
-        kind: "default",
-        editable,
-        defaultLocale: "",
-        locales: getLocaleCodes("own").map((code) => ({ code })),
-      },
-      ...listWorkspaces(),
-      {
-        id: MODULES_WORKSPACE,
-        kind: "modules",
-        editable: false,
-        defaultLocale: "",
-        locales: getLocaleCodes("external").map((code) => ({ code })),
-      },
-    ];
-    return { editable, workspaces };
+    return { editable, workspaces: listAllWorkspaces() };
+  }
+
+  @Get("/summary")
+  summary(@Parameter("defaultLocale", "query") defaultLocale?: string) {
+    const { editable } = getTranslationConfig();
+    return {
+      editable,
+      workspaces: summarizeWorkspaces(defaultLocale || FALLBACK_LOCALE),
+    };
+  }
+
+  @Get("/export")
+  export(@Parameter("workspace", "query") workspace?: string) {
+    return exportWorkspace(workspace || DEFAULT_WORKSPACE);
   }
 
   @Get("/tree")
@@ -162,25 +166,37 @@ export class TranslationsController extends Controller(
   }
 
   @Post("/workspace")
-  createWorkspace(@JSONBody() body: WorkspaceCreateBody) {
+  createWorkspace(
+    @AuthUserWithPermission(createWorkspaceAction) _user: User,
+    @JSONBody() body: WorkspaceCreateBody,
+  ) {
     assertEditable();
     createWorkspace(body.id, body.locale);
   }
 
   @Post("/workspace/rename")
-  renameWorkspace(@JSONBody() body: WorkspaceRenameBody) {
+  renameWorkspace(
+    @AuthUserWithPermission(renameWorkspaceAction) _user: User,
+    @JSONBody() body: WorkspaceRenameBody,
+  ) {
     assertEditable();
     renameWorkspace(body.id, body.newId);
   }
 
   @Delete("/workspace")
-  deleteWorkspace(@JSONBody() body: WorkspaceDeleteBody) {
+  deleteWorkspace(
+    @AuthUserWithPermission(deleteWorkspaceAction) _user: User,
+    @JSONBody() body: WorkspaceDeleteBody,
+  ) {
     assertEditable();
     deleteWorkspace(body.id);
   }
 
   @Post("/locale")
-  addLocale(@JSONBody() body: LocaleCreateBody) {
+  addLocale(
+    @AuthUserWithPermission(manageLanguagesAction) _user: User,
+    @JSONBody() body: LocaleCreateBody,
+  ) {
     assertEditable();
     addLocale(body.workspace, {
       code: body.code,
@@ -190,19 +206,28 @@ export class TranslationsController extends Controller(
   }
 
   @Delete("/locale")
-  removeLocale(@JSONBody() body: LocaleDeleteBody) {
+  removeLocale(
+    @AuthUserWithPermission(manageLanguagesAction) _user: User,
+    @JSONBody() body: LocaleDeleteBody,
+  ) {
     assertEditable();
     removeLocale(body.workspace, body.code);
   }
 
   @Post("/locale/default")
-  setDefaultLocale(@JSONBody() body: LocaleDefaultBody) {
+  setDefaultLocale(
+    @AuthUserWithPermission(manageLanguagesAction) _user: User,
+    @JSONBody() body: LocaleDefaultBody,
+  ) {
     assertEditable();
     setWorkspaceDefaultLocale(body.workspace, body.code);
   }
 
   @Put("/key")
-  upsertKey(@JSONBody() body: KeyUpsertBody) {
+  upsertKey(
+    @AuthUserWithPermission(editTranslationsAction) _user: User,
+    @JSONBody() body: KeyUpsertBody,
+  ) {
     assertEditable();
     upsertKeyFor(
       body.workspace,
@@ -213,13 +238,19 @@ export class TranslationsController extends Controller(
   }
 
   @Post("/key/rename")
-  renameKey(@JSONBody() body: KeyRenameBody) {
+  renameKey(
+    @AuthUserWithPermission(manageKeysAction) _user: User,
+    @JSONBody() body: KeyRenameBody,
+  ) {
     assertEditable();
     renameKeyFor(body.workspace, body.path, body.newPath);
   }
 
   @Delete("/key")
-  deleteKey(@JSONBody() body: KeyDeleteBody) {
+  deleteKey(
+    @AuthUserWithPermission(manageKeysAction) _user: User,
+    @JSONBody() body: KeyDeleteBody,
+  ) {
     assertEditable();
     deleteKeyFor(body.workspace, body.path);
   }

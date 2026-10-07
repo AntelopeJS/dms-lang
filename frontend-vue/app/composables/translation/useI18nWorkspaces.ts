@@ -1,177 +1,164 @@
 import { useDmsState } from '#dms/frontend-module'
-
-export interface WorkspaceLocale {
-  code: string
-  name?: string
-  flag?: string
-}
-
-export type WorkspaceKind = 'default' | 'modules' | 'added'
-
-export interface WorkspaceSummary {
-  id: string
-  kind: WorkspaceKind
-  editable: boolean
-  defaultLocale: string
-  locales: WorkspaceLocale[]
-}
+import type {
+  WorkspaceLocale,
+  WorkspaceStats,
+  WorkspaceSummary,
+} from '../../types/lang'
 
 interface WorkspacesResponse {
   editable: boolean
   workspaces: WorkspaceSummary[]
 }
 
+interface SummaryResponse {
+  editable: boolean
+  workspaces: WorkspaceStats[]
+}
+
 const API_BASE = '/api/lang/translations'
-const WORKSPACES_ENDPOINT = `${API_BASE}/workspaces`
-const WORKSPACE_ENDPOINT = `${API_BASE}/workspace`
-const WORKSPACE_RENAME_ENDPOINT = `${API_BASE}/workspace/rename`
-const LOCALE_ENDPOINT = `${API_BASE}/locale`
-const LOCALE_DEFAULT_ENDPOINT = `${API_BASE}/locale/default`
-const KEY_ENDPOINT = `${API_BASE}/key`
-const KEY_RENAME_ENDPOINT = `${API_BASE}/key/rename`
+const ENDPOINTS = {
+  workspaces: `${API_BASE}/workspaces`,
+  summary: `${API_BASE}/summary`,
+  export: `${API_BASE}/export`,
+  workspace: `${API_BASE}/workspace`,
+  workspaceRename: `${API_BASE}/workspace/rename`,
+  locale: `${API_BASE}/locale`,
+  localeDefault: `${API_BASE}/locale/default`,
+  key: `${API_BASE}/key`,
+  keyRename: `${API_BASE}/key/rename`,
+} as const
 
 export const DEFAULT_WORKSPACE = 'default'
+export const MODULES_WORKSPACE = 'modules'
 
 const WORKSPACE_ID_RE = /^[a-z0-9][\w-]{0,63}$/
+const RESERVED_WORKSPACE_IDS = new Set([
+  DEFAULT_WORKSPACE,
+  MODULES_WORKSPACE,
+  'all',
+])
 
 export function normalizeWorkspaceId(raw: string): string {
   return raw.trim().toLowerCase()
 }
 
+export function isValidWorkspaceId(id: string): boolean {
+  return WORKSPACE_ID_RE.test(id) && !RESERVED_WORKSPACE_IDS.has(id)
+}
+
+function useWorkspacesState() {
+  return {
+    workspaces: useDmsState<WorkspaceSummary[]>(
+      'dms-lang-workspaces',
+      () => [],
+    ),
+    editable: useDmsState<boolean>('dms-lang-workspaces-editable', () => false),
+    isLoading: useDmsState<boolean>('dms-lang-workspaces-loading', () => false),
+    isLoaded: useDmsState<boolean>('dms-lang-workspaces-loaded', () => false),
+    selectedWorkspace: useDmsState<string>(
+      'dms-lang-selected-workspace',
+      () => DEFAULT_WORKSPACE,
+    ),
+    requestSeq: useDmsState<number>('dms-lang-workspaces-seq', () => 0),
+  }
+}
+
+function useWorkspaceWrites() {
+  const { $authFetch } = useAuthFetch()
+  const send = (url: string, method: string, body: Record<string, unknown>) =>
+    $authFetch(url, { method, body })
+
+  return {
+    createWorkspace: (id: string, locale: WorkspaceLocale) =>
+      send(ENDPOINTS.workspace, 'POST', { id, locale }),
+    renameWorkspace: (id: string, newId: string) =>
+      send(ENDPOINTS.workspaceRename, 'POST', { id, newId }),
+    deleteWorkspace: (id: string) =>
+      send(ENDPOINTS.workspace, 'DELETE', { id }),
+    addLocale: (workspace: string, locale: WorkspaceLocale) =>
+      send(ENDPOINTS.locale, 'POST', { workspace, ...locale }),
+    removeLocale: (workspace: string, code: string) =>
+      send(ENDPOINTS.locale, 'DELETE', { workspace, code }),
+    setDefaultLocale: (workspace: string, code: string) =>
+      send(ENDPOINTS.localeDefault, 'POST', { workspace, code }),
+    upsertKey: (
+      workspace: string,
+      path: string,
+      values: Record<string, unknown> = {},
+      defaultLocale?: string,
+    ) => send(ENDPOINTS.key, 'PUT', { workspace, path, values, defaultLocale }),
+    renameKey: (workspace: string, path: string, newPath: string) =>
+      send(ENDPOINTS.keyRename, 'POST', { workspace, path, newPath }),
+    deleteKey: (workspace: string, path: string) =>
+      send(ENDPOINTS.key, 'DELETE', { workspace, path }),
+  }
+}
+
+function useWorkspaceReads() {
+  const { $authFetch } = useAuthFetch()
+  return {
+    fetchSummary: (defaultLocale: string) =>
+      $authFetch<SummaryResponse>(ENDPOINTS.summary, {
+        query: { defaultLocale },
+      }),
+    exportWorkspace: (workspace: string) =>
+      $authFetch<Record<string, Record<string, unknown>>>(ENDPOINTS.export, {
+        query: { workspace },
+      }),
+  }
+}
+
+/**
+ * The workspaces of the module, the one selected for every page, and the
+ * routes that read and change them.
+ */
 export const useI18nWorkspaces = () => {
   const { $authFetch } = useAuthFetch()
-
-  const workspaces = useDmsState<WorkspaceSummary[]>(
-    'dms-lang-workspaces',
-    () => [],
-  )
-  const editable = useDmsState<boolean>(
-    'dms-lang-workspaces-editable',
-    () => false,
-  )
-  const isLoading = useDmsState<boolean>(
-    'dms-lang-workspaces-loading',
-    () => false,
-  )
-  const selectedWorkspace = useDmsState<string>(
-    'dms-lang-selected-workspace',
-    () => DEFAULT_WORKSPACE,
-  )
-  const requestSeq = useDmsState<number>('dms-lang-workspaces-seq', () => 0)
+  const state = useWorkspacesState()
 
   function canUseWorkspaceId(id: string): boolean {
     return (
-      WORKSPACE_ID_RE.test(id) &&
-      !workspaces.value.some((workspace) => workspace.id === id)
+      isValidWorkspaceId(id) &&
+      !state.workspaces.value.some((workspace) => workspace.id === id)
     )
   }
 
   function ensureSelection(): void {
-    if (workspaces.value.some((w) => w.id === selectedWorkspace.value)) return
-    selectedWorkspace.value = workspaces.value[0]?.id ?? ''
+    const ids = state.workspaces.value.map((workspace) => workspace.id)
+    if (ids.includes(state.selectedWorkspace.value)) return
+    state.selectedWorkspace.value = ids[0] ?? ''
   }
 
   async function fetchWorkspaces(): Promise<WorkspaceSummary[]> {
-    requestSeq.value += 1
-    const sequence = requestSeq.value
-    isLoading.value = true
+    state.requestSeq.value += 1
+    const sequence = state.requestSeq.value
+    state.isLoading.value = true
     try {
-      const response = await $authFetch<WorkspacesResponse>(WORKSPACES_ENDPOINT)
-      if (sequence !== requestSeq.value) return workspaces.value
-      editable.value = response?.editable ?? false
-      workspaces.value = response?.workspaces ?? []
+      const response = await $authFetch<WorkspacesResponse>(
+        ENDPOINTS.workspaces,
+      )
+      if (sequence !== state.requestSeq.value) return state.workspaces.value
+      state.editable.value = response?.editable ?? false
+      state.workspaces.value = response?.workspaces ?? []
+      state.isLoaded.value = true
       ensureSelection()
-      return workspaces.value
+      return state.workspaces.value
     } catch {
-      return workspaces.value
+      return state.workspaces.value
     } finally {
-      if (sequence === requestSeq.value) isLoading.value = false
+      if (sequence === state.requestSeq.value) state.isLoading.value = false
     }
   }
 
-  function createWorkspace(id: string, locale: WorkspaceLocale) {
-    return $authFetch(WORKSPACE_ENDPOINT, {
-      method: 'POST',
-      body: { id, locale },
-    })
-  }
-
-  function renameWorkspace(id: string, newId: string) {
-    return $authFetch(WORKSPACE_RENAME_ENDPOINT, {
-      method: 'POST',
-      body: { id, newId },
-    })
-  }
-
-  function deleteWorkspace(id: string) {
-    return $authFetch(WORKSPACE_ENDPOINT, {
-      method: 'DELETE',
-      body: { id },
-    })
-  }
-
-  function addLocale(workspace: string, locale: WorkspaceLocale) {
-    return $authFetch(LOCALE_ENDPOINT, {
-      method: 'POST',
-      body: { workspace, ...locale },
-    })
-  }
-
-  function removeLocale(workspace: string, code: string) {
-    return $authFetch(LOCALE_ENDPOINT, {
-      method: 'DELETE',
-      body: { workspace, code },
-    })
-  }
-
-  function setDefaultLocale(workspace: string, code: string) {
-    return $authFetch(LOCALE_DEFAULT_ENDPOINT, {
-      method: 'POST',
-      body: { workspace, code },
-    })
-  }
-
-  function upsertKey(
-    workspace: string,
-    path: string,
-    values: Record<string, unknown> = {},
-    defaultLocale?: string,
-  ) {
-    return $authFetch(KEY_ENDPOINT, {
-      method: 'PUT',
-      body: { workspace, path, values, defaultLocale },
-    })
-  }
-
-  function renameKey(workspace: string, path: string, newPath: string) {
-    return $authFetch(KEY_RENAME_ENDPOINT, {
-      method: 'POST',
-      body: { workspace, path, newPath },
-    })
-  }
-
-  function deleteKey(workspace: string, path: string) {
-    return $authFetch(KEY_ENDPOINT, {
-      method: 'DELETE',
-      body: { workspace, path },
-    })
-  }
-
   return {
-    workspaces,
-    editable,
-    selectedWorkspace,
-    isLoading: readonly(isLoading),
+    workspaces: state.workspaces,
+    editable: state.editable,
+    selectedWorkspace: state.selectedWorkspace,
+    isLoading: readonly(state.isLoading),
+    isLoaded: readonly(state.isLoaded),
     fetchWorkspaces,
     canUseWorkspaceId,
-    createWorkspace,
-    renameWorkspace,
-    deleteWorkspace,
-    addLocale,
-    removeLocale,
-    setDefaultLocale,
-    upsertKey,
-    renameKey,
-    deleteKey,
+    ...useWorkspaceReads(),
+    ...useWorkspaceWrites(),
   }
 }

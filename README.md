@@ -8,11 +8,17 @@
 
 Language and translation management for AntelopeJS DMS, available under `/modules/lang`.
 
-It provides:
+It provides, under two sidebar groups:
 
-- **Overview** — workspace and locale summaries, translation coverage, and the public locale endpoint.
-- **Translations** — a key-by-locale matrix with missing-translation filtering.
-- **Workspace selection** — a global sidebar widget for switching workspaces.
+- **Translate › Overview**: the coverage of each language of the selected workspace, a namespace × language heatmap and the public locale endpoint.
+- **Translate › Translations**: a key-by-language matrix with per-cell save state, placeholder checks, "Missing in" and namespace filters, a key editor drawer and CSV export.
+- **Language** (opened from Overview): a translation queue for one language, with its progress by namespace.
+- **Manage › Workspaces**: every workspace with its kind, size and coverage, and the creation of new ones.
+- **Workspace settings** (opened from Workspaces): name, base language, languages, ready-to-paste app snippets and a danger zone.
+
+Every page names the workspace it works on in a scope bar, which also switches it; the selection is kept in the page URL (`?workspace=`). The command palette offers Translate missing keys, Add a translation key, Add a language and New translation workspace.
+
+Write routes check the permission of the page action they belong to (`modules.lang.translate.translations.matrix.edit`, `….keys`, `modules.lang.manage.workspaces.list.create`, …); module pages stay owner-only, as every DMS module.
 
 ## Installation
 
@@ -47,11 +53,11 @@ pnpm test
 
 ## Vue and Inertia development
 
-The backend registers `frontend-vue/dms.frontend.ts` through `AddFrontendModule` with the Vue 3 renderer. It exposes `DmsLang*` component names, pages and the sidebar widget. Nuxt is not required; `@nuxt/ui` provides its Vue components through the adapter's Vite integration.
+The backend registers `frontend-vue/dms.frontend.ts` through `AddFrontendModule` with the Vue 3 renderer. The module declares `componentPrefix: "DmsLang"` and registers every component of `app/components` and `app/build/components` under it; the backend pages name them (`CustomComponent("DmsLangTranslationMatrix")`). `dms.frontend.build.ts` declares `app/composables`, `app/utils` and `app/types` for auto-import; `app/build/` is private and imported by path. Nuxt is not required; `@nuxt/ui` provides its Vue components through the adapter's Vite integration.
 
 The module compiles against the published `@antelopejs/interface-dms` package, its only DMS runtime dependency. The `@antelopejs/dms` backend and the `@antelopejs/dms-frontend` adapter are development dependencies, needed to run the tests and the playground. Run `pnpm install`, `pnpm build` and `pnpm test` here.
 
-`pnpm test:unit` checks locale discovery and fallback normalization. `pnpm test:frontend` compiles the module alongside the published core DMS frontend with the adapter's source verifier.
+`pnpm test:unit` checks locale discovery and the coverage, placeholder and fallback helpers of the frontend. `pnpm test:frontend` compiles the module alongside the published core DMS frontend with the adapter's source verifier.
 
 Run `pnpm dev` for the backend and `pnpm frontend:dev` for the Inertia workspace. The playground connects to MongoDB at `mongodb://localhost:27017`; set `MONGO_URL` to use another instance. The frontend workspace uses the `ajs dms` commands for development, preparation and production builds. Use `pnpm typecheck` for the backend; run `pnpm typecheck` in the generated Vite workspace for frontend types. The adapter owns the generated aliases, auto-import declarations and Vue compiler configuration.
 
