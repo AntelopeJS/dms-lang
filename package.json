@@ -71,6 +71,13 @@
     "typescript": "^6.0.3"
   },
   "packageManager": "pnpm@10.2.0",
+  "pnpm": {
+    "overrides": {
+      "undici@>=6.0.0 <6.28.1": "^6.28.1",
+      "tinypool@<2.1.2": "^2.1.2",
+      "source-map-js@>=1.0.0 <1.2.2": "^1.2.2"
+    }
+  },
   "antelopeJs": {
     "baseUrl": "dist",
     "implements": [],
