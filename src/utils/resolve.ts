@@ -253,7 +253,7 @@ function buildFlatRow(context: FlatContext, key: string): FlatRow {
   return row;
 }
 
-function isRowMissing(row: FlatRow, locale: string): boolean {
+export function isRowMissing(row: FlatRow, locale: string): boolean {
   return isMissing(row.values[locale]) && isMissing(row.inherited?.[locale]);
 }
 

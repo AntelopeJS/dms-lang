@@ -1,6 +1,5 @@
 import { FALLBACK_LOCALE, listAllWorkspaces } from "./catalog";
-import { type FlatResult, resolveFlat } from "./resolve";
-import { isMissing } from "./tree";
+import { type FlatResult, isRowMissing, resolveFlat } from "./resolve";
 import {
   DEFAULT_WORKSPACE,
   MODULES_WORKSPACE,
@@ -18,11 +17,11 @@ export interface WorkspaceStats extends WorkspaceSummary {
   overrides: number;
 }
 
-function countTranslated(flat: FlatResult): number {
+export function countTranslated(flat: FlatResult): number {
   return flat.rows.reduce(
     (total, row) =>
       total +
-      flat.locales.filter((locale) => !isMissing(row.values[locale])).length,
+      flat.locales.filter((locale) => !isRowMissing(row, locale)).length,
     0,
   );
 }
@@ -31,11 +30,11 @@ function countOverrides(flat: FlatResult): number {
   return flat.rows.filter((row) => row.overridden === true).length;
 }
 
-function targetLocales(flat: FlatResult): string[] {
+export function targetLocales(flat: FlatResult): string[] {
   return flat.locales.filter((locale) => locale !== flat.defaultLocale);
 }
 
-function averageCoverage(flat: FlatResult): number {
+export function averageCoverage(flat: FlatResult): number {
   const targets = targetLocales(flat);
   if (targets.length === 0) return 100;
   const sum = targets.reduce(
@@ -45,7 +44,7 @@ function averageCoverage(flat: FlatResult): number {
   return Math.round(sum / targets.length);
 }
 
-function sumMissing(flat: FlatResult): number {
+export function sumMissing(flat: FlatResult): number {
   return targetLocales(flat).reduce(
     (total, locale) => total + (flat.localeMissing[locale] ?? 0),
     0,

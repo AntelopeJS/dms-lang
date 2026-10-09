@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useDmsRouter } from '#dms/frontend-module'
 import type { DropdownMenuItem } from '@nuxt/ui'
 import type { WorkspaceSummary } from '../types/lang'
 import LocaleTile from '../build/components/LocaleTile.vue'
@@ -14,7 +15,9 @@ const { formatCount } = useLangFormat()
 const { workspaces, editable, isLoaded } = useI18nWorkspaces()
 const { current, isEditable, isModules, isAdded } = useWorkspaceContext()
 const { flat } = useWorkspaceFlat()
-const { switchLink } = useWorkspaceRoute()
+const { switchLink, queryWorkspace } = useWorkspaceRoute()
+const router = useDmsRouter()
+const { selectedWorkspace } = useI18nWorkspaces()
 const links = useLangLinks()
 
 function workspaceLabel(workspace: WorkspaceSummary | null): string {
@@ -81,6 +84,12 @@ const hint = computed(() => {
 const showReadOnlyServer = computed(
   () => isLoaded.value && !editable.value && !isModules.value,
 )
+
+onMounted(() => {
+  if (!queryWorkspace.value && selectedWorkspace.value) {
+    void router.replace(switchLink(selectedWorkspace.value))
+  }
+})
 </script>
 
 <template>

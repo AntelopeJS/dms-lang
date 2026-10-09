@@ -1,14 +1,17 @@
 import { CustomComponent } from "@antelopejs/interface-dms/base/custom";
 import { Grid, GridRow } from "@antelopejs/interface-dms/base/grid";
+import { StatGroup } from "@antelopejs/interface-dms/base/stat-group";
 import { VStack } from "@antelopejs/interface-dms/base/stack";
 import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
 import { LANG_MODULE_ID, translateCategory } from "./module";
-import { PERMISSION_TEXTS } from "./texts";
+import { LANG_API, PERMISSION_TEXTS } from "./texts";
 
 const TEXTS = `${PERMISSION_TEXTS}.overview`;
 const SIDE_GAP = "1rem";
 const MIN_COLUMN_WIDTH = "320px";
 const LANGUAGES_SPAN = 2;
+const KPI_COUNT = 4;
+const API = LANG_API;
 
 const languages = CustomComponent("DmsLangLanguageList").meta({
   name: `${TEXTS}.languages`,
@@ -48,7 +51,12 @@ export class LangOverviewController extends PageController("overview", {
     icon: "i-ph-stack",
   });
 
-  static kpis = CustomComponent("DmsLangOverviewKpis").meta({
+  static kpis = StatGroup({
+    layout: "cards",
+    label: "$dms_lang.kpis.label",
+    fetchUrl: `${API}/kpis?workspace={{query.workspace}}`,
+    skeletonCount: KPI_COUNT,
+  }).meta({
     name: `${TEXTS}.kpis`,
     description: `${TEXTS}.kpis_description`,
     icon: "i-ph-chart-bar",

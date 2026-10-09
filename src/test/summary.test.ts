@@ -17,6 +17,7 @@ import {
   setTranslationConfig,
   type TranslationConfig,
 } from "../utils/config";
+import { localeStats, workspaceAbout, workspaceKpis } from "../utils/blocks";
 import { exportWorkspace } from "../utils/export";
 import { initializeLocaleRegistry } from "../utils/registry";
 import { resolveFlat } from "../utils/resolve";
@@ -147,5 +148,28 @@ describe("[integration] workspace summary, export and overrides", () => {
       "modules.lang.manage.workspace.content.main.main.danger.rename",
       "modules.lang.manage.workspace.content.main.main.danger.delete",
     ]);
+  });
+  it("serves the KPIs, the about list and a language's stats as block items", () => {
+    const kpis = workspaceKpis(WORKSPACE).items;
+    expect(kpis.map((item) => [item.id, item.value])).to.deep.include.members([
+      ["languages", 2],
+      ["keys", 2],
+      ["missing", 1],
+    ]);
+    expect(kpis.find((item) => item.id === "languages")?.detail).to.deep.equal({
+      key: "dms_lang.kpis.languages_detail",
+      params: { n: { type: "count", value: 1 } },
+    });
+    const about = workspaceAbout(WORKSPACE).items;
+    expect(about.find((item) => item.id === "folder")?.value).to.equal(
+      `i18n-workspaces/${WORKSPACE}`,
+    );
+    const stats = localeStats(WORKSPACE, "it-IT").items;
+    expect(stats.map((item) => [item.id, item.value])).to.deep.include.members([
+      ["translated", 1],
+      ["missing", 1],
+      ["issues", 1],
+    ]);
+    expect(localeStats(WORKSPACE, "xx-XX").items).to.deep.equal([]);
   });
 });

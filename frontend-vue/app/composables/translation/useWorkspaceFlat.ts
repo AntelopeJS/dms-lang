@@ -79,7 +79,9 @@ export const useWorkspaceFlat = () => {
     const running = requests.get(workspace)
     if (running) return running
     if (!force && store.entries.value[workspace]) return Promise.resolve()
-    const next = request(workspace)
+    const next = request(workspace).then(() => {
+      if (force) refreshPageBlocks()
+    })
     requests.set(workspace, next)
     return next
   }
@@ -93,6 +95,7 @@ export const useWorkspaceFlat = () => {
       ...store.entries.value,
       [workspace]: refreshCounts(next),
     }
+    refreshPageBlocks()
   }
 
   onMounted(() => load())

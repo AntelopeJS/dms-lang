@@ -21,6 +21,7 @@ import {
 } from "../pages/actions";
 import { FALLBACK_LOCALE, listAllWorkspaces } from "../utils/catalog";
 import { getTranslationConfig } from "../utils/config";
+import { localeStats, workspaceAbout, workspaceKpis } from "../utils/blocks";
 import { exportWorkspace } from "../utils/export";
 import { deleteKeyFor, renameKeyFor, upsertKeyFor } from "../utils/mutations";
 import {
@@ -109,6 +110,24 @@ export class TranslationsController extends Controller(
       editable,
       workspaces: summarizeWorkspaces(defaultLocale || FALLBACK_LOCALE),
     };
+  }
+
+  @Get("/kpis")
+  kpis(@Parameter("workspace", "query") workspace?: string) {
+    return workspaceKpis(workspace || DEFAULT_WORKSPACE);
+  }
+
+  @Get("/about")
+  about(@Parameter("workspace", "query") workspace?: string) {
+    return workspaceAbout(workspace || DEFAULT_WORKSPACE);
+  }
+
+  @Get("/locale-stats")
+  localeStats(
+    @Parameter("workspace", "query") workspace?: string,
+    @Parameter("locale", "query") locale?: string,
+  ) {
+    return localeStats(workspace || DEFAULT_WORKSPACE, locale ?? "");
   }
 
   @Get("/export")

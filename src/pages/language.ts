@@ -1,14 +1,17 @@
 import { CustomComponent } from "@antelopejs/interface-dms/base/custom";
 import { Grid, GridRow } from "@antelopejs/interface-dms/base/grid";
+import { StatGroup } from "@antelopejs/interface-dms/base/stat-group";
 import { VStack } from "@antelopejs/interface-dms/base/stack";
 import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
 import { LANG_MODULE_ID, translateCategory } from "./module";
-import { PERMISSION_TEXTS } from "./texts";
+import { LANG_API, PERMISSION_TEXTS } from "./texts";
 
 const TEXTS = `${PERMISSION_TEXTS}.language`;
 const GAP = "1rem";
 const MIN_COLUMN_WIDTH = "320px";
 const QUEUE_SPAN = 2;
+const STAT_COLUMNS = 2;
+const STAT_COUNT = 4;
 
 const queue = CustomComponent("DmsLangTranslationQueue").meta({
   name: `${TEXTS}.queue`,
@@ -16,7 +19,13 @@ const queue = CustomComponent("DmsLangTranslationQueue").meta({
   icon: "i-ph-queue",
 });
 
-const progress = CustomComponent("DmsLangLanguageProgress").meta({
+const progress = StatGroup({
+  layout: "cards",
+  columns: STAT_COLUMNS,
+  label: "$dms_lang.progress.label",
+  fetchUrl: `${LANG_API}/locale-stats?workspace={{query.workspace}}&locale={{query.locale}}`,
+  skeletonCount: STAT_COUNT,
+}).meta({
   name: `${TEXTS}.progress`,
   description: `${TEXTS}.progress_description`,
   icon: "i-ph-chart-donut",

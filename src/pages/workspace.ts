@@ -1,15 +1,17 @@
 import { Banner } from "@antelopejs/interface-dms/base/banner";
 import { CustomComponent } from "@antelopejs/interface-dms/base/custom";
 import { Grid, GridRow } from "@antelopejs/interface-dms/base/grid";
+import { KeyValueList } from "@antelopejs/interface-dms/base/key-value-list";
 import { VStack } from "@antelopejs/interface-dms/base/stack";
 import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
 import { LANG_MODULE_ID, manageCategory } from "./module";
-import { PERMISSION_TEXTS } from "./texts";
+import { LANG_API, PERMISSION_TEXTS } from "./texts";
 
 const TEXTS = `${PERMISSION_TEXTS}.workspace`;
 const GAP = "1rem";
 const MIN_COLUMN_WIDTH = "300px";
 const MAIN_SPAN = 2;
+const ABOUT_ROWS = 5;
 
 export const WORKSPACE_ACTIONS = {
   languages: "languages",
@@ -52,7 +54,12 @@ export const workspaceDangerZone = CustomComponent("DmsLangWorkspaceDangerZone")
     icon: "i-ph-trash",
   });
 
-const about = CustomComponent("DmsLangWorkspaceAbout").meta({
+const about = KeyValueList({
+  title: "$dms_lang.about.title",
+  dense: true,
+  fetchUrl: `${LANG_API}/about?workspace={{query.workspace}}`,
+  skeletonCount: ABOUT_ROWS,
+}).meta({
   name: `${TEXTS}.about`,
   description: `${TEXTS}.about_description`,
   icon: "i-ph-info",

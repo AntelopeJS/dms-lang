@@ -291,3 +291,38 @@ A source change reloads fine; only the config restart is affected.
   skip, namespace scope, base and unknown language), create / rename / delete
   workspace with typed confirmation, the module key override, the command
   palette `?action=` entries and the read-only server.
+
+## 10. Update to DMS 0.7.1
+
+**Q10.1 Which versions?**
+`@antelopejs/dms` `>=0.7.1 <0.8.0` (0.7.0 required an unreleased interface
+and does not start), `@antelopejs/interface-dms` `>=0.5.0 <1.0.0`,
+`@antelopejs/dms-frontend` 0.5.1, `@antelopejs/core` 1.14.0.
+
+**Q10.2 What breaks?**
+Nothing the module uses: permissions now need their ancestors (#172), which
+the owner-only module already holds through `*`; the settings changes and the
+notification bell do not touch it.
+
+**Q10.3 What can now be a DMS block instead of a custom component?**
+Blocks resolve `{{params.X}}` / `{{query.X}}` in their `fetchUrl` (#170) and
+write composed texts with typed, pluralised params (#173). Since every page
+keeps the workspace in `?workspace=`, three sections become stock blocks fed
+by new routes:
+- Overview KPIs: `StatGroup` on `GET /kpis?workspace=` (was `OverviewKpis`);
+- Language progress: `StatGroup` on `GET /locale-stats?workspace=&locale=`
+  (was the `LanguageProgress` ring);
+- Workspace "About": `KeyValueList` on `GET /about?workspace=` (was
+  `WorkspaceAbout`).
+The scope bar adds `?workspace=` when a page opens without it, and every save
+calls `refreshPageBlocks()` so these blocks follow the edits.
+
+**Q10.4 Why not the languages list?**
+`TableView.fromSource` does not resolve route tokens in its `fetchUrl` (only
+blocks do), so a table cannot follow the selected workspace. It is the first
+DMS addition proposed in `pdf/dms-lang-v2-ecrans.pdf`, with a copy button on
+`KeyValueList`, a heatmap chart, a module context selector and an action row.
+
+**Q10.5 The side panels (#168) and the ⌘K assistant (#169)?**
+Not used: the key drawer belongs to the matrix, and the module has no
+assistant.
