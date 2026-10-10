@@ -51,7 +51,7 @@
   },
   "devDependencies": {
     "@antelopejs/core": "1.14.0",
-    "@antelopejs/dms": ">=0.7.2 <0.8.0",
+    "@antelopejs/dms": ">=0.7.4 <0.8.0",
     "@antelopejs/dms-frontend": "0.5.2",
     "@antelopejs/tooling-configs": ">=0.0.7 <1.0.0",
     "@types/chai": "^5.2.3",
