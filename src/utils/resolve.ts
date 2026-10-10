@@ -150,6 +150,7 @@ export interface FlatRow {
   key: string;
   values: Record<string, TranslationValue>;
   inherited?: Record<string, TranslationValue>;
+  overridden?: boolean;
 }
 
 export interface FlatResult {
@@ -166,6 +167,7 @@ interface FlatContext {
   locales: string[];
   presence: LocaleMessages;
   inherited?: LocaleMessages;
+  overrides?: LocaleMessages;
 }
 
 function ownFlatContext(
@@ -192,6 +194,7 @@ function modulesFlatContext(
     defaultLocale,
     locales: getLocaleCodes("external"),
     presence: external,
+    overrides: loadMessages("own"),
   };
 }
 
@@ -226,6 +229,34 @@ function valuesAtPath(
   return values;
 }
 
+function isOverridden(
+  overrides: LocaleMessages,
+  locales: string[],
+  path: string,
+): boolean {
+  return locales.some(
+    (locale) => !isMissing(getValueAtPath(overrides[locale], path)),
+  );
+}
+
+function buildFlatRow(context: FlatContext, key: string): FlatRow {
+  const row: FlatRow = {
+    key,
+    values: valuesAtPath(context.presence, context.locales, key),
+  };
+  if (context.inherited) {
+    row.inherited = valuesAtPath(context.inherited, context.locales, key);
+  }
+  if (context.overrides) {
+    row.overridden = isOverridden(context.overrides, context.locales, key);
+  }
+  return row;
+}
+
+export function isRowMissing(row: FlatRow, locale: string): boolean {
+  return isMissing(row.values[locale]) && isMissing(row.inherited?.[locale]);
+}
+
 function computeLocaleMissing(
   rows: FlatRow[],
   locales: string[],
@@ -239,7 +270,7 @@ function computeLocaleMissing(
     }
     let missing = 0;
     for (const row of rows) {
-      if (isMissing(row.values[locale])) missing += 1;
+      if (isRowMissing(row, locale)) missing += 1;
     }
     localeMissing[locale] = missing;
   }
@@ -256,16 +287,9 @@ export function resolveFlat(
     fallbackDefaultLocale,
   );
 
-  const rows: FlatRow[] = collectLeafPaths(data.tree).map((key) => {
-    const row: FlatRow = {
-      key,
-      values: valuesAtPath(context.presence, context.locales, key),
-    };
-    if (context.inherited) {
-      row.inherited = valuesAtPath(context.inherited, context.locales, key);
-    }
-    return row;
-  });
+  const rows = collectLeafPaths(data.tree).map((key) =>
+    buildFlatRow(context, key),
+  );
 
   const localeMissing = computeLocaleMissing(
     rows,

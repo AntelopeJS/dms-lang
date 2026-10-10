@@ -1,81 +1,114 @@
+import { useDmsState } from '#dms/frontend-module'
+import type { FlatTranslations } from '../../types/lang'
 import {
   EMPTY_FLAT,
-  type FlatTranslations,
-} from "./useTranslationProgress";
+  cloneFlat,
+  refreshCounts,
+  resolveDefaultLocale,
+} from '../../utils/translations'
+
+const FLAT_ENDPOINT = '/api/lang/translations/flat'
+
+function useFlatStore() {
+  return {
+    entries: useDmsState<Record<string, FlatTranslations>>(
+      'dms-lang-flat',
+      () => ({}),
+    ),
+    pending: useDmsState<Record<string, boolean>>(
+      'dms-lang-flat-pending',
+      () => ({}),
+    ),
+    failed: useDmsState<Record<string, boolean>>(
+      'dms-lang-flat-failed',
+      () => ({}),
+    ),
+  }
+}
+
+const requests = new Map<string, Promise<void>>()
 
 /**
- * Flat translations of the globally selected workspace. Reloads on selection
- * change (sequence-guarded so a stale response never overwrites a fresher
- * one, and cleared on workspace switch so the previous workspace's numbers
- * never show), surfaces load failures as an error toast instead of silently
- * rendering empty data, and refreshes the shared workspace list on mount.
+ * The flat translations of the selected workspace, shared by every component
+ * of the page: one request per workspace however many sections read it, and
+ * the values a save changed patched in place so every section follows.
  */
 export const useWorkspaceFlat = () => {
-  const { t } = useI18n();
-  const toast = useToast();
-  const { confirm } = useConfirm();
-  const { tryMutate } = useMutationToast();
-  const { selectedWorkspace, fetchWorkspaces, removeLocale } =
-    useI18nWorkspaces();
-  const { fetchFlat } = useTranslationProgress();
+  const { $authFetch } = useAuthFetch()
+  const { fallbackLocale } = useI18n()
+  const { selectedWorkspace } = useI18nWorkspaces()
+  const store = useFlatStore()
 
-  const flat = ref<FlatTranslations>(EMPTY_FLAT);
-  const isLoading = ref(false);
-  let requestId = 0;
-  let loadedWorkspace = "";
+  const baseLocale = computed(() => resolveDefaultLocale(fallbackLocale.value))
+  const flat = computed(
+    () => store.entries.value[selectedWorkspace.value] ?? EMPTY_FLAT,
+  )
+  const isLoading = computed(
+    () => store.pending.value[selectedWorkspace.value] === true,
+  )
+  const hasError = computed(
+    () => store.failed.value[selectedWorkspace.value] === true,
+  )
+  const isLoaded = computed(
+    () => store.entries.value[selectedWorkspace.value] !== undefined,
+  )
 
-  async function loadFlat(): Promise<void> {
-    if (!selectedWorkspace.value) return;
-    if (selectedWorkspace.value !== loadedWorkspace) flat.value = EMPTY_FLAT;
-    requestId += 1;
-    const id = requestId;
-    isLoading.value = true;
+  async function request(workspace: string): Promise<void> {
+    store.pending.value = { ...store.pending.value, [workspace]: true }
     try {
-      const result = await fetchFlat(selectedWorkspace.value);
-      if (id !== requestId) return;
-      if (!result) {
-        toast.add({
-          title: t("dms_lang.translation.ws_load_error"),
-          color: "error",
-        });
-        return;
+      const response = await $authFetch<Partial<FlatTranslations>>(
+        FLAT_ENDPOINT,
+        { query: { workspace, defaultLocale: baseLocale.value } },
+      )
+      store.entries.value = {
+        ...store.entries.value,
+        [workspace]: { ...EMPTY_FLAT, ...response },
       }
-      flat.value = result;
-      loadedWorkspace = selectedWorkspace.value;
+      store.failed.value = { ...store.failed.value, [workspace]: false }
+    } catch {
+      store.failed.value = { ...store.failed.value, [workspace]: true }
     } finally {
-      if (id === requestId) isLoading.value = false;
+      store.pending.value = { ...store.pending.value, [workspace]: false }
+      requests.delete(workspace)
     }
   }
 
-  function reload(): Promise<unknown> {
-    return Promise.all([fetchWorkspaces(), loadFlat()]);
+  function load(force = false): Promise<void> {
+    const workspace = selectedWorkspace.value
+    if (!workspace) return Promise.resolve()
+    const running = requests.get(workspace)
+    if (running) return running
+    if (!force && store.entries.value[workspace]) return Promise.resolve()
+    const next = request(workspace).then(() => {
+      if (force) refreshPageBlocks()
+    })
+    requests.set(workspace, next)
+    return next
   }
 
-  async function removeLanguage(code: string): Promise<void> {
-    const workspace = selectedWorkspace.value;
-    const confirmed = await confirm({
-      title: t("dms_lang.translation.ws_delete_language_title"),
-      description: t("dms_lang.translation.ws_delete_language_confirm", {
-        code,
-      }),
-      confirmLabel: t("dms_lang.translation.ws_delete"),
-      confirmColor: "error",
-    });
-    if (!confirmed) return;
-    const ok = await tryMutate(() => removeLocale(workspace, code));
-    if (!ok) return;
-    await reload();
+  function update(workspace: string, change: (flat: FlatTranslations) => void) {
+    const current = store.entries.value[workspace]
+    if (!current) return
+    const next = cloneFlat(current)
+    change(next)
+    store.entries.value = {
+      ...store.entries.value,
+      [workspace]: refreshCounts(next),
+    }
+    refreshPageBlocks()
   }
 
-  watch(selectedWorkspace, loadFlat, { immediate: true });
-
-  onMounted(() => fetchWorkspaces());
+  onMounted(() => load())
+  watch(selectedWorkspace, () => load())
 
   return {
     flat,
-    isLoading: readonly(isLoading),
-    loadFlat,
-    reload,
-    removeLanguage,
-  };
-};
+    baseLocale,
+    isLoading,
+    isLoaded,
+    hasError,
+    load,
+    reload: () => load(true),
+    update,
+  }
+}
