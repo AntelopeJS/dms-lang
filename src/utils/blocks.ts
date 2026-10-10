@@ -52,6 +52,8 @@ export interface KeyValueItem {
   value: BlockText | number;
   type?: "text" | "mono";
   tone?: Tone;
+  copy?: boolean;
+  copyValue?: string;
 }
 
 export interface BlockItems<T> {

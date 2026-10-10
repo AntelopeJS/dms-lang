@@ -159,7 +159,12 @@
 			"remove_named": "Retirer {name}",
 			"add": "Ajouter une langue",
 			"add_hint": "Démarre vide, avec {base} comme référence",
-			"translate_missing": "Traduire {count} manquantes"
+			"translate_missing": "Traduire {count} manquantes",
+			"column_language": "Langue",
+			"column_missing": "Manquantes",
+			"column_rank": "Rang",
+			"detail": "{code} · {n} sur {total}",
+			"detail_base": "{code} · {n} texte | {code} · {n} textes"
 		},
 		"namespaces": {
 			"title": "Couverture par espace de noms",
@@ -173,7 +178,11 @@
 			"title": "Utiliser dans votre application",
 			"settings": "Paramètres",
 			"note": "Public, sans connexion. Les changements enregistrés sont servis dès la requête suivante.",
-			"source_title": "Où vivent ces clés"
+			"source_title": "Où vivent ces clés",
+			"access": "Accès",
+			"snippet_i18next": "i18next",
+			"snippet_fetch": "fetch",
+			"snippet_curl": "curl"
 		},
 		"first_run": {
 			"title": "{name} est prêt à être traduit",
@@ -181,7 +190,8 @@
 			"created": "Espace créé avec {base} comme base",
 			"keys": "Ajoutez vos premières clés",
 			"languages": "Ajoutez une langue à traduire",
-			"add_key": "Ajouter une première clé"
+			"add_key": "Ajouter une première clé",
+			"add_language": "Ajouter une langue"
 		},
 		"modules_notice": {
 			"title": "Clés fournies par les modules installés",
@@ -316,10 +326,12 @@
 			"description": "Les applications qui demandent {url} reçoivent une 404.",
 			"file": "{file} est supprimé",
 			"strings": "Textes traduits perdus",
-			"submit": "Retirer la langue"
+			"submit": "Retirer la langue",
+			"done": "Langue retirée"
 		},
 		"language_base": {
-			"done": "{name} est maintenant la langue de base"
+			"done": "{name} est maintenant la langue de base",
+			"done_generic": "Langue de base changée"
 		},
 		"workspace_name": {
 			"label": "Nom de l'espace",
@@ -460,7 +472,12 @@
 				"about": "À propos de l'espace",
 				"about_description": "Type, taille et dossier de l'espace.",
 				"keys_note": "Note sur les clés",
-				"keys_note_description": "Explique comment les clés sont partagées entre les langues."
+				"keys_note_description": "Explique comment les clés sont partagées entre les langues.",
+				"languages_table": "Langues",
+				"languages_table_description": "Langues de l'espace avec leur couverture ; définir la base, retirer.",
+				"snippets": "Extraits",
+				"snippet": "Extrait",
+				"endpoint": "URL publique"
 			}
 		}
 	}

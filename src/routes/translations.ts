@@ -23,6 +23,13 @@ import { FALLBACK_LOCALE, listAllWorkspaces } from "../utils/catalog";
 import { getTranslationConfig } from "../utils/config";
 import { localeStats, workspaceAbout, workspaceKpis } from "../utils/blocks";
 import { exportWorkspace } from "../utils/export";
+import {
+  removalConfirm,
+  type SnippetKind,
+  workspaceEndpoint,
+  workspaceSnippet,
+} from "../utils/integration";
+import { listLanguages } from "../utils/languages";
 import { deleteKeyFor, renameKeyFor, upsertKeyFor } from "../utils/mutations";
 import {
   ALL_WORKSPACE,
@@ -128,6 +135,55 @@ export class TranslationsController extends Controller(
     @Parameter("locale", "query") locale?: string,
   ) {
     return localeStats(workspace || DEFAULT_WORKSPACE, locale ?? "");
+  }
+
+  @Get("/languages")
+  languages(@Parameter("workspace", "query") workspace?: string) {
+    return listLanguages(workspace || DEFAULT_WORKSPACE);
+  }
+
+  @Get("/languages/:workspace/:code/removal-confirm")
+  languageRemovalConfirm(
+    @Parameter("workspace", "param") workspace: string,
+    @Parameter("code", "param") code: string,
+  ) {
+    return removalConfirm(workspace, code);
+  }
+
+  @Post("/languages/:workspace/:code/base")
+  makeBaseLanguage(
+    @AuthUserWithPermission(manageLanguagesAction) _user: User,
+    @Parameter("workspace", "param") workspace: string,
+    @Parameter("code", "param") code: string,
+  ) {
+    assertEditable();
+    setWorkspaceDefaultLocale(workspace, code);
+  }
+
+  @Delete("/languages/:workspace/:code")
+  removeLanguage(
+    @AuthUserWithPermission(manageLanguagesAction) _user: User,
+    @Parameter("workspace", "param") workspace: string,
+    @Parameter("code", "param") code: string,
+  ) {
+    assertEditable();
+    removeLocale(workspace, code);
+  }
+
+  @Get("/endpoint")
+  endpoint(@Parameter("workspace", "query") workspace?: string) {
+    return workspaceEndpoint(workspace || DEFAULT_WORKSPACE);
+  }
+
+  @Get("/snippet")
+  snippet(
+    @Parameter("workspace", "query") workspace?: string,
+    @Parameter("kind", "query") kind?: string,
+  ) {
+    return workspaceSnippet(
+      workspace || DEFAULT_WORKSPACE,
+      (kind || "i18next") as SnippetKind,
+    );
   }
 
   @Get("/export")

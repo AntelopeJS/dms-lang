@@ -159,7 +159,12 @@
 			"remove_named": "Remove {name}",
 			"add": "Add language",
 			"add_hint": "Starts empty, with {base} as reference",
-			"translate_missing": "Translate {count} missing"
+			"translate_missing": "Translate {count} missing",
+			"column_language": "Language",
+			"column_missing": "Missing",
+			"column_rank": "Rank",
+			"detail": "{code} · {n} of {total}",
+			"detail_base": "{code} · {n} string | {code} · {n} strings"
 		},
 		"namespaces": {
 			"title": "Coverage by namespace",
@@ -173,7 +178,11 @@
 			"title": "Use in your app",
 			"settings": "Settings",
 			"note": "Public, no sign-in. Saved changes are served on the next request.",
-			"source_title": "Where these keys live"
+			"source_title": "Where these keys live",
+			"access": "Access",
+			"snippet_i18next": "i18next",
+			"snippet_fetch": "fetch",
+			"snippet_curl": "curl"
 		},
 		"first_run": {
 			"title": "{name} is ready to translate",
@@ -181,7 +190,8 @@
 			"created": "Workspace created with {base} as base",
 			"keys": "Add your first keys",
 			"languages": "Add a language to translate into",
-			"add_key": "Add first key"
+			"add_key": "Add first key",
+			"add_language": "Add language"
 		},
 		"modules_notice": {
 			"title": "Keys shipped by installed modules",
@@ -316,10 +326,12 @@
 			"description": "Apps requesting {url} get a 404.",
 			"file": "{file} is deleted",
 			"strings": "Translated strings lost",
-			"submit": "Remove language"
+			"submit": "Remove language",
+			"done": "Language removed"
 		},
 		"language_base": {
-			"done": "{name} is now the base language"
+			"done": "{name} is now the base language",
+			"done_generic": "Base language changed"
 		},
 		"workspace_name": {
 			"label": "Workspace name",
@@ -460,7 +472,12 @@
 				"about": "About the workspace",
 				"about_description": "Kind, size and folder of the workspace.",
 				"keys_note": "Keys note",
-				"keys_note_description": "Explains how keys are shared between languages."
+				"keys_note_description": "Explains how keys are shared between languages.",
+				"languages_table": "Languages",
+				"languages_table_description": "Languages of the workspace with their coverage; make base, remove.",
+				"snippets": "Snippets",
+				"snippet": "Snippet",
+				"endpoint": "Public URL"
 			}
 		}
 	}

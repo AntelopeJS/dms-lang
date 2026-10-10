@@ -7,7 +7,7 @@
   "license": "Apache-2.0",
   "packageManager": "pnpm@10.6.5",
   "engines": {
-    "@antelopejs/dms-frontend": ">=0.5.0 <0.6.0"
+    "@antelopejs/dms-frontend": ">=0.5.2 <0.6.0"
   },
   "scripts": {
     "build": "ajs dms build",
@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "@antelopejs/core": "1.14.0",
-    "@antelopejs/dms-frontend": "0.5.1",
+    "@antelopejs/dms-frontend": "0.5.2",
     "@eslint/js": "^9",
     "@typescript-eslint/eslint-plugin": "^8",
     "@typescript-eslint/parser": "^8",

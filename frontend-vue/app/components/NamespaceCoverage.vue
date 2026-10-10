@@ -19,6 +19,16 @@ const HEAT_CLASSES: Record<'success' | 'warning' | 'error', string> = {
 const { flat, isLoaded } = useWorkspaceFlat()
 const { formatCount } = useLangFormat()
 const links = useLangLinks()
+const { current } = useWorkspaceContext()
+const { nativeName } = useLocaleNames()
+const { addLanguage } = useLanguageActions()
+
+const isFirstRun = computed(
+  () =>
+    isLoaded.value &&
+    current.value?.kind === 'added' &&
+    flat.value.totalKeys === 0,
+)
 
 const locales = computed(() =>
   flat.value.locales
@@ -58,6 +68,52 @@ const gridTemplate = computed(
 
     <div v-if="!isLoaded" class="space-y-2 p-4">
       <USkeleton v-for="index in 4" :key="index" class="h-8 w-full" />
+    </div>
+
+    <div
+      v-else-if="isFirstRun"
+      class="flex flex-col items-center gap-3 px-4 py-6 text-center"
+    >
+      <p class="text-highlighted text-sm font-semibold">
+        {{ $t('dms_lang.first_run.title', { name: current?.id }) }}
+      </p>
+      <DmsCheckList
+        size="sm"
+        :items="[
+          {
+            id: 'created',
+            label: $t('dms_lang.first_run.created', {
+              base: nativeName(flat.defaultLocale),
+            }),
+            state: 'ok',
+          },
+          {
+            id: 'keys',
+            label: $t('dms_lang.first_run.keys'),
+            state: 'pending',
+          },
+          {
+            id: 'languages',
+            label: $t('dms_lang.first_run.languages'),
+            state: flat.locales.length > 1 ? 'ok' : 'pending',
+          },
+        ]"
+      />
+      <div class="flex flex-wrap justify-center gap-2">
+        <UButton
+          icon="i-ph-plus"
+          size="sm"
+          :label="$t('dms_lang.first_run.add_key')"
+          :to="links.translations({ [PAGE_ACTION_QUERY]: PAGE_ACTIONS.addKey })"
+        />
+        <UButton
+          size="sm"
+          color="neutral"
+          variant="outline"
+          :label="$t('dms_lang.first_run.add_language')"
+          @click="addLanguage()"
+        />
+      </div>
     </div>
 
     <p

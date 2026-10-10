@@ -14,7 +14,7 @@ const { t } = useI18n()
 const { formatCount } = useLangFormat()
 const { workspaces, editable, isLoaded } = useI18nWorkspaces()
 const { current, isEditable, isModules, isAdded } = useWorkspaceContext()
-const { flat } = useWorkspaceFlat()
+const { flat, isLoaded: isFlatLoaded } = useWorkspaceFlat()
 const { switchLink, queryWorkspace } = useWorkspaceRoute()
 const router = useDmsRouter()
 const { selectedWorkspace } = useI18nWorkspaces()
@@ -85,11 +85,29 @@ const showReadOnlyServer = computed(
   () => isLoaded.value && !editable.value && !isModules.value,
 )
 
-onMounted(() => {
-  if (!queryWorkspace.value && selectedWorkspace.value) {
-    void router.replace(switchLink(selectedWorkspace.value))
-  }
-})
+const { addLanguage } = useLanguageActions()
+const { pageAction, clearPageAction } = useWorkspaceRoute()
+
+watch(
+  [queryWorkspace, pageAction],
+  ([workspace, action]) => {
+    if (import.meta.env.SSR || workspace || action) return
+    if (selectedWorkspace.value) {
+      void router.replace(switchLink(selectedWorkspace.value))
+    }
+  },
+  { immediate: true },
+)
+
+watch(
+  [pageAction, isFlatLoaded],
+  async ([action, loaded]) => {
+    if (action !== PAGE_ACTIONS.addLanguage || !loaded) return
+    await clearPageAction()
+    await addLanguage()
+  },
+  { immediate: true },
+)
 </script>
 
 <template>

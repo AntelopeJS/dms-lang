@@ -19,6 +19,12 @@ import {
 } from "../utils/config";
 import { localeStats, workspaceAbout, workspaceKpis } from "../utils/blocks";
 import { exportWorkspace } from "../utils/export";
+import {
+  removalConfirm,
+  workspaceEndpoint,
+  workspaceSnippet,
+} from "../utils/integration";
+import { listLanguages } from "../utils/languages";
 import { initializeLocaleRegistry } from "../utils/registry";
 import { resolveFlat } from "../utils/resolve";
 import { countDefaultMissing, summarizeWorkspaces } from "../utils/summary";
@@ -47,6 +53,66 @@ async function registerSource(
     renderer: { name: "vue", version: "3" },
     priority: own ? 40 : 35,
     options: { dmsI18nAppLayer: own },
+  });
+}
+
+function describeBlockRoutes(): void {
+  it("serves the KPIs, the about list and a language's stats as block items", () => {
+    const kpis = workspaceKpis(WORKSPACE).items;
+    expect(kpis.map((item) => [item.id, item.value])).to.deep.include.members([
+      ["languages", 2],
+      ["keys", 2],
+      ["missing", 1],
+    ]);
+    expect(kpis.find((item) => item.id === "languages")?.detail).to.deep.equal({
+      key: "dms_lang.kpis.languages_detail",
+      params: { n: { type: "count", value: 1 } },
+    });
+    const about = workspaceAbout(WORKSPACE).items;
+    expect(about.find((item) => item.id === "folder")?.value).to.equal(
+      `i18n-workspaces/${WORKSPACE}`,
+    );
+    const stats = localeStats(WORKSPACE, "it-IT").items;
+    expect(stats.map((item) => [item.id, item.value])).to.deep.include.members([
+      ["translated", 1],
+      ["missing", 1],
+      ["issues", 1],
+    ]);
+    expect(localeStats(WORKSPACE, "xx-XX").items).to.deep.equal([]);
+  });
+  it("lists the languages of a workspace as source table rows", () => {
+    const { results, total } = listLanguages(WORKSPACE);
+    expect(total).to.equal(2);
+    const base = results.find((row) => row.code === "en-GB");
+    const italian = results.find((row) => row.code === "it-IT");
+    expect(base).to.include({
+      isBase: true,
+      translated: 2,
+      total: 2,
+      canManage: true,
+    });
+    expect(base?.rank).to.be.below(italian?.rank ?? 0);
+    expect(italian).to.include({
+      isBase: false,
+      translated: 1,
+      missing: 1,
+      workspace: WORKSPACE,
+    });
+    expect(italian?.name).to.equal("Italiano");
+  });
+
+  it("words the removal of a language and serves the app snippets", async () => {
+    const dialog = await removalConfirm(WORKSPACE, "it-IT");
+    expect(dialog).to.include({ confirmText: "it-IT", color: "error" });
+    expect(dialog.impact[1]).to.include({ count: 1 });
+    expect(dialog.params.url).to.match(/\/i18n\/storefront\/it-IT\.json$/);
+    const endpoint = await workspaceEndpoint(WORKSPACE);
+    expect(endpoint.items[0]).to.include({
+      value: `/i18n/${WORKSPACE}/{locale}.json`,
+    });
+    const curl = await workspaceSnippet(WORKSPACE, "curl");
+    expect(curl).to.include({ language: "shell" });
+    expect(curl.code).to.match(/^curl .*\/i18n\/storefront\/en-GB\.json$/);
   });
 }
 
@@ -149,27 +215,5 @@ describe("[integration] workspace summary, export and overrides", () => {
       "modules.lang.manage.workspace.content.main.main.danger.delete",
     ]);
   });
-  it("serves the KPIs, the about list and a language's stats as block items", () => {
-    const kpis = workspaceKpis(WORKSPACE).items;
-    expect(kpis.map((item) => [item.id, item.value])).to.deep.include.members([
-      ["languages", 2],
-      ["keys", 2],
-      ["missing", 1],
-    ]);
-    expect(kpis.find((item) => item.id === "languages")?.detail).to.deep.equal({
-      key: "dms_lang.kpis.languages_detail",
-      params: { n: { type: "count", value: 1 } },
-    });
-    const about = workspaceAbout(WORKSPACE).items;
-    expect(about.find((item) => item.id === "folder")?.value).to.equal(
-      `i18n-workspaces/${WORKSPACE}`,
-    );
-    const stats = localeStats(WORKSPACE, "it-IT").items;
-    expect(stats.map((item) => [item.id, item.value])).to.deep.include.members([
-      ["translated", 1],
-      ["missing", 1],
-      ["issues", 1],
-    ]);
-    expect(localeStats(WORKSPACE, "xx-XX").items).to.deep.equal([]);
-  });
+  describeBlockRoutes();
 });

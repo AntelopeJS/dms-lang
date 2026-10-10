@@ -37,6 +37,9 @@ export const useWorkspaceRoute = () => {
     if (!pageAction.value) return
     const params = new URLSearchParams(route.query)
     params.delete(PAGE_ACTION_QUERY)
+    if (!params.get('workspace') && selectedWorkspace.value) {
+      params.set('workspace', selectedWorkspace.value)
+    }
     const search = params.toString()
     await router.replace(search ? `${route.path}?${search}` : route.path)
   }

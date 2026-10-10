@@ -326,3 +326,31 @@ DMS addition proposed in `pdf/dms-lang-v2-ecrans.pdf`, with a copy button on
 **Q10.5 The side panels (#168) and the ⌘K assistant (#169)?**
 Not used: the key drawer belongs to the matrix, and the module has no
 assistant.
+
+## 11. Update to DMS 0.7.2
+
+**Q11.1 What does 0.7.2 let the module drop?**
+- `TableView.fromSource` now resolves `{{query.workspace}}` in its
+  `fetchUrl` (#178): the languages list of the overview and of the workspace
+  settings is a DMS table (`IdentityDisplay` with a composed sub-line,
+  `ProgressDisplay`), with row actions calling `POST/DELETE
+  /languages/:workspace/:code[/base]` and a removal dialog worded by the
+  server (`confirm: { from }`, code to type). `LanguageList` is gone.
+- `KeyValueList` rows take `copy` / `copyValue` (#180): the public URL is a
+  DMS block (`GET /endpoint`). `AppEndpoint` is gone.
+- `CodeBlock` (#182): the i18next / fetch / curl snippets are a `Tab` of three
+  `CodeBlock`s read from `GET /snippet`, in a `Card` with the URL list.
+  `WorkspaceIntegration` is gone.
+- Source tables reload when the page refreshes its blocks (#185), so the
+  languages table follows every edit made elsewhere on the page.
+
+**Q11.2 Where do the overview's header buttons come from now?**
+From the backend: `DefaultLayout({ headerActions })` with "Add language" (the
+`lang-add-language` quick action, handled by the scope bar) and "Translate
+missing keys" (a page link). The labels no longer carry the missing count.
+
+**Q11.3 What is left custom?**
+14 components, listed with their reason in `pdf/dms-lang-v2-ecrans.pdf`: the
+scope bar, the heatmap, the danger zone and the general settings (DMS gaps),
+the matrix, the queue, the key drawer, the language picker (product UI) and a
+few dialogs that a `Form` in a modal could replace.
