@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import FormFieldRow from './form/FormFieldRow.vue'
+import FormRows from './form/FormRows.vue'
+
 interface Props {
   workspace: string
 }
@@ -41,14 +44,19 @@ async function submit() {
     @update:open="(open: boolean) => !open && close(null)"
   >
     <template #body>
-      <form class="space-y-4" @submit.prevent="submit">
-        <UFormField
-          :label="$t('dms_lang.workspace_name.label')"
-          :help="check.isError.value ? undefined : check.message.value"
-          :error="check.isError.value ? check.message.value : undefined"
-        >
-          <UInput v-model="name" autofocus class="w-full" />
-        </UFormField>
+      <form class="space-y-4" novalidate @submit.prevent="submit">
+        <FormRows has-required>
+          <FormFieldRow
+            :label="$t('dms_lang.workspace_name.label')"
+            :help="check.isError.value ? undefined : check.message.value"
+            :error="check.isError.value ? check.message.value : null"
+            required
+          >
+            <template #default="{ id }">
+              <DmsInputText :id="id" v-model="name" autofocus class="w-full" />
+            </template>
+          </FormFieldRow>
+        </FormRows>
         <div class="border-default space-y-2 rounded-md border px-3 py-2.5">
           <div>
             <DmsEyebrow

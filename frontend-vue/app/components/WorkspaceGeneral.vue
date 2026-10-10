@@ -68,7 +68,7 @@ usePageHeaderActions(() =>
       :description="$t('dms_lang.workspace.name_help')"
     >
       <div class="flex gap-2">
-        <UInput
+        <DmsInputText
           :model-value="workspaceId"
           readonly
           class="flex-1"

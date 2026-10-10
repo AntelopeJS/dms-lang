@@ -375,7 +375,6 @@
 			"path_invalid": "Utilisez lettres, chiffres, tirets et underscores, séparés par des points.",
 			"path_taken": "Cette clé existe déjà.",
 			"path_namespace": "Va dans l'espace de noms {namespace}, à côté de {count} clés.",
-			"optional": "facultatif",
 			"add_another": "En ajouter une autre",
 			"submit": "Ajouter la clé",
 			"added": "Clé {key} ajoutée"

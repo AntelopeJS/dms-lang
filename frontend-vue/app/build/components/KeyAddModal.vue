@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { namespaceOf } from '../../utils/translations'
+import FormFieldRow from './form/FormFieldRow.vue'
+import FormRows from './form/FormRows.vue'
 
 interface Props {
   workspace: string
@@ -24,7 +26,7 @@ const baseText = ref('')
 const addAnother = ref(false)
 const isSubmitting = ref(false)
 const added = ref<string[]>([])
-const pathInput = useTemplateRef<{ inputRef?: HTMLInputElement }>('pathInput')
+const form = useTemplateRef<HTMLFormElement>('form')
 
 const trimmedPath = computed(() => path.value.trim())
 const isTaken = computed(
@@ -59,7 +61,7 @@ function close() {
 function resetForNext() {
   path.value = ''
   baseText.value = ''
-  nextTick(() => pathInput.value?.inputRef?.focus())
+  nextTick(() => form.value?.querySelector('input')?.focus())
 }
 
 async function submit() {
@@ -94,50 +96,52 @@ async function submit() {
     @update:open="(open: boolean) => !open && close()"
   >
     <template #body>
-      <form class="space-y-4" @submit.prevent="submit">
-        <UFormField
-          :label="$t('dms_lang.key_add.path')"
-          :help="hasPathError ? undefined : pathHelp"
-          :error="hasPathError ? pathHelp : undefined"
-        >
-          <UInput
-            ref="pathInput"
-            v-model="path"
-            autofocus
-            class="w-full"
-            :ui="{ base: 'font-mono' }"
-            placeholder="checkout.coupon.invalid"
-          />
-        </UFormField>
-        <UFormField
-          :label="props.baseName"
-          :hint="$t('dms_lang.key_add.optional')"
-        >
-          <template #label>
-            <span class="inline-flex items-center gap-2">
-              {{ props.baseName }}
+      <form ref="form" novalidate @submit.prevent="submit">
+        <FormRows has-required>
+          <FormFieldRow
+            :label="$t('dms_lang.key_add.path')"
+            :help="hasPathError ? undefined : pathHelp"
+            :error="hasPathError ? pathHelp : null"
+            required
+          >
+            <template #default="{ id }">
+              <DmsInputText
+                :id="id"
+                v-model="path"
+                autofocus
+                class="w-full"
+                :ui="{ base: 'font-mono' }"
+                placeholder="checkout.coupon.invalid"
+              />
+            </template>
+          </FormFieldRow>
+          <FormFieldRow :label="props.baseName">
+            <template #label-extra>
               <DmsStatusPill
                 dot="none"
                 tone="neutral"
                 size="sm"
                 :label="$t('dms_lang.common.base')"
               />
-            </span>
-          </template>
-          <UTextarea
-            v-model="baseText"
-            :rows="2"
-            autoresize
-            class="w-full"
-            @keydown.meta.enter.prevent="submit"
-            @keydown.ctrl.enter.prevent="submit"
-          />
-        </UFormField>
+            </template>
+            <template #default="{ id }">
+              <DmsTextarea
+                :id="id"
+                v-model="baseText"
+                :rows="2"
+                autoresize
+                class="w-full"
+                @keydown.meta.enter.prevent="submit"
+                @keydown.ctrl.enter.prevent="submit"
+              />
+            </template>
+          </FormFieldRow>
+        </FormRows>
       </form>
     </template>
     <template #footer>
       <div class="flex w-full items-center gap-2">
-        <UCheckbox
+        <DmsCheckbox
           v-model="addAnother"
           :label="$t('dms_lang.key_add.add_another')"
         />

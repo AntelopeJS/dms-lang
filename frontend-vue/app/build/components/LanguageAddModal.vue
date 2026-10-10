@@ -105,7 +105,7 @@ function close(added: boolean) {
   >
     <template #body>
       <div class="space-y-3">
-        <UInput
+        <DmsInputText
           v-model="search"
           icon="i-ph-magnifying-glass"
           autofocus

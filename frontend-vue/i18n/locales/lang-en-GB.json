@@ -375,7 +375,6 @@
 			"path_invalid": "Use letters, digits, dashes and underscores, separated by dots.",
 			"path_taken": "This key already exists.",
 			"path_namespace": "Goes into the {namespace} namespace, next to {count} keys.",
-			"optional": "optional",
 			"add_another": "Add another",
 			"submit": "Add key",
 			"added": "Key {key} added"

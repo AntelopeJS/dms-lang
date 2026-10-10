@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import LocaleTile from './LocaleTile.vue'
+import FormFieldRow from './form/FormFieldRow.vue'
+import FormRows from './form/FormRows.vue'
 import { SUGGESTED_LANGUAGE_CODES } from '../../utils/languages'
 
 interface LanguageItem {
@@ -64,38 +66,48 @@ async function submit() {
     @update:open="(open: boolean) => !open && close(null)"
   >
     <template #body>
-      <form class="space-y-4" @submit.prevent="submit">
-        <UFormField
-          :label="$t('dms_lang.workspace_name.label')"
-          :help="check.isError.value ? undefined : check.message.value"
-          :error="check.isError.value ? check.message.value : undefined"
-        >
-          <UInput
-            v-model="name"
-            autofocus
-            class="w-full"
-            :placeholder="$t('dms_lang.workspace_name.placeholder')"
-            :trailing-icon="
-              check.isValid.value ? 'i-ph-check-circle' : undefined
-            "
-            :ui="{ trailingIcon: 'text-success' }"
-          />
-        </UFormField>
-        <UFormField
-          :label="$t('dms_lang.workspace_create.base')"
-          :help="$t('dms_lang.workspace_create.base_help')"
-        >
-          <USelectMenu
-            v-model="base"
-            :items="languageItems"
-            value-key="value"
-            class="w-full"
+      <form class="space-y-4" novalidate @submit.prevent="submit">
+        <FormRows has-required>
+          <FormFieldRow
+            :label="$t('dms_lang.workspace_name.label')"
+            :help="check.isError.value ? undefined : check.message.value"
+            :error="check.isError.value ? check.message.value : null"
+            required
           >
-            <template #leading>
-              <LocaleTile :code="base" size="sm" />
+            <template #default="{ id }">
+              <DmsInputText
+                :id="id"
+                v-model="name"
+                autofocus
+                class="w-full"
+                :placeholder="$t('dms_lang.workspace_name.placeholder')"
+                :trailing-icon="
+                  check.isValid.value ? 'i-ph-check-circle' : undefined
+                "
+                :ui="{ trailingIcon: 'text-success' }"
+              />
             </template>
-          </USelectMenu>
-        </UFormField>
+          </FormFieldRow>
+          <FormFieldRow
+            :label="$t('dms_lang.workspace_create.base')"
+            :help="$t('dms_lang.workspace_create.base_help')"
+            required
+          >
+            <template #default="{ id }">
+              <USelectMenu
+                :id="id"
+                v-model="base"
+                :items="languageItems"
+                value-key="value"
+                class="w-full"
+              >
+                <template #leading>
+                  <LocaleTile :code="base" size="sm" />
+                </template>
+              </USelectMenu>
+            </template>
+          </FormFieldRow>
+        </FormRows>
         <div
           class="border-default flex items-center gap-2.5 rounded-md border border-dashed px-3 py-2"
         >

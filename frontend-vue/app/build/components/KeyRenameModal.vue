@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import FormFieldRow from './form/FormFieldRow.vue'
+import FormRows from './form/FormRows.vue'
+
 interface Props {
   workspace: string
   path: string
@@ -56,31 +59,40 @@ async function submit() {
     @update:open="(open: boolean) => !open && close(null)"
   >
     <template #body>
-      <form class="space-y-4" @submit.prevent="submit">
-        <UFormField :label="$t('dms_lang.key_rename.current')">
-          <UInput
-            :model-value="props.path"
-            disabled
-            class="w-full"
-            :ui="{ base: 'font-mono' }"
-          />
-        </UFormField>
-        <UFormField
-          :label="$t('dms_lang.key_rename.new')"
-          :help="
-            error
-              ? undefined
-              : $t('dms_lang.key_rename.help', { path: props.path })
-          "
-          :error="error || undefined"
-        >
-          <UInput
-            v-model="newPath"
-            autofocus
-            class="w-full"
-            :ui="{ base: 'font-mono' }"
-          />
-        </UFormField>
+      <form novalidate @submit.prevent="submit">
+        <FormRows has-required>
+          <FormFieldRow :label="$t('dms_lang.key_rename.current')">
+            <template #default="{ id }">
+              <DmsInputText
+                :id="id"
+                :model-value="props.path"
+                disabled
+                class="w-full"
+                :ui="{ base: 'font-mono' }"
+              />
+            </template>
+          </FormFieldRow>
+          <FormFieldRow
+            :label="$t('dms_lang.key_rename.new')"
+            :help="
+              error
+                ? undefined
+                : $t('dms_lang.key_rename.help', { path: props.path })
+            "
+            :error="error || null"
+            required
+          >
+            <template #default="{ id }">
+              <DmsInputText
+                :id="id"
+                v-model="newPath"
+                autofocus
+                class="w-full"
+                :ui="{ base: 'font-mono' }"
+              />
+            </template>
+          </FormFieldRow>
+        </FormRows>
       </form>
     </template>
     <template #footer>
