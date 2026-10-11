@@ -286,6 +286,7 @@ export const useWorkspaceFlat = () => {
  * workspace.
  */
 export function useWorkspaceFlatSync(): void {
+  if (import.meta.env.SSR) return
   const loader = useFlatLoader()
   if (syncUsers === 0) syncScope = startSync(loader)
   syncUsers += 1
