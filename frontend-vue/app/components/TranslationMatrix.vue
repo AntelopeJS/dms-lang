@@ -239,11 +239,17 @@ function jumpToMissing(step: JumpStep) {
   )
 }
 
+function isOverlayActive(): boolean {
+  return (
+    isFocusInsideOverlay(document.activeElement) ||
+    document.querySelector(OPEN_OVERLAY) !== null
+  )
+}
+
 function onKeydown(event: KeyboardEvent) {
   if (!canEditValues.value || event.key.toLowerCase() !== JUMP_KEY) return
   if (event.ctrlKey || event.metaKey || event.altKey) return
-  if (isTypingTarget(event.target) || document.querySelector(OPEN_OVERLAY))
-    return
+  if (isTypingTarget(event.target) || isOverlayActive()) return
   event.preventDefault()
   jumpToMissing(event.shiftKey ? -1 : 1)
 }
