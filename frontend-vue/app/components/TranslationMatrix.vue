@@ -23,7 +23,10 @@ import {
   useCellSaves,
   type CellAddress,
 } from '../build/composables/useCellSaves'
-import { useCellEditor } from '../build/composables/useCellEditor'
+import {
+  useCellEditor,
+  type CellRef,
+} from '../build/composables/useCellEditor'
 import {
   focusNeighbourCell,
   isTypingTarget,
@@ -164,6 +167,7 @@ const editor = useCellEditor({
   shownValue,
   targetOf: moves.targetOf,
   onStart: pin,
+  onMoveEnd: focusCell,
 })
 
 const countedLabel = computed(() =>
@@ -242,6 +246,13 @@ function onKeydown(event: KeyboardEvent) {
     return
   event.preventDefault()
   jumpToMissing(event.shiftKey ? -1 : 1)
+}
+
+function focusCell(cell: CellRef) {
+  const selector = `[data-matrix-cell][data-key="${CSS.escape(cell.key)}"][data-code="${CSS.escape(cell.code)}"]`
+  nextTick(() =>
+    rootElement.value?.querySelector<HTMLElement>(selector)?.focus(),
+  )
 }
 
 function onGridKeydown(event: KeyboardEvent) {

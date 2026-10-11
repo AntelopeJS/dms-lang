@@ -326,6 +326,9 @@ function escapeDraft() {
   <div v-else-if="props.failure" class="space-y-1">
     <button
       type="button"
+      data-matrix-cell
+      :data-key="props.rowKey"
+      :data-code="props.code"
       class="border-error/40 bg-error/5 text-default line-clamp-3 w-full rounded-md border px-2.5 py-1.5 text-left text-sm"
       :aria-label="ariaLabel"
       :disabled="!props.editable"
@@ -386,6 +389,8 @@ function escapeDraft() {
     :type="props.editable ? 'button' : undefined"
     :aria-label="props.editable && isMissing ? ariaLabel : undefined"
     data-matrix-cell
+    :data-key="props.rowKey"
+    :data-code="props.code"
     class="group/cell block w-full rounded-md px-2.5 py-1.5 text-left text-sm"
     :class="[
       props.editable

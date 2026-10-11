@@ -29,6 +29,8 @@ export interface CellEditorOptions {
   /** The cell a move goes to from a cell, if any. */
   targetOf: (cell: CellRef, move: CellMove) => CellRef | null
   onStart: (key: string) => void
+  /** A move found no cell to go to: the focus goes back to the cell left. */
+  onMoveEnd: (cell: CellRef) => void
 }
 
 interface EditingCell extends CellRef {
@@ -120,6 +122,7 @@ function moveFrom(
 ) {
   const target = context.options.targetOf({ key, code }, move)
   if (target) nextTick(() => startEdit(context, target.key, target.code))
+  else if (move !== 'stay') context.options.onMoveEnd({ key, code })
 }
 
 function startEdit(
