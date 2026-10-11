@@ -1,19 +1,10 @@
 <script setup lang="ts">
-import { coverageTone, namespaceCoverage } from '../utils/translations'
+import { coverageTone } from '../utils/translations'
 
-const { flat, isLoaded } = useWorkspaceFlat()
+const { isLoaded } = useWorkspaceFlat()
+const { isUnknown } = useWorkspaceContext()
 const { formatCount } = useLangFormat()
-const { locale, namespace, exists, isBase } = useLanguageQueue()
-
-const entries = computed(() =>
-  namespaceCoverage(flat.value.rows, [locale.value])
-    .map((entry) => ({
-      namespace: entry.namespace,
-      coverage: entry.coverage[locale.value] ?? 0,
-      missing: entry.missing[locale.value] ?? 0,
-    }))
-    .sort((left, right) => left.coverage - right.coverage),
-)
+const { namespace, namespaceProgress, exists, isBase } = useLanguageQueue()
 
 function scope(target: string) {
   namespace.value = namespace.value === target ? '' : target
@@ -22,7 +13,7 @@ function scope(target: string) {
 
 <template>
   <DmsCard
-    v-if="(exists && !isBase) || !isLoaded"
+    v-if="!isUnknown && ((exists && !isBase) || !isLoaded)"
     :padded="false"
     :title="$t('dms_lang.language_namespaces.title')"
   >
@@ -40,7 +31,7 @@ function scope(target: string) {
       <USkeleton v-for="index in 5" :key="index" class="h-6 w-full" />
     </div>
     <ul v-else class="divide-default divide-y">
-      <li v-for="entry in entries" :key="entry.namespace">
+      <li v-for="entry in namespaceProgress" :key="entry.namespace">
         <button
           type="button"
           class="grid w-full grid-cols-[minmax(0,1fr)_5rem_3rem_3rem] items-center gap-3 px-4 py-2.5 text-left transition-colors"
