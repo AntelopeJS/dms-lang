@@ -126,7 +126,6 @@ export const useQueueSession = (upNextSize: number) => {
   useSessionWatchers(language, view.current, pass, {
     start,
     advance: moves.advance,
-    clear: drafts.clear,
   })
   return {
     ...language,
@@ -145,15 +144,12 @@ export const useQueueSession = (upNextSize: number) => {
 interface SessionSteps {
   start: (key?: string) => void
   advance: () => QueueStep | undefined
-  clear: () => void
 }
 
 /**
  * Starts a new pass whenever the workspace, the language, the mode or the
  * namespace changes (on the key in the URL), and moves on when the key shown
- * leaves the translations (deleted elsewhere). Another language or workspace
- * remounts the page on the same path and keeps the drafts; leaving the page
- * (the leave guard asked first) drops them.
+ * leaves the translations (deleted elsewhere).
  */
 function useSessionWatchers(
   language: LanguageQueue,
@@ -180,11 +176,6 @@ function useSessionWatchers(
   watch(current, (row) => {
     if (!row && !pass.value.isFinished && pass.value.order.length)
       steps.advance()
-  })
-  onUnmounted(() => {
-    setTimeout(() => {
-      if (langPageOf(window.location.pathname) !== 'language') steps.clear()
-    })
   })
 }
 

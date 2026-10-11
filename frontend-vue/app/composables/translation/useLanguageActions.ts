@@ -1,3 +1,4 @@
+import { until } from '@vueuse/core'
 import { useDmsState } from '#dms/frontend-module'
 import LanguageAddModal from '../../build/components/LanguageAddModal.vue'
 
@@ -8,16 +9,17 @@ interface BaseImpact {
 
 const LANGUAGES_API = '/api/lang/translations/languages'
 const LISTED_KEYS = 5
-const MODAL_LEAVE_MS = 200
-
-const waitForModalLeave = () =>
-  new Promise((resolve) => setTimeout(resolve, MODAL_LEAVE_MS))
 
 /** Add, remove and make base a language of the selected workspace. */
 export const useLanguageActions = () => {
   const { t } = useI18n()
   const toast = useToast()
   const overlay = useOverlay()
+  /** Settles once every closed dialog has finished leaving the screen. */
+  const dialogsLeft = () =>
+    until(() =>
+      overlay.overlays.some((entry) => entry.isMounted && !entry.isOpen),
+    ).toBe(false)
   const { confirm } = useConfirm()
   const { $authFetch } = useAuthFetch()
   const { formatCount } = useLangFormat()
@@ -131,7 +133,7 @@ export const useLanguageActions = () => {
     })
     if (!removed) return false
     notify(t('dms_lang.language_remove.done'))
-    await waitForModalLeave()
+    await dialogsLeft()
     await afterRemove?.()
     await reload()
     return true

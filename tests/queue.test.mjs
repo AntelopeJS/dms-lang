@@ -15,6 +15,7 @@ import {
   draftGroups,
   draftIdOf,
   parseDraftId,
+  settledDrafts,
   takeDrafts,
   withDraft,
 } from "../frontend-vue/app/utils/queueDrafts.ts";
@@ -150,6 +151,24 @@ test("a text back to the one it started on is no draft", () => {
   assert.deepEqual(
     withDraft({}, id, { value: "Bonjour", start: "Bonjour" }),
     {},
+  );
+});
+
+test("a save drops the draft only when it is still the text sent", () => {
+  const id = draftIdOf({ workspace: "web", locale: "fr", key: "a" });
+  const sent = { typed: "Salut ", stored: "Salut " };
+  const drafts = { [id]: { value: "Salut ", start: null } };
+  assert.deepEqual(settledDrafts(drafts, id, sent), {});
+  const typed = { [id]: { value: "Salut !", start: null } };
+  assert.deepEqual(settledDrafts(typed, id, sent), {
+    [id]: { value: "Salut !", start: "Salut " },
+  });
+  assert.deepEqual(settledDrafts({}, id, sent), {});
+  const cleared = { [id]: { value: "  ", start: "Salut" } };
+  assert.deepEqual(
+    settledDrafts(cleared, id, { typed: "  ", stored: null }),
+    {},
+    "spaces sent as no text are no draft once saved",
   );
 });
 

@@ -1,10 +1,11 @@
-import type { Ref } from 'vue'
+import { effectScope, type Ref } from 'vue'
 import { useDmsState } from '#dms/frontend-module'
 import type { TranslationValue } from '../../types/lang'
 import { savedText } from '../../utils/keySaves'
 import {
   draftGroups,
   draftIdOf,
+  settledDrafts,
   takeDrafts,
   withDraft,
   withoutDraft,
@@ -13,11 +14,38 @@ import {
   type DraftGroup,
   type QueueDraft,
   type QueueDrafts,
+  type SentDraft,
 } from '../../utils/queueDrafts'
+
+const QUEUE_PAGE: LangPage = 'language'
+
+let isClearedOnLeave = false
+
+/**
+ * Drops the drafts once the page shows anything else than the Language page
+ * (the leave guard asked first). Watched once for the app, outside any page:
+ * switching language or workspace remounts the page on the same path and
+ * keeps them.
+ */
+function clearOnLeave(path: () => string, drafts: Ref<QueueDrafts>) {
+  if (isClearedOnLeave || import.meta.env.SSR) return
+  isClearedOnLeave = true
+  effectScope(true).run(() =>
+    watch(
+      () => langPageOf(path()) === QUEUE_PAGE,
+      (isOnPage) => {
+        if (!isOnPage) drafts.value = {}
+      },
+    ),
+  )
+}
 
 /** The drafts of every workspace and language, kept in the app state. */
 function useDraftStore() {
-  return useDmsState<QueueDrafts>('dms-lang-queue-drafts', () => ({}))
+  const { route } = useWorkspaceRoute()
+  const drafts = useDmsState<QueueDrafts>('dms-lang-queue-drafts', () => ({}))
+  clearOnLeave(() => route.path, drafts)
+  return drafts
 }
 
 type DraftIdOf = (key: string) => string
@@ -39,6 +67,10 @@ function draftWrites(drafts: Ref<QueueDrafts>, idOf: DraftIdOf) {
       const draft = draftOf(key)
       if (draft) set(key, { ...draft, start: savedText(saved) })
     },
+    /** Once `sent` is saved: drops the draft, or keeps what was typed meanwhile. */
+    settle(key: string, sent: SentDraft) {
+      drafts.value = settledDrafts(drafts.value, idOf(key), sent)
+    },
     drop(key: string) {
       drafts.value = withoutDraft(drafts.value, idOf(key))
     },
@@ -47,9 +79,6 @@ function draftWrites(drafts: Ref<QueueDrafts>, idOf: DraftIdOf) {
       const { kept, taken } = takeDrafts(drafts.value, isGone)
       if (taken.length) drafts.value = kept
       return taken
-    },
-    clear() {
-      drafts.value = {}
     },
   }
 }

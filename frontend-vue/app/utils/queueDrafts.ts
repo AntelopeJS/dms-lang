@@ -67,6 +67,27 @@ export function withDraft(
   return draft.value === (draft.start ?? '') ? rest : { ...rest, [id]: draft }
 }
 
+/** A text sent for a draft: as it was typed, and as the server stores it. */
+export interface SentDraft {
+  typed: string
+  stored: string | null
+}
+
+/**
+ * The drafts once a draft was saved: gone when it is still the text typed
+ * when it was sent, else kept (typed during the save) and started on the
+ * text the server now stores.
+ */
+export function settledDrafts(
+  drafts: QueueDrafts,
+  id: string,
+  sent: SentDraft,
+): QueueDrafts {
+  const draft = drafts[id]
+  if (!draft || draft.value === sent.typed) return withoutDraft(drafts, id)
+  return withDraft(drafts, id, { value: draft.value, start: sent.stored })
+}
+
 /** The drafts, grouped per workspace and language. */
 export function draftGroups(drafts: QueueDrafts): DraftGroup[] {
   const found = new Map<string, DraftGroup>()

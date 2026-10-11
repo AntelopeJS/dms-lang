@@ -119,9 +119,13 @@ function useNamespaceProgress(
   return { namespaceProgress, hasNamespace, compareRows }
 }
 
-/** The mode and the namespace, read from the URL and written back to it. */
+/**
+ * The mode and the namespace, read from the URL and written back to it. A
+ * namespace the language does not have is taken out of the URL.
+ */
 function useQueueScope(hasNamespace: NamespaceCheck) {
   const query = useQueueQuery()
+  const { isLoaded } = useWorkspaceFlat()
   const namespace = computed<string>({
     get: () =>
       hasNamespace(query.namespace.value) ? query.namespace.value : '',
@@ -134,6 +138,14 @@ function useQueueScope(hasNamespace: NamespaceCheck) {
         mode: value === DEFAULT_MODE ? undefined : value,
       }),
   })
+  watch(
+    [query.namespace, isLoaded],
+    ([raw, loaded]) => {
+      if (loaded && raw && !hasNamespace(raw))
+        void query.replaceQuery({ namespace: undefined })
+    },
+    { immediate: true },
+  )
   return { mode, namespace, replaceQuery: query.replaceQuery }
 }
 

@@ -2,7 +2,7 @@ import type { ComputedRef, Ref } from 'vue'
 import type { FlatTranslationRow } from '../../types/lang'
 import type { QueueSession } from '../../composables/translation/useQueueSession'
 import type { KeySaveFailureKind } from '../../utils/keySaveErrors'
-import { savedText as expectedTextOf } from '../../utils/keySaves'
+import { savedText as expectedTextOf, storedText } from '../../utils/keySaves'
 import type { QueueEditing } from './useQueueEditing'
 import { useKeySaves, type KeyWriteFailed } from './useKeySaves'
 import { useQueueToasts } from './useQueueToasts'
@@ -95,10 +95,13 @@ const SAVE_FAILURES: Record<KeySaveFailureKind, SaveFailureHandler> = {
     }),
 }
 
-/** Sends a text, expecting the one its draft started on. */
+/**
+ * Sends a text, expecting the one its draft started on. Once saved, a text
+ * typed during the save stays as a draft, and the queue stays on its key.
+ */
 async function send(context: QueueSaveContext, write: QueueWrite) {
   const { session, state, saves, workspace } = context
-  const { row, value } = write
+  const { row, typed, value } = write
   const code = session.locale.value
   const start = session.drafts.startOf(row.key)
   state.isSaving.value = true
@@ -113,8 +116,15 @@ async function send(context: QueueSaveContext, write: QueueWrite) {
   state.isSaving.value = false
   if (outcome.status === 'failed')
     return SAVE_FAILURES[outcome.failure.kind](context, write, outcome)
-  session.drafts.drop(row.key)
-  context.toasts.showStep(session.complete(row.key, write.shouldAdvance))
+  const isTypedMeanwhile =
+    session.drafts.read(row.key) !== undefined &&
+    session.drafts.read(row.key) !== typed
+  session.drafts.settle(row.key, { typed, stored: storedText(value) })
+  const step = session.complete(
+    row.key,
+    write.shouldAdvance && !isTypedMeanwhile,
+  )
+  context.toasts.showStep(step)
 }
 
 function confirmClear(context: QueueSaveContext, row: FlatTranslationRow) {
@@ -248,8 +258,9 @@ function saveActions(context: QueueSaveContext) {
 
 /**
  * The save protocol of the translation queue, on the module's one save
- * engine (`useKeySaves`): a draft expects the text it started on, and a
- * refused write says why (conflict, deleted key, invalid message).
+ * engine (`useKeySaves`): a draft expects the text it started on, a refused
+ * write says why (conflict, deleted key, invalid message) and a text typed
+ * during a save is kept.
  */
 export function useQueueSave(
   session: QueueSession,

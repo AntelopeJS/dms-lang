@@ -208,10 +208,9 @@ defineExpose({
         </span>
       </div>
 
-      <UAlert
+      <DmsBanner
         v-if="conflict !== undefined"
-        color="warning"
-        variant="subtle"
+        tone="warning"
         icon="i-ph-warning"
         :title="$t('dms_lang.queue.conflict_title', { key: props.row.key })"
         :description="
@@ -219,69 +218,67 @@ defineExpose({
             ? $t('dms_lang.queue.conflict_current', { value: conflict })
             : $t('dms_lang.queue.conflict_empty')
         "
-        :actions="[
-          {
-            label: $t('dms_lang.queue.conflict_use'),
-            color: 'warning',
-            variant: 'outline',
-            size: 'xs',
-            onClick: save.useTheirs,
-          },
-          {
-            label: $t('dms_lang.queue.conflict_overwrite'),
-            color: 'warning',
-            variant: 'solid',
-            size: 'xs',
-            disabled: isSaving,
-            onClick: save.overwrite,
-          },
-        ]"
-      />
+      >
+        <template #actions>
+          <UButton
+            :label="$t('dms_lang.queue.conflict_use')"
+            color="warning"
+            variant="outline"
+            size="xs"
+            @click="save.useTheirs"
+          />
+          <UButton
+            :label="$t('dms_lang.queue.conflict_overwrite')"
+            color="warning"
+            size="xs"
+            :disabled="isSaving"
+            @click="save.overwrite"
+          />
+        </template>
+      </DmsBanner>
 
-      <UAlert
+      <DmsBanner
         v-if="isOutdated && canEditValues && !drafts.has(props.row.key)"
-        color="warning"
-        variant="subtle"
+        tone="warning"
+        size="sm"
         icon="i-ph-clock-counter-clockwise"
         :description="$t('dms_lang.drawer.outdated')"
-        :actions="[
-          {
-            label: $t('dms_lang.drawer.mark_reviewed'),
-            icon: 'i-ph-check',
-            color: 'warning',
-            variant: 'outline',
-            size: 'xs',
-            loading: isReviewing,
-            onClick: save.markReviewed,
-          },
-        ]"
-      />
+      >
+        <template #actions>
+          <UButton
+            :label="$t('dms_lang.drawer.mark_reviewed')"
+            icon="i-ph-check"
+            color="warning"
+            variant="outline"
+            size="xs"
+            :loading="isReviewing"
+            @click="save.markReviewed"
+          />
+        </template>
+      </DmsBanner>
 
-      <UAlert
+      <DmsBanner
         v-if="!canEditValues"
-        color="neutral"
-        variant="subtle"
+        tone="info"
+        size="sm"
         icon="i-ph-lock-simple"
         :description="
           isModules
             ? $t('dms_lang.queue.read_only_modules')
             : $t('dms_lang.queue.read_only')
         "
-        :actions="
-          isModules
-            ? [
-                {
-                  label: $t('dms_lang.queue.override'),
-                  icon: 'i-ph-pencil-simple',
-                  color: 'neutral',
-                  variant: 'outline',
-                  size: 'xs',
-                  to: overrideLink,
-                },
-              ]
-            : []
-        "
-      />
+      >
+        <template v-if="isModules" #actions>
+          <UButton
+            :label="$t('dms_lang.queue.override')"
+            icon="i-ph-pencil-simple"
+            color="neutral"
+            variant="outline"
+            size="xs"
+            :to="overrideLink"
+          />
+        </template>
+      </DmsBanner>
 
       <UTextarea
         ref="textarea"
