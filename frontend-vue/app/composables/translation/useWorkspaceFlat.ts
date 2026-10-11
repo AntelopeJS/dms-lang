@@ -1,4 +1,5 @@
-import type { Ref } from 'vue'
+import type { EffectScope, Ref } from 'vue'
+import { useEventListener } from '@vueuse/core'
 import { useDmsState } from '#dms/frontend-module'
 import type { FlatTranslations } from '../../types/lang'
 import { EMPTY_FLAT, cloneFlat, refreshCounts } from '../../utils/translations'
@@ -10,7 +11,7 @@ export const LANG_REALTIME_TOPIC = 'dms-lang.translations'
 
 /** Data older than this is fetched again when a page shows it. */
 const STALE_AFTER_MS = 5000
-/** A write echoed back this soon after a local change is already shown. */
+/** A change announced this soon after a local write is read once the local writes settle. */
 const ECHO_WINDOW_MS = 1500
 /** Realtime messages arriving together trigger a single reload. */
 const REALTIME_DEBOUNCE_MS = 300
@@ -34,7 +35,21 @@ interface DroppedPage {
   at: number
 }
 
-function useFlatStore() {
+interface FlatStore {
+  entries: Ref<Record<string, FlatTranslations>>
+  pending: Ref<Record<string, boolean>>
+  failed: Ref<Record<string, boolean>>
+  touchedAt: Ref<Record<string, number>>
+}
+
+interface FlatLoader {
+  store: FlatStore
+  selectedWorkspace: Ref<string>
+  fetchWorkspaces: () => Promise<unknown>
+  fetchFlat: (workspace: string) => Promise<FlatTranslations>
+}
+
+function useFlatStore(): FlatStore {
   return {
     entries: useDmsState<Record<string, FlatTranslations>>(
       'dms-lang-flat',
@@ -64,9 +79,214 @@ export const useFlatPresence = () => {
 const requests = new Map<string, Promise<void>>()
 const reloads = new Map<string, Promise<void>>()
 let realtimeTimer: ReturnType<typeof setTimeout> | undefined
+let syncScope: EffectScope | undefined
+let syncUsers = 0
+let isRejoinClaimed = false
 
 function isFresh(touchedAt: number | undefined, windowMs: number): boolean {
   return touchedAt !== undefined && Date.now() - touchedAt < windowMs
+}
+
+function setFlag(
+  flags: Ref<Record<string, boolean>>,
+  workspace: string,
+  value: boolean,
+) {
+  flags.value = { ...flags.value, [workspace]: value }
+}
+
+function touch(store: FlatStore, workspace: string): void {
+  store.touchedAt.value = { ...store.touchedAt.value, [workspace]: Date.now() }
+}
+
+async function request(loader: FlatLoader, workspace: string): Promise<void> {
+  const { store } = loader
+  setFlag(store.pending, workspace, true)
+  try {
+    const response = await loader.fetchFlat(workspace)
+    store.entries.value = {
+      ...store.entries.value,
+      [workspace]: { ...EMPTY_FLAT, ...response },
+    }
+    setFlag(store.failed, workspace, false)
+    touch(store, workspace)
+  } catch {
+    setFlag(store.failed, workspace, true)
+  } finally {
+    setFlag(store.pending, workspace, false)
+    requests.delete(workspace)
+  }
+}
+
+function fetchOnce(loader: FlatLoader, workspace: string): Promise<void> {
+  const running = requests.get(workspace)
+  if (running) return running
+  const next = request(loader, workspace)
+  requests.set(workspace, next)
+  return next
+}
+
+function refetch(loader: FlatLoader, withBlocks: boolean): Promise<void> {
+  const workspace = loader.selectedWorkspace.value
+  if (!workspace) return Promise.resolve()
+  const running = reloads.get(workspace)
+  if (running) return running
+  const next = Promise.all([
+    fetchOnce(loader, workspace),
+    loader.fetchWorkspaces(),
+  ])
+    .then(() => {
+      if (withBlocks) refreshPageBlocks()
+    })
+    .finally(() => reloads.delete(workspace))
+  reloads.set(workspace, next)
+  return next
+}
+
+function load(loader: FlatLoader): Promise<void> {
+  const workspace = loader.selectedWorkspace.value
+  if (!workspace || loader.store.entries.value[workspace])
+    return Promise.resolve()
+  return fetchOnce(loader, workspace)
+}
+
+/**
+ * A page that just mounted has fetched its own blocks: only the shared data
+ * may be old. A tab coming back shows blocks as old as the data.
+ */
+function revalidate(loader: FlatLoader, withBlocks: boolean): Promise<void> {
+  const workspace = loader.selectedWorkspace.value
+  if (!workspace || !loader.store.entries.value[workspace]) return load(loader)
+  if (isFresh(loader.store.touchedAt.value[workspace], STALE_AFTER_MS))
+    return Promise.resolve()
+  return refetch(loader, withBlocks)
+}
+
+function useFlatLoader(): FlatLoader {
+  const { $authFetch } = useAuthFetch()
+  const { selectedWorkspace, fetchWorkspaces } = useI18nWorkspaces()
+  return {
+    store: useFlatStore(),
+    selectedWorkspace,
+    fetchWorkspaces,
+    fetchFlat: (workspace) =>
+      $authFetch<FlatTranslations>(FLAT_ENDPOINT, { query: { workspace } }),
+  }
+}
+
+function echoLeft(loader: FlatLoader): number {
+  const touchedAt = loader.store.touchedAt.value[loader.selectedWorkspace.value]
+  if (touchedAt === undefined) return 0
+  return Math.max(0, touchedAt + ECHO_WINDOW_MS - Date.now())
+}
+
+function scheduleReload(loader: FlatLoader): void {
+  clearTimeout(realtimeTimer)
+  realtimeTimer = setTimeout(
+    () => {
+      if (echoLeft(loader) > 0) return scheduleReload(loader)
+      void refetch(loader, true)
+    },
+    Math.max(REALTIME_DEBOUNCE_MS, echoLeft(loader)),
+  )
+}
+
+function onRealtimeChange(
+  loader: FlatLoader,
+  payload: ChangedPayload | undefined,
+): void {
+  const workspace = loader.selectedWorkspace.value
+  if (payload?.workspace && payload.workspace !== workspace) return
+  scheduleReload(loader)
+}
+
+function startSync(loader: FlatLoader): EffectScope {
+  const scope = effectScope(true)
+  scope.run(() => {
+    useRealtimeTopic(LANG_REALTIME_TOPIC, (event) => {
+      if ('type' in event)
+        onRealtimeChange(loader, event.payload as ChangedPayload)
+    })
+    useEventListener(document, 'visibilitychange', () => {
+      if (document.visibilityState === 'visible') void revalidate(loader, true)
+    })
+    watch(loader.selectedWorkspace, () => load(loader))
+  })
+  return scope
+}
+
+/** The blocks of one page mount together: one of them joins its topics again. */
+function claimRejoin(): boolean {
+  if (isRejoinClaimed) return false
+  isRejoinClaimed = true
+  setTimeout(() => (isRejoinClaimed = false), REJOIN_DELAY_MS)
+  return true
+}
+
+/**
+ * The flat translations of the selected workspace, shared by every component
+ * of the page: one request per workspace however many sections read it, and
+ * the values a save changed patched in place so every section follows. Reading
+ * them has no side effect: each page block mounts `useWorkspaceFlatSync`.
+ */
+export const useWorkspaceFlat = () => {
+  const loader = useFlatLoader()
+  const { store, selectedWorkspace } = loader
+
+  function flatOf(workspace: string): FlatTranslations {
+    return store.entries.value[workspace] ?? EMPTY_FLAT
+  }
+
+  function update(workspace: string, change: (flat: FlatTranslations) => void) {
+    const current = store.entries.value[workspace]
+    if (!current) return
+    const next = cloneFlat(current)
+    change(next)
+    store.entries.value = {
+      ...store.entries.value,
+      [workspace]: refreshCounts(next),
+    }
+    touch(store, workspace)
+    refreshPageBlocks()
+  }
+
+  return {
+    flat: computed(() => flatOf(selectedWorkspace.value)),
+    flatOf,
+    isLoading: computed(
+      () => store.pending.value[selectedWorkspace.value] === true,
+    ),
+    isLoaded: computed(
+      () => store.entries.value[selectedWorkspace.value] !== undefined,
+    ),
+    hasError: computed(
+      () => store.failed.value[selectedWorkspace.value] === true,
+    ),
+    /** Reads the translations and the workspace list again, then every block of the page. */
+    reload: () => refetch(loader, true),
+    update,
+  }
+}
+
+/**
+ * Keeps the translations of the page fresh, once per page however many of
+ * its blocks mount it: loads them, reads them again when the tab comes back
+ * into view or the backend says a workspace changed, and follows the selected
+ * workspace.
+ */
+export function useWorkspaceFlatSync(): void {
+  if (import.meta.env.SSR) return
+  const loader = useFlatLoader()
+  if (syncUsers === 0) syncScope = startSync(loader)
+  syncUsers += 1
+  if (claimRejoin()) useRealtimeRejoin()
+  onMounted(() => void revalidate(loader, false))
+  onBeforeUnmount(() => {
+    syncUsers -= 1
+    if (syncUsers > 0) return
+    syncScope?.stop()
+    syncScope = undefined
+  })
 }
 
 let droppedPage: DroppedPage | undefined
@@ -125,154 +345,4 @@ function useRealtimeRejoin() {
     if (page) timer = setTimeout(() => void rejoin(page), REJOIN_DELAY_MS)
   })
   onBeforeUnmount(() => clearTimeout(timer))
-}
-
-/**
- * The flat translations of the selected workspace, shared by every component
- * of the page: one request per workspace however many sections read it, and
- * the values a save changed patched in place so every section follows. Read
- * again when a page shows stale data, when the tab comes back into view and
- * when the backend says something changed.
- */
-export const useWorkspaceFlat = () => {
-  const { $authFetch } = useAuthFetch()
-  const { selectedWorkspace, fetchWorkspaces } = useI18nWorkspaces()
-  const store = useFlatStore()
-
-  const flat = computed(
-    () => store.entries.value[selectedWorkspace.value] ?? EMPTY_FLAT,
-  )
-  const isLoading = computed(
-    () => store.pending.value[selectedWorkspace.value] === true,
-  )
-  const hasError = computed(
-    () => store.failed.value[selectedWorkspace.value] === true,
-  )
-  const isLoaded = computed(
-    () => store.entries.value[selectedWorkspace.value] !== undefined,
-  )
-
-  function touch(workspace: string): void {
-    store.touchedAt.value = {
-      ...store.touchedAt.value,
-      [workspace]: Date.now(),
-    }
-  }
-
-  async function request(workspace: string): Promise<void> {
-    store.pending.value = { ...store.pending.value, [workspace]: true }
-    try {
-      const response = await $authFetch<Partial<FlatTranslations>>(
-        FLAT_ENDPOINT,
-        { query: { workspace } },
-      )
-      store.entries.value = {
-        ...store.entries.value,
-        [workspace]: { ...EMPTY_FLAT, ...response },
-      }
-      store.failed.value = { ...store.failed.value, [workspace]: false }
-      touch(workspace)
-    } catch {
-      store.failed.value = { ...store.failed.value, [workspace]: true }
-    } finally {
-      store.pending.value = { ...store.pending.value, [workspace]: false }
-      requests.delete(workspace)
-    }
-  }
-
-  function fetchFlat(workspace: string): Promise<void> {
-    const running = requests.get(workspace)
-    if (running) return running
-    const next = request(workspace)
-    requests.set(workspace, next)
-    return next
-  }
-
-  function load(force = false): Promise<void> {
-    const workspace = selectedWorkspace.value
-    if (!workspace) return Promise.resolve()
-    if (!force && store.entries.value[workspace]) return Promise.resolve()
-    if (force) return reload()
-    return fetchFlat(workspace)
-  }
-
-  function refetch(withBlocks: boolean): Promise<void> {
-    const workspace = selectedWorkspace.value
-    if (!workspace) return Promise.resolve()
-    const running = reloads.get(workspace)
-    if (running) return running
-    const next = Promise.all([fetchFlat(workspace), fetchWorkspaces()])
-      .then(() => {
-        if (withBlocks) refreshPageBlocks()
-      })
-      .finally(() => reloads.delete(workspace))
-    reloads.set(workspace, next)
-    return next
-  }
-
-  /** Reads the translations and the workspace list again, then every block of the page. */
-  function reload(): Promise<void> {
-    return refetch(true)
-  }
-
-  // A page that just mounted has fetched its own blocks: only the shared
-  // data may be old. A tab coming back shows blocks as old as the data.
-  function revalidate(withBlocks = true): Promise<void> {
-    const workspace = selectedWorkspace.value
-    if (!workspace || !store.entries.value[workspace]) return load()
-    if (isFresh(store.touchedAt.value[workspace], STALE_AFTER_MS)) {
-      return Promise.resolve()
-    }
-    return refetch(withBlocks)
-  }
-
-  function update(workspace: string, change: (flat: FlatTranslations) => void) {
-    const current = store.entries.value[workspace]
-    if (!current) return
-    const next = cloneFlat(current)
-    change(next)
-    store.entries.value = {
-      ...store.entries.value,
-      [workspace]: refreshCounts(next),
-    }
-    touch(workspace)
-    refreshPageBlocks()
-  }
-
-  function onRealtimeChange(payload: ChangedPayload | undefined): void {
-    const workspace = selectedWorkspace.value
-    if (payload?.workspace && payload.workspace !== workspace) return
-    if (isFresh(store.touchedAt.value[workspace], ECHO_WINDOW_MS)) return
-    clearTimeout(realtimeTimer)
-    realtimeTimer = setTimeout(() => void reload(), REALTIME_DEBOUNCE_MS)
-  }
-
-  function onVisibilityChange(): void {
-    if (document.visibilityState === 'visible') void revalidate()
-  }
-
-  useRealtimeTopic(LANG_REALTIME_TOPIC, (event) => {
-    if ('type' in event) onRealtimeChange(event.payload as ChangedPayload)
-  })
-  useRealtimeRejoin()
-
-  onMounted(() => {
-    void revalidate(false)
-    document.addEventListener('visibilitychange', onVisibilityChange)
-  })
-  onBeforeUnmount(() =>
-    document.removeEventListener('visibilitychange', onVisibilityChange),
-  )
-  watch(selectedWorkspace, () => load())
-
-  return {
-    flat,
-    isLoading,
-    isLoaded,
-    hasError,
-    load,
-    reload,
-    revalidate: () => revalidate(),
-    update,
-  }
 }

@@ -97,6 +97,66 @@ function countRows(
   return counts
 }
 
+type RowPredicate = (row: FlatTranslationRow) => boolean
+
+const NO_STATUS: RowStatus = { missing: [], hasIssue: false }
+
+function useRowStatuses(
+  flat: Ref<FlatTranslations>,
+  state: Ref<MatrixFilterState>,
+  shown: Ref<string[]>,
+) {
+  const targets = computed(() =>
+    targetLocales(flat.value, state.value.missingIn, shown.value),
+  )
+  const statuses = computed(() => {
+    const base = flat.value.defaultLocale
+    return new Map(
+      flat.value.rows.map((row) => [
+        row.key,
+        rowStatus(row, base, targets.value),
+      ]),
+    )
+  })
+  const statusOf = (row: FlatTranslationRow): RowStatus =>
+    statuses.value.get(row.key) ?? NO_STATUS
+  const isRowMissing = (row: FlatTranslationRow): boolean =>
+    statusOf(row).missing.length > 0
+  const predicates: Record<TranslationFilter, RowPredicate> = {
+    all: () => true,
+    missing: isRowMissing,
+    complete: (row) => !isRowMissing(row),
+    issues: (row) => statusOf(row).hasIssue,
+  }
+  return { targets, statusOf, isRowMissing, predicates }
+}
+
+function useScopedRows(
+  flat: Ref<FlatTranslations>,
+  state: Ref<MatrixFilterState>,
+) {
+  const haystacks = computed(
+    () => new Map(flat.value.rows.map((row) => [row.key, searchText(row)])),
+  )
+  const namespaces = computed(() => [
+    ...new Set(flat.value.rows.map((row) => namespaceOf(row.key))),
+  ])
+  const namespace = computed(() =>
+    namespaces.value.includes(state.value.namespace)
+      ? state.value.namespace
+      : '',
+  )
+  const scoped = computed(() => {
+    const needle = state.value.search.trim().toLowerCase()
+    return flat.value.rows.filter(
+      (row) =>
+        (!namespace.value || namespaceOf(row.key) === namespace.value) &&
+        (!needle || haystacks.value.get(row.key)?.includes(needle)),
+    )
+  })
+  return { namespaces, scoped }
+}
+
 /**
  * Which keys the matrix shows, and how many each filter would show. A key
  * listed in `pinned` stays shown after it stops matching (a translation just
@@ -108,90 +168,26 @@ export function useMatrixFilters(
   shown: Ref<string[]>,
   pinned: Ref<Set<string>>,
 ) {
-  const targets = computed(() =>
-    targetLocales(flat.value, state.value.missingIn, shown.value),
+  const { targets, statusOf, isRowMissing, predicates } = useRowStatuses(
+    flat,
+    state,
+    shown,
   )
-
-  const statuses = computed(() => {
-    const base = flat.value.defaultLocale
-    return new Map(
-      flat.value.rows.map((row) => [
-        row.key,
-        rowStatus(row, base, targets.value),
-      ]),
-    )
-  })
-
-  const haystacks = computed(
-    () => new Map(flat.value.rows.map((row) => [row.key, searchText(row)])),
-  )
-
-  const namespaces = computed(() => [
-    ...new Set(flat.value.rows.map((row) => namespaceOf(row.key))),
-  ])
-
-  const namespace = computed(() =>
-    namespaces.value.includes(state.value.namespace)
-      ? state.value.namespace
-      : '',
-  )
-
-  function statusOf(row: FlatTranslationRow): RowStatus {
-    return statuses.value.get(row.key) ?? { missing: [], hasIssue: false }
-  }
-
-  function isRowMissing(row: FlatTranslationRow): boolean {
-    return statusOf(row).missing.length > 0
-  }
-
-  const PREDICATES: Record<
-    TranslationFilter,
-    (row: FlatTranslationRow) => boolean
-  > = {
-    all: () => true,
-    missing: isRowMissing,
-    complete: (row) => !isRowMissing(row),
-    issues: (row) => statusOf(row).hasIssue,
-  }
-
-  const scoped = computed(() => {
-    const needle = state.value.search.trim().toLowerCase()
-    return flat.value.rows.filter(
-      (row) =>
-        (!namespace.value || namespaceOf(row.key) === namespace.value) &&
-        (!needle || haystacks.value.get(row.key)?.includes(needle)),
-    )
-  })
-
-  const counts = computed(() => countRows(scoped.value, statusOf))
-
-  function matches(row: FlatTranslationRow): boolean {
-    return PREDICATES[state.value.filter](row)
-  }
-
+  const { namespaces, scoped } = useScopedRows(flat, state)
+  const matches = (row: FlatTranslationRow) =>
+    predicates[state.value.filter](row)
   const rows = computed(() =>
     scoped.value.filter((row) => matches(row) || pinned.value.has(row.key)),
   )
 
-  /** A pinned key the filter would hide now: its translation is done. */
-  function isRowDone(row: FlatTranslationRow): boolean {
-    return pinned.value.has(row.key) && !matches(row)
-  }
-
-  const doneCount = computed(() => rows.value.filter(isRowDone).length)
-
-  const groups = computed(() => groupRows(rows.value, isRowMissing))
-
   return {
     rows,
-    groups,
-    counts,
+    groups: computed(() => groupRows(rows.value, isRowMissing)),
+    counts: computed(() => countRows(scoped.value, statusOf)),
     targets,
     namespaces,
-    namespace,
-    doneCount,
-    isRowMissing,
-    isRowDone,
+    isRowDone: (row: FlatTranslationRow) =>
+      pinned.value.has(row.key) && !matches(row),
   }
 }
 

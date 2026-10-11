@@ -11,6 +11,7 @@ import {
   stringValue,
   type KeyPathConflict,
   type MessageIssue,
+  type MessageIssueSeverity,
 } from '../../utils/translations'
 import FormFieldRow from './form/FormFieldRow.vue'
 import FormRows from './form/FormRows.vue'
@@ -23,15 +24,14 @@ interface Props {
   existingKeys: string[]
   /** Project files only: the keys the installed modules provide. */
   moduleRows?: FlatTranslationRow[]
-  writeNewKey?: (
-    workspace: string,
-    path: string,
-    values: Record<string, string>,
-  ) => Promise<void>
 }
 
-/** Languages shown before the "more languages" toggle. */
+interface Emits {
+  close: [added: string[]]
+}
+
 const VISIBLE_LOCALES = 3
+const ISSUE_SEPARATOR = ' · '
 
 const CONFLICT_LABELS: Record<KeyPathConflict['kind'], string> = {
   exists: 'dms_lang.key_add.path_taken',
@@ -46,7 +46,7 @@ const MODULE_CONFLICT_LABELS: Record<KeyPathConflict['kind'], string> = {
 }
 
 const props = defineProps<Props>()
-const emit = defineEmits<{ close: [added: string[]] }>()
+const emit = defineEmits<Emits>()
 
 const { t } = useI18n()
 const { errorMessage } = useMutationToast()
@@ -169,6 +169,20 @@ function issuesOf(code: string): MessageIssue[] {
   return checkMessage(base, valueOf(code))
 }
 
+function issueText(code: string, severity: MessageIssueSeverity): string {
+  return issuesOf(code)
+    .filter((issue) => issue.severity === severity)
+    .map((issue) => messageIssueText(issue, t))
+    .join(ISSUE_SEPARATOR)
+}
+
+function valueHelp(code: string, index: number): string | undefined {
+  const warnings = issueText(code, 'warning')
+  if (warnings) return warnings
+  const needsText = index === 0 && !Object.keys(written.value).length
+  return needsText ? t('dms_lang.key_add.texts_required') : undefined
+}
+
 function close() {
   isOpen.value = false
   emit('close', added.value)
@@ -183,8 +197,6 @@ function resetForNext() {
 function write(key: string): Promise<unknown> {
   if (isOverride.value)
     return updateKey(props.workspace, key, written.value)
-  if (props.writeNewKey)
-    return props.writeNewKey(props.workspace, key, written.value)
   return createKey(props.workspace, key, written.value)
 }
 
@@ -243,16 +255,11 @@ async function submit() {
             </template>
           </FormFieldRow>
           <FormFieldRow
-            v-for="code in shownLocales"
+            v-for="(code, index) in shownLocales"
             :key="code"
             :label="nativeName(code)"
-            :error="
-              issuesOf(code).length
-                ? issuesOf(code)
-                    .map((issue) => messageIssueText(issue, t))
-                    .join(' · ')
-                : null
-            "
+            :help="valueHelp(code, index)"
+            :error="issueText(code, 'error') || null"
           >
             <template #label-extra>
               <span class="text-dimmed font-mono text-xs">{{ code }}</span>

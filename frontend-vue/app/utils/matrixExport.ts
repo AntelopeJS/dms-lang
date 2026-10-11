@@ -1,4 +1,4 @@
-import type { FlatTranslationRow } from '../../../types/lang'
+import type { FlatTranslationRow } from '../types/lang'
 
 const BYTE_ORDER_MARK = '﻿'
 const LINE_BREAK = '\r\n'

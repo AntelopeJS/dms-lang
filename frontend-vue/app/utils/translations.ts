@@ -80,12 +80,12 @@ export type MessageTranslate = (
 ) => string
 
 const FULL_COVERAGE = 100
-const NAMESPACE_SEPARATOR = '.'
+export const NAMESPACE_SEPARATOR = '.'
 const OPEN_BRACE = '{'
 const CLOSE_BRACE = '}'
 const QUOTE = "'"
 const LINKED_MARK = '@'
-const PLURAL_SEPARATOR = '|'
+export const PLURAL_SEPARATOR = '|'
 /** What the scanner reads as a variable, to highlight and rename it. */
 const PLACEHOLDER_NAME = /^(?:[A-Za-z_][\w$-]*|\d+)$/
 const LITERAL_PATTERN = /\s*'((?:[^'\\\n]|\\.)*)'\s*\}/y
@@ -135,6 +135,8 @@ export const EMPTY_FLAT: FlatTranslations = {
   localeProgress: {},
   localeMissing: {},
   totalKeys: 0,
+  baseMissing: 0,
+  incompleteKeys: 0,
 }
 
 /** No value, or a text made of spaces only: the server stores neither. */

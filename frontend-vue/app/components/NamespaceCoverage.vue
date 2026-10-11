@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useWorkspaceFlatSync } from '../composables/translation/useWorkspaceFlat'
 import UButton from '@nuxt/ui/components/Button.vue'
 import type { NamespaceCoverage } from '../types/lang'
 import LocaleTile from '../build/components/LocaleTile.vue'
@@ -21,6 +22,7 @@ const HEAT_CLASSES: Record<'success' | 'warning' | 'error', string> = {
 
 const { t } = useI18n()
 const { flat, isLoaded } = useWorkspaceFlat()
+useWorkspaceFlatSync()
 const { formatCount } = useLangFormat()
 const links = useLangLinks()
 const { canManage, isResolved, isUnknown } = useWorkspaceContext()

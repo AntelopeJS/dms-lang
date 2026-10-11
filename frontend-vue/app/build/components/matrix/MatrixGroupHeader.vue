@@ -6,8 +6,12 @@ interface Props {
   collapsed: boolean
 }
 
+interface Emits {
+  toggle: []
+}
+
 const props = defineProps<Props>()
-const emit = defineEmits<{ toggle: [] }>()
+const emit = defineEmits<Emits>()
 
 const { formatCount } = useLangFormat()
 </script>

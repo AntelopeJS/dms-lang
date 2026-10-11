@@ -6,12 +6,12 @@ import {
   formatTokens,
   hasBlockingIssue,
   messageIssueText,
+  PLURAL_SEPARATOR,
   type MessageIssue,
 } from '../../../utils/translations'
-import type { CellFailure, CellState } from './useCellSaves'
-
-/** Where the editor goes once a cell is saved. */
-export type CellMove = 'stay' | 'down' | 'next' | 'previous'
+import type { SaveState } from '../../../utils/keySaves'
+import type { CellFailure } from '../../composables/useCellSaves'
+import type { CellMove } from '../../composables/useCellEditor'
 
 interface Props {
   value: string
@@ -22,52 +22,64 @@ interface Props {
   isBase: boolean
   editable: boolean
   isEditing: boolean
-  state: CellState
+  state: SaveState
   failure?: CellFailure
   rowKey: string
   languageName: string
   /** Translated from an older base text. */
   isOutdated?: boolean
-  maxLength?: number
+  code: string
+  /** The text the editor opens with. */
+  initialDraft?: string
   /** The other's text when the cell changed elsewhere while being edited ('': removed). */
   changedElsewhere?: string
 }
 
 interface Emits {
-  edit: []
-  commit: [move: CellMove]
+  edit: [key: string, code: string]
+  commit: [key: string, code: string, move: CellMove, draft: string]
   cancel: []
-  retry: []
-  discard: []
+  retry: [key: string, code: string]
+  discard: [key: string, code: string]
   /** Write the bare `@` and lone braces of the unsaved text as literals. */
-  escape: []
-  openPanel: []
-  review: []
+  escape: [key: string, code: string]
+  openPanel: [key: string, code: string, draft: string]
+  review: [key: string, code: string]
+  /** The text typed so far, each time it changes. */
+  draft: [key: string, code: string, draft: string]
+}
+
+interface TextareaHandle {
+  textareaRef?: HTMLTextAreaElement
 }
 
 type KeyHandler = (event: KeyboardEvent) => (() => void) | undefined
 
+type FailureAction = 'fix' | 'overwrite' | 'retry'
+
 const LONG_TEXT = 150
 const MULTILINE = '\n'
-const PLURAL_SEPARATOR = '|'
 const SYNTAX_KINDS = new Set(['bareAt', 'unclosedBrace', 'strayBrace'])
+const FAILURE_ACTION_LABELS: Record<FailureAction, string> = {
+  fix: 'dms_lang.matrix.fix',
+  overwrite: 'dms_lang.matrix.overwrite',
+  retry: 'dms_lang.actions.retry',
+}
 
 const props = withDefaults(defineProps<Props>(), {
   inherited: undefined,
   override: undefined,
   failure: undefined,
   isOutdated: false,
-  maxLength: undefined,
   changedElsewhere: undefined,
+  initialDraft: '',
 })
 const emit = defineEmits<Emits>()
-const draft = defineModel<string>('draft', { default: '' })
+const draft = ref(props.initialDraft)
 
 const { t } = useI18n()
 const isCommitted = ref(false)
-const textarea = useTemplateRef<{ textareaRef?: HTMLTextAreaElement }>(
-  'textarea',
-)
+const textarea = useTemplateRef<TextareaHandle>('textarea')
 
 const isMissing = computed(() => props.value === '')
 const shown = computed(() => (props.isEditing ? draft.value : props.value))
@@ -80,11 +92,14 @@ const missingTokens = computed(() =>
     .flatMap((issue) => issue.tokens),
 )
 const canEscape = computed(() => isEscapable(issues.value))
-/** The unsaved text does not compile: it is fixed or escaped, not sent again as is. */
 const failureIssues = computed<MessageIssue[]>(() =>
   props.failure ? checkMessage('', props.failure.draft) : [],
 )
 const isFailureInvalid = computed(() => hasBlockingIssue(failureIssues.value))
+const failureAction = computed<FailureAction>(() => {
+  if (isFailureInvalid.value) return 'fix'
+  return props.failure?.isConflict ? 'overwrite' : 'retry'
+})
 const hasError = computed(() =>
   issues.value.some((issue) => issue.severity === 'error'),
 )
@@ -93,9 +108,6 @@ const suggestsPanel = computed(
     props.baseValue.length > LONG_TEXT ||
     props.baseValue.includes(MULTILINE) ||
     props.baseValue.includes(PLURAL_SEPARATOR),
-)
-const isOverLimit = computed(
-  () => props.maxLength !== undefined && draft.value.length > props.maxLength,
 )
 const ariaLabel = computed(() =>
   t(
@@ -106,10 +118,13 @@ const ariaLabel = computed(() =>
   ),
 )
 
+watch(draft, (text) => emit('draft', props.rowKey, props.code, text))
+
 watch(
   () => props.isEditing,
   (editing) => {
     if (!editing) return
+    draft.value = props.initialDraft
     isCommitted.value = false
     nextTick(() => {
       const element = textarea.value?.textareaRef
@@ -127,7 +142,11 @@ function isEscapable(list: MessageIssue[]): boolean {
 function commit(move: CellMove) {
   if (isCommitted.value) return
   isCommitted.value = true
-  emit('commit', move)
+  emit('commit', props.rowKey, props.code, move, draft.value)
+}
+
+function onBlur() {
+  if (document.hasFocus()) commit('stay')
 }
 
 function cancel() {
@@ -137,7 +156,7 @@ function cancel() {
 
 function openPanel() {
   isCommitted.value = true
-  emit('openPanel')
+  emit('openPanel', props.rowKey, props.code, draft.value)
 }
 
 const KEY_HANDLERS: Record<string, KeyHandler> = {
@@ -195,7 +214,7 @@ function escapeDraft() {
       class="w-full"
       :ui="{ base: 'text-sm' }"
       @keydown="onKeydown"
-      @blur="commit('stay')"
+      @blur="onBlur"
     />
     <p
       v-if="props.changedElsewhere !== undefined"
@@ -266,14 +285,7 @@ function escapeDraft() {
         <UKbd size="sm" value="escape" />
         {{ $t('dms_lang.matrix.shortcut_cancel') }}
       </span>
-      <span
-        v-if="props.maxLength !== undefined"
-        class="font-mono"
-        :class="isOverLimit ? 'text-warning' : undefined"
-      >
-        {{ draft.length }} / {{ props.maxLength }}
-      </span>
-      <span v-else-if="!props.isBase && props.baseValue" class="font-mono">
+      <span v-if="!props.isBase && props.baseValue" class="font-mono">
         {{
           $t('dms_lang.matrix.length', {
             count: draft.length,
@@ -291,7 +303,7 @@ function escapeDraft() {
         :label="$t('dms_lang.drawer.mark_reviewed')"
         :title="$t('dms_lang.drawer.outdated')"
         @mousedown.prevent
-        @click="emit('review')"
+        @click="emit('review', props.rowKey, props.code)"
       />
       <UButton
         size="xs"
@@ -314,10 +326,13 @@ function escapeDraft() {
   <div v-else-if="props.failure" class="space-y-1">
     <button
       type="button"
+      data-matrix-cell
+      :data-key="props.rowKey"
+      :data-code="props.code"
       class="border-error/40 bg-error/5 text-default line-clamp-3 w-full rounded-md border px-2.5 py-1.5 text-left text-sm"
       :aria-label="ariaLabel"
       :disabled="!props.editable"
-      @click="emit('edit')"
+      @click="emit('edit', props.rowKey, props.code)"
     >
       <PlaceholderText v-if="props.failure.draft" :text="props.failure.draft" />
       <span v-else class="text-dimmed italic">—</span>
@@ -348,7 +363,7 @@ function escapeDraft() {
         color="neutral"
         variant="ghost"
         :label="$t('dms_lang.matrix.discard')"
-        @click="emit('discard')"
+        @click="emit('discard', props.rowKey, props.code)"
       />
       <UButton
         v-if="isFailureInvalid && isEscapable(failureIssues)"
@@ -356,20 +371,14 @@ function escapeDraft() {
         color="error"
         variant="soft"
         :label="$t('dms_lang.message_issue.escape')"
-        @click="emit('escape')"
+        @click="emit('escape', props.rowKey, props.code)"
       />
       <UButton
         size="xs"
         color="error"
         variant="soft"
-        :label="
-          isFailureInvalid
-            ? $t('dms_lang.matrix.fix')
-            : props.failure.isConflict
-              ? $t('dms_lang.matrix.overwrite')
-              : $t('dms_lang.actions.retry')
-        "
-        @click="emit('retry')"
+        :label="$t(FAILURE_ACTION_LABELS[failureAction])"
+        @click="emit('retry', props.rowKey, props.code)"
       />
     </div>
   </div>
@@ -380,6 +389,8 @@ function escapeDraft() {
     :type="props.editable ? 'button' : undefined"
     :aria-label="props.editable && isMissing ? ariaLabel : undefined"
     data-matrix-cell
+    :data-key="props.rowKey"
+    :data-code="props.code"
     class="group/cell block w-full rounded-md px-2.5 py-1.5 text-left text-sm"
     :class="[
       props.editable
@@ -390,7 +401,7 @@ function escapeDraft() {
         ? 'border-warning/40 bg-warning/5 hover:bg-warning/10 border border-dashed'
         : '',
     ]"
-    @click="props.editable && emit('edit')"
+    @click="props.editable && emit('edit', props.rowKey, props.code)"
   >
     <span v-if="isMissing && props.inherited" class="block space-y-0.5">
       <span class="text-dimmed line-clamp-3 italic">
@@ -460,22 +471,8 @@ function escapeDraft() {
       <UIcon name="i-ph-clock-counter-clockwise" class="size-3" />
       {{ $t('dms_lang.matrix.outdated') }}
     </span>
-    <span
-      v-if="props.state === 'saving' || props.state === 'saved'"
-      class="mt-1 flex items-center gap-1 text-[10.5px]"
-      :class="props.state === 'saved' ? 'text-success' : 'text-dimmed'"
-      role="status"
-    >
-      <UIcon
-        :name="props.state === 'saved' ? 'i-ph-check' : 'i-ph-circle-notch'"
-        class="size-3"
-        :class="props.state === 'saving' ? 'animate-spin' : undefined"
-      />
-      {{
-        props.state === 'saved'
-          ? $t('dms_lang.matrix.saved')
-          : $t('dms_lang.matrix.saving')
-      }}
+    <span v-if="props.state !== 'idle'" class="mt-1 flex">
+      <DmsSaveStatus :state="props.state" />
     </span>
   </component>
 </template>

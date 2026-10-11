@@ -109,6 +109,9 @@ importers:
       '@typescript-eslint/parser':
         specifier: ^8
         version: 8.70.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3)
+      '@vueuse/core':
+        specifier: ^14.4.0
+        version: 14.4.0(vue@3.5.42(typescript@6.0.3))
       eslint:
         specifier: ^9
         version: 9.39.5(jiti@2.7.0)
