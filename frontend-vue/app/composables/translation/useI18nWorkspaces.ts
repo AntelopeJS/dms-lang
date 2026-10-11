@@ -20,9 +20,9 @@ interface SummaryResponse {
   workspaces: WorkspaceStats[]
 }
 
-/** What a write to one key answers: the row as the server now stores it. */
+/** What a write to one key answers: the row as the server now stores it, none once the key is gone. */
 export interface KeyRowResponse {
-  row: FlatTranslationRow
+  row?: FlatTranslationRow
 }
 
 type KeyValues = Record<string, unknown>
@@ -39,6 +39,7 @@ const ENDPOINTS = {
   key: `${API_BASE}/key`,
   keyRename: `${API_BASE}/key/rename`,
   keyOverride: `${API_BASE}/key/override`,
+  keyReviewed: `${API_BASE}/key/reviewed`,
 } as const
 
 export const DEFAULT_WORKSPACE = 'default'
@@ -122,6 +123,9 @@ function useKeyWrites() {
         defaultLocale,
         expected,
       }),
+    /** Keeps translations as they are although the base text changed. */
+    markReviewed: (workspace: string, path: string, locales: string[]) =>
+      send(ENDPOINTS.keyReviewed, 'POST', { workspace, path, locales }),
     revertOverride: (workspace: string, path: string, locales?: string[]) =>
       send(ENDPOINTS.keyOverride, 'DELETE', { workspace, path, locales }),
   }

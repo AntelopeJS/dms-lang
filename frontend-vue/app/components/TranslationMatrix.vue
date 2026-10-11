@@ -20,11 +20,13 @@ import MatrixColumns from '../build/components/matrix/MatrixColumns.vue'
 import MatrixGroupHeader from '../build/components/matrix/MatrixGroupHeader.vue'
 import MatrixKeyCell from '../build/components/matrix/MatrixKeyCell.vue'
 import MatrixToolbar from '../build/components/matrix/MatrixToolbar.vue'
+import { exportFileName, translationsCsv } from '../utils/matrixExport'
 import {
-  exportFileName,
-  translationsCsv,
-} from '../utils/matrixExport'
-import { useCellSaves } from '../build/composables/useCellSaves'
+  useCellSaves,
+  type CellAddress,
+} from '../build/composables/useCellSaves'
+import { clearsBaseText } from '../build/composables/useKeySaves'
+import { saveIdOf, storedText } from '../utils/keySaves'
 import { useKeyPanel } from '../build/composables/useKeyPanel'
 import { useMatrixRows } from '../build/composables/useMatrixRows'
 import { useMatrixView } from '../build/composables/useMatrixView'
@@ -76,7 +78,6 @@ const { route, pageAction, clearPageAction, selectWorkspace } =
 const router = useDmsRouter()
 const toast = useToast()
 const links = useLangLinks()
-const { confirm } = useConfirm()
 const { filters, order, saveOrder, sanitize, resetFilters } = useMatrixView()
 
 const pinned = ref<Set<string>>(new Set())
@@ -92,7 +93,12 @@ const root = useTemplateRef<{ $el?: HTMLElement }>('root')
 const scroller = useTemplateRef<HTMLElement>('scroller')
 const sentinel = useTemplateRef<HTMLElement>('sentinel')
 
-const saves = useCellSaves((key) => pin(key))
+const saves = useCellSaves(
+  (address) => rowOf(address),
+  (address) => {
+    if (address.workspace === selectedWorkspace.value) pin(address.key)
+  },
+)
 const isCompact = computed(() => width.value < COMPACT_WIDTH)
 
 const languages = computed<LanguageCoverage[]>(() =>
@@ -140,7 +146,7 @@ const { rows, groups, counts, targets, namespaces, isRowDone } =
   useMatrixFilters(flat, filters, columnCodes, pinned)
 /** A row with a text not saved (a conflict, an error) is not done. */
 function isRowFinished(row: FlatTranslationRow): boolean {
-  return isRowDone(row) && !saves.hasRowFailure(row.key)
+  return isRowDone(row) && !saves.hasRowFailure(selectedWorkspace.value, row.key)
 }
 const doneCount = computed(() => rows.value.filter(isRowFinished).length)
 const rowCount = computed(() => rows.value.length)
@@ -178,11 +184,28 @@ const countedLabel = computed(() =>
 const hasOpenDraft = computed(() => {
   const cell = editingCell.value
   if (!cell) return false
-  const draft = drafts.value[saves.idOf(cell.key, cell.code)]
+  const draft = drafts.value[idOf(cell.key, cell.code)]
   return draft !== undefined && draft !== shownValue(cell.key, cell.code)
 })
 
 useUnsavedChanges({ dirty: () => saves.hasUnsaved.value || hasOpenDraft.value })
+
+function at(
+  key: string,
+  code: string,
+  workspace = selectedWorkspace.value,
+): CellAddress {
+  return { workspace, key, code }
+}
+
+function idOf(key: string, code: string, workspace = selectedWorkspace.value) {
+  return saveIdOf(workspace, key, code)
+}
+
+function rowOf(address: CellAddress): FlatTranslationRow | undefined {
+  if (address.workspace !== selectedWorkspace.value) return undefined
+  return rowsByKey.value.get(address.key)
+}
 
 function pin(key: string) {
   if (pinned.value.has(key)) return
@@ -191,7 +214,7 @@ function pin(key: string) {
 
 function rowValue(row: FlatTranslationRow | undefined, code: string): string {
   return row
-    ? saves.shownValue(row.key, code, stringValue(row.values[code]))
+    ? saves.shownValue(at(row.key, code), stringValue(row.values[code]))
     : ''
 }
 
@@ -204,7 +227,7 @@ function isEditingCell(key: string, code: string): boolean {
 }
 
 function setDraft(key: string, code: string, value: string | undefined) {
-  const id = saves.idOf(key, code)
+  const id = idOf(key, code)
   const { [id]: _previous, ...rest } = drafts.value
   drafts.value = value === undefined ? rest : { ...rest, [id]: value }
 }
@@ -212,14 +235,14 @@ function setDraft(key: string, code: string, value: string | undefined) {
 function startEdit(key: string, code: string) {
   if (!canEditValues.value || isEditingCell(key, code)) return
   commitEditing()
-  const id = saves.idOf(key, code)
+  const id = idOf(key, code)
   if (drafts.value[id] === undefined)
     setDraft(
       key,
       code,
-      saves.failureOf(key, code)?.draft ?? shownValue(key, code),
+      saves.failureOf(at(key, code))?.draft ?? shownValue(key, code),
     )
-  saves.begin(key, code)
+  saves.begin(at(key, code))
   editingWorkspace = selectedWorkspace.value
   isEditingBase = code === flat.value.defaultLocale
   editingCell.value = { key, code }
@@ -231,7 +254,7 @@ function cancelEdit() {
   const cell = editingCell.value
   if (cell) {
     setDraft(cell.key, cell.code, undefined)
-    saves.end(cell.key, cell.code)
+    saves.end(at(cell.key, cell.code))
   }
   editingCell.value = null
 }
@@ -242,31 +265,23 @@ function commitEditing() {
 }
 
 function isClearingBase(key: string, code: string, draft: string): boolean {
-  return (
-    code === flat.value.defaultLocale &&
-    draft.trim() === '' &&
-    shownValue(key, code) !== ''
+  return clearsBaseText(
+    code,
+    flat.value.defaultLocale,
+    draft,
+    shownValue(key, code),
   )
-}
-
-function confirmClearBase(key: string): Promise<boolean> {
-  return confirm({
-    title: t('dms_lang.matrix.clear_base_title', { key }),
-    description: t('dms_lang.matrix.clear_base_description'),
-    color: 'warning',
-    confirmLabel: t('dms_lang.matrix.clear_base_confirm'),
-  })
 }
 
 async function commitCell(key: string, code: string, move: CellMove) {
   if (isEditingCell(key, code) && editingWorkspace !== selectedWorkspace.value)
     return leaveEditing()
-  const draft = drafts.value[saves.idOf(key, code)]
+  const draft = drafts.value[idOf(key, code)]
   setDraft(key, code, undefined)
   if (isEditingCell(key, code)) editingCell.value = null
   const hasChanged = draft !== undefined && draft !== shownValue(key, code)
   if (hasChanged && isClearingBase(key, code, draft)) {
-    if (!(await confirmClearBase(key))) {
+    if (!(await saves.confirmClearBase(key))) {
       setDraft(key, code, draft)
       editingCell.value = { key, code }
       return
@@ -274,8 +289,8 @@ async function commitCell(key: string, code: string, move: CellMove) {
   }
   if (hasChanged && keepInvalid(key, code, draft))
     return moveFrom(key, code, move)
-  if (hasChanged) void saves.save(key, code, draft)
-  else saves.end(key, code)
+  if (hasChanged) void saves.save(at(key, code), draft)
+  else saves.end(at(key, code))
   moveFrom(key, code, move)
 }
 
@@ -298,7 +313,7 @@ function keepInvalid(
   workspace = selectedWorkspace.value,
 ): boolean {
   const reason = blockingText(draft)
-  if (reason) saves.keep(key, code, draft, reason, workspace)
+  if (reason) saves.keep(at(key, code, workspace), draft, reason)
   return reason !== ''
 }
 
@@ -312,51 +327,45 @@ function leaveEditing() {
   const workspace = editingWorkspace
   if (!cell) return
   editingCell.value = null
-  const id = saves.idOf(cell.key, cell.code, workspace)
+  const id = idOf(cell.key, cell.code, workspace)
   const { [id]: draft, ...rest } = drafts.value
   drafts.value = rest
-  const origin = saves.originOf(cell.key, cell.code, workspace)
+  const origin = saves.originOf(at(cell.key, cell.code, workspace))
   if (draft === undefined || storedText(draft) === (origin ?? null)) {
-    saves.end(cell.key, cell.code, workspace)
+    saves.end(at(cell.key, cell.code, workspace))
     return
   }
   if (keepInvalid(cell.key, cell.code, draft, workspace)) return
   if (isEditingBase && storedText(draft) === null && origin) {
     saves.keep(
-      cell.key,
-      cell.code,
+      at(cell.key, cell.code, workspace),
       draft,
       t('dms_lang.matrix.clear_base_kept'),
-      workspace,
     )
     return
   }
-  void saves.save(cell.key, cell.code, draft, workspace)
-}
-
-function storedText(value: string): string | null {
-  return value.trim() === '' ? null : value
+  void saves.save(at(cell.key, cell.code, workspace), draft)
 }
 
 async function retryCell(key: string, code: string) {
-  const failure = saves.failureOf(key, code)
+  const failure = saves.failureOf(at(key, code))
   if (!failure) return
   // A text that does not compile goes back to the editor to be fixed.
   if (blockingText(failure.draft)) return startEdit(key, code)
   if (
     isClearingBase(key, code, failure.draft) &&
-    !(await confirmClearBase(key))
+    !(await saves.confirmClearBase(key))
   )
     return
-  void saves.save(key, code, failure.draft)
+  void saves.save(at(key, code), failure.draft)
 }
 
 /** Writes the bare `@` and lone braces of a text kept unsaved as literals, then saves it. */
 function escapeFailure(key: string, code: string) {
-  const failure = saves.failureOf(key, code)
+  const failure = saves.failureOf(at(key, code))
   if (!failure) return
   const escaped = escapeMessage(failure.draft)
-  if (!keepInvalid(key, code, escaped)) void saves.save(key, code, escaped)
+  if (!keepInvalid(key, code, escaped)) void saves.save(at(key, code), escaped)
 }
 
 /** A link named a key the workspace does not hold (renamed, deleted). */
@@ -421,7 +430,7 @@ function missingCells(): CellRef[] {
       codes
         .filter(
           (code) =>
-            isRowValueMissing(row, code) && !saves.isPending(row.key, code),
+            isRowValueMissing(row, code) && !saves.isPending(at(row.key, code)),
         )
         .map((code) => ({ key: row.key, code })),
     ),
@@ -498,7 +507,7 @@ function onGridKeydown(event: KeyboardEvent) {
 async function openKey(key: string, focusLocale?: string) {
   const initialDrafts: Record<string, string> = {}
   for (const code of flat.value.locales) {
-    const failure = saves.failureOf(key, code)
+    const failure = saves.failureOf(at(key, code))
     if (failure) initialDrafts[code] = failure.draft
   }
   const handed = Object.keys(initialDrafts)
@@ -509,24 +518,24 @@ async function openKey(key: string, focusLocale?: string) {
   })
   if (!isShown) return
   for (const code of handed)
-    if (saves.failureOf(key, code)?.draft === initialDrafts[code])
-      saves.discard(key, code)
+    if (saves.failureOf(at(key, code))?.draft === initialDrafts[code])
+      saves.discard(at(key, code))
 }
 
 /** From a cell being edited: the panel takes over the text typed so far, once it shows the key. */
 async function openFromCell(key: string, code: string) {
-  const draft = drafts.value[saves.idOf(key, code)]
+  const draft = drafts.value[idOf(key, code)]
   const typed = draft !== undefined && draft !== shownValue(key, code)
-  const failure = saves.failureOf(key, code)
+  const failure = saves.failureOf(at(key, code))
   const text = typed ? draft : failure?.draft
   const initialDrafts = text === undefined ? undefined : { [code]: text }
   const isShown = await panel.open({ key, focusLocale: code, initialDrafts })
   if (!isEditingCell(key, code)) return
   if (!isShown) return reopenEditor(key, code)
   setDraft(key, code, undefined)
-  saves.end(key, code)
+  saves.end(at(key, code))
   // The panel now holds the text: an older failure of this cell would only resend a stale value.
-  if (failure) saves.discard(key, code)
+  if (failure) saves.discard(at(key, code))
   editingCell.value = null
 }
 
@@ -556,14 +565,14 @@ function cellProps(row: FlatTranslationRow, column: LanguageCoverage) {
     isBase: column.isBase,
     editable: canEditValues.value,
     isEditing: isEditingCell(key, code),
-    state: saves.stateOf(key, code),
-    failure: saves.failureOf(key, code),
+    state: saves.stateOf(at(key, code)),
+    failure: saves.failureOf(at(key, code)),
     rowKey: key,
     languageName: column.name,
     isOutdated: row.outdated?.includes(code) ?? false,
-    draft: drafts.value[saves.idOf(key, code)] ?? '',
+    draft: drafts.value[idOf(key, code)] ?? '',
     changedElsewhere: isEditingCell(key, code)
-      ? saves.changedElsewhere(key, code)
+      ? saves.changedElsewhere(at(key, code))
       : undefined,
   }
 }
@@ -576,10 +585,10 @@ function cellEvents(row: FlatTranslationRow, column: LanguageCoverage) {
     commit: (move: CellMove) => commitCell(key, code, move),
     cancel: cancelEdit,
     retry: () => retryCell(key, code),
-    discard: () => saves.discard(key, code),
+    discard: () => saves.discard(at(key, code)),
     escape: () => escapeFailure(key, code),
     openPanel: () => openFromCell(key, code),
-    review: () => void saves.markReviewed(key, code),
+    review: () => void saves.markReviewed(at(key, code)),
     'update:draft': (value: string) => setDraft(key, code, value),
   }
 }

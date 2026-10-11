@@ -8,7 +8,8 @@ import {
   messageIssueText,
   type MessageIssue,
 } from '../../../utils/translations'
-import type { CellFailure, CellState } from '../../composables/useCellSaves'
+import type { SaveState } from '../../../utils/keySaves'
+import type { CellFailure } from '../../composables/useCellSaves'
 
 /** Where the editor goes once a cell is saved. */
 export type CellMove = 'stay' | 'down' | 'next' | 'previous'
@@ -22,7 +23,7 @@ interface Props {
   isBase: boolean
   editable: boolean
   isEditing: boolean
-  state: CellState
+  state: SaveState
   failure?: CellFailure
   rowKey: string
   languageName: string

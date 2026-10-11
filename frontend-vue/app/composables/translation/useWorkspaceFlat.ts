@@ -159,6 +159,11 @@ export const useWorkspaceFlat = () => {
     () => store.entries.value[selectedWorkspace.value] !== undefined,
   )
 
+  /** The translations of a workspace read so far, whichever is selected. */
+  function flatOf(workspace: string): FlatTranslations {
+    return store.entries.value[workspace] ?? EMPTY_FLAT
+  }
+
   function touch(workspace: string): void {
     store.touchedAt.value = {
       ...store.touchedAt.value,
@@ -274,6 +279,7 @@ export const useWorkspaceFlat = () => {
 
   return {
     flat,
+    flatOf,
     baseLocale,
     isLoading,
     isLoaded,

@@ -1,10 +1,9 @@
 <script lang="ts">
-/** A field's stored text when its edit began: what the save expects to replace. */
-type EditStarts = Record<string, string | null>
+import type { ExpectedText } from '../../utils/keySaves'
 
 interface KeptDrafts {
   drafts: Record<string, string>
-  starts: EditStarts
+  starts: Record<string, ExpectedText>
 }
 
 /** Text a closing panel could not save, given back when its key opens again. */
@@ -13,6 +12,13 @@ const keptDrafts = new Map<string, KeptDrafts>()
 
 <script setup lang="ts">
 import type { FlatTranslationRow } from '../../types/lang'
+import { storedText, type SaveState } from '../../utils/keySaves'
+import {
+  clearsBaseText,
+  useEditStarts,
+  useKeySaves,
+  useSaveStates,
+} from '../composables/useKeySaves'
 import {
   checkMessage,
   escapeMessage,
@@ -42,10 +48,6 @@ interface Props {
   open?: boolean
 }
 
-interface ReviewResult {
-  row?: FlatTranslationRow
-}
-
 /** The module texts of a key, kept when its last override goes and the row leaves the project files. */
 interface KnownInherited {
   key: string
@@ -53,15 +55,11 @@ interface KnownInherited {
 }
 
 type DrawerResult = 'saved' | 'renamed' | 'deleted' | 'closed'
-type FieldState = 'idle' | 'saving' | 'saved' | 'error' | 'blocked'
 type FieldStatus = 'missing' | 'inherited' | 'overridden' | 'outdated' | 'done'
 
 const KEY_SEPARATOR = '.'
 const DRAFT_ID_SEPARATOR = '\u0000'
 const WIDE_SCREEN_QUERY = '(min-width: 1024px)'
-const SAVED_FLASH_MS = 1800
-const CONFLICT_CODE = 'conflict'
-const REVIEWED_ENDPOINT = '/api/lang/translations/key/reviewed'
 const BASE_MISSING_LABEL = 'dms_lang.matrix.source_missing'
 const FIELD_STATUS_LABELS: Record<FieldStatus, string> = {
   missing: 'dms_lang.matrix.missing',
@@ -86,22 +84,23 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const toast = useToast()
-const { selectedWorkspace, upsertKey } = useI18nWorkspaces()
-const { flat, update, reload } = useWorkspaceFlat()
+const { selectedWorkspace } = useI18nWorkspaces()
+const { flat } = useWorkspaceFlat()
 const { nativeName } = useLocaleNames()
 const { renameKey, deleteKey, revertToModule } = useKeyActions()
-const { errorMessage, serverErrorCode, reportFailure } = useMutationToast()
-const { confirm } = useConfirm()
-const { $authFetch } = useAuthFetch()
+const { reportFailure } = useMutationToast()
+const saves = useKeySaves()
 
 const canOverride = Boolean(getCurrentInstance()?.vnode.props?.onOverride)
 const isOpen = ref(props.open)
 const currentKey = ref(props.keys[props.startIndex] ?? '')
 const drafts = ref<Record<string, string>>({})
-const editStarts = ref<EditStarts>({})
+const editStarts = useEditStarts()
 const knownInherited = ref<KnownInherited | null>(null)
-const fieldStates = ref<Record<string, FieldState>>({})
+const fieldStates = ref<Record<string, SaveState>>({})
 const fieldErrors = ref<Record<string, string>>({})
+const blocked = ref<Record<string, boolean>>({})
+const states = useSaveStates(fieldStates)
 const isWide = ref(false)
 const body = useTemplateRef<HTMLElement>('body')
 let hasSaved = false
@@ -179,33 +178,30 @@ function storedOf(code: string): string | null {
 }
 
 /** The text a save of the field expects to replace: the one shown when its edit began. */
-function expectedOf(code: string): string | null {
-  return code in editStarts.value ? editStarts.value[code] : storedOf(code)
+function expectedOf(code: string): ExpectedText {
+  return editStarts.has(code) ? editStarts.of(code) : storedOf(code)
 }
 
 /** Someone else saved the field while it was being edited: the typed text waits for a choice. */
 function hasConflict(code: string): boolean {
   return (
     isChanged(code) &&
-    code in editStarts.value &&
-    editStarts.value[code] !== storedOf(code)
+    editStarts.has(code) &&
+    editStarts.of(code) !== storedOf(code)
   )
 }
 
 /** A field left unsaved: in conflict, refused by the server or not valid. */
 function isWaiting(code: string): boolean {
-  const state = fieldStates.value[code]
-  return hasConflict(code) || state === 'error' || state === 'blocked'
+  return (
+    hasConflict(code) ||
+    fieldStates.value[code] === 'error' ||
+    blocked.value[code] === true
+  )
 }
 
 function startEdit(code: string) {
-  if (code in editStarts.value) return
-  editStarts.value = { ...editStarts.value, [code]: storedOf(code) }
-}
-
-function setEditStart(code: string, value: string | null | undefined) {
-  const { [code]: _previous, ...rest } = editStarts.value
-  editStarts.value = value === undefined ? rest : { ...rest, [code]: value }
+  editStarts.begin(code, storedOf(code))
 }
 
 function statusOf(code: string): FieldStatus {
@@ -225,27 +221,33 @@ function issueOfKind(code: string, kind: MessageIssue['kind']) {
   return issuesOf(code).find((issue) => issue.kind === kind)
 }
 
-function setFieldState(code: string, state: FieldState, error = '') {
-  fieldStates.value = { ...fieldStates.value, [code]: state }
+function setFieldState(code: string, state: SaveState, error = '') {
+  states.setState(code, state)
   fieldErrors.value = { ...fieldErrors.value, [code]: error }
+  blocked.value = { ...blocked.value, [code]: false }
+}
+
+function block(code: string) {
+  setFieldState(code, 'idle')
+  blocked.value = { ...blocked.value, [code]: true }
 }
 
 function setDraft(code: string, value: string) {
   startEdit(code)
   drafts.value = { ...drafts.value, [code]: value }
-  if (fieldStates.value[code] === 'blocked') setFieldState(code, 'idle')
+  if (blocked.value[code]) setFieldState(code, 'idle')
 }
 
 function discardDraft(code: string) {
   const { [code]: _dropped, ...rest } = drafts.value
   drafts.value = rest
-  setEditStart(code, undefined)
+  editStarts.end(code)
   setFieldState(code, 'idle')
 }
 
 /** Saves the typed text over what someone else saved meanwhile. */
 function overwrite(code: string) {
-  setEditStart(code, storedOf(code))
+  editStarts.set(code, storedOf(code))
   save([code])
 }
 
@@ -286,28 +288,6 @@ function rewrite(code: string, value: string) {
   focusField(code)
 }
 
-function applyRow(
-  path: string,
-  values: Record<string, string>,
-  saved?: FlatTranslationRow,
-) {
-  const seed = props.seed?.key === path ? props.seed : undefined
-  update(selectedWorkspace.value, (next) => {
-    const index = next.rows.findIndex((entry) => entry.key === path)
-    const target = saved ?? {
-      ...(index >= 0
-        ? next.rows[index]
-        : { key: path, inherited: seed?.inherited ?? knownInheritedOf(path) }),
-      values: { ...(index >= 0 ? next.rows[index].values : {}) },
-    }
-    if (!saved)
-      for (const [code, value] of Object.entries(values))
-        target.values[code] = value.trim() ? value : undefined
-    if (index >= 0) next.rows[index] = target
-    else next.rows.push(target)
-  })
-}
-
 function knownInheritedOf(path: string) {
   return knownInherited.value?.key === path
     ? knownInherited.value.inherited
@@ -319,22 +299,21 @@ function settle(codes: string[], values: Record<string, string>) {
   for (const code of codes) {
     const isDone = rest[code] === values[code]
     if (isDone) delete rest[code]
-    setEditStart(code, isDone ? undefined : values[code].trim() || null)
-    setFieldState(code, 'saved')
-    setTimeout(() => {
-      if (fieldStates.value[code] === 'saved') setFieldState(code, 'idle')
-    }, SAVED_FLASH_MS)
+    if (isDone) editStarts.end(code)
+    else editStarts.set(code, storedText(values[code]))
+    setFieldState(code, 'idle')
+    states.flashSaved(code)
   }
   drafts.value = rest
 }
 
 function collect(codes: string[]) {
   const values: Record<string, string> = {}
-  const expected: Record<string, string | null> = {}
+  const expected: Record<string, ExpectedText> = {}
   for (const code of codes.filter(isChanged)) {
     if (hasConflict(code)) continue
     if (hasBlockingIssue(issuesOf(code))) {
-      setFieldState(code, 'blocked')
+      block(code)
       continue
     }
     values[code] = draftOf(code)
@@ -345,24 +324,18 @@ function collect(codes: string[]) {
 
 function isClearingBase(codes: string[]): boolean {
   const code = base.value
+  const stored = inheritedOf(code) ? '' : ownOf(code)
   return (
     codes.includes(code) &&
     isChanged(code) &&
-    !draftOf(code).trim() &&
-    !inheritedOf(code)
+    clearsBaseText(code, base.value, draftOf(code), stored)
   )
 }
 
 /** Emptying the base text asks first, as in the matrix; declined, the text comes back. */
 async function confirmBaseClear(codes: string[]) {
   if (!isClearingBase(codes)) return
-  const isConfirmed = await confirm({
-    title: t('dms_lang.matrix.clear_base_title', { key: key.value }),
-    description: t('dms_lang.matrix.clear_base_description'),
-    color: 'warning',
-    confirmLabel: t('dms_lang.matrix.clear_base_confirm'),
-  })
-  if (!isConfirmed) discardDraft(base.value)
+  if (!(await saves.confirmClearBase(key.value))) discardDraft(base.value)
 }
 
 /** Saves the given fields of the shown key; false while one stays unsaved. */
@@ -373,28 +346,17 @@ async function persist(codes: string[]): Promise<boolean> {
   if (key.value !== path) return false
   const { values, expected } = collect(codes)
   const sent = Object.keys(values)
-  const isBlocked = codes.some(
-    (code) => fieldStates.value[code] === 'blocked' || hasConflict(code),
-  )
-  if (!sent.length) return !isBlocked
+  const isHeld = codes.some((code) => blocked.value[code] || hasConflict(code))
+  if (!sent.length) return !isHeld
   sent.forEach((code) => setFieldState(code, 'saving'))
-  try {
-    const response = await upsertKey(
-      workspace,
-      path,
-      values,
-      base.value,
-      expected,
-    )
-    applyRow(path, values, response?.row)
-    if (key.value === path) settle(sent, values)
-    hasSaved = true
-    return !isBlocked
-  } catch (error) {
-    sent.forEach((code) => setFieldState(code, 'error', errorMessage(error)))
-    if (serverErrorCode(error) === CONFLICT_CODE) await reload()
+  const outcome = await saves.write({ workspace, key: path, values, expected })
+  if (outcome.status === 'failed') {
+    sent.forEach((code) => setFieldState(code, 'error', outcome.message))
     return false
   }
+  if (key.value === path) settle(sent, values)
+  hasSaved = true
+  return !isHeld
 }
 
 function save(codes: string[]): Promise<boolean> {
@@ -425,8 +387,11 @@ function show(path: string) {
   currentKey.value = path
   fieldStates.value = {}
   fieldErrors.value = {}
+  blocked.value = {}
   drafts.value = { ...kept?.drafts }
-  editStarts.value = { ...kept?.starts }
+  editStarts.clear()
+  for (const [code, start] of Object.entries(kept?.starts ?? {}))
+    editStarts.set(code, start)
   if (path === props.keys[props.startIndex]) takeDrafts(props.initialDrafts)
   focusField(props.focusLocale)
 }
@@ -513,21 +478,16 @@ async function rename() {
 /** Acknowledges "To review" without changing the text. */
 async function markReviewed(code: string) {
   const path = key.value
-  const workspace = selectedWorkspace.value
-  try {
-    const response = await $authFetch<ReviewResult>(REVIEWED_ENDPOINT, {
-      method: 'POST',
-      body: { workspace, path, locales: [code] },
-    })
-    applyRow(path, {}, response?.row)
-    toast.add({
-      title: t('dms_lang.drawer.reviewed', { code, key: path }),
-      color: 'success',
-      icon: 'i-ph-check',
-    })
-  } catch (error) {
-    reportFailure(error)
-  }
+  const outcome = await saves.markReviewed(
+    { workspace: selectedWorkspace.value, key: path },
+    code,
+  )
+  if (outcome.status === 'failed') return reportFailure(outcome.error)
+  toast.add({
+    title: t('dms_lang.drawer.reviewed', { code, key: path }),
+    color: 'success',
+    icon: 'i-ph-check',
+  })
 }
 
 async function remove() {
@@ -726,10 +686,7 @@ onMounted(() => {
                 {{ $t('dms_lang.drawer.saved_state') }}
               </span>
               <template
-                v-else-if="
-                  fieldStates[code] === 'error' ||
-                  fieldStates[code] === 'blocked'
-                "
+                v-else-if="fieldStates[code] === 'error' || blocked[code]"
               >
                 <span class="text-error font-medium">
                   {{ $t('dms_lang.drawer.not_saved') }}

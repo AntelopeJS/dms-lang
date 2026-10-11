@@ -1,6 +1,7 @@
 import type { Ref } from 'vue'
 import { useDmsRouter, useDmsState } from '#dms/frontend-module'
 import type { FlatTranslationRow, TranslationValue } from '../../types/lang'
+import { savedText } from '../../utils/keySaves'
 
 export type QueueMode = 'missing' | 'issues' | 'all'
 
@@ -230,10 +231,6 @@ interface DraftId {
   key: string
 }
 
-function storedValue(value: TranslationValue | undefined): string | null {
-  return value === undefined || value === null ? null : String(value)
-}
-
 function parseId(id: string): DraftId {
   const [workspace = '', locale = '', ...key] = id.split(DRAFT_SEPARATOR)
   return { workspace, locale, key: key.join(DRAFT_SEPARATOR) }
@@ -301,12 +298,12 @@ function useQueueDrafts(locale: Ref<string>) {
     /** Keeps a typed text, started on `saved` unless it already was a draft. */
     write(key: string, value: string, saved: TranslationValue | undefined) {
       const existing = drafts.value[idOf(key)]
-      set(key, value, existing ? existing.start : storedValue(saved))
+      set(key, value, existing ? existing.start : savedText(saved))
     },
     /** Keeps the text, now started on the value saved elsewhere (overwrite it). */
     rebase(key: string, saved: TranslationValue | undefined) {
       const existing = drafts.value[idOf(key)]
-      if (existing) set(key, existing.value, storedValue(saved))
+      if (existing) set(key, existing.value, savedText(saved))
     },
     drop(key: string) {
       drafts.value = without(idOf(key))
@@ -352,7 +349,7 @@ export const useQueueSession = (upNextSize: number) => {
     const start = drafts.startOf(row.key)
     return (
       start !== undefined &&
-      start !== storedValue(row.values[language.locale.value])
+      start !== savedText(row.values[language.locale.value])
     )
   }
 

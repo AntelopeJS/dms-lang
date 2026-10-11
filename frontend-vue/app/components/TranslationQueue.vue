@@ -10,22 +10,25 @@ import {
   escapeMessage,
   formatTokens,
   hasBlockingIssue,
-  isLocaleValueMissing,
   messageIssueText,
   placeholdersOf,
   replacePlaceholder,
   stringValue,
 } from '../utils/translations'
+import type { KeySaveFailureKind } from '../utils/keySaveErrors'
+import { savedText as expectedTextOf } from '../utils/keySaves'
 import LocaleTile from '../build/components/LocaleTile.vue'
 import PlaceholderText from '../build/components/PlaceholderText.vue'
+import {
+  useKeySaves,
+  type KeyWriteFailed,
+} from '../build/composables/useKeySaves'
 
-interface SaveResponse {
-  row?: FlatTranslationRow
-}
-
-interface RejectedWrite {
-  data?: { current?: Record<string, unknown>; details?: string[] }
-}
+type SaveFailureHandler = (
+  row: FlatTranslationRow,
+  value: string,
+  outcome: KeyWriteFailed,
+) => void
 
 interface Rejection {
   key: string
@@ -49,10 +52,6 @@ const LONG_TEXT = 80
 const URL_SYNC_MS = 400
 const LANGUAGE_SUGGESTIONS = 6
 const ARM_SEPARATOR = '\n'
-const CONFLICT_CODE = 'conflict'
-const DELETED_CODE = 'key_not_found'
-const INVALID_CODE = 'invalid_message'
-const REVIEWED_ENDPOINT = '/api/lang/translations/key/reviewed'
 const MAC_PLATFORM = /Mac|iPhone|iPad/
 const FIELD_SELECTOR = 'input, textarea, select, [contenteditable]'
 const DIALOG_SELECTOR = '[role="dialog"]'
@@ -71,19 +70,18 @@ const { t } = useI18n()
 const toast = useToast()
 const { confirm } = useConfirm()
 const { formatCount } = useLangFormat()
-const { selectedWorkspace, upsertKey, exportWorkspace } = useI18nWorkspaces()
-const { flat, isLoaded, update } = useWorkspaceFlat()
+const { selectedWorkspace, exportWorkspace } = useI18nWorkspaces()
+const { flat, isLoaded } = useWorkspaceFlat()
 const { canEditValues, canManage, isModules, isUnknown, allows } =
   useWorkspaceContext()
 const { switchLink } = useWorkspaceRoute()
 const { nativeName, fullName, nameAmong } = useLocaleNames()
-const { reportFailure, errorMessage, isConflict, serverErrorCode } =
-  useMutationToast()
+const { reportFailure } = useMutationToast()
+const saves = useKeySaves()
 const { removeLanguage, makeBase } = useLanguageActions()
 const { downloadFile } = useWorkspaceActions()
 const links = useLangLinks()
 const router = useDmsRouter()
-const { $authFetch } = useAuthFetch()
 const session = useQueueSession(UP_NEXT)
 const {
   locale,
@@ -421,13 +419,6 @@ function skip() {
   showStep(session.skip())
 }
 
-function changeRow(key: string, change: (row: FlatTranslationRow) => void) {
-  update(selectedWorkspace.value, (next) => {
-    const target = next.rows.find((entry) => entry.key === key)
-    if (target) change(target)
-  })
-}
-
 /** The base text changed since this translation was written. */
 const isOutdated = computed(
   () => !!current.value && session.isOutdated(current.value),
@@ -438,37 +429,23 @@ async function markReviewed() {
   const row = current.value
   if (!row || isReviewing.value) return
   isReviewing.value = true
-  try {
-    const response = await $authFetch<SaveResponse>(REVIEWED_ENDPOINT, {
-      method: 'POST',
-      body: {
-        workspace: selectedWorkspace.value,
-        path: row.key,
-        locales: [locale.value],
-      },
-    })
-    changeRow(row.key, (target) => {
-      if (response?.row) Object.assign(target, response.row)
-      else
-        target.outdated = target.outdated?.filter(
-          (code) => code !== locale.value,
-        )
-    })
-    toast.add({
-      title: t('dms_lang.drawer.reviewed', {
-        code: locale.value,
-        key: row.key,
-      }),
-      color: 'success',
-      icon: 'i-ph-check',
-    })
-    showStep(session.complete(row.key))
-  } catch (error) {
-    if (serverErrorCode(error) === DELETED_CODE) return onDeleted(row)
-    reportFailure(error)
-  } finally {
-    isReviewing.value = false
-  }
+  const outcome = await saves.markReviewed(
+    { workspace: selectedWorkspace.value, key: row.key },
+    locale.value,
+  )
+  isReviewing.value = false
+  if (outcome.status === 'failed') return onReviewFailed(row, outcome)
+  toast.add({
+    title: t('dms_lang.drawer.reviewed', { code: locale.value, key: row.key }),
+    color: 'success',
+    icon: 'i-ph-check',
+  })
+  showStep(session.complete(row.key))
+}
+
+function onReviewFailed(row: FlatTranslationRow, outcome: KeyWriteFailed) {
+  if (outcome.failure.kind === 'deleted') return onDeleted(row)
+  reportFailure(outcome.error)
 }
 
 function useTheirs() {
@@ -489,16 +466,6 @@ function warnConflict(key: string) {
     color: 'warning',
     icon: 'i-ph-warning',
   })
-}
-
-function onConflict(row: FlatTranslationRow, error: unknown) {
-  const value = (error as RejectedWrite).data?.current?.[locale.value]
-  changeRow(row.key, (target) => {
-    target.values[locale.value] = isLocaleValueMissing(value)
-      ? undefined
-      : stringValue(value)
-  })
-  warnConflict(row.key)
 }
 
 async function copyText(value: string) {
@@ -549,61 +516,48 @@ function announceDeleted(key: string, draftText = '') {
 function onDeleted(row: FlatTranslationRow) {
   const draftText = drafts.read(row.key)
   drafts.drop(row.key)
-  update(selectedWorkspace.value, (next) => {
-    next.rows = next.rows.filter((entry) => entry.key !== row.key)
-  })
+  saves.dropRow({ workspace: selectedWorkspace.value, key: row.key })
   announceDeleted(row.key, draftText)
 }
 
-function onSaveError(row: FlatTranslationRow, value: string, error: unknown) {
-  const code = serverErrorCode(error)
-  if (code === CONFLICT_CODE || (isConflict(error) && !code)) {
-    return onConflict(row, error)
-  }
-  if (code === DELETED_CODE) return onDeleted(row)
-  if (code === INVALID_CODE) {
+const SAVE_FAILURES: Record<KeySaveFailureKind, SaveFailureHandler> = {
+  conflict: (row) => warnConflict(row.key),
+  deleted: (row) => onDeleted(row),
+  invalid: (row, value, outcome) => {
+    const { details } = outcome.failure
     rejection.value = {
       key: row.key,
       value: drafts.read(row.key) ?? value,
-      problems: (error as RejectedWrite).data?.details ?? [errorMessage(error)],
+      problems: details.length ? details : [outcome.message],
     }
-    return
-  }
-  reportFailure(error, {
-    title: t('dms_lang.matrix.save_failed', {
-      key: row.key,
-      code: locale.value,
+  },
+  other: (row, value, outcome) =>
+    reportFailure(outcome.error, {
+      title: t('dms_lang.matrix.save_failed', {
+        key: row.key,
+        code: locale.value,
+      }),
+      retry: () => void write(row, value),
     }),
-    retry: () => void write(row, value),
-  })
 }
 
 async function write(row: FlatTranslationRow, value: string) {
   isSaving.value = true
-  // The value the draft was started on, never the one shown now: a change
-  // made elsewhere while typing is refused instead of overwritten.
   const start = drafts.startOf(row.key)
-  const expected =
-    start === undefined ? (row.values[locale.value] ?? null) : start
-  try {
-    const response = (await upsertKey(
-      selectedWorkspace.value,
-      row.key,
-      { [locale.value]: value || null },
-      baseLocale.value,
-      { [locale.value]: expected },
-    )) as SaveResponse | undefined
-    changeRow(row.key, (target) => {
-      if (response?.row) Object.assign(target, response.row)
-      else target.values[locale.value] = value || undefined
-    })
-    drafts.drop(row.key)
-    showStep(session.complete(row.key))
-  } catch (error) {
-    onSaveError(row, value, error)
-  } finally {
-    isSaving.value = false
-  }
+  const outcome = await saves.write({
+    workspace: selectedWorkspace.value,
+    key: row.key,
+    values: { [locale.value]: value },
+    expected: {
+      [locale.value]:
+        start === undefined ? expectedTextOf(row.values[locale.value]) : start,
+    },
+  })
+  isSaving.value = false
+  if (outcome.status === 'failed')
+    return SAVE_FAILURES[outcome.failure.kind](row, value, outcome)
+  drafts.drop(row.key)
+  showStep(session.complete(row.key))
 }
 
 function confirmClear(row: FlatTranslationRow): Promise<boolean> {
