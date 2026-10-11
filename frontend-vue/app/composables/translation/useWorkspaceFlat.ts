@@ -16,7 +16,7 @@ export const LANG_REALTIME_TOPIC = 'dms-lang.translations'
 
 /** Data older than this is fetched again when a page shows it. */
 const STALE_AFTER_MS = 5000
-/** A write echoed back this soon after a local change is already shown. */
+/** A change announced this soon after a local write is read once the local writes settle. */
 const ECHO_WINDOW_MS = 1500
 /** Realtime messages arriving together trigger a single reload. */
 const REALTIME_DEBOUNCE_MS = 300
@@ -185,18 +185,30 @@ function useFlatLoader(): FlatLoader {
   }
 }
 
+function echoLeft(loader: FlatLoader): number {
+  const touchedAt = loader.store.touchedAt.value[loader.selectedWorkspace.value]
+  if (touchedAt === undefined) return 0
+  return Math.max(0, touchedAt + ECHO_WINDOW_MS - Date.now())
+}
+
+function scheduleReload(loader: FlatLoader): void {
+  clearTimeout(realtimeTimer)
+  realtimeTimer = setTimeout(
+    () => {
+      if (echoLeft(loader) > 0) return scheduleReload(loader)
+      void refetch(loader, true)
+    },
+    Math.max(REALTIME_DEBOUNCE_MS, echoLeft(loader)),
+  )
+}
+
 function onRealtimeChange(
   loader: FlatLoader,
   payload: ChangedPayload | undefined,
 ): void {
   const workspace = loader.selectedWorkspace.value
   if (payload?.workspace && payload.workspace !== workspace) return
-  if (isFresh(loader.store.touchedAt.value[workspace], ECHO_WINDOW_MS)) return
-  clearTimeout(realtimeTimer)
-  realtimeTimer = setTimeout(
-    () => void refetch(loader, true),
-    REALTIME_DEBOUNCE_MS,
-  )
+  scheduleReload(loader)
 }
 
 function startSync(loader: FlatLoader): EffectScope {
