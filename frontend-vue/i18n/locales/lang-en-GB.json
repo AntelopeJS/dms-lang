@@ -565,14 +565,15 @@
 			"submit": "Import workspace",
 			"done": "Workspace {name} imported",
 			"invalid_title": "{file} is neither a workspace backup nor a JSON of languages",
-			"invalid_help": "Expected a backup downloaded from a workspace, a JSON holding one object per language code (en, fr…), or one language file named after its code, such as it.json."
+			"invalid_help": "Expected a backup downloaded from a workspace, a JSON holding one object per language code (en, fr…), or one language file named after its code, such as it.json.",
+			"newer_title": "{file} was saved by a newer version of the Translations module",
+			"newer_help": "Update the module on this server to import this backup."
 		},
 		"workspace_details": {
 			"description_label": "Description",
 			"description_help": "What this workspace is for: the app that loads it, who looks after it. Shown on its card.",
 			"description_placeholder": "Texts of the iOS and Android app",
 			"type_label": "Type",
-			"saved": "Workspace details saved",
 			"save_failed": "Couldn't save the workspace details"
 		},
 		"workspace_types": {

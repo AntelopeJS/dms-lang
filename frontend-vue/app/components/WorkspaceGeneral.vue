@@ -1,7 +1,15 @@
 <script setup lang="ts">
 import { useWorkspaceFlatSync } from '../composables/translation/useWorkspaceFlat'
 import UButton from '@nuxt/ui/components/Button.vue'
+import DmsInstantSaveBadge from '#dms-ui/app/components/save-bar/InstantSaveBadge.vue'
+import { combineSaveStates } from '#dms-layout/app/composables/layout/useInstantSaveHeader'
+import type { WorkspaceType } from '../types/lang'
+import type { SaveState } from '../utils/keySaves'
 import LocaleTile from '../build/components/LocaleTile.vue'
+import { useSaveStates } from '../build/composables/useKeySaves'
+
+/** A setting of the page, each saved on its own. */
+type DetailField = 'description' | 'type' | 'base'
 
 const DESCRIPTION_ROWS = 2
 
@@ -30,35 +38,70 @@ const baseItems = computed(() =>
     value: code,
   })),
 )
+const saveStates = ref<Record<string, SaveState>>({})
+const { stateOf, setState, flashSaved } = useSaveStates(saveStates)
+const retries: Partial<Record<DetailField, () => void>> = {}
+
+/** Saves one setting, its state shown next to it and in the header pill. */
+async function track(field: DetailField, run: () => Promise<boolean>) {
+  retries[field] = () => void track(field, run)
+  setState(field, 'saving')
+  if (await run()) flashSaved(field)
+  else setState(field, 'error')
+}
+
+async function changeBase(code: string) {
+  setState('base', 'saving')
+  if (await makeBase(code)) flashSaved('base')
+  else setState('base', 'idle')
+}
+
 const baseModel = computed({
   get: () => flat.value.defaultLocale,
   set: (code: string) => {
-    if (code !== flat.value.defaultLocale) void makeBase(code)
+    if (code !== flat.value.defaultLocale) void changeBase(code)
   },
 })
 
 const description = ref('')
+const isTypingDescription = ref(false)
 watch(
   () => current.value?.description,
   (text) => {
+    if (isTypingDescription.value || stateOf('description') === 'error') return
     description.value = text ?? ''
   },
   { immediate: true },
 )
 
-async function saveDescription() {
+function saveDescription() {
+  isTypingDescription.value = false
   const text = description.value.trim()
   if (text === (current.value?.description ?? '')) return
-  await updateDetails(workspaceId.value, { description: text || null })
+  void track('description', () =>
+    updateDetails(workspaceId.value, { description: text || null }),
+  )
+}
+
+function saveType(type: WorkspaceType) {
+  void track('type', () => updateDetails(workspaceId.value, { type }))
 }
 
 function pickType(value: unknown) {
   const type = typeOf(value)
-  if (type && type !== current.value?.type)
-    void updateDetails(workspaceId.value, { type })
+  if (type && type !== current.value?.type) saveType(type)
 }
 
-usePageHeaderActions(() =>
+const hasInstantSaves = computed(
+  () => canEditDetails.value || canManageLanguages.value,
+)
+
+usePageHeaderActions(() => [
+  hasInstantSaves.value
+    ? h(DmsInstantSaveBadge, {
+        state: combineSaveStates(Object.values(saveStates.value)),
+      })
+    : null,
   h(UButton, {
     label: t('dms_lang.workspace.open_overview'),
     icon: 'i-ph-gauge',
@@ -66,7 +109,7 @@ usePageHeaderActions(() =>
     variant: 'outline',
     to: links.overview(),
   }),
-)
+])
 </script>
 
 <template>
@@ -119,11 +162,18 @@ usePageHeaderActions(() =>
           :placeholder="
             $t('dms_lang.workspace_details.description_placeholder')
           "
+          @focus="isTypingDescription = true"
           @blur="saveDescription"
         />
         <p v-else class="text-highlighted text-sm">
           {{ current?.description || '—' }}
         </p>
+        <template #details>
+          <DmsSaveStatus
+            :state="stateOf('description')"
+            @retry="retries.description?.()"
+          />
+        </template>
       </DmsFieldRow>
       <DmsFieldRow
         layout="form"
@@ -135,6 +185,9 @@ usePageHeaderActions(() =>
           :items="typeItems"
           :disabled="!canEditDetails"
         />
+        <template #details>
+          <DmsSaveStatus :state="stateOf('type')" @retry="retries.type?.()" />
+        </template>
       </DmsFieldRow>
     </template>
 
@@ -164,6 +217,9 @@ usePageHeaderActions(() =>
           {{ flat.defaultLocale }}
         </span>
       </span>
+      <template #details>
+        <DmsSaveStatus :state="stateOf('base')" />
+      </template>
     </DmsFieldRow>
 
     <DmsFieldRow

@@ -1,20 +1,19 @@
 import { h } from 'vue'
 import UButton from '@nuxt/ui/components/Button.vue'
-import type {
-  WorkspaceDetails,
-  WorkspaceLocale,
-  WorkspaceSummary,
-  WorkspaceType,
-} from '../../types/lang'
-import { typedLocaleCode } from '../../utils/languages'
+import type { WorkspaceSummary, WorkspaceType } from '../../types/lang'
+import {
+  BACKUP_FORMAT,
+  parseBackup,
+  type DetailsChange,
+  type WorkspaceBackup,
+  type WorkspaceImport,
+} from '../../utils/workspaceBackup'
 import WorkspaceCreateModal from '../../build/components/WorkspaceCreateModal.vue'
 import WorkspaceRenameModal from '../../build/components/WorkspaceRenameModal.vue'
 
 const JSON_INDENT = 2
 const REVOKE_DELAY_MS = 1000
 const JSON_FILE_TYPES = '.json,application/json'
-const JSON_EXTENSION_RE = /\.json$/i
-const BACKUP_FORMAT = 'dms-lang.workspace'
 const WORKSPACE_DESCRIPTION_MAX = 500
 const API_BASE = '/api/lang/translations'
 const ENDPOINTS = {
@@ -30,55 +29,9 @@ const TYPE_ICONS: Record<WorkspaceType, string> = {
   other: 'i-ph-shapes',
 }
 
-type LocaleMessages = Record<string, Record<string, unknown>>
-
-/** A workspace saved as one JSON file: its manifest and every language file. */
-export interface WorkspaceBackup extends WorkspaceDetails {
-  format?: string
-  version?: number
-  id?: string
-  defaultLocale?: string
-  locales?: WorkspaceLocale[]
-  messages: LocaleMessages
-}
-
 interface DeleteImpact {
   files: number
   strings: number
-}
-
-interface DetailsChange {
-  description?: string | null
-  type?: WorkspaceType | null
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function isLocaleMessages(value: unknown): value is LocaleMessages {
-  if (!isRecord(value)) return false
-  const entries = Object.entries(value)
-  return (
-    entries.length > 0 &&
-    entries.every(
-      ([code, messages]) => typedLocaleCode(code) && isRecord(messages),
-    )
-  )
-}
-
-/**
- * What a JSON file holds as a workspace: a backup (`messages` and its
- * manifest), an export of every language (`{ <locale>: messages }`), or one
- * language file named after its code (`it.json`). Null when it is none.
- */
-function readBackup(content: unknown, fileName = ''): WorkspaceBackup | null {
-  if (isRecord(content) && isLocaleMessages(content.messages))
-    return content as unknown as WorkspaceBackup
-  if (isLocaleMessages(content)) return { messages: content }
-  const code = typedLocaleCode(fileName.replace(JSON_EXTENSION_RE, ''))
-  if (code && isRecord(content)) return { messages: { [code]: content } }
-  return null
 }
 
 function downloadFile(name: string, content: string, type: string): void {
@@ -88,14 +41,6 @@ function downloadFile(name: string, content: string, type: string): void {
   link.download = name
   link.click()
   setTimeout(() => URL.revokeObjectURL(url), REVOKE_DELAY_MS)
-}
-
-async function parseBackup(file: File): Promise<WorkspaceBackup | null> {
-  try {
-    return readBackup(JSON.parse(await file.text()), file.name)
-  } catch {
-    return null
-  }
 }
 
 function pickFile(accept: string): Promise<File | null> {
@@ -146,7 +91,7 @@ export const useWorkspaceApi = () => {
       }),
     fetchBackup: (workspace: string) =>
       $authFetch<WorkspaceBackup>(ENDPOINTS.backup, { query: { workspace } }),
-    importWorkspace: (id: string, backup: WorkspaceBackup) =>
+    importWorkspace: (id: string, backup: WorkspaceImport) =>
       $authFetch<WorkspaceSummary>(ENDPOINTS.import, {
         method: 'POST',
         body: { ...backup, format: BACKUP_FORMAT, id },
@@ -191,11 +136,13 @@ export const useWorkspaceActions = () => {
   async function importWorkspace(): Promise<string | null> {
     const file = await pickFile(JSON_FILE_TYPES)
     if (!file) return null
-    const backup = await parseBackup(file)
-    if (backup) return openCreate(backup)
+    const read = parseBackup(await file.text(), file.name)
+    if (read.backup) return openCreate(read.backup)
     toast.add({
-      title: t('dms_lang.workspace_import.invalid_title', { file: file.name }),
-      description: t('dms_lang.workspace_import.invalid_help'),
+      title: t(`dms_lang.workspace_import.${read.problem}_title`, {
+        file: file.name,
+      }),
+      description: t(`dms_lang.workspace_import.${read.problem}_help`),
       color: 'error',
       icon: 'i-ph-warning-circle',
     })
@@ -219,7 +166,6 @@ export const useWorkspaceActions = () => {
     if (!ok) return false
     await fetchWorkspaces()
     refreshPageBlocks()
-    succeed(t('dms_lang.workspace_details.saved'))
     return true
   }
 

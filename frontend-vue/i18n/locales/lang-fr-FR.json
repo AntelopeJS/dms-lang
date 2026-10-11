@@ -565,14 +565,15 @@
 			"submit": "Importer l'espace",
 			"done": "Espace {name} importé",
 			"invalid_title": "{file} n'est ni une sauvegarde d'espace ni un JSON de langues",
-			"invalid_help": "Attendu : une sauvegarde téléchargée depuis un espace, un JSON avec un objet par code de langue (en, fr…), ou un fichier de langue nommé d'après son code, comme it.json."
+			"invalid_help": "Attendu : une sauvegarde téléchargée depuis un espace, un JSON avec un objet par code de langue (en, fr…), ou un fichier de langue nommé d'après son code, comme it.json.",
+			"newer_title": "{file} a été enregistré par une version plus récente du module Traductions",
+			"newer_help": "Mettez à jour le module sur ce serveur pour importer cette sauvegarde."
 		},
 		"workspace_details": {
 			"description_label": "Description",
 			"description_help": "À quoi sert cet espace : l'application qui le charge, qui s'en occupe. Affichée sur sa carte.",
 			"description_placeholder": "Textes de l'application iOS et Android",
 			"type_label": "Type",
-			"saved": "Détails de l'espace enregistrés",
 			"save_failed": "Impossible d'enregistrer les détails de l'espace"
 		},
 		"workspace_types": {

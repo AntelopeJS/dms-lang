@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { WorkspaceDetails, WorkspaceType } from '../../types/lang'
-import type { WorkspaceBackup } from '../../composables/translation/useWorkspaceActions'
+import type { WorkspaceBackup } from '../../utils/workspaceBackup'
 import { canonicalLocale, searchLanguages } from '../../utils/languages'
 import LocaleTile from './LocaleTile.vue'
 import FormFieldRow from './form/FormFieldRow.vue'
@@ -74,14 +74,20 @@ function detailsOf(): WorkspaceDetails {
   }
 }
 
+/** The backup with the details as the form leaves them: a field emptied clears the backup's. */
+function importOf(backup: WorkspaceBackup) {
+  return {
+    ...backup,
+    description: description.value.trim() || null,
+    type: type.value ?? null,
+    defaultLocale: base.value,
+  }
+}
+
 function send(id: string): Promise<unknown> {
   if (!props.backup)
     return createWorkspace(id, { code: base.value }, detailsOf())
-  return importWorkspace(id, {
-    ...props.backup,
-    ...detailsOf(),
-    defaultLocale: base.value,
-  })
+  return importWorkspace(id, importOf(props.backup))
 }
 
 async function submit() {
