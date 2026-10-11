@@ -295,7 +295,7 @@ function cleanType(
 }
 
 /** The description and type of a validated request; empty fields are left out. */
-export function cleanDetails(input: DetailsInput): WorkspaceDetails {
+function cleanDetails(input: DetailsInput): WorkspaceDetails {
   return storedDetails({
     description: cleanDescription(input.description),
     type: cleanType(input.type),

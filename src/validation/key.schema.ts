@@ -35,7 +35,3 @@ export const keySchema = {
     locales: localeCodes.optional(),
   }),
 };
-
-export type LocaleTextsInput = z.infer<typeof localeTexts>;
-export type CreateKeyInput = z.infer<typeof keySchema.create>;
-export type UpdateKeyInput = z.infer<typeof keySchema.update>;

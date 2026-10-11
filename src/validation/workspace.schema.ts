@@ -3,7 +3,7 @@ import { errorMessage } from "../utils/errors";
 import { WORKSPACE_TYPES } from "../utils/workspaces";
 
 /** Longest workspace description. */
-export const DESCRIPTION_MAX_LENGTH = 500;
+const DESCRIPTION_MAX_LENGTH = 500;
 const NO_TYPE = "";
 
 const id = z.string().trim().min(1);
@@ -40,6 +40,4 @@ export const workspaceSchema = {
   language: z.object({ workspace: id, code }),
 };
 
-export type LocaleEntryInput = z.infer<typeof localeEntry>;
-export type WorkspaceDetailsInput = z.infer<typeof workspaceSchema.update>;
 export type ImportInput = z.infer<typeof workspaceSchema.import>;
