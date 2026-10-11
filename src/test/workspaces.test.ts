@@ -180,23 +180,7 @@ describe("[integration] workspace data model", () => {
     });
   });
 
-  it("stops a write on a manifest that is not valid JSON instead of wiping it", () => {
-    createWorkspace("core-corrupt", { code: "en" }, { description: "Kept" });
-    const manifest = join(directory, "ws", "core-corrupt", ".workspace.json");
-    writeFileSync(manifest, "{ broken");
-    expectError(
-      () => updateWorkspaceDetails("core-corrupt", { type: "website" }),
-      500,
-      "server_error",
-    );
-    expectError(
-      () => addLocale("core-corrupt", { code: "fr" }),
-      500,
-      "server_error",
-    );
-    expect(readFileSync(manifest, "utf-8")).to.equal("{ broken");
-  });
-
+  describeManifestWrites(() => directory);
   describeLanguages();
   describePublicAccess();
 });
@@ -343,5 +327,29 @@ function describePublicAccess(): void {
       400,
       "invalid_key_path",
     );
+  });
+}
+
+function describeManifestWrites(directoryOf: () => string): void {
+  it("stops a write on a manifest that is not valid JSON instead of wiping it", () => {
+    createWorkspace("core-corrupt", { code: "en" }, { description: "Kept" });
+    const manifest = join(
+      directoryOf(),
+      "ws",
+      "core-corrupt",
+      ".workspace.json",
+    );
+    writeFileSync(manifest, "{ broken");
+    expectError(
+      () => updateWorkspaceDetails("core-corrupt", { type: "website" }),
+      500,
+      "server_error",
+    );
+    expectError(
+      () => addLocale("core-corrupt", { code: "fr" }),
+      500,
+      "server_error",
+    );
+    expect(readFileSync(manifest, "utf-8")).to.equal("{ broken");
   });
 }

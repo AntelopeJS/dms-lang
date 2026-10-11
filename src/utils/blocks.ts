@@ -81,48 +81,49 @@ function keysDetail(
   };
 }
 
-/** The four headline figures of a workspace (Overview). */
-export function workspaceKpis(workspace: string): BlockItems<StatGroupItem> {
-  const flat = resolveFlat(resolveWorkspaceId(workspace));
+function kpiItems(flat: FlatResult): StatGroupItem[] {
   const targets = targetLocales(flat).length;
   const missing = sumMissing(flat);
   const coverage = targetCoverage(flat);
-  return {
-    items: [
-      {
-        id: "languages",
-        icon: "i-ph-globe",
-        tone: "primary",
-        eyebrow: `$${LANG_TEXTS}.kpis.languages`,
-        value: flat.locales.length,
-        detail: counted("kpis.languages_detail", targets),
-      },
-      {
-        id: "keys",
-        icon: "i-ph-key",
-        tone: "neutral",
-        eyebrow: `$${LANG_TEXTS}.kpis.keys`,
-        value: flat.totalKeys,
-        ...keysDetail(flat),
-      },
-      {
-        id: "missing",
-        icon: "i-ph-warning",
-        tone: missingTone(missing, coverage !== undefined),
-        eyebrow: `$${LANG_TEXTS}.kpis.missing`,
-        value: missing,
-        detail: counted("kpis.missing_detail", targets),
-      },
-      {
-        id: "coverage",
-        icon: "i-ph-chart-bar",
-        tone: "primary",
-        eyebrow: `$${LANG_TEXTS}.kpis.coverage`,
-        value: coverage === undefined ? NO_VALUE : percent(coverage),
-        detail: `$${LANG_TEXTS}.kpis.coverage_detail`,
-      },
-    ],
-  };
+  return [
+    {
+      id: "languages",
+      icon: "i-ph-globe",
+      tone: "primary",
+      eyebrow: `$${LANG_TEXTS}.kpis.languages`,
+      value: flat.locales.length,
+      detail: counted("kpis.languages_detail", targets),
+    },
+    {
+      id: "keys",
+      icon: "i-ph-key",
+      tone: "neutral",
+      eyebrow: `$${LANG_TEXTS}.kpis.keys`,
+      value: flat.totalKeys,
+      ...keysDetail(flat),
+    },
+    {
+      id: "missing",
+      icon: "i-ph-warning",
+      tone: missingTone(missing, coverage !== undefined),
+      eyebrow: `$${LANG_TEXTS}.kpis.missing`,
+      value: missing,
+      detail: counted("kpis.missing_detail", targets),
+    },
+    {
+      id: "coverage",
+      icon: "i-ph-chart-bar",
+      tone: "primary",
+      eyebrow: `$${LANG_TEXTS}.kpis.coverage`,
+      value: coverage === undefined ? NO_VALUE : percent(coverage),
+      detail: `$${LANG_TEXTS}.kpis.coverage_detail`,
+    },
+  ];
+}
+
+/** The four headline figures of a workspace (Overview). */
+export function workspaceKpis(workspace: string): BlockItems<StatGroupItem> {
+  return { items: kpiItems(resolveFlat(resolveWorkspaceId(workspace))) };
 }
 
 function folderOf(summary: WorkspaceSummary): BlockText {

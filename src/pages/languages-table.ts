@@ -1,4 +1,5 @@
 import { ButtonVariant } from "@antelopejs/interface-dms/base/types/button";
+import type { CustomRowAction } from "@antelopejs/interface-dms/base/types/row-action";
 import { DefaultDataTypes } from "@antelopejs/interface-dms/base/data-types/default-types";
 import {
   DefaultDisplays,
@@ -53,77 +54,83 @@ const columns = {
   },
 };
 
+/** Translate a target language, edit the base: links to the other pages. */
+const PAGE_LINKS: CustomRowAction[] = [
+  {
+    label: `${TEXTS}.translate`,
+    icon: "i-ph-translate",
+    target: {
+      type: "page",
+      url: `${PAGES_URL}/language?workspace={workspace}&locale={code}`,
+    },
+    rule: TARGET,
+    isVisible: true,
+    showLabel: true,
+    variant: ButtonVariant.outline,
+    isDefault: true,
+  },
+  {
+    label: `${TEXTS}.edit_base`,
+    icon: "i-ph-table",
+    target: {
+      type: "page",
+      url: `${PAGES_URL}/translations?workspace={workspace}`,
+    },
+    rule: EDITABLE_BASE,
+    isVisible: true,
+    showLabel: true,
+    variant: ButtonVariant.outline,
+    isDefault: true,
+  },
+];
+
+/** Make a target the base or remove it: the writes, behind their permission. */
+function managedActions(manageLanguages: Action): CustomRowAction[] {
+  return [
+    {
+      label: `${TEXTS}.make_base`,
+      icon: "i-ph-star",
+      target: {
+        type: "api",
+        url: `${LANGUAGE_URL}/base`,
+        method: "POST",
+        successMessage: "$dms_lang.language_base.done_generic",
+      },
+      confirm: { from: `${LANGUAGE_URL}/base-confirm` },
+      rule: MANAGEABLE,
+      permission: manageLanguages,
+    },
+    {
+      label: `${TEXTS}.remove`,
+      icon: "i-ph-trash",
+      color: "error",
+      target: {
+        type: "api",
+        url: LANGUAGE_URL,
+        method: "DELETE",
+        successMessage: "$dms_lang.language_remove.done",
+      },
+      confirm: { from: `${LANGUAGE_URL}/removal-confirm` },
+      rule: MANAGEABLE,
+      permission: manageLanguages,
+    },
+  ];
+}
+
 /**
  * The languages of the workspace in the URL (`?workspace=`), least complete
- * first with the base pinned on top under any sort: translate, make base,
- * remove.
+ * first with the base pinned on top under any sort (the route sorts, the table
+ * only asks): translate, make base, remove.
  */
 export function languagesTable(manageLanguages: Action) {
   return TableView.fromSource({
     caption: `${TEXTS}.title`,
     fetchUrl: `${LANG_API}/languages?workspace={{query.workspace}}`,
     columns,
-    // The route sorts, so that the base stays pinned on top under any sort.
     capabilities: { sort: true },
     defaultSort: { field: "coverage" },
     layout: "full",
     labelKey: "name",
-    rowActions: {
-      custom: [
-        {
-          label: `${TEXTS}.translate`,
-          icon: "i-ph-translate",
-          target: {
-            type: "page",
-            url: `${PAGES_URL}/language?workspace={workspace}&locale={code}`,
-          },
-          rule: TARGET,
-          isVisible: true,
-          showLabel: true,
-          variant: ButtonVariant.outline,
-          isDefault: true,
-        },
-        {
-          label: `${TEXTS}.edit_base`,
-          icon: "i-ph-table",
-          target: {
-            type: "page",
-            url: `${PAGES_URL}/translations?workspace={workspace}`,
-          },
-          rule: EDITABLE_BASE,
-          isVisible: true,
-          showLabel: true,
-          variant: ButtonVariant.outline,
-          isDefault: true,
-        },
-        {
-          label: `${TEXTS}.make_base`,
-          icon: "i-ph-star",
-          target: {
-            type: "api",
-            url: `${LANGUAGE_URL}/base`,
-            method: "POST",
-            successMessage: "$dms_lang.language_base.done_generic",
-          },
-          confirm: { from: `${LANGUAGE_URL}/base-confirm` },
-          rule: MANAGEABLE,
-          permission: manageLanguages,
-        },
-        {
-          label: `${TEXTS}.remove`,
-          icon: "i-ph-trash",
-          color: "error",
-          target: {
-            type: "api",
-            url: LANGUAGE_URL,
-            method: "DELETE",
-            successMessage: "$dms_lang.language_remove.done",
-          },
-          confirm: { from: `${LANGUAGE_URL}/removal-confirm` },
-          rule: MANAGEABLE,
-          permission: manageLanguages,
-        },
-      ],
-    },
+    rowActions: { custom: [...PAGE_LINKS, ...managedActions(manageLanguages)] },
   });
 }

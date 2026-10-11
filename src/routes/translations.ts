@@ -99,7 +99,23 @@ function keyResult(workspace: string, path: string): KeyResult {
   return { row: resolveRow(workspace, path) };
 }
 
-function permissionIds() {
+/** The permission of each write, for the frontend to show only what the user may do. */
+interface PermissionIds {
+  editTranslations: string | undefined;
+  manageKeys: string | undefined;
+  manageLanguages: string | undefined;
+  createWorkspace: string | undefined;
+  renameWorkspace: string | undefined;
+  deleteWorkspace: string | undefined;
+  editWorkspace: string | undefined;
+}
+
+/** A workspace as /workspaces lists it: with its public URL template when it is served. */
+interface ListedWorkspace extends WorkspaceSummary {
+  publicUrl?: string;
+}
+
+function permissionIds(): PermissionIds {
   return {
     editTranslations: editTranslationsAction.permissionId,
     manageKeys: manageKeysAction.permissionId,
@@ -111,8 +127,10 @@ function permissionIds() {
   };
 }
 
-function withPublicUrl(origin: string) {
-  return (workspace: WorkspaceSummary) => {
+function withPublicUrl(
+  origin: string,
+): (workspace: WorkspaceSummary) => ListedWorkspace {
+  return (workspace) => {
     const publicUrl = publicLocaleUrl(origin, workspace);
     return publicUrl === undefined ? workspace : { ...workspace, publicUrl };
   };
