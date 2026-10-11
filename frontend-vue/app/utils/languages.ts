@@ -183,8 +183,13 @@ function startsWords(name: string, needleWords: string[]): boolean {
   )
 }
 
+/** Whether a search is written as a code with subtags (`pt-BR`, `zh_Hant`), valid or not. */
+export function hasSubtags(search: string): boolean {
+  return SUBTAG_SEPARATOR.test(search)
+}
+
 function isSpelledCode(search: string): boolean {
-  return SUBTAG_SEPARATOR.test(search) && typedLocaleCode(search) !== null
+  return hasSubtags(search) && typedLocaleCode(search) !== null
 }
 
 function rankFor(candidate: LanguageCandidate, needle: string) {

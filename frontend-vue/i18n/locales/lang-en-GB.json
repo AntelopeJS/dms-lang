@@ -504,9 +504,7 @@
 			"title": "Add a language to {workspace}",
 			"description": "Creates an empty file. Every key starts as missing and shows the {base} text as reference.",
 			"search": "Search languages or type a code (pt-BR)",
-			"suggested": "Suggested · {n} match | Suggested · {n} matches",
 			"already_added": "Already in this workspace",
-			"added": "Added",
 			"added_elsewhere": "{name} · {code} was just added to this workspace from elsewhere. Pick another language.",
 			"exists_title": "{name} · {code} is already in this workspace",
 			"exists": "Someone added it in the meantime. The page now shows it.",
@@ -519,7 +517,9 @@
 			"same_language": "This workspace already has {codes}. {name} · {code} becomes a separate language, translated on its own.",
 			"done": "{name} ({code}) added · no key to translate | {name} ({code}) added · {count} key to translate | {name} ({code}) added · {count} keys to translate",
 			"locked_title": "Languages of this workspace can't be changed here",
-			"locked": "Project files and module languages follow the files on disk. Create a workspace to manage its languages here."
+			"locked": "Project files and module languages follow the files on disk. Create a workspace to manage its languages here.",
+			"label": "Language",
+			"pick": "Pick a language"
 		},
 		"language_remove": {
 			"title": "Remove {name} from {workspace}?",

@@ -1,3 +1,6 @@
+/** The HTTP method an app reads an added workspace's public files with. */
+export const PUBLIC_URL_METHOD = 'GET'
+
 /** `kind` keeps the order of the server: project files, modules, then the workspaces created. */
 export type WorkspaceSort = 'kind' | 'name' | 'coverage'
 

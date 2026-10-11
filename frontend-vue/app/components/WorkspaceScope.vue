@@ -5,11 +5,8 @@ import type { DropdownMenuItem } from '@nuxt/ui'
 import type { WorkspaceSummary } from '../types/lang'
 import LocaleTile from '../build/components/LocaleTile.vue'
 
-const KIND_ICONS: Record<WorkspaceSummary['kind'], string> = {
-  default: 'i-ph-file-code',
-  added: 'i-ph-stack',
-  modules: 'i-ph-puzzle-piece',
-}
+/** Marks the workspace shown in the menu. */
+const CURRENT_ICON = 'i-ph-check'
 /** From this many workspaces on, the menu gets a filter field. */
 const MENU_FILTER_THRESHOLD = 7
 const MENU_FILTER_FIELDS = ['label', 'description', 'workspaceId', 'summary']
@@ -43,7 +40,7 @@ const router = useDmsRouter()
 const links = useLangLinks()
 const { nativeName } = useLocaleNames()
 const { addLanguage } = useLanguageActions()
-const { typeIcon, typeLabel } = useWorkspaceTypes()
+const { typeIcon, typeLabel, kindIcon } = useWorkspaceTypes()
 
 function workspaceLabel(workspace: WorkspaceSummary | null): string {
   if (!workspace) return ''
@@ -53,7 +50,7 @@ function workspaceLabel(workspace: WorkspaceSummary | null): string {
 }
 
 function trailingIconOf(workspace: WorkspaceSummary): string | undefined {
-  if (workspace.id === current.value?.id) return 'i-ph-check'
+  if (workspace.id === current.value?.id) return CURRENT_ICON
   return workspace.editable ? undefined : 'i-ph-lock-simple'
 }
 
@@ -71,9 +68,7 @@ const switchItems = computed<DropdownMenuItem[]>(() => [
   ...workspaces.value.map((workspace) => ({
     label: workspaceLabel(workspace),
     description: workspaceDetail(workspace),
-    icon: workspace.type
-      ? typeIcon(workspace.type)
-      : KIND_ICONS[workspace.kind],
+    icon: workspace.type ? typeIcon(workspace.type) : kindIcon(workspace.kind),
     slot: 'workspace' as const,
     trailingIcon: trailingIconOf(workspace),
     to: switchLink(workspace.id),
@@ -144,13 +139,43 @@ const addKeyLink = computed(() =>
   links.translations({ [PAGE_ACTION_QUERY]: PAGE_ACTIONS.addKey }),
 )
 
+const hasNoKey = useFirstRun()
 const isFirstRun = computed(
-  () =>
-    currentPage.value === 'overview' &&
-    isResolved.value &&
-    isAdded.value &&
-    flat.value.totalKeys === 0,
+  () => currentPage.value === 'overview' && hasNoKey.value,
 )
+const firstRunSteps = computed(() => [
+  {
+    id: 'created',
+    label: t('dms_lang.first_run.created', {
+      base: nativeName(flat.value.defaultLocale),
+    }),
+    state: 'ok' as const,
+  },
+  {
+    id: 'keys',
+    label: t('dms_lang.first_run.keys'),
+    state: 'pending' as const,
+  },
+  {
+    id: 'languages',
+    label: t('dms_lang.first_run.languages'),
+    state:
+      flat.value.locales.length > 1 ? ('ok' as const) : ('pending' as const),
+  },
+])
+const firstRunActions = computed(() => [
+  {
+    label: t('dms_lang.first_run.add_key'),
+    icon: 'i-ph-plus',
+    to: addKeyLink.value,
+  },
+  {
+    label: t('dms_lang.first_run.add_language'),
+    color: 'neutral' as const,
+    variant: 'outline' as const,
+    onClick: () => void addLanguage(),
+  },
+])
 
 // A page opened without `?workspace=` names the one it shows: the one
 // remembered, or the project files once that one turns out to be gone.
@@ -246,7 +271,7 @@ watch(
             :name="item.trailingIcon"
             class="size-4 shrink-0"
             :class="
-              item.trailingIcon === 'i-ph-check'
+              item.trailingIcon === CURRENT_ICON
                 ? 'text-primary'
                 : 'text-dimmed'
             "
@@ -258,7 +283,7 @@ watch(
           :aria-label="$t('dms_lang.scope.switch')"
         >
           <DmsIconWell
-            :icon="current ? KIND_ICONS[current.kind] : 'i-ph-stack'"
+            :icon="current ? kindIcon(current.kind) : 'i-ph-stack'"
             :tone="!current ? 'neutral' : isEditable ? 'primary' : 'warning'"
             size="sm"
           />
@@ -355,52 +380,20 @@ watch(
       :description="$t('dms_lang.scope.server_read_only_description')"
     />
 
-    <div
-      v-if="isFirstRun"
-      class="dms-card flex flex-col items-center gap-3 px-4 py-8 text-center"
-    >
-      <p class="text-highlighted text-base font-semibold">
-        {{ $t('dms_lang.first_run.title', { name: current?.id }) }}
-      </p>
-      <p class="text-muted max-w-prose text-sm">
-        {{ $t('dms_lang.first_run.description') }}
-      </p>
-      <DmsCheckList
-        size="sm"
-        :items="[
-          {
-            id: 'created',
-            label: $t('dms_lang.first_run.created', {
-              base: nativeName(flat.defaultLocale),
-            }),
-            state: 'ok',
-          },
-          {
-            id: 'keys',
-            label: $t('dms_lang.first_run.keys'),
-            state: 'pending',
-          },
-          {
-            id: 'languages',
-            label: $t('dms_lang.first_run.languages'),
-            state: flat.locales.length > 1 ? 'ok' : 'pending',
-          },
-        ]"
-      />
-      <div class="flex flex-wrap justify-center gap-2">
-        <UButton
-          icon="i-ph-plus"
-          :label="$t('dms_lang.first_run.add_key')"
-          :to="addKeyLink"
-        />
-        <UButton
-          color="neutral"
-          variant="outline"
-          :label="$t('dms_lang.first_run.add_language')"
-          @click="addLanguage()"
-        />
-      </div>
-    </div>
+    <DmsCard v-if="isFirstRun" :padded="false">
+      <DmsEmptyState
+        icon="i-ph-rocket-launch"
+        tone="primary"
+        size="lg"
+        :title="$t('dms_lang.first_run.title', { name: current?.id })"
+        :description="$t('dms_lang.first_run.description')"
+        :actions="firstRunActions"
+      >
+        <template #content>
+          <DmsCheckList size="sm" :items="firstRunSteps" />
+        </template>
+      </DmsEmptyState>
+    </DmsCard>
   </div>
 </template>
 

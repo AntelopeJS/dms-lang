@@ -69,7 +69,6 @@ const {
 const { nameAmong, fullName } = useLocaleNames()
 const { addKey } = useKeyActions()
 const { addLanguage } = useLanguageActions()
-const { downloadFile } = useWorkspaceActions()
 const { route, pageAction, clearPageAction, selectWorkspace } =
   useWorkspaceRoute()
 const router = useDmsRouter()
@@ -333,7 +332,7 @@ function exportCsv(isView: boolean) {
     isView ? rows.value : flat.value.rows,
     locales,
   )
-  downloadFile(
+  downloadText(
     exportFileName(selectedWorkspace.value, isView ? locales : undefined),
     content,
     'text/csv;charset=utf-8',

@@ -2,7 +2,8 @@
 import type { WorkspaceDetails, WorkspaceType } from '../../types/lang'
 import type { WorkspaceBackup } from '../../utils/workspaceBackup'
 import { canonicalLocale, searchLanguages } from '../../utils/languages'
-import LocaleTile from './LocaleTile.vue'
+import { PUBLIC_URL_METHOD } from '../../utils/workspaces'
+import LanguagePicker from './LanguagePicker.vue'
 import FormFieldRow from './form/FormFieldRow.vue'
 import FormRows from './form/FormRows.vue'
 import WorkspaceDetailsFields from './form/WorkspaceDetailsFields.vue'
@@ -21,7 +22,7 @@ const { t } = useI18n()
 const { createWorkspace } = useI18nWorkspaces()
 const { importWorkspace } = useWorkspaceApi()
 const { tryMutate } = useMutationToast()
-const { fullName, findLanguages, languageOption } = useLocaleNames()
+const { findLanguages, languageOption } = useLocaleNames()
 const links = useLangLinks()
 
 const backupCodes = computed(() =>
@@ -44,15 +45,10 @@ const type = ref<WorkspaceType | undefined>(props.backup?.type)
 const isSubmitting = ref(false)
 const check = useWorkspaceNameCheck(name)
 
-const languageItems = computed(() =>
-  (props.backup
+const languageOptions = computed(() =>
+  props.backup
     ? searchLanguages(backupCodes.value.map(languageOption), baseSearch.value)
-    : findLanguages(baseSearch.value)
-  ).map((option) => ({
-    label: option.name,
-    value: option.code,
-    description: option.localName,
-  })),
+    : findLanguages(baseSearch.value),
 )
 
 const previewUrl = computed(() =>
@@ -144,41 +140,12 @@ async function submit() {
             required
           >
             <template #default="{ id }">
-              <USelectMenu
+              <LanguagePicker
                 :id="id"
                 v-model="base"
-                v-model:search-term="baseSearch"
-                :items="languageItems"
-                value-key="value"
-                ignore-filter
-                :search-input="{
-                  placeholder: $t('dms_lang.language_add.search'),
-                }"
-                class="w-full"
-                :ui="{ content: 'min-w-80' }"
-              >
-                <template #leading>
-                  <LocaleTile :code="base" size="sm" />
-                </template>
-                <template #default>
-                  <span class="flex min-w-0 items-center gap-1.5">
-                    <span class="text-highlighted truncate">
-                      {{ fullName(base) }}
-                    </span>
-                    <span class="text-dimmed font-mono text-xs">
-                      · {{ base }}
-                    </span>
-                  </span>
-                </template>
-                <template #item-trailing="{ item }">
-                  <span class="text-dimmed font-mono text-xs">
-                    {{ item.value }}
-                  </span>
-                </template>
-                <template #empty>
-                  {{ $t('dms_lang.language_add.no_match') }}
-                </template>
-              </USelectMenu>
+                v-model:search="baseSearch"
+                :options="languageOptions"
+              />
             </template>
           </FormFieldRow>
           <WorkspaceDetailsFields
@@ -189,7 +156,12 @@ async function submit() {
         <div
           class="border-default flex items-center gap-2.5 rounded-md border border-dashed px-3 py-2"
         >
-          <DmsStatusPill tone="success" size="sm" label="GET" :dot="'none'" />
+          <DmsStatusPill
+            tone="success"
+            size="sm"
+            :label="PUBLIC_URL_METHOD"
+            dot="none"
+          />
           <code class="text-muted min-w-0 truncate font-mono text-xs">
             {{ previewUrl }}
           </code>

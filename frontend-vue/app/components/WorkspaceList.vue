@@ -2,7 +2,11 @@
 import UButton from '@nuxt/ui/components/Button.vue'
 import type { WorkspaceStats } from '../types/lang'
 import { COVERAGE_TEXT_CLASSES, coverageTone } from '../utils/translations'
-import { matchesWorkspace, sortWorkspaces } from '../utils/workspaces'
+import {
+  PUBLIC_URL_METHOD,
+  matchesWorkspace,
+  sortWorkspaces,
+} from '../utils/workspaces'
 import type { WorkspaceSort } from '../utils/workspaces'
 import LocaleTile from '../build/components/LocaleTile.vue'
 
@@ -19,11 +23,6 @@ interface WorkspacePill {
   label: string
 }
 
-const KIND_ICONS: Record<WorkspaceStats['kind'], string> = {
-  default: 'i-ph-file-code',
-  added: 'i-ph-stack',
-  modules: 'i-ph-puzzle-piece',
-}
 const EDITABLE_CONFIG = `"dms-lang": {\n  config: { editable: true },\n}`
 /** Below this many workspaces, searching and sorting them is noise. */
 const TOOLBAR_THRESHOLD = 4
@@ -40,7 +39,7 @@ const { formatCount } = useLangFormat()
 const { fetchSummary, selectedWorkspace, editable, fetchWorkspaces } =
   useI18nWorkspaces()
 const { createWorkspace, importWorkspace } = useWorkspaceActions()
-const { typeIcon, typeLabel } = useWorkspaceTypes()
+const { typeIcon, typeLabel, kindIcon } = useWorkspaceTypes()
 const { pageAction, clearPageAction, selectWorkspace } = useWorkspaceRoute()
 const { allows } = useWorkspaceContext()
 const links = useLangLinks()
@@ -73,7 +72,7 @@ const shown = computed(() =>
 )
 
 function isWorkspaceSort(value: unknown): value is WorkspaceSort {
-  return typeof value === 'string' && value in SORT_LABELS
+  return typeof value === 'string' && Object.hasOwn(SORT_LABELS, value)
 }
 
 function readSort(): WorkspaceSort | null {
@@ -315,7 +314,7 @@ onMounted(() => {
         <div class="space-y-4 p-4">
           <div class="flex items-start gap-3">
             <DmsIconWell
-              :icon="KIND_ICONS[workspace.kind]"
+              :icon="kindIcon(workspace.kind)"
               :tone="workspace.kind === 'modules' ? 'warning' : 'primary'"
               size="lg"
             />
@@ -403,7 +402,12 @@ onMounted(() => {
         <template #footer>
           <div class="flex items-center gap-2.5">
             <template v-if="workspace.kind === 'added'">
-              <DmsStatusPill tone="success" size="sm" label="GET" dot="none" />
+              <DmsStatusPill
+                tone="success"
+                size="sm"
+                :label="PUBLIC_URL_METHOD"
+                dot="none"
+              />
               <code
                 class="text-muted min-w-0 flex-1 truncate font-mono text-xs"
               >

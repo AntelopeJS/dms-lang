@@ -1,6 +1,10 @@
 import { h } from 'vue'
 import UButton from '@nuxt/ui/components/Button.vue'
-import type { WorkspaceSummary, WorkspaceType } from '../../types/lang'
+import type {
+  WorkspaceKind,
+  WorkspaceSummary,
+  WorkspaceType,
+} from '../../types/lang'
 import {
   BACKUP_FORMAT,
   parseBackup,
@@ -11,8 +15,6 @@ import {
 import WorkspaceCreateModal from '../../build/components/WorkspaceCreateModal.vue'
 import WorkspaceRenameModal from '../../build/components/WorkspaceRenameModal.vue'
 
-const JSON_INDENT = 2
-const REVOKE_DELAY_MS = 1000
 const JSON_FILE_TYPES = '.json,application/json'
 const WORKSPACE_DESCRIPTION_MAX = 500
 const API_BASE = '/api/lang/translations'
@@ -29,18 +31,19 @@ const TYPE_ICONS: Record<WorkspaceType, string> = {
   other: 'i-ph-shapes',
 }
 
+const KIND_ICONS: Record<WorkspaceKind, string> = {
+  default: 'i-ph-file-code',
+  added: 'i-ph-stack',
+  modules: 'i-ph-puzzle-piece',
+}
+
+function isWorkspaceType(value: unknown): value is WorkspaceType {
+  return typeof value === 'string' && Object.hasOwn(TYPE_ICONS, value)
+}
+
 interface DeleteImpact {
   files: number
   strings: number
-}
-
-function downloadFile(name: string, content: string, type: string): void {
-  const url = URL.createObjectURL(new Blob([content], { type }))
-  const link = document.createElement('a')
-  link.href = url
-  link.download = name
-  link.click()
-  setTimeout(() => URL.revokeObjectURL(url), REVOKE_DELAY_MS)
 }
 
 function pickFile(accept: string): Promise<File | null> {
@@ -54,7 +57,7 @@ function pickFile(accept: string): Promise<File | null> {
   })
 }
 
-/** The kinds of app a workspace serves, as a picker offers them. */
+/** The kinds of app a workspace serves, as a picker offers them, and the icon of each kind of workspace. */
 export const useWorkspaceTypes = () => {
   const { t } = useI18n()
   const typeItems = computed(() =>
@@ -66,9 +69,7 @@ export const useWorkspaceTypes = () => {
   )
   const typeIcon = (type: WorkspaceType) => TYPE_ICONS[type]
   const typeOf = (value: unknown): WorkspaceType | undefined =>
-    typeof value === 'string' && value in TYPE_ICONS
-      ? (value as WorkspaceType)
-      : undefined
+    isWorkspaceType(value) ? value : undefined
   const typeLabel = (type: WorkspaceType) =>
     t(`dms_lang.workspace_types.${type}`)
   return {
@@ -76,6 +77,7 @@ export const useWorkspaceTypes = () => {
     typeIcon,
     typeLabel,
     typeOf,
+    kindIcon: (kind: WorkspaceKind) => KIND_ICONS[kind],
     descriptionMax: WORKSPACE_DESCRIPTION_MAX,
   }
 }
@@ -171,12 +173,7 @@ export const useWorkspaceActions = () => {
 
   async function downloadBackup(workspace: string): Promise<void> {
     try {
-      const backup = await api.fetchBackup(workspace)
-      downloadFile(
-        `${workspace}.json`,
-        JSON.stringify(backup, null, JSON_INDENT),
-        'application/json',
-      )
+      downloadJson(`${workspace}.json`, await api.fetchBackup(workspace))
     } catch (error) {
       reportFailure(error, { title: t('dms_lang.errors.export_failed') })
     }
@@ -245,6 +242,5 @@ export const useWorkspaceActions = () => {
     updateDetails,
     deleteWorkspace,
     downloadBackup,
-    downloadFile,
   }
 }

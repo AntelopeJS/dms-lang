@@ -3,6 +3,7 @@ import type { FlatTranslationRow } from '../../types/lang'
 import type { QueueSession } from '../../composables/translation/useQueueSession'
 import type { KeySaveFailureKind } from '../../utils/keySaveErrors'
 import { savedText as expectedTextOf, storedText } from '../../utils/keySaves'
+import { DRAFT_SEPARATOR } from '../../utils/queueDrafts'
 import type { QueueEditing } from './useQueueEditing'
 import { useKeySaves, type KeyWriteFailed } from './useKeySaves'
 import { useQueueToasts } from './useQueueToasts'
@@ -49,10 +50,8 @@ type SaveFailureHandler = (
   outcome: KeyWriteFailed,
 ) => void
 
-const ARM_SEPARATOR = '\n'
-
 function armId(key: string, value: string): string {
-  return [key, value].join(ARM_SEPARATOR)
+  return [key, value].join(DRAFT_SEPARATOR)
 }
 
 function isArmedFor(context: QueueSaveContext, key: string): boolean {

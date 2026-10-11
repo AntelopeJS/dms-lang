@@ -16,7 +16,6 @@ import { useQueueShortcuts } from '../build/composables/useQueueShortcuts'
 import { useQueueToasts } from '../build/composables/useQueueToasts'
 
 const UP_NEXT = 4
-const JSON_INDENT = 2
 const URL_SYNC_MS = 400
 const LANGUAGE_SUGGESTIONS = 6
 
@@ -30,7 +29,6 @@ const { canManage, isUnknown, allows } = useWorkspaceContext()
 const { nameAmong } = useLocaleNames()
 const { reportFailure } = useMutationToast()
 const { removeLanguage, makeBase } = useLanguageActions()
-const { downloadFile } = useWorkspaceActions()
 const links = useLangLinks()
 const router = useDmsRouter()
 const toasts = useQueueToasts()
@@ -82,11 +80,7 @@ const unknownActions = computed(() => [
 async function download() {
   try {
     const messages = await exportWorkspace(selectedWorkspace.value)
-    downloadFile(
-      `${locale.value}.json`,
-      JSON.stringify(messages[locale.value] ?? {}, null, JSON_INDENT),
-      'application/json',
-    )
+    downloadJson(`${locale.value}.json`, messages[locale.value] ?? {})
   } catch (error) {
     reportFailure(error, { title: t('dms_lang.errors.export_failed') })
   }

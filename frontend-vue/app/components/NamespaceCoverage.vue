@@ -28,6 +28,7 @@ const links = useLangLinks()
 const { canManage, isResolved, isUnknown } = useWorkspaceContext()
 const { nameAmong } = useLocaleNames()
 const { addLanguage } = useLanguageActions()
+const isFirstRun = useFirstRun()
 
 function missingCount(code: string): number {
   return flat.value.localeMissing[code] ?? 0
@@ -133,7 +134,7 @@ usePageHeaderActions(() => [
 
 <template>
   <DmsCard
-    v-if="!isUnknown"
+    v-if="!isUnknown && !isFirstRun"
     :padded="false"
     :title="$t('dms_lang.namespaces.title')"
   >
@@ -152,16 +153,16 @@ usePageHeaderActions(() => [
       <USkeleton v-for="index in 4" :key="index" class="h-8 w-full" />
     </div>
 
-    <p
+    <DmsEmptyState
       v-else-if="!locales.length || !namespaces.length"
-      class="text-muted px-4 py-8 text-center text-sm"
-    >
-      {{
+      size="sm"
+      :icon="namespaces.length ? 'i-ph-translate' : 'i-ph-key'"
+      :title="
         namespaces.length
           ? $t('dms_lang.namespaces.no_targets')
           : $t('dms_lang.namespaces.no_keys')
-      }}
-    </p>
+      "
+    />
 
     <div v-else class="overflow-x-auto px-4 pt-3 pb-4">
       <div
