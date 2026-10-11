@@ -25,7 +25,10 @@ interface Props {
   moduleRows?: FlatTranslationRow[]
 }
 
-/** Languages shown before the "more languages" toggle. */
+interface Emits {
+  close: [added: string[]]
+}
+
 const VISIBLE_LOCALES = 3
 
 const CONFLICT_LABELS: Record<KeyPathConflict['kind'], string> = {
@@ -41,7 +44,7 @@ const MODULE_CONFLICT_LABELS: Record<KeyPathConflict['kind'], string> = {
 }
 
 const props = defineProps<Props>()
-const emit = defineEmits<{ close: [added: string[]] }>()
+const emit = defineEmits<Emits>()
 
 const { t } = useI18n()
 const { errorMessage } = useMutationToast()

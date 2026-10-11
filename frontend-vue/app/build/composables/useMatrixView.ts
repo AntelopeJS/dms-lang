@@ -1,5 +1,6 @@
 import { StorageSerializers, useStorage } from '@vueuse/core'
 import { useDmsRouter } from '#dms/frontend-module'
+import type { FlatTranslations } from '../../types/lang'
 import {
   EMPTY_FILTERS,
   parseFilter,
@@ -8,7 +9,6 @@ import {
 
 type FilterQuery = Record<keyof MatrixFilterState, string>
 
-/** The query names of the filters. */
 const QUERY_NAMES: FilterQuery = {
   filter: 'filter',
   missingIn: 'missingIn',
@@ -52,12 +52,107 @@ interface StoredColumns {
   hidden: string[]
 }
 
-function columnsOf(stored: Partial<StoredColumns> | null): StoredColumns | null {
+function columnsOf(
+  stored: Partial<StoredColumns> | null,
+): StoredColumns | null {
   if (!Array.isArray(stored?.shown)) return null
   return {
     shown: stored.shown.map(String),
     hidden: Array.isArray(stored.hidden) ? stored.hidden.map(String) : [],
   }
+}
+
+function defaultOrder(codes: string[], base: string): string[] {
+  return [...codes].sort((a, b) => Number(b === base) - Number(a === base))
+}
+
+function restoredOrder(
+  codes: string[],
+  base: string,
+  stored: StoredColumns | null,
+): string[] {
+  if (!stored) return defaultOrder(codes, base)
+  const known = new Set([...stored.shown, ...stored.hidden])
+  return [
+    ...stored.shown.filter((code) => codes.includes(code)),
+    ...codes.filter((code) => !known.has(code)),
+  ]
+}
+
+function sanitizedFilters(
+  filters: MatrixFilterState,
+  flat: FlatTranslations,
+  namespaces: string[],
+): MatrixFilterState | null {
+  const { missingIn, namespace } = filters
+  const keepsLanguage =
+    !missingIn ||
+    (flat.locales.includes(missingIn) && missingIn !== flat.defaultLocale)
+  const keepsNamespace = !namespace || namespaces.includes(namespace)
+  if (keepsLanguage && keepsNamespace) return null
+  return {
+    ...filters,
+    missingIn: keepsLanguage ? missingIn : '',
+    namespace: keepsNamespace ? namespace : '',
+  }
+}
+
+function useFilterQuery() {
+  const { route } = useWorkspaceRoute()
+  const router = useDmsRouter()
+  const filters = ref<MatrixFilterState>(filtersOf(route.query))
+  watch(
+    () => route.query,
+    (query) => {
+      const next = filtersOf(query)
+      if (!sameFilters(next, filters.value)) filters.value = next
+    },
+  )
+  watch(
+    filters,
+    (next) => {
+      const link = linkWithQuery(route.path, {
+        ...route.query,
+        ...queryOf(next),
+      })
+      if (link !== linkWithQuery(route.path, route.query))
+        void router.replace(link)
+    },
+    { deep: true },
+  )
+  return filters
+}
+
+function useColumnOrder() {
+  const { selectedWorkspace } = useI18nWorkspaces()
+  const { flat } = useWorkspaceFlat()
+  const order = ref<string[]>([])
+  const stored = useStorage<Partial<StoredColumns> | null>(
+    () => `${COLUMNS_STORAGE}${selectedWorkspace.value}`,
+    null,
+    undefined,
+    { serializer: StorageSerializers.object },
+  )
+  watch(
+    () => `${selectedWorkspace.value}|${flat.value.locales.join(',')}`,
+    () => {
+      const { locales, defaultLocale } = flat.value
+      order.value = restoredOrder(
+        locales,
+        defaultLocale,
+        columnsOf(stored.value),
+      )
+    },
+    { immediate: true },
+  )
+  function saveOrder(next: string[]) {
+    order.value = next
+    stored.value = {
+      shown: next,
+      hidden: flat.value.locales.filter((code) => !next.includes(code)),
+    }
+  }
+  return { order, saveOrder }
 }
 
 /**
@@ -67,93 +162,20 @@ function columnsOf(stored: Partial<StoredColumns> | null): StoredColumns | null 
  * in this browser.
  */
 export function useMatrixView() {
-  const { route } = useWorkspaceRoute()
-  const router = useDmsRouter()
-  const { selectedWorkspace } = useI18nWorkspaces()
   const { flat } = useWorkspaceFlat()
+  const filters = useFilterQuery()
 
-  const filters = ref<MatrixFilterState>(filtersOf(route.query))
-  const order = ref<string[]>([])
-  const storedColumns = useStorage<Partial<StoredColumns> | null>(
-    () => `${COLUMNS_STORAGE}${selectedWorkspace.value}`,
-    null,
-    undefined,
-    { serializer: StorageSerializers.object },
-  )
-
-  watch(
-    () => route.query,
-    (query) => {
-      const next = filtersOf(query)
-      if (!sameFilters(next, filters.value)) filters.value = next
-    },
-  )
-
-  watch(
+  return {
     filters,
-    (next) => {
-      const query = { ...route.query, ...queryOf(next) }
-      const link = linkWithQuery(route.path, query)
-      const current = linkWithQuery(route.path, route.query)
-      if (link !== current) void router.replace(link)
+    ...useColumnOrder(),
+    /** Drops filters the workspace cannot have (a language or a namespace it lacks). */
+    sanitize(namespaces: string[]) {
+      if (!flat.value.locales.length) return
+      const next = sanitizedFilters(filters.value, flat.value, namespaces)
+      if (next) filters.value = next
     },
-    { deep: true },
-  )
-
-  function defaultOrder(codes: string[]): string[] {
-    const base = flat.value.defaultLocale
-    return [...codes].sort((a, b) => (a === base ? -1 : b === base ? 1 : 0))
+    resetFilters() {
+      filters.value = { ...EMPTY_FILTERS }
+    },
   }
-
-  /** The stored columns, then the languages added since (hidden ones stay hidden). */
-  function restoreOrder() {
-    const codes = flat.value.locales
-    const stored = columnsOf(storedColumns.value)
-    if (!stored) {
-      order.value = defaultOrder(codes)
-      return
-    }
-    const known = new Set([...stored.shown, ...stored.hidden])
-    order.value = [
-      ...stored.shown.filter((code) => codes.includes(code)),
-      ...codes.filter((code) => !known.has(code)),
-    ]
-  }
-
-  function saveOrder(next: string[]) {
-    order.value = next
-    storedColumns.value = {
-      shown: next,
-      hidden: flat.value.locales.filter((code) => !next.includes(code)),
-    }
-  }
-
-  watch(
-    () => `${selectedWorkspace.value}|${flat.value.locales.join(',')}`,
-    restoreOrder,
-    { immediate: true },
-  )
-
-  /** Drops filters the workspace cannot have (a language or a namespace it lacks). */
-  function sanitize(namespaces: string[]) {
-    if (!flat.value.locales.length) return
-    const { missingIn, namespace } = filters.value
-    const keepsLanguage =
-      !missingIn ||
-      (flat.value.locales.includes(missingIn) &&
-        missingIn !== flat.value.defaultLocale)
-    const keepsNamespace = !namespace || namespaces.includes(namespace)
-    if (keepsLanguage && keepsNamespace) return
-    filters.value = {
-      ...filters.value,
-      missingIn: keepsLanguage ? missingIn : '',
-      namespace: keepsNamespace ? namespace : '',
-    }
-  }
-
-  function resetFilters() {
-    filters.value = { ...EMPTY_FILTERS }
-  }
-
-  return { filters, order, saveOrder, sanitize, resetFilters }
 }

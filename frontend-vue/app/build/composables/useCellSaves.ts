@@ -35,6 +35,11 @@ export interface CellAddress {
   code: string
 }
 
+interface KeptText extends CellAddress {
+  draft: string
+  message: string
+}
+
 interface CellStore {
   states: Ref<Record<string, SaveState>>
   pending: Ref<Record<string, string>>
@@ -148,7 +153,6 @@ async function queueSave(
   settle(context, address, draft, outcome)
 }
 
-/** The toasts of a cell that could not be saved, with the cell's own choices. */
 function useCellReports(
   retry: (address: CellAddress) => void,
   discard: (address: CellAddress) => void,
@@ -187,7 +191,6 @@ function useCellReports(
   }
 }
 
-/** What each cell shows while its texts are being saved or could not be. */
 function useCellView(
   store: CellStore,
   states: ReturnType<typeof useSaveStates>,
@@ -216,14 +219,12 @@ function useCellView(
   }
 }
 
-/** The edits of matrix cells: what each one began on. */
 function useCellStarts(
   store: CellStore,
   rowOf: (address: CellAddress) => FlatTranslationRow | undefined,
 ) {
   const starts = useEditStarts()
 
-  /** What a save sent now would replace: what the cell shows. */
   function expectedNow(address: CellAddress): ExpectedText {
     const id = idOfCell(address)
     const failure = store.failures.value[id]
@@ -234,7 +235,6 @@ function useCellStarts(
     return row ? savedText(row.values[address.code]) : undefined
   }
 
-  /** The text the edit began on, ending the edit. */
   function take(address: CellAddress): ExpectedText {
     const id = idOfCell(address)
     const expected = starts.has(id) ? starts.of(id) : expectedNow(address)
@@ -245,10 +245,6 @@ function useCellStarts(
   return { starts, expectedNow, take }
 }
 
-/**
- * The other's text when a cell changed elsewhere since its edit began (`''`:
- * their change removed it); `undefined` while nothing changed.
- */
 function changedElsewhere(
   store: CellStore,
   starts: ReturnType<typeof useEditStarts>,
@@ -259,6 +255,36 @@ function changedElsewhere(
   if (!starts.has(id) || id in store.pending.value || !row) return undefined
   const current = savedText(row.values[address.code])
   return current === starts.of(id) ? undefined : (current ?? '')
+}
+
+function keepCell(
+  context: CellContext,
+  starts: ReturnType<typeof useEditStarts>,
+  kept: KeptText,
+) {
+  const id = idOfCell(kept)
+  const expected = starts.has(id) ? starts.of(id) : undefined
+  starts.end(id)
+  const { draft, message } = kept
+  setFailure(context.store, id, { draft, message, isConflict: false, expected })
+  context.states.setState(id, 'error')
+}
+
+function retryCell(context: CellContext, address: CellAddress) {
+  const failure = context.store.failures.value[idOfCell(address)]
+  if (failure) void queueSave(context, address, failure.draft, failure.expected)
+}
+
+function discardCell(context: CellContext, address: CellAddress) {
+  const id = idOfCell(address)
+  setFailure(context.store, id, undefined)
+  context.states.setState(id, 'idle')
+}
+
+async function markCellReviewed(context: CellContext, address: CellAddress) {
+  const outcome = await context.saves.markReviewed(address, address.code)
+  if (outcome.status === 'failed')
+    context.report.failure(address, outcome.error, false)
 }
 
 /**
@@ -275,40 +301,11 @@ export function useCellSaves(
   const states = useSaveStates(store.states)
   const { starts, expectedNow, take } = useCellStarts(store, rowOf)
   const saves = useKeySaves()
-  const report = useCellReports(retry, discard)
+  const report = useCellReports(
+    (address) => retryCell(context, address),
+    (address) => discardCell(context, address),
+  )
   const context: CellContext = { store, saves, states, report, onTouched }
-
-  function save(address: CellAddress, draft: string): Promise<void> {
-    return queueSave(context, address, draft, take(address))
-  }
-
-  /** Keeps a text unsaved, to be confirmed in the cell (a base text cleared on the way out). */
-  function keep(address: CellAddress, draft: string, message: string) {
-    const id = idOfCell(address)
-    const expected = starts.has(id) ? starts.of(id) : undefined
-    starts.end(id)
-    setFailure(store, id, { draft, message, isConflict: false, expected })
-    states.setState(id, 'error')
-  }
-
-  function retry(address: CellAddress) {
-    const failure = store.failures.value[idOfCell(address)]
-    if (failure)
-      void queueSave(context, address, failure.draft, failure.expected)
-  }
-
-  /** Drops a text that could not be saved: the cell shows its stored value again. */
-  function discard(address: CellAddress) {
-    const id = idOfCell(address)
-    setFailure(store, id, undefined)
-    states.setState(id, 'idle')
-  }
-
-  async function markReviewed(address: CellAddress) {
-    const outcome = await saves.markReviewed(address, address.code)
-    if (outcome.status === 'failed')
-      report.failure(address, outcome.error, false)
-  }
 
   return {
     ...useCellView(store, states),
@@ -318,11 +315,13 @@ export function useCellSaves(
     originOf: (address: CellAddress) => starts.of(idOfCell(address)),
     changedElsewhere: (address: CellAddress) =>
       changedElsewhere(store, starts, address, rowOf(address)),
-    save,
-    keep,
-    retry,
-    discard,
-    markReviewed,
+    save: (address: CellAddress, draft: string) =>
+      queueSave(context, address, draft, take(address)),
+    keep: (address: CellAddress, draft: string, message: string) =>
+      keepCell(context, starts, { ...address, draft, message }),
+    retry: (address: CellAddress) => retryCell(context, address),
+    discard: (address: CellAddress) => discardCell(context, address),
+    markReviewed: (address: CellAddress) => markCellReviewed(context, address),
     confirmClearBase: saves.confirmClearBase,
   }
 }

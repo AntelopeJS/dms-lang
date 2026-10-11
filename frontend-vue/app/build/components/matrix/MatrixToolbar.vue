@@ -79,7 +79,6 @@ const filterModel = computed({
   set: (filter: TranslationFilter) =>
     (filters.value = { ...filters.value, filter }),
 })
-/** Picking a language starts translating it: only its missing keys show. */
 const languageModel = computed({
   get: () => filters.value.missingIn || props.shownLanguage || ANY_LANGUAGE,
   set: (value: string) => {

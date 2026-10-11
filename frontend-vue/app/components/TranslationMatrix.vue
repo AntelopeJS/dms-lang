@@ -1,57 +1,51 @@
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
 import { useElementSize, useIntersectionObserver } from '@vueuse/core'
-import { useWorkspaceFlatSync } from '../composables/translation/useWorkspaceFlat'
 import UButton from '@nuxt/ui/components/Button.vue'
 import UDropdownMenu from '@nuxt/ui/components/DropdownMenu.vue'
 import { useDmsRouter } from '#dms/frontend-module'
 import type { FlatTranslationRow, LanguageCoverage } from '../types/lang'
+import { useWorkspaceFlatSync } from '../composables/translation/useWorkspaceFlat'
 import {
-  checkMessage,
   coverageTone,
-  escapeMessage,
   languageCoverage,
-  messageIssueText,
   stringValue,
 } from '../utils/translations'
+import { exportFileName, translationsCsv } from '../utils/matrixExport'
 import LocaleTile from '../build/components/LocaleTile.vue'
 import PlaceholderText from '../build/components/PlaceholderText.vue'
-import MatrixCell, {
-  type CellMove,
-} from '../build/components/matrix/MatrixCell.vue'
+import MatrixCell from '../build/components/matrix/MatrixCell.vue'
 import MatrixColumns from '../build/components/matrix/MatrixColumns.vue'
 import MatrixGroupHeader from '../build/components/matrix/MatrixGroupHeader.vue'
 import MatrixKeyCell from '../build/components/matrix/MatrixKeyCell.vue'
 import MatrixToolbar from '../build/components/matrix/MatrixToolbar.vue'
-import { exportFileName, translationsCsv } from '../utils/matrixExport'
 import {
   useCellSaves,
   type CellAddress,
 } from '../build/composables/useCellSaves'
-import { clearsBaseText } from '../build/composables/useKeySaves'
-import { saveIdOf, storedText } from '../utils/keySaves'
+import {
+  useCellEditor,
+  type CellMove,
+} from '../build/composables/useCellEditor'
+import {
+  focusNeighbourCell,
+  isTypingTarget,
+  useCellMoves,
+  type JumpStep,
+} from '../build/composables/useCellMoves'
 import { useKeyPanel } from '../build/composables/useKeyPanel'
 import { useMatrixRows } from '../build/composables/useMatrixRows'
 import { useMatrixView } from '../build/composables/useMatrixView'
 import { useMatrixFilters } from '../build/composables/useMatrixFilters'
 
-interface CellRef {
-  key: string
-  code: string
-}
-
-type JumpStep = 1 | -1
-
 const COMPACT_WIDTH = 768
-/** A dialog, a drawer or the key panel is open: N belongs to it. */
 const OPEN_OVERLAY = '[role="dialog"][data-state="open"], [role="alertdialog"]'
 const SCROLL_MARGIN = '400px'
-const ARROW_STEPS: Record<string, [number, number]> = {
-  ArrowUp: [-1, 0],
-  ArrowDown: [1, 0],
-  ArrowLeft: [0, -1],
-  ArrowRight: [0, 1],
-}
+const KEY_COLUMN_REM = 16
+const LANGUAGE_COLUMN_REM = 15
+const TODO_COLUMN_REM = 28
+const SKELETON_ROWS = 6
+const JUMP_KEY = 'n'
 
 const { t } = useI18n()
 const { formatCount } = useLangFormat()
@@ -80,13 +74,6 @@ const links = useLangLinks()
 const { filters, order, saveOrder, sanitize, resetFilters } = useMatrixView()
 
 const pinned = ref<Set<string>>(new Set())
-const editingCell = ref<CellRef | null>(null)
-const cursor = ref<CellRef | null>(null)
-const drafts = ref<Record<string, string>>({})
-// The cell being edited, as it was opened: its workspace may be left (the
-// page remounts) while it is open.
-let editingWorkspace = ''
-let isEditingBase = false
 const root = useTemplateRef<ComponentPublicInstance>('root')
 const scroller = useTemplateRef<HTMLElement>('scroller')
 const sentinel = useTemplateRef<HTMLElement>('sentinel')
@@ -95,14 +82,14 @@ const { width } = useElementSize(rootElement, {
   width: Number.POSITIVE_INFINITY,
   height: 0,
 })
-
-const saves = useCellSaves(
-  (address) => rowOf(address),
-  (address) => {
-    if (address.workspace === selectedWorkspace.value) pin(address.key)
-  },
-)
 const isCompact = computed(() => width.value < COMPACT_WIDTH)
+
+const rowsByKey = computed(
+  () => new Map(flat.value.rows.map((row) => [row.key, row])),
+)
+const saves = useCellSaves(rowOf, (address) => {
+  if (address.workspace === selectedWorkspace.value) pin(address.key)
+})
 
 const languages = computed<LanguageCoverage[]>(() =>
   languageCoverage(flat.value, (code) => nameAmong(code, flat.value.locales)),
@@ -115,7 +102,6 @@ const targetLanguages = computed(() =>
     .filter((entry) => !entry.isBase)
     .map((entry) => ({ code: entry.code, name: fullName(entry.code) })),
 )
-/** The language being translated: the chosen one, or the first shown on a phone. */
 const todoLanguage = computed(() => {
   const chosen = filters.value.missingIn
   if (chosen && flat.value.locales.includes(chosen)) return chosen
@@ -137,29 +123,18 @@ const columns = computed(() =>
 )
 const columnSiblings = computed(() => columns.value.map((entry) => entry.code))
 const compactColumn = computed(() => columns.value.at(-1))
-/**
- * The table's width when the columns sit at their set widths (key column
- * included). Firefox sizes a full-width `min-w-max` table to millions of pixels.
- */
-const tableMinWidth = computed(
-  () => `${16 + columns.value.length * (todoLanguage.value ? 28 : 15)}rem`,
-)
+const tableMinWidth = computed(() => {
+  const column = todoLanguage.value ? TODO_COLUMN_REM : LANGUAGE_COLUMN_REM
+  return `${KEY_COLUMN_REM + columns.value.length * column}rem`
+})
 
 const { rows, groups, counts, targets, namespaces, isRowDone } =
   useMatrixFilters(flat, filters, columnCodes, pinned)
-/** A row with a text not saved (a conflict, an error) is not done. */
-function isRowFinished(row: FlatTranslationRow): boolean {
-  return isRowDone(row) && !saves.hasRowFailure(selectedWorkspace.value, row.key)
-}
 const doneCount = computed(() => rows.value.filter(isRowFinished).length)
 const rowCount = computed(() => rows.value.length)
 const view = useMatrixRows(groups, rowCount)
 const rowIndex = computed(
   () => new Map(view.renderedRows.value.map((row, index) => [row.key, index])),
-)
-
-const rowsByKey = computed(
-  () => new Map(flat.value.rows.map((row) => [row.key, row])),
 )
 
 const panel = useKeyPanel({
@@ -174,6 +149,25 @@ const panel = useKeyPanel({
     if (row) void overrideKey(row)
   },
 })
+const moves = useCellMoves({
+  view,
+  groups,
+  columnCodes,
+  targets,
+  baseLocale: () => flat.value.defaultLocale,
+  isPending: (key, code) => saves.isPending(at(key, code)),
+})
+const editor = useCellEditor({
+  saves,
+  panel,
+  workspace: selectedWorkspace,
+  baseLocale: () => flat.value.defaultLocale,
+  locales: () => flat.value.locales,
+  canEdit: () => canEditValues.value,
+  shownValue,
+  targetOf: moves.targetOf,
+  onStart: pin,
+})
 
 const countedLabel = computed(() =>
   targets.value.length === 1
@@ -185,30 +179,23 @@ const countedLabel = computed(() =>
       ),
 )
 
-const hasOpenDraft = computed(() => {
-  const cell = editingCell.value
-  if (!cell) return false
-  const draft = drafts.value[idOf(cell.key, cell.code)]
-  return draft !== undefined && draft !== shownValue(cell.key, cell.code)
+useUnsavedChanges({
+  dirty: () => saves.hasUnsaved.value || editor.hasOpenDraft.value,
 })
 
-useUnsavedChanges({ dirty: () => saves.hasUnsaved.value || hasOpenDraft.value })
-
-function at(
-  key: string,
-  code: string,
-  workspace = selectedWorkspace.value,
-): CellAddress {
-  return { workspace, key, code }
-}
-
-function idOf(key: string, code: string, workspace = selectedWorkspace.value) {
-  return saveIdOf(workspace, key, code)
+function at(key: string, code: string): CellAddress {
+  return { workspace: selectedWorkspace.value, key, code }
 }
 
 function rowOf(address: CellAddress): FlatTranslationRow | undefined {
   if (address.workspace !== selectedWorkspace.value) return undefined
   return rowsByKey.value.get(address.key)
+}
+
+function isRowFinished(row: FlatTranslationRow): boolean {
+  return (
+    isRowDone(row) && !saves.hasRowFailure(selectedWorkspace.value, row.key)
+  )
 }
 
 function pin(key: string) {
@@ -226,153 +213,6 @@ function shownValue(key: string, code: string): string {
   return rowValue(rowsByKey.value.get(key), code)
 }
 
-function isEditingCell(key: string, code: string): boolean {
-  return editingCell.value?.key === key && editingCell.value.code === code
-}
-
-function setDraft(key: string, code: string, value: string | undefined) {
-  const id = idOf(key, code)
-  const { [id]: _previous, ...rest } = drafts.value
-  drafts.value = value === undefined ? rest : { ...rest, [id]: value }
-}
-
-function startEdit(key: string, code: string) {
-  if (!canEditValues.value || isEditingCell(key, code)) return
-  commitEditing()
-  const id = idOf(key, code)
-  if (drafts.value[id] === undefined)
-    setDraft(
-      key,
-      code,
-      saves.failureOf(at(key, code))?.draft ?? shownValue(key, code),
-    )
-  saves.begin(at(key, code))
-  editingWorkspace = selectedWorkspace.value
-  isEditingBase = code === flat.value.defaultLocale
-  editingCell.value = { key, code }
-  cursor.value = { key, code }
-  pin(key)
-}
-
-function cancelEdit() {
-  const cell = editingCell.value
-  if (cell) {
-    setDraft(cell.key, cell.code, undefined)
-    saves.end(at(cell.key, cell.code))
-  }
-  editingCell.value = null
-}
-
-function commitEditing() {
-  const cell = editingCell.value
-  if (cell) void commitCell(cell.key, cell.code, 'stay')
-}
-
-function isClearingBase(key: string, code: string, draft: string): boolean {
-  return clearsBaseText(
-    code,
-    flat.value.defaultLocale,
-    draft,
-    shownValue(key, code),
-  )
-}
-
-async function commitCell(key: string, code: string, move: CellMove) {
-  if (isEditingCell(key, code) && editingWorkspace !== selectedWorkspace.value)
-    return leaveEditing()
-  const draft = drafts.value[idOf(key, code)]
-  setDraft(key, code, undefined)
-  if (isEditingCell(key, code)) editingCell.value = null
-  const hasChanged = draft !== undefined && draft !== shownValue(key, code)
-  if (hasChanged && isClearingBase(key, code, draft)) {
-    if (!(await saves.confirmClearBase(key))) {
-      setDraft(key, code, draft)
-      editingCell.value = { key, code }
-      return
-    }
-  }
-  if (hasChanged && keepInvalid(key, code, draft))
-    return moveFrom(key, code, move)
-  if (hasChanged) void saves.save(at(key, code), draft)
-  else saves.end(at(key, code))
-  moveFrom(key, code, move)
-}
-
-/** What makes a text impossible to compile (vue-i18n syntax), as sentences; '' when it compiles. */
-function blockingText(draft: string): string {
-  return checkMessage('', draft)
-    .filter((issue) => issue.severity === 'error')
-    .map((issue) => messageIssueText(issue, t))
-    .join(' ')
-}
-
-/**
- * A text that would not compile is not sent, as in the panel: the cell keeps
- * it "Not saved" with the reason, to fix, escape or discard.
- */
-function keepInvalid(
-  key: string,
-  code: string,
-  draft: string,
-  workspace = selectedWorkspace.value,
-): boolean {
-  const reason = blockingText(draft)
-  if (reason) saves.keep(at(key, code, workspace), draft, reason)
-  return reason !== ''
-}
-
-/**
- * The workspace is left with a cell open: its text is saved in the workspace
- * it was typed in (a cleared base text waits there for a confirmation),
- * never lost nor written to the new one.
- */
-function leaveEditing() {
-  const cell = editingCell.value
-  const workspace = editingWorkspace
-  if (!cell) return
-  editingCell.value = null
-  const id = idOf(cell.key, cell.code, workspace)
-  const { [id]: draft, ...rest } = drafts.value
-  drafts.value = rest
-  const origin = saves.originOf(at(cell.key, cell.code, workspace))
-  if (draft === undefined || storedText(draft) === (origin ?? null)) {
-    saves.end(at(cell.key, cell.code, workspace))
-    return
-  }
-  if (keepInvalid(cell.key, cell.code, draft, workspace)) return
-  if (isEditingBase && storedText(draft) === null && origin) {
-    saves.keep(
-      at(cell.key, cell.code, workspace),
-      draft,
-      t('dms_lang.matrix.clear_base_kept'),
-    )
-    return
-  }
-  void saves.save(at(cell.key, cell.code, workspace), draft)
-}
-
-async function retryCell(key: string, code: string) {
-  const failure = saves.failureOf(at(key, code))
-  if (!failure) return
-  // A text that does not compile goes back to the editor to be fixed.
-  if (blockingText(failure.draft)) return startEdit(key, code)
-  if (
-    isClearingBase(key, code, failure.draft) &&
-    !(await saves.confirmClearBase(key))
-  )
-    return
-  void saves.save(at(key, code), failure.draft)
-}
-
-/** Writes the bare `@` and lone braces of a text kept unsaved as literals, then saves it. */
-function escapeFailure(key: string, code: string) {
-  const failure = saves.failureOf(at(key, code))
-  if (!failure) return
-  const escaped = escapeMessage(failure.draft)
-  if (!keepInvalid(key, code, escaped)) void saves.save(at(key, code), escaped)
-}
-
-/** A link named a key the workspace does not hold (renamed, deleted). */
 async function dropUnknownKey(key: string) {
   toast.add({
     title: t('dms_lang.matrix.key_not_found', { key }),
@@ -386,84 +226,11 @@ async function dropUnknownKey(key: string) {
   )
 }
 
-/** The columns Tab and Enter walk through: the base only when one edits it. */
-function navigableCodes(code: string): string[] {
-  const base = flat.value.defaultLocale
-  const codes = columnCodes.value
-  if (code === base || codes.length === 1) return codes
-  return codes.filter((entry) => entry !== base)
-}
-
-function neighbourRow(key: string, step: JumpStep): string | undefined {
-  const shown = view.renderedRows.value
-  const index = shown.findIndex((row) => row.key === key)
-  if (step > 0 && index === shown.length - 1 && view.hasMore.value)
-    view.showMore()
-  return view.renderedRows.value[index + step]?.key
-}
-
-function sideCell(key: string, code: string, step: JumpStep): CellRef | null {
-  const codes = navigableCodes(code)
-  const next = codes[codes.indexOf(code) + step]
-  if (next) return { key, code: next }
-  const row = neighbourRow(key, step)
-  if (!row) return null
-  return { key: row, code: step > 0 ? codes[0] : codes[codes.length - 1] }
-}
-
-const MOVES: Record<CellMove, (key: string, code: string) => CellRef | null> = {
-  stay: () => null,
-  down: (key, code) => {
-    const row = neighbourRow(key, 1)
-    return row ? { key: row, code } : null
-  },
-  next: (key, code) => sideCell(key, code, 1),
-  previous: (key, code) => sideCell(key, code, -1),
-}
-
-function moveFrom(key: string, code: string, move: CellMove) {
-  const target = MOVES[move](key, code)
-  if (target) nextTick(() => startEdit(target.key, target.code))
-}
-
-/** Every empty cell of the counted languages, in the order they show. */
-function missingCells(): CellRef[] {
-  const codes = columnCodes.value.filter((code) => targets.value.includes(code))
-  return groups.value.flatMap((group) =>
-    group.rows.flatMap((row) =>
-      codes
-        .filter(
-          (code) =>
-            isRowValueMissing(row, code) && !saves.isPending(at(row.key, code)),
-        )
-        .map((code) => ({ key: row.key, code })),
-    ),
-  )
-}
-
-function cellIndex(cell: CellRef, keys: string[], codes: string[]): number {
-  return keys.indexOf(cell.key) * codes.length + codes.indexOf(cell.code)
-}
-
-function pickMissing(cells: CellRef[], step: JumpStep): CellRef | undefined {
-  const from = cursor.value
-  if (!from) return step > 0 ? cells[0] : cells.at(-1)
-  const keys = groups.value.flatMap((group) => group.rows.map((row) => row.key))
-  const codes = columnCodes.value
-  const origin = cellIndex(from, keys, codes)
-  const ordered = step > 0 ? cells : [...cells].reverse()
-  const found = ordered.find(
-    (cell) => step * (cellIndex(cell, keys, codes) - origin) > 0,
-  )
-  return found ?? ordered[0]
-}
-
-/** N / Shift+N: the next or previous empty cell, its namespace opened and scrolled to. */
 function jumpToMissing(step: JumpStep) {
-  const target = pickMissing(missingCells(), step)
+  const target = moves.nextMissing(editor.cursor.value, step)
   if (!target) return
   view.reveal(target.key)
-  startEdit(target.key, target.code)
+  editor.startEdit(target.key, target.code)
   nextTick(() =>
     rootElement.value
       ?.querySelector('[data-editing]')
@@ -471,83 +238,17 @@ function jumpToMissing(step: JumpStep) {
   )
 }
 
-function isTyping(target: EventTarget | null): boolean {
-  return (
-    target instanceof HTMLElement &&
-    target.closest('input, textarea, select, [contenteditable]') !== null
-  )
-}
-
 function onKeydown(event: KeyboardEvent) {
-  if (!canEditValues.value || event.key.toLowerCase() !== 'n') return
+  if (!canEditValues.value || event.key.toLowerCase() !== JUMP_KEY) return
   if (event.ctrlKey || event.metaKey || event.altKey) return
-  if (isTyping(event.target) || document.querySelector(OPEN_OVERLAY)) return
+  if (isTypingTarget(event.target) || document.querySelector(OPEN_OVERLAY))
+    return
   event.preventDefault()
   jumpToMissing(event.shiftKey ? -1 : 1)
 }
 
-/** Arrow keys move between cells, as in a spreadsheet. */
 function onGridKeydown(event: KeyboardEvent) {
-  const step = ARROW_STEPS[event.key]
-  const cell = (event.target as HTMLElement).closest<HTMLElement>(
-    'td[data-row]',
-  )
-  if (!step || !cell || isTyping(event.target)) return
-  const row = Number(cell.dataset.row) + step[0]
-  const column = Number(cell.dataset.col) + step[1]
-  const target = rootElement.value?.querySelector<HTMLElement>(
-    `td[data-row="${row}"][data-col="${column}"] button`,
-  )
-  if (!target) return
-  event.preventDefault()
-  target.focus()
-}
-
-/**
- * The panel, opened on a key with whatever the matrix had not saved for it.
- * The texts leave their cells only once the panel took the key: an open panel
- * with a field waiting for a choice stays on its own key and says why.
- */
-async function openKey(key: string, focusLocale?: string) {
-  const initialDrafts: Record<string, string> = {}
-  for (const code of flat.value.locales) {
-    const failure = saves.failureOf(at(key, code))
-    if (failure) initialDrafts[code] = failure.draft
-  }
-  const handed = Object.keys(initialDrafts)
-  const isShown = await panel.open({
-    key,
-    focusLocale,
-    initialDrafts: handed.length ? initialDrafts : undefined,
-  })
-  if (!isShown) return
-  for (const code of handed)
-    if (saves.failureOf(at(key, code))?.draft === initialDrafts[code])
-      saves.discard(at(key, code))
-}
-
-/** From a cell being edited: the panel takes over the text typed so far, once it shows the key. */
-async function openFromCell(key: string, code: string) {
-  const draft = drafts.value[idOf(key, code)]
-  const typed = draft !== undefined && draft !== shownValue(key, code)
-  const failure = saves.failureOf(at(key, code))
-  const text = typed ? draft : failure?.draft
-  const initialDrafts = text === undefined ? undefined : { [code]: text }
-  const isShown = await panel.open({ key, focusLocale: code, initialDrafts })
-  if (!isEditingCell(key, code)) return
-  if (!isShown) return reopenEditor(key, code)
-  setDraft(key, code, undefined)
-  saves.end(at(key, code))
-  // The panel now holds the text: an older failure of this cell would only resend a stale value.
-  if (failure) saves.discard(at(key, code))
-  editingCell.value = null
-}
-
-/** The panel kept its key: the editor opens again on the text, saved as usual when left. */
-async function reopenEditor(key: string, code: string) {
-  editingCell.value = null
-  await nextTick()
-  if (!editingCell.value) editingCell.value = { key, code }
+  focusNeighbourCell(event, rootElement.value)
 }
 
 async function overrideKey(row: FlatTranslationRow) {
@@ -555,27 +256,30 @@ async function overrideKey(row: FlatTranslationRow) {
   await selectWorkspace(DEFAULT_WORKSPACE, { query: { key: row.key } })
 }
 
+function inheritedOf(row: FlatTranslationRow, code: string) {
+  if (!isDefault.value || !row.inherited) return undefined
+  return stringValue(row.inherited[code]) || undefined
+}
+
 function cellProps(row: FlatTranslationRow, column: LanguageCoverage) {
   const { key } = row
   const { code } = column
+  const isEditing = editor.isEditing(key, code)
   return {
     value: rowValue(row, code),
     baseValue: rowValue(row, flat.value.defaultLocale),
-    inherited:
-      isDefault.value && row.inherited
-        ? stringValue(row.inherited[code]) || undefined
-        : undefined,
+    inherited: inheritedOf(row, code),
     override: isModules.value ? row.overrides?.[code] : undefined,
     isBase: column.isBase,
     editable: canEditValues.value,
-    isEditing: isEditingCell(key, code),
+    isEditing,
     state: saves.stateOf(at(key, code)),
     failure: saves.failureOf(at(key, code)),
     rowKey: key,
     languageName: column.name,
     isOutdated: row.outdated?.includes(code) ?? false,
-    draft: drafts.value[idOf(key, code)] ?? '',
-    changedElsewhere: isEditingCell(key, code)
+    draft: editor.draftOf(key, code),
+    changedElsewhere: isEditing
       ? saves.changedElsewhere(at(key, code))
       : undefined,
   }
@@ -585,15 +289,15 @@ function cellEvents(row: FlatTranslationRow, column: LanguageCoverage) {
   const { key } = row
   const { code } = column
   return {
-    edit: () => startEdit(key, code),
-    commit: (move: CellMove) => commitCell(key, code, move),
-    cancel: cancelEdit,
-    retry: () => retryCell(key, code),
+    edit: () => editor.startEdit(key, code),
+    commit: (move: CellMove) => editor.commitCell(key, code, move),
+    cancel: editor.cancelEdit,
+    retry: () => editor.retryCell(key, code),
     discard: () => saves.discard(at(key, code)),
-    escape: () => escapeFailure(key, code),
-    openPanel: () => openFromCell(key, code),
+    escape: () => editor.escapeFailure(key, code),
+    openPanel: () => editor.openFromCell(key, code),
     review: () => void saves.markReviewed(at(key, code)),
-    'update:draft': (value: string) => setDraft(key, code, value),
+    'update:draft': (value: string) => editor.setDraft(key, code, value),
   }
 }
 
@@ -603,7 +307,6 @@ function hideDone() {
 
 function exportCsv(isView: boolean) {
   const base = flat.value.defaultLocale
-  // Everything follows the chosen column order too, hidden languages last.
   const ordered = isView
     ? columnCodes.value
     : [...new Set([...order.value, ...flat.value.locales])].filter((code) =>
@@ -675,7 +378,7 @@ usePageHeaderActions(() => [
 watch(
   () => [filters.value, selectedWorkspace.value],
   () => {
-    commitEditing()
+    editor.commitEditing()
     pinned.value = new Set()
     view.reset()
   },
@@ -686,8 +389,6 @@ watch([namespaces, () => flat.value.locales.join(',')], () =>
   sanitize(namespaces.value),
 )
 
-// The rights come with the workspace list: the dialog waits for it, and for
-// the translations, before the action is taken off the URL.
 watch(
   [pageAction, isResolved, isUnknown],
   async ([action, resolved, unknown]) => {
@@ -722,9 +423,7 @@ onMounted(() => window.addEventListener('keydown', onKeydown))
 const matrixPath = route.path
 
 onBeforeUnmount(() => {
-  // Another workspace remounts the page with a cell still open: its text is
-  // saved. Leaving the page asked first (useUnsavedChanges).
-  if (route.path === matrixPath) leaveEditing()
+  if (route.path === matrixPath) editor.leaveEditing()
   window.removeEventListener('keydown', onKeydown)
 })
 </script>
@@ -807,7 +506,7 @@ onBeforeUnmount(() => {
 
     <div v-else-if="!isLoaded" class="divide-default divide-y">
       <div
-        v-for="index in 6"
+        v-for="index in SKELETON_ROWS"
         :key="index"
         class="grid grid-cols-4 gap-4 px-4 py-4"
       >
@@ -884,7 +583,7 @@ onBeforeUnmount(() => {
           :key="row.key"
           class="border-default group/row space-y-2 border-b px-4 py-3"
           :data-editing="
-            isEditingCell(row.key, compactColumn.code) || undefined
+            editor.isEditing(row.key, compactColumn.code) || undefined
           "
         >
           <MatrixKeyCell
@@ -893,13 +592,13 @@ onBeforeUnmount(() => {
             :is-modules="isModules"
             :is-overridden="row.overridden === true"
             :can-override="serverEditable"
-            @open="openKey(row.key, compactColumn.code)"
+            @open="editor.openKey(row.key, compactColumn.code)"
             @override="overrideKey(row)"
           />
           <p
             v-if="
               !compactColumn.isBase &&
-              !isEditingCell(row.key, compactColumn.code)
+              !editor.isEditing(row.key, compactColumn.code)
             "
             class="text-dimmed line-clamp-3 text-xs"
           >
@@ -1013,7 +712,7 @@ onBeforeUnmount(() => {
                 :is-modules="isModules"
                 :is-overridden="row.overridden === true"
                 :can-override="serverEditable"
-                @open="openKey(row.key)"
+                @open="editor.openKey(row.key)"
                 @override="overrideKey(row)"
               />
             </td>
@@ -1022,7 +721,7 @@ onBeforeUnmount(() => {
               :key="column.code"
               :data-row="rowIndex.get(row.key)"
               :data-col="columnIndex"
-              :data-editing="isEditingCell(row.key, column.code) || undefined"
+              :data-editing="editor.isEditing(row.key, column.code) || undefined"
               class="border-default group-hover/row:bg-elevated/30 border-b border-l px-1.5 py-1"
             >
               <MatrixCell

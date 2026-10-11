@@ -1,8 +1,9 @@
+import type { Ref } from 'vue'
 import { useDmsRouter, useDmsState } from '#dms/frontend-module'
 import type { FlatTranslationRow } from '../../types/lang'
 import KeyEditorDrawer from '../components/KeyEditorDrawer.vue'
 
-interface PanelRequest {
+export interface PanelRequest {
   key: string
   /** The language to put the cursor in. */
   focusLocale?: string
@@ -10,7 +11,7 @@ interface PanelRequest {
   initialDrafts?: Record<string, string>
 }
 
-interface PanelOptions {
+export interface PanelOptions {
   /** The keys the panel steps through with previous / next. */
   keys: () => string[]
   editable: () => boolean
@@ -25,14 +26,196 @@ interface PanelOptions {
   onUnknown?: (key: string) => void
 }
 
-const KEY_QUERY = 'key'
-
 type DrawerOverlay = ReturnType<ReturnType<typeof useOverlay>['create']>
 
-/** A key asked of the open panel, until it says which key it shows. */
 interface PendingSwitch {
   key: string
   settle: (isShown: boolean) => void
+}
+
+interface PanelState {
+  shownWorkspace: string
+  drawer: DrawerOverlay | null
+  pushedFrom: string | null
+  pendingSwitch: PendingSwitch | null
+  isDisposed: boolean
+}
+
+interface PanelContext {
+  options: PanelOptions
+  overlay: ReturnType<typeof useOverlay>
+  router: ReturnType<typeof useDmsRouter>
+  route: ReturnType<typeof useWorkspaceRoute>['route']
+  seeds: Ref<Record<string, FlatTranslationRow>>
+  workspace: Ref<string>
+  shownKey: Ref<string>
+  state: PanelState
+}
+
+const KEY_QUERY = 'key'
+
+function linkWithKey(context: PanelContext, key: string | undefined): string {
+  const { route } = context
+  return linkWithQuery(route.path, { ...route.query, [KEY_QUERY]: key })
+}
+
+function seed(
+  context: PanelContext,
+  key: string,
+  texts: FlatTranslationRow['values'],
+) {
+  context.seeds.value = {
+    ...context.seeds.value,
+    [key]: { key, values: { ...texts }, inherited: { ...texts } },
+  }
+}
+
+function dropSeed(context: PanelContext, key: string) {
+  const { [key]: dropped, ...rest } = context.seeds.value
+  if (dropped) context.seeds.value = rest
+}
+
+function propsFor(context: PanelContext, request: PanelRequest) {
+  const { options } = context
+  const keys = options.keys()
+  const index = keys.indexOf(request.key)
+  return {
+    keys: index < 0 ? [request.key] : keys,
+    startIndex: Math.max(index, 0),
+    editable: options.editable(),
+    manageKeys: options.manageKeys(),
+    canOverride: options.canOverride(),
+    seed: context.seeds.value[request.key],
+    focusLocale: request.focusLocale,
+    initialDrafts: request.initialDrafts,
+    onNavigate: (key: string) => onNavigate(context, key),
+    onOverride: options.onOverride,
+  }
+}
+
+function settleSwitch(context: PanelContext, shown: string | null) {
+  const pending = context.state.pendingSwitch
+  context.state.pendingSwitch = null
+  pending?.settle(pending.key === shown)
+}
+
+function switchKey(
+  context: PanelContext,
+  drawer: DrawerOverlay,
+  request: PanelRequest,
+): Promise<boolean> {
+  return new Promise((settle) => {
+    context.state.pendingSwitch = { key: request.key, settle }
+    drawer.patch(propsFor(context, request))
+  })
+}
+
+function show(context: PanelContext, request: PanelRequest): Promise<boolean> {
+  const { state } = context
+  state.shownWorkspace = context.workspace.value
+  settleSwitch(context, null)
+  if (state.drawer && request.key === context.shownKey.value) {
+    state.drawer.patch(propsFor(context, request))
+    return Promise.resolve(true)
+  }
+  if (state.drawer) return switchKey(context, state.drawer, request)
+  context.shownKey.value = request.key
+  state.drawer = context.overlay.create(KeyEditorDrawer, {
+    destroyOnClose: true,
+  })
+  void state.drawer
+    .open(propsFor(context, request))
+    .then(() => onClosed(context))
+  return Promise.resolve(true)
+}
+
+async function open(
+  context: PanelContext,
+  request: PanelRequest,
+): Promise<boolean> {
+  if (context.state.drawer) return show(context, request)
+  void show(context, request)
+  if (context.route.query[KEY_QUERY] === request.key) return true
+  context.state.pushedFrom = linkWithKey(context, undefined)
+  await context.router.push(linkWithKey(context, request.key))
+  return true
+}
+
+function onNavigate(context: PanelContext, key: string) {
+  context.shownKey.value = key
+  settleSwitch(context, key)
+  if (context.route.query[KEY_QUERY] !== key)
+    void context.router.replace(linkWithKey(context, key))
+}
+
+function onClosed(context: PanelContext) {
+  const { state, route, router } = context
+  state.drawer = null
+  settleSwitch(context, null)
+  if (!state.isDisposed) dropSeed(context, context.shownKey.value)
+  context.shownKey.value = ''
+  const from = state.pushedFrom
+  state.pushedFrom = null
+  if (state.isDisposed || !route.query[KEY_QUERY]) return
+  const without = linkWithKey(context, undefined)
+  if (from === without) router.back()
+  else void router.replace(without)
+}
+
+function isOpenable(context: PanelContext, key: string): boolean {
+  const { options } = context
+  if (context.seeds.value[key] || options.isKnown?.(key) !== false) return true
+  options.onUnknown?.(key)
+  return false
+}
+
+function followQuery(context: PanelContext, key: string) {
+  if (!key) return context.state.drawer?.close()
+  if (key === context.shownKey.value || !isOpenable(context, key)) return
+  void show(context, { key })
+}
+
+function followWorkspace(context: PanelContext, workspace: string) {
+  const { drawer, shownWorkspace } = context.state
+  const shownKey = context.shownKey.value
+  if (!drawer || !shownKey || shownWorkspace === workspace) return
+  if (!isOpenable(context, shownKey)) return drawer.close()
+  void show(context, { key: shownKey })
+}
+
+function patchRights(context: PanelContext) {
+  const { options } = context
+  context.state.drawer?.patch({
+    editable: options.editable(),
+    manageKeys: options.manageKeys(),
+    canOverride: options.canOverride(),
+  })
+}
+
+function watchPanel(context: PanelContext) {
+  const { isLoaded, flat } = useWorkspaceFlat()
+  const { options, route } = context
+  watch(
+    [() => route.query[KEY_QUERY] ?? '', isLoaded],
+    ([key, loaded]) => loaded && followQuery(context, key),
+    { immediate: true },
+  )
+  watch(
+    [context.workspace, isLoaded],
+    ([workspace, loaded]) => loaded && followWorkspace(context, workspace),
+  )
+  watch(
+    () =>
+      flat.value.rows.find((row) => row.key === context.shownKey.value)
+        ?.inherited,
+    (inherited) => {
+      if (context.shownKey.value && inherited && Object.keys(inherited).length)
+        seed(context, context.shownKey.value, inherited)
+    },
+  )
+  watch([options.editable, options.manageKeys, options.canOverride], () =>
+    patchRights(context),
+  )
 }
 
 /**
@@ -44,177 +227,33 @@ interface PendingSwitch {
  * dropped before it did.
  */
 export function useKeyPanel(options: PanelOptions) {
-  const overlay = useOverlay()
-  const router = useDmsRouter()
-  const { route } = useWorkspaceRoute()
-  const { isLoaded, flat } = useWorkspaceFlat()
-  const { selectedWorkspace } = useI18nWorkspaces()
-  /** Module keys being overridden: the panel shows their module text. */
-  const seeds = useDmsState<Record<string, FlatTranslationRow>>(
-    'dms-lang-override-seeds',
-    () => ({}),
-  )
-
-  const shownKey = ref('')
-  let shownWorkspace = ''
-  let drawer: DrawerOverlay | null = null
-  let pushedFrom: string | null = null
-  let pendingSwitch: PendingSwitch | null = null
-  let isDisposed = false
-
-  function linkWithKey(key: string | undefined): string {
-    return linkWithQuery(route.path, { ...route.query, [KEY_QUERY]: key })
-  }
-
-  function dropSeed(key: string) {
-    const { [key]: seed, ...rest } = seeds.value
-    if (seed) seeds.value = rest
-  }
-
-  function propsFor(request: PanelRequest) {
-    const keys = options.keys()
-    const index = keys.indexOf(request.key)
-    return {
-      keys: index < 0 ? [request.key] : keys,
-      startIndex: Math.max(index, 0),
-      editable: options.editable(),
-      manageKeys: options.manageKeys(),
-      canOverride: options.canOverride(),
-      seed: seeds.value[request.key],
-      focusLocale: request.focusLocale,
-      initialDrafts: request.initialDrafts,
-      onNavigate: (key: string) => onNavigate(key),
-      onOverride: options.onOverride,
-    }
-  }
-
-  function settleSwitch(shown: string | null) {
-    const pending = pendingSwitch
-    pendingSwitch = null
-    pending?.settle(pending.key === shown)
-  }
-
-  /** Resolves once the panel shows the key, or stays on its own (false). */
-  function show(request: PanelRequest): Promise<boolean> {
-    shownWorkspace = selectedWorkspace.value
-    settleSwitch(null)
-    if (drawer && request.key === shownKey.value) {
-      drawer.patch(propsFor(request))
-      return Promise.resolve(true)
-    }
-    if (drawer) {
-      const open = drawer
-      return new Promise((settle) => {
-        pendingSwitch = { key: request.key, settle }
-        open.patch(propsFor(request))
-      })
-    }
-    shownKey.value = request.key
-    drawer = overlay.create(KeyEditorDrawer, { destroyOnClose: true })
-    void drawer.open(propsFor(request)).then(onClosed)
-    return Promise.resolve(true)
-  }
-
-  /**
-   * Opens a key from the page: one history entry for the panel, so Back
-   * closes it. False when the open panel kept its own key.
-   */
-  async function open(request: PanelRequest): Promise<boolean> {
-    // The open panel reports the key it shows (onNavigate): the URL follows.
-    if (drawer) return show(request)
-    void show(request)
-    if (route.query[KEY_QUERY] === request.key) return true
-    pushedFrom = linkWithKey(undefined)
-    await router.push(linkWithKey(request.key))
-    return true
-  }
-
-  function onNavigate(key: string) {
-    shownKey.value = key
-    settleSwitch(key)
-    if (route.query[KEY_QUERY] !== key) void router.replace(linkWithKey(key))
-  }
-
-  function onClosed() {
-    drawer = null
-    settleSwitch(null)
-    if (!isDisposed) dropSeed(shownKey.value)
-    shownKey.value = ''
-    const from = pushedFrom
-    pushedFrom = null
-    if (isDisposed || !route.query[KEY_QUERY]) return
-    const without = linkWithKey(undefined)
-    if (from === without) router.back()
-    else void router.replace(without)
-  }
-
-  function seed(key: string, texts: FlatTranslationRow['values']) {
-    seeds.value = {
-      ...seeds.value,
-      [key]: { key, values: { ...texts }, inherited: { ...texts } },
-    }
-  }
-
-  /** Remembers a module key's text before switching to the project files. */
-  function seedOverride(row: FlatTranslationRow) {
-    seed(row.key, row.values)
-  }
-
-  function isOpenable(key: string): boolean {
-    if (seeds.value[key] || options.isKnown?.(key) !== false) return true
-    options.onUnknown?.(key)
-    return false
-  }
-
-  watch(
-    [() => route.query[KEY_QUERY] ?? '', isLoaded],
-    ([key, loaded]) => {
-      if (!loaded) return
-      if (!key) {
-        drawer?.close()
-        return
-      }
-      if (key === shownKey.value || !isOpenable(key)) return
-      void show({ key })
+  const context: PanelContext = {
+    options,
+    overlay: useOverlay(),
+    router: useDmsRouter(),
+    route: useWorkspaceRoute().route,
+    seeds: useDmsState<Record<string, FlatTranslationRow>>(
+      'dms-lang-override-seeds',
+      () => ({}),
+    ),
+    workspace: useI18nWorkspaces().selectedWorkspace,
+    shownKey: ref(''),
+    state: {
+      shownWorkspace: '',
+      drawer: null,
+      pushedFrom: null,
+      pendingSwitch: null,
+      isDisposed: false,
     },
-    { immediate: true },
-  )
-
-  // The panel follows the key to another workspace (a module key overridden
-  // in the project files): it reads that workspace's rows and the module text.
-  watch([selectedWorkspace, isLoaded], ([workspace, loaded]) => {
-    const key = shownKey.value
-    if (!loaded || !drawer || !key || shownWorkspace === workspace) return
-    if (!isOpenable(key)) {
-      drawer.close()
-      return
-    }
-    void show({ key })
-  })
-
-  // A module key leaves the project files with its last override: the panel
-  // (opened again when the page reloads) keeps showing its module text.
-  watch(
-    () => flat.value.rows.find((row) => row.key === shownKey.value)?.inherited,
-    (inherited) => {
-      if (shownKey.value && inherited && Object.keys(inherited).length)
-        seed(shownKey.value, inherited)
-    },
-  )
-
-  // The rights arrive with the workspace list, after a link opened the panel.
-  watch([options.editable, options.manageKeys, options.canOverride], () =>
-    drawer?.patch({
-      editable: options.editable(),
-      manageKeys: options.manageKeys(),
-      canOverride: options.canOverride(),
-    }),
-  )
-
+  }
+  watchPanel(context)
   onBeforeUnmount(() => {
-    isDisposed = true
-    drawer?.close()
+    context.state.isDisposed = true
+    context.state.drawer?.close()
   })
-
-  return { open, seedOverride }
+  return {
+    open: (request: PanelRequest) => open(context, request),
+    seedOverride: (row: FlatTranslationRow) =>
+      seed(context, row.key, row.values),
+  }
 }

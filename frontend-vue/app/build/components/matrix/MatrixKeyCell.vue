@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { NAMESPACE_SEPARATOR } from '../../../utils/translations'
+
 interface Props {
   rowKey: string
   /** Saved during this view and no longer matching the filter. */
@@ -13,12 +15,10 @@ interface Emits {
   override: []
 }
 
-const KEY_SEPARATOR = '.'
-
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-const split = computed(() => props.rowKey.lastIndexOf(KEY_SEPARATOR) + 1)
+const split = computed(() => props.rowKey.lastIndexOf(NAMESPACE_SEPARATOR) + 1)
 </script>
 
 <template>

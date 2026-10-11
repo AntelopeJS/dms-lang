@@ -8,10 +8,60 @@ interface RenderedGroup extends MatrixGroup {
   shown: FlatTranslationRow[]
 }
 
-/** Rows drawn at first, and added each time the end of the list comes into view. */
 const ROW_BATCH = 100
-/** Above this many keys, namespaces start folded: one opens what one needs. */
 const COLLAPSE_ABOVE = 300
+
+interface RowsContext {
+  groups: Ref<MatrixGroup[]>
+  toggled: Ref<Set<string>>
+  limit: Ref<number>
+  foldsByDefault: Ref<boolean>
+}
+
+function isCollapsed(context: RowsContext, namespace: string): boolean {
+  return context.foldsByDefault.value !== context.toggled.value.has(namespace)
+}
+
+function toggle(context: RowsContext, namespace: string) {
+  const next = new Set(context.toggled.value)
+  if (next.has(namespace)) next.delete(namespace)
+  else next.add(namespace)
+  context.toggled.value = next
+}
+
+function costOf(context: RowsContext, group: MatrixGroup): number {
+  return isCollapsed(context, group.namespace) ? 1 : group.rows.length + 1
+}
+
+function renderedGroups(context: RowsContext): RenderedGroup[] {
+  let budget = context.limit.value
+  const result: RenderedGroup[] = []
+  for (const group of context.groups.value) {
+    if (budget <= 0) break
+    const collapsed = isCollapsed(context, group.namespace)
+    const shown = collapsed ? [] : group.rows.slice(0, budget - 1)
+    budget -= shown.length + 1
+    result.push({ ...group, collapsed, shown })
+  }
+  return result
+}
+
+function reveal(context: RowsContext, key: string) {
+  let position = 0
+  for (const group of context.groups.value) {
+    const index = group.rows.findIndex((row) => row.key === key)
+    if (index >= 0) {
+      if (isCollapsed(context, group.namespace))
+        toggle(context, group.namespace)
+      context.limit.value = Math.max(
+        context.limit.value,
+        position + index + ROW_BATCH,
+      )
+      return
+    }
+    position += costOf(context, group)
+  }
+}
 
 /**
  * Which rows of the matrix are drawn: namespaces fold by default on large
@@ -22,86 +72,33 @@ export function useMatrixRows(
   groups: Ref<MatrixGroup[]>,
   rowCount: Ref<number>,
 ) {
-  const toggled = ref<Set<string>>(new Set())
-  const limit = ref(ROW_BATCH)
-
-  const foldsByDefault = computed(
-    () => rowCount.value > COLLAPSE_ABOVE && groups.value.length > 1,
+  const context: RowsContext = {
+    groups,
+    toggled: ref<Set<string>>(new Set()),
+    limit: ref(ROW_BATCH),
+    foldsByDefault: computed(
+      () => rowCount.value > COLLAPSE_ABOVE && groups.value.length > 1,
+    ),
+  }
+  const rendered = computed(() => renderedGroups(context))
+  const cost = computed(() =>
+    groups.value.reduce((sum, group) => sum + costOf(context, group), 0),
   )
-
-  function isCollapsed(namespace: string): boolean {
-    return foldsByDefault.value !== toggled.value.has(namespace)
-  }
-
-  function toggle(namespace: string) {
-    const next = new Set(toggled.value)
-    if (next.has(namespace)) next.delete(namespace)
-    else next.add(namespace)
-    toggled.value = next
-  }
-
-  function expand(namespace: string) {
-    if (isCollapsed(namespace)) toggle(namespace)
-  }
-
-  /** Each group costs its header and its open rows. */
-  function costOf(group: MatrixGroup): number {
-    return isCollapsed(group.namespace) ? 1 : group.rows.length + 1
-  }
-
-  const rendered = computed<RenderedGroup[]>(() => {
-    let budget = limit.value
-    const result: RenderedGroup[] = []
-    for (const group of groups.value) {
-      if (budget <= 0) break
-      const collapsed = isCollapsed(group.namespace)
-      const shown = collapsed ? [] : group.rows.slice(0, budget - 1)
-      budget -= shown.length + 1
-      result.push({ ...group, collapsed, shown })
-    }
-    return result
-  })
-
-  const renderedRows = computed(() =>
-    rendered.value.flatMap((group) => group.shown),
-  )
-
-  const hasMore = computed(
-    () =>
-      groups.value.reduce((sum, group) => sum + costOf(group), 0) > limit.value,
-  )
-
-  function showMore() {
-    limit.value += ROW_BATCH
-  }
-
-  /** Opens a key's namespace and draws rows down to it. */
-  function reveal(key: string) {
-    let position = 0
-    for (const group of groups.value) {
-      if (group.rows.some((row) => row.key === key)) {
-        expand(group.namespace)
-        const index = group.rows.findIndex((row) => row.key === key)
-        limit.value = Math.max(limit.value, position + index + ROW_BATCH)
-        return
-      }
-      position += costOf(group)
-    }
-  }
-
-  function reset() {
-    toggled.value = new Set()
-    limit.value = ROW_BATCH
-  }
 
   return {
     rendered,
-    renderedRows,
-    hasMore,
-    isCollapsed,
-    toggle,
-    showMore,
-    reveal,
-    reset,
+    renderedRows: computed(() =>
+      rendered.value.flatMap((group) => group.shown),
+    ),
+    hasMore: computed(() => cost.value > context.limit.value),
+    toggle: (namespace: string) => toggle(context, namespace),
+    showMore() {
+      context.limit.value += ROW_BATCH
+    },
+    reveal: (key: string) => reveal(context, key),
+    reset() {
+      context.toggled.value = new Set()
+      context.limit.value = ROW_BATCH
+    },
   }
 }

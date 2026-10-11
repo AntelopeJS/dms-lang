@@ -6,13 +6,12 @@ import {
   formatTokens,
   hasBlockingIssue,
   messageIssueText,
+  PLURAL_SEPARATOR,
   type MessageIssue,
 } from '../../../utils/translations'
 import type { SaveState } from '../../../utils/keySaves'
 import type { CellFailure } from '../../composables/useCellSaves'
-
-/** Where the editor goes once a cell is saved. */
-export type CellMove = 'stay' | 'down' | 'next' | 'previous'
+import type { CellMove } from '../../composables/useCellEditor'
 
 interface Props {
   value: string
@@ -45,12 +44,22 @@ interface Emits {
   review: []
 }
 
+interface TextareaHandle {
+  textareaRef?: HTMLTextAreaElement
+}
+
 type KeyHandler = (event: KeyboardEvent) => (() => void) | undefined
+
+type FailureAction = 'fix' | 'overwrite' | 'retry'
 
 const LONG_TEXT = 150
 const MULTILINE = '\n'
-const PLURAL_SEPARATOR = '|'
 const SYNTAX_KINDS = new Set(['bareAt', 'unclosedBrace', 'strayBrace'])
+const FAILURE_ACTION_LABELS: Record<FailureAction, string> = {
+  fix: 'dms_lang.matrix.fix',
+  overwrite: 'dms_lang.matrix.overwrite',
+  retry: 'dms_lang.actions.retry',
+}
 
 const props = withDefaults(defineProps<Props>(), {
   inherited: undefined,
@@ -64,9 +73,7 @@ const draft = defineModel<string>('draft', { default: '' })
 
 const { t } = useI18n()
 const isCommitted = ref(false)
-const textarea = useTemplateRef<{ textareaRef?: HTMLTextAreaElement }>(
-  'textarea',
-)
+const textarea = useTemplateRef<TextareaHandle>('textarea')
 
 const isMissing = computed(() => props.value === '')
 const shown = computed(() => (props.isEditing ? draft.value : props.value))
@@ -79,11 +86,14 @@ const missingTokens = computed(() =>
     .flatMap((issue) => issue.tokens),
 )
 const canEscape = computed(() => isEscapable(issues.value))
-/** The unsaved text does not compile: it is fixed or escaped, not sent again as is. */
 const failureIssues = computed<MessageIssue[]>(() =>
   props.failure ? checkMessage('', props.failure.draft) : [],
 )
 const isFailureInvalid = computed(() => hasBlockingIssue(failureIssues.value))
+const failureAction = computed<FailureAction>(() => {
+  if (isFailureInvalid.value) return 'fix'
+  return props.failure?.isConflict ? 'overwrite' : 'retry'
+})
 const hasError = computed(() =>
   issues.value.some((issue) => issue.severity === 'error'),
 )
@@ -351,13 +361,7 @@ function escapeDraft() {
         size="xs"
         color="error"
         variant="soft"
-        :label="
-          isFailureInvalid
-            ? $t('dms_lang.matrix.fix')
-            : props.failure.isConflict
-              ? $t('dms_lang.matrix.overwrite')
-              : $t('dms_lang.actions.retry')
-        "
+        :label="$t(FAILURE_ACTION_LABELS[failureAction])"
         @click="emit('retry')"
       />
     </div>

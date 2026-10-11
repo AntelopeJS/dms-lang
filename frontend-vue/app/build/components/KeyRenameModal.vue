@@ -28,8 +28,12 @@ const MODULE_CONFLICT_LABELS: Record<KeyPathConflict['kind'], string> = {
   leafParent: 'dms_lang.key_add.module_parent',
 }
 
+interface Emits {
+  close: [newPath: string | null]
+}
+
 const props = defineProps<Props>()
-const emit = defineEmits<{ close: [newPath: string | null] }>()
+const emit = defineEmits<Emits>()
 
 const { t } = useI18n()
 const { errorMessage } = useMutationToast()

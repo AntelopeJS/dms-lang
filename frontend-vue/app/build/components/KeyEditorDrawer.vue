@@ -6,7 +6,6 @@ interface KeptDrafts {
   starts: Record<string, ExpectedText>
 }
 
-/** Text a closing panel could not save, given back when its key opens again. */
 const keptDrafts = new Map<string, KeptDrafts>()
 </script>
 
@@ -27,6 +26,7 @@ import {
   hasBlockingIssue,
   isLocaleValueMissing,
   messageIssueText,
+  NAMESPACE_SEPARATOR,
   placeholdersOf,
   replacePlaceholder,
   stringValue,
@@ -51,7 +51,13 @@ interface Props {
   canOverride?: boolean
 }
 
-/** The module texts of a key, kept when its last override goes and the row leaves the project files. */
+interface Emits {
+  close: []
+  'update:open': [open: boolean]
+  navigate: [key: string]
+  override: [key: string]
+}
+
 interface KnownInherited {
   key: string
   inherited: FlatTranslationRow['inherited']
@@ -59,7 +65,6 @@ interface KnownInherited {
 
 type FieldStatus = 'missing' | 'inherited' | 'overridden' | 'outdated' | 'done'
 
-const KEY_SEPARATOR = '.'
 const DRAFT_ID_SEPARATOR = '\u0000'
 const WIDE_SCREEN_QUERY = '(min-width: 1024px)'
 const BASE_MISSING_LABEL = 'dms_lang.matrix.source_missing'
@@ -78,12 +83,7 @@ const props = withDefaults(defineProps<Props>(), {
   open: true,
   canOverride: false,
 })
-const emit = defineEmits<{
-  close: []
-  'update:open': [open: boolean]
-  navigate: [key: string]
-  override: [key: string]
-}>()
+const emit = defineEmits<Emits>()
 
 const { t } = useI18n()
 const toast = useToast()
@@ -130,7 +130,7 @@ const locales = computed(() => [
   ...flat.value.locales.filter((code) => code !== base.value),
 ])
 const crumbs = computed(() =>
-  key.value.split(KEY_SEPARATOR).slice(0, -1).join(' › '),
+  key.value.split(NAMESPACE_SEPARATOR).slice(0, -1).join(' › '),
 )
 const changedCodes = computed(() => locales.value.filter(isChanged))
 const missingCount = computed(
@@ -159,7 +159,6 @@ function inheritedOf(code: string): string {
   return isStored.value ? '' : stringValue(row.value.values[code])
 }
 
-/** What a field shows before any typing: the own text, else the module's. */
 function baselineOf(code: string): string {
   return ownOf(code) || inheritedOf(code)
 }
@@ -178,12 +177,10 @@ function storedOf(code: string): string | null {
   return ownOf(code) || null
 }
 
-/** The text a save of the field expects to replace: the one shown when its edit began. */
 function expectedOf(code: string): ExpectedText {
   return editStarts.has(code) ? editStarts.of(code) : storedOf(code)
 }
 
-/** Someone else saved the field while it was being edited: the typed text waits for a choice. */
 function hasConflict(code: string): boolean {
   return (
     isChanged(code) &&
@@ -192,7 +189,6 @@ function hasConflict(code: string): boolean {
   )
 }
 
-/** A field left unsaved: in conflict, refused by the server or not valid. */
 function isWaiting(code: string): boolean {
   return (
     hasConflict(code) ||
@@ -201,7 +197,6 @@ function isWaiting(code: string): boolean {
   )
 }
 
-/** What the field's save status shows: a text held back as invalid is not saved. */
 function saveStateOf(code: string): SaveState {
   return blocked.value[code] ? 'error' : states.stateOf(code)
 }
@@ -251,7 +246,6 @@ function discardDraft(code: string) {
   setFieldState(code, 'idle')
 }
 
-/** Saves the typed text over what someone else saved meanwhile. */
 function overwrite(code: string) {
   editStarts.set(code, storedOf(code))
   save([code])
@@ -279,7 +273,6 @@ async function focusField(code?: string, caret?: number) {
   if (caret !== undefined) input.setSelectionRange(caret, caret)
 }
 
-/** Writes a token where the caret is (over the selection) and keeps the focus there. */
 function insertAtCaret(code: string, token: string) {
   const input = fieldInput(code)
   const current = draftOf(code)
@@ -338,13 +331,11 @@ function isClearingBase(codes: string[]): boolean {
   )
 }
 
-/** Emptying the base text asks first, as in the matrix; declined, the text comes back. */
 async function confirmBaseClear(codes: string[]) {
   if (!isClearingBase(codes)) return
   if (!(await saves.confirmClearBase(key.value))) discardDraft(base.value)
 }
 
-/** Saves the given fields of the shown key; false while one stays unsaved. */
 async function persist(codes: string[]): Promise<boolean> {
   const path = key.value
   const workspace = selectedWorkspace.value
@@ -379,7 +370,6 @@ async function flush(): Promise<boolean> {
   return save(changedCodes.value)
 }
 
-/** Text typed elsewhere starts its edit now: its save expects the text shown at this point. */
 function takeDrafts(typed: Record<string, string> | undefined) {
   for (const code of Object.keys(typed ?? {})) startEdit(code)
   drafts.value = { ...drafts.value, ...typed }
@@ -429,7 +419,6 @@ async function requestClose() {
   if (isSaved) finish()
 }
 
-/** Closed from outside (the matrix, the Back button): nothing typed is dropped. */
 async function closeFromOutside() {
   const path = key.value
   const workspace = selectedWorkspace.value
@@ -461,7 +450,6 @@ function onDismissAttempt() {
   if (!isWide.value) requestClose()
 }
 
-/** Escape typed in the page next to a side panel belongs to the page. */
 function onEscape() {
   const panel = body.value?.closest('[role="dialog"]')
   if (isWide.value && !panel?.contains(document.activeElement)) return
@@ -480,7 +468,6 @@ async function rename() {
   if (renamed) finish()
 }
 
-/** Acknowledges "To review" without changing the text. */
 async function markReviewed(code: string) {
   const path = key.value
   const outcome = await saves.markReviewed(
@@ -503,7 +490,6 @@ async function remove() {
   if (isDone) finish()
 }
 
-/** Another key was asked while a field waits (a conflict, an invalid text): the panel stays and says why. */
 function stayOnKey() {
   toast.add({
     title: t('dms_lang.drawer.stays_title', { key: key.value }),
@@ -515,8 +501,6 @@ function stayOnKey() {
   if (waiting) fieldInput(waiting)?.scrollIntoView({ block: 'nearest' })
 }
 
-// The page asks for another key: the panel always answers with the key it
-// shows (`navigate`), so the page drops what it handed over only once taken.
 watch(
   () => [props.keys[props.startIndex], props.initialDrafts] as const,
   async ([target], _previous, onCleanup) => {

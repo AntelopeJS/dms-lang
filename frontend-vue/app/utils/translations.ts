@@ -79,12 +79,12 @@ export type MessageTranslate = (
 
 const FULL_COVERAGE = 100
 const DEFAULT_LOCALE = 'en'
-const NAMESPACE_SEPARATOR = '.'
+export const NAMESPACE_SEPARATOR = '.'
 const OPEN_BRACE = '{'
 const CLOSE_BRACE = '}'
 const QUOTE = "'"
 const LINKED_MARK = '@'
-const PLURAL_SEPARATOR = '|'
+export const PLURAL_SEPARATOR = '|'
 /** What vue-i18n compiles as a variable, the rule the server applies too. */
 const PLACEHOLDER_NAME = /^(?:[A-Za-z_][\w$-]*|\d+)$/
 const LITERAL_PATTERN = /\s*'((?:[^'\\\n]|\\.)*)'\s*\}/y
