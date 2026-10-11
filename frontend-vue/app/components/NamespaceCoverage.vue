@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import UButton from '@nuxt/ui/components/Button.vue'
+import type { NamespaceCoverage } from '../types/lang'
 import LocaleTile from '../build/components/LocaleTile.vue'
 import {
   HIGH_COVERAGE,
@@ -8,7 +10,7 @@ import {
 } from '../utils/translations'
 
 const MAX_NAMESPACES = 6
-const MAX_LOCALES = 5
+const MAX_LOCALES = 6
 
 const HEAT_CLASSES: Record<'success' | 'warning' | 'error', string> = {
   success: 'bg-success/15 text-success ring-success/25',
@@ -16,45 +18,122 @@ const HEAT_CLASSES: Record<'success' | 'warning' | 'error', string> = {
   error: 'bg-error/15 text-error ring-error/25',
 }
 
+const { t } = useI18n()
 const { flat, isLoaded } = useWorkspaceFlat()
 const { formatCount } = useLangFormat()
 const links = useLangLinks()
-const { current } = useWorkspaceContext()
-const { nativeName } = useLocaleNames()
+const { canManage, isResolved, isUnknown } = useWorkspaceContext()
+const { nameAmong } = useLocaleNames()
 const { addLanguage } = useLanguageActions()
 
-const isFirstRun = computed(
-  () =>
-    isLoaded.value &&
-    current.value?.kind === 'added' &&
-    flat.value.totalKeys === 0,
-)
+function missingCount(code: string): number {
+  return flat.value.localeMissing[code] ?? 0
+}
 
-const locales = computed(() =>
+const targets = computed(() =>
   flat.value.locales
     .filter((code) => code !== flat.value.defaultLocale)
     .sort(
       (left, right) =>
-        (flat.value.localeProgress[right] ?? 0) -
-        (flat.value.localeProgress[left] ?? 0),
-    )
-    .slice(0, MAX_LOCALES),
+        (flat.value.localeProgress[left] ?? 0) -
+          (flat.value.localeProgress[right] ?? 0) ||
+        missingCount(right) - missingCount(left) ||
+        left.localeCompare(right),
+    ),
+)
+const locales = computed(() => targets.value.slice(0, MAX_LOCALES))
+const hiddenLocales = computed(
+  () => targets.value.length - locales.value.length,
 )
 
-const namespaces = computed(() =>
-  namespaceCoverage(flat.value.rows, locales.value)
-    .sort((left, right) => right.keys - left.keys)
-    .slice(0, MAX_NAMESPACES),
+function totalMissing(entry: NamespaceCoverage): number {
+  return Object.values(entry.missing).reduce((sum, count) => sum + count, 0)
+}
+
+const allNamespaces = computed(() =>
+  namespaceCoverage(flat.value.rows, targets.value).sort(
+    (left, right) =>
+      totalMissing(right) / right.keys - totalMissing(left) / left.keys ||
+      totalMissing(right) - totalMissing(left) ||
+      left.namespace.localeCompare(right.namespace),
+  ),
 )
+const namespaces = computed(() => allNamespaces.value.slice(0, MAX_NAMESPACES))
+const hiddenNamespaces = computed(
+  () => allNamespaces.value.length - namespaces.value.length,
+)
+
+const neediest = computed(() => targets.value[0] ?? '')
+const neediestMissing = computed(() => missingCount(neediest.value))
+
+function shownCoverage(entry: NamespaceCoverage, code: string): number {
+  return honestCoverage(entry.keys - (entry.missing[code] ?? 0), entry.keys)
+}
+
+function cellLink(entry: NamespaceCoverage, code: string): string {
+  if (!entry.missing[code]) {
+    return links.translations({ namespace: entry.namespace })
+  }
+  return links.translations({
+    namespace: entry.namespace,
+    missingIn: code,
+    filter: 'missing',
+  })
+}
+
+function cellLabel(entry: NamespaceCoverage, code: string): string {
+  const missing = entry.missing[code] ?? 0
+  const params = {
+    namespace: entry.namespace,
+    name: nameAmong(code, targets.value),
+    missing: formatCount(missing),
+    keys: formatCount(entry.keys),
+  }
+  if (!missing) return t('dms_lang.namespaces.cell_complete', params)
+  return t('dms_lang.namespaces.cell_missing', params, missing)
+}
 
 const gridTemplate = computed(
   () =>
     `minmax(6rem, 1fr) repeat(${locales.value.length}, minmax(2.5rem, 3rem))`,
 )
+
+usePageHeaderActions(() => [
+  canManage.value
+    ? h(UButton, {
+        label: t('dms_lang.languages.add'),
+        icon: 'i-ph-plus',
+        color: 'neutral',
+        variant: 'outline',
+        onClick: () => addLanguage(),
+      })
+    : null,
+  isResolved.value && neediestMissing.value
+    ? h(UButton, {
+        label: t(
+          'dms_lang.namespaces.translate_in',
+          {
+            count: formatCount(neediestMissing.value),
+            name: nameAmong(neediest.value, targets.value),
+          },
+          neediestMissing.value,
+        ),
+        icon: 'i-ph-translate',
+        to: links.translations({
+          filter: 'missing',
+          missingIn: neediest.value,
+        }),
+      })
+    : null,
+])
 </script>
 
 <template>
-  <DmsCard :padded="false" :title="$t('dms_lang.namespaces.title')">
+  <DmsCard
+    v-if="!isUnknown"
+    :padded="false"
+    :title="$t('dms_lang.namespaces.title')"
+  >
     <template #actions>
       <UButton
         size="xs"
@@ -70,52 +149,6 @@ const gridTemplate = computed(
       <USkeleton v-for="index in 4" :key="index" class="h-8 w-full" />
     </div>
 
-    <div
-      v-else-if="isFirstRun"
-      class="flex flex-col items-center gap-3 px-4 py-6 text-center"
-    >
-      <p class="text-highlighted text-sm font-semibold">
-        {{ $t('dms_lang.first_run.title', { name: current?.id }) }}
-      </p>
-      <DmsCheckList
-        size="sm"
-        :items="[
-          {
-            id: 'created',
-            label: $t('dms_lang.first_run.created', {
-              base: nativeName(flat.defaultLocale),
-            }),
-            state: 'ok',
-          },
-          {
-            id: 'keys',
-            label: $t('dms_lang.first_run.keys'),
-            state: 'pending',
-          },
-          {
-            id: 'languages',
-            label: $t('dms_lang.first_run.languages'),
-            state: flat.locales.length > 1 ? 'ok' : 'pending',
-          },
-        ]"
-      />
-      <div class="flex flex-wrap justify-center gap-2">
-        <UButton
-          icon="i-ph-plus"
-          size="sm"
-          :label="$t('dms_lang.first_run.add_key')"
-          :to="links.translations({ [PAGE_ACTION_QUERY]: PAGE_ACTIONS.addKey })"
-        />
-        <UButton
-          size="sm"
-          color="neutral"
-          variant="outline"
-          :label="$t('dms_lang.first_run.add_language')"
-          @click="addLanguage()"
-        />
-      </div>
-    </div>
-
     <p
       v-else-if="!locales.length || !namespaces.length"
       class="text-muted px-4 py-8 text-center text-sm"
@@ -127,7 +160,7 @@ const gridTemplate = computed(
       }}
     </p>
 
-    <div v-else class="overflow-x-auto px-4 pb-4 pt-3">
+    <div v-else class="overflow-x-auto px-4 pt-3 pb-4">
       <div
         class="grid items-center gap-1.5"
         :style="{ gridTemplateColumns: gridTemplate }"
@@ -137,9 +170,9 @@ const gridTemplate = computed(
           v-for="code in locales"
           :key="code"
           class="flex justify-center"
-          :title="code"
+          :title="`${nameAmong(code, targets)} · ${code}`"
         >
-          <LocaleTile :code="code" size="sm" />
+          <LocaleTile :code="code" :siblings="targets" size="sm" />
         </span>
         <template v-for="entry in namespaces" :key="entry.namespace">
           <span class="flex min-w-0 items-baseline gap-1.5">
@@ -153,26 +186,45 @@ const gridTemplate = computed(
           <ULink
             v-for="code in locales"
             :key="code"
-            :to="
-              links.translations({
-                namespace: entry.namespace,
-                missingIn: code,
-                filter: 'missing',
-              })
-            "
-            class="grid h-8 place-items-center rounded-md font-mono text-xs font-semibold ring-1 ring-inset transition-opacity hover:opacity-80"
-            :class="HEAT_CLASSES[coverageTone(entry.coverage[code] ?? 0)]"
-            :aria-label="
-              $t('dms_lang.namespaces.cell', {
-                namespace: entry.namespace,
-                code,
-                coverage: entry.coverage[code],
-              })
-            "
+            :to="cellLink(entry, code)"
+            class="grid h-8 place-items-center rounded-md font-mono text-xs font-semibold ring-1 transition-opacity ring-inset hover:opacity-80"
+            :class="HEAT_CLASSES[coverageTone(shownCoverage(entry, code))]"
+            :title="cellLabel(entry, code)"
+            :aria-label="cellLabel(entry, code)"
           >
-            {{ entry.coverage[code] }}
+            {{ shownCoverage(entry, code) }}
           </ULink>
         </template>
+      </div>
+
+      <div
+        v-if="hiddenLocales || hiddenNamespaces"
+        class="text-muted mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs"
+      >
+        <span v-if="hiddenLocales">
+          {{
+            $t(
+              'dms_lang.namespaces.more_locales',
+              { count: formatCount(hiddenLocales) },
+              hiddenLocales,
+            )
+          }}
+        </span>
+        <span v-if="hiddenNamespaces">
+          {{
+            $t(
+              'dms_lang.namespaces.more_namespaces',
+              { count: formatCount(hiddenNamespaces) },
+              hiddenNamespaces,
+            )
+          }}
+        </span>
+        <ULink
+          :to="links.translations()"
+          class="text-primary ml-auto font-medium hover:underline"
+        >
+          {{ $t('dms_lang.namespaces.see_all') }}
+        </ULink>
       </div>
     </div>
 
