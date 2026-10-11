@@ -200,6 +200,11 @@ function isWaiting(code: string): boolean {
   )
 }
 
+/** What the field's save status shows: a text held back as invalid is not saved. */
+function saveStateOf(code: string): SaveState {
+  return blocked.value[code] ? 'error' : states.stateOf(code)
+}
+
 function startEdit(code: string) {
   editStarts.begin(code, storedOf(code))
 }
@@ -672,34 +677,13 @@ onMounted(() => {
                 <UIcon name="i-ph-warning" class="size-3.5" />
                 {{ $t('dms_lang.drawer.conflict') }}
               </span>
-              <template v-else-if="fieldStates[code] === 'saving'">
-                <UIcon name="i-ph-circle-notch" class="size-3.5 animate-spin" />
-                <span class="text-dimmed">
-                  {{ $t('dms_lang.drawer.saving') }}
-                </span>
-              </template>
-              <span
-                v-else-if="fieldStates[code] === 'saved'"
-                class="text-success inline-flex items-center gap-1"
-              >
-                <UIcon name="i-ph-check" class="size-3.5" />
-                {{ $t('dms_lang.drawer.saved_state') }}
-              </span>
-              <template
-                v-else-if="fieldStates[code] === 'error' || blocked[code]"
-              >
-                <span class="text-error font-medium">
-                  {{ $t('dms_lang.drawer.not_saved') }}
-                </span>
-                <UButton
-                  v-if="fieldStates[code] === 'error'"
-                  size="xs"
-                  color="neutral"
-                  variant="link"
-                  :label="$t('dms_lang.actions.retry')"
-                  @click="save([code])"
+              <template v-else-if="saveStateOf(code) !== 'idle'">
+                <DmsSaveStatus
+                  :state="saveStateOf(code)"
+                  @retry="save([code])"
                 />
                 <UButton
+                  v-if="saveStateOf(code) === 'error'"
                   size="xs"
                   color="neutral"
                   variant="link"

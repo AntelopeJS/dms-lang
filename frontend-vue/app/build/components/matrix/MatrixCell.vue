@@ -461,22 +461,8 @@ function escapeDraft() {
       <UIcon name="i-ph-clock-counter-clockwise" class="size-3" />
       {{ $t('dms_lang.matrix.outdated') }}
     </span>
-    <span
-      v-if="props.state === 'saving' || props.state === 'saved'"
-      class="mt-1 flex items-center gap-1 text-[10.5px]"
-      :class="props.state === 'saved' ? 'text-success' : 'text-dimmed'"
-      role="status"
-    >
-      <UIcon
-        :name="props.state === 'saved' ? 'i-ph-check' : 'i-ph-circle-notch'"
-        class="size-3"
-        :class="props.state === 'saving' ? 'animate-spin' : undefined"
-      />
-      {{
-        props.state === 'saved'
-          ? $t('dms_lang.matrix.saved')
-          : $t('dms_lang.matrix.saving')
-      }}
+    <span v-if="props.state !== 'idle'" class="mt-1 flex">
+      <DmsSaveStatus :state="props.state" />
     </span>
   </component>
 </template>
