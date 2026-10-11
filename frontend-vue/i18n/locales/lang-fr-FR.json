@@ -554,6 +554,7 @@
 			"title": "Ajouter une clé",
 			"description": "Ajoutée à {workspace}. Écrivez le texte dans les langues que vous connaissez ; les autres apparaîtront comme manquantes.",
 			"path": "Chemin de la clé",
+			"texts_required": "Écrivez le texte dans au moins une langue pour ajouter la clé.",
 			"path_help": "Séparé par des points, comme checkout.coupon.invalid.",
 			"path_invalid": "Utilisez des lettres, des chiffres, des tirets et des tirets bas, séparés par des points.",
 			"path_taken": "Cette clé existe déjà.",

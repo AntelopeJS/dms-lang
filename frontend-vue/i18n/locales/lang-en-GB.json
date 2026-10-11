@@ -554,6 +554,7 @@
 			"title": "Add key",
 			"description": "Added to {workspace}. Write the text in the languages you know now; the others show as missing.",
 			"path": "Key path",
+			"texts_required": "Write the text in at least one language to add the key.",
 			"path_help": "Dot-separated, such as checkout.coupon.invalid.",
 			"path_invalid": "Use letters, digits, dashes and underscores, separated by dots.",
 			"path_taken": "This key already exists.",
