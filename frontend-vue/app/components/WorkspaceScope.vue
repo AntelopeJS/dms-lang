@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useDmsRouter } from '#dms/frontend-module'
+import { useDmsRouter, useDmsState } from '#dms/frontend-module'
 import type { DropdownMenuItem } from '@nuxt/ui'
 import type { WorkspaceSummary } from '../types/lang'
 import LocaleTile from '../build/components/LocaleTile.vue'
@@ -9,16 +9,39 @@ const KIND_ICONS: Record<WorkspaceSummary['kind'], string> = {
   added: 'i-ph-stack',
   modules: 'i-ph-puzzle-piece',
 }
+/** From this many workspaces on, the menu gets a filter field. */
+const MENU_FILTER_THRESHOLD = 7
+const MENU_FILTER_FIELDS = ['label', 'description', 'workspaceId', 'summary']
+/** Marks the "workspace not found" state; the style below hides the page's other blocks under it. */
+const UNKNOWN_CLASS = 'dms-lang-unknown-workspace'
 
 const { t } = useI18n()
 const { formatCount } = useLangFormat()
-const { workspaces, editable, isLoaded } = useI18nWorkspaces()
-const { current, isEditable, isModules, isAdded } = useWorkspaceContext()
-const { flat, isLoaded: isFlatLoaded } = useWorkspaceFlat()
-const { switchLink, queryWorkspace } = useWorkspaceRoute()
+const { workspaces, editable, isLoaded, selectedWorkspace } =
+  useI18nWorkspaces()
+const {
+  current,
+  isEditable,
+  isModules,
+  isAdded,
+  isUnknown,
+  unknownId,
+  isResolved,
+} = useWorkspaceContext()
+const { flat } = useWorkspaceFlat()
+const {
+  route,
+  switchLink,
+  queryWorkspace,
+  pageAction,
+  clearPageAction,
+  currentPage,
+} = useWorkspaceRoute()
 const router = useDmsRouter()
-const { selectedWorkspace } = useI18nWorkspaces()
 const links = useLangLinks()
+const { nativeName } = useLocaleNames()
+const { addLanguage } = useLanguageActions()
+const { typeIcon, typeLabel } = useWorkspaceTypes()
 
 function workspaceLabel(workspace: WorkspaceSummary | null): string {
   if (!workspace) return ''
@@ -32,45 +55,68 @@ function trailingIconOf(workspace: WorkspaceSummary): string | undefined {
   return workspace.editable ? undefined : 'i-ph-lock-simple'
 }
 
+/** What the workspace serves (its type), else its kind, and its languages. */
 function workspaceDetail(workspace: WorkspaceSummary): string {
   const count = workspace.locales.length
-  return t(
-    'dms_lang.scope.menu_detail',
-    { kind: t(`dms_lang.workspace_kinds.${workspace.kind}.kind`), count },
-    count,
-  )
+  const kind = workspace.type
+    ? typeLabel(workspace.type)
+    : t(`dms_lang.workspace_kinds.${workspace.kind}.kind`)
+  return t('dms_lang.scope.menu_detail', { kind, count }, count)
 }
 
-const menuItems = computed<DropdownMenuItem[][]>(() => [
-  [
-    { type: 'label', label: t('dms_lang.scope.switch') },
-    ...workspaces.value.map((workspace) => ({
-      label: workspaceLabel(workspace),
-      description: workspaceDetail(workspace),
-      icon: KIND_ICONS[workspace.kind],
-      trailingIcon: trailingIconOf(workspace),
-      to: switchLink(workspace.id),
-    })),
-  ],
-  [
-    {
-      label: t('dms_lang.scope.manage'),
-      icon: 'i-ph-gear-six',
-      to: links.workspaces(),
-    },
-    ...(editable.value
-      ? [
-          {
-            label: t('dms_lang.workspaces.new'),
-            icon: 'i-ph-plus',
-            to: links.workspaces({
-              [PAGE_ACTION_QUERY]: PAGE_ACTIONS.newWorkspace,
-            }),
-          },
-        ]
-      : []),
-  ],
+const switchItems = computed<DropdownMenuItem[]>(() => [
+  { type: 'label', label: t('dms_lang.scope.switch') },
+  ...workspaces.value.map((workspace) => ({
+    label: workspaceLabel(workspace),
+    description: workspaceDetail(workspace),
+    icon: workspace.type
+      ? typeIcon(workspace.type)
+      : KIND_ICONS[workspace.kind],
+    slot: 'workspace' as const,
+    trailingIcon: trailingIconOf(workspace),
+    to: switchLink(workspace.id),
+    workspaceId: workspace.id,
+    summary: workspace.description ?? '',
+  })),
 ])
+
+const menuFilter = computed(() =>
+  workspaces.value.length >= MENU_FILTER_THRESHOLD
+    ? { placeholder: t('dms_lang.scope.filter') }
+    : false,
+)
+
+const manageItems = computed<DropdownMenuItem[]>(() => [
+  ...(current.value && currentPage.value !== 'workspace'
+    ? [
+        {
+          label: t('dms_lang.scope.settings', {
+            name: workspaceLabel(current.value),
+          }),
+          icon: 'i-ph-sliders-horizontal',
+          to: links.workspaceSettings(),
+        },
+      ]
+    : []),
+  {
+    label: t('dms_lang.scope.manage'),
+    icon: 'i-ph-gear-six',
+    to: links.workspaces(),
+  },
+  ...(editable.value
+    ? [
+        {
+          label: t('dms_lang.workspaces.new'),
+          icon: 'i-ph-plus',
+          to: links.workspaces({
+            [PAGE_ACTION_QUERY]: PAGE_ACTIONS.newWorkspace,
+          }),
+        },
+      ]
+    : []),
+])
+
+const menuItems = computed(() => [switchItems.value, manageItems.value])
 
 const hint = computed(() => {
   if (isAdded.value) {
@@ -78,31 +124,73 @@ const hint = computed(() => {
       url: links.publicLocaleUrl(current.value?.id ?? ''),
     })
   }
-  return t(`dms_lang.workspace_kinds.${current.value?.kind ?? 'default'}.hint`)
+  return current.value
+    ? t(`dms_lang.workspace_kinds.${current.value.kind}.hint`)
+    : ''
 })
 
 const showReadOnlyServer = computed(
   () => isLoaded.value && !editable.value && !isModules.value,
 )
 
-const { addLanguage } = useLanguageActions()
-const { pageAction, clearPageAction } = useWorkspaceRoute()
+const baseMissingLink = computed(() => links.translations({ filter: 'issues' }))
+
+const workspacesLink = linkWithQuery(LANG_PAGES.workspaces, {
+  workspace: DEFAULT_WORKSPACE,
+})
+const addKeyLink = computed(() =>
+  links.translations({ [PAGE_ACTION_QUERY]: PAGE_ACTIONS.addKey }),
+)
+
+const isFirstRun = computed(
+  () =>
+    currentPage.value === 'overview' &&
+    isResolved.value &&
+    isAdded.value &&
+    flat.value.totalKeys === 0,
+)
+
+// A page opened without `?workspace=` names the one it shows: the one
+// remembered, or the project files once that one turns out to be gone.
+const filledFromMemory = useDmsState<string>(
+  'dms-lang-workspace-filled',
+  () => '',
+)
+
+function fillWorkspace(workspace: string): void {
+  void router.replace(linkWithQuery(route.path, { ...route.query, workspace }))
+}
 
 watch(
   [queryWorkspace, pageAction],
   ([workspace, action]) => {
     if (import.meta.env.SSR || workspace || action) return
-    if (selectedWorkspace.value) {
-      void router.replace(switchLink(selectedWorkspace.value))
-    }
+    const isKnown = workspaces.value.some(
+      (entry) => entry.id === selectedWorkspace.value,
+    )
+    const fallback =
+      isKnown || !isLoaded.value ? selectedWorkspace.value : DEFAULT_WORKSPACE
+    filledFromMemory.value = fallback
+    fillWorkspace(fallback)
   },
   { immediate: true },
 )
 
 watch(
-  [pageAction, isFlatLoaded],
-  async ([action, loaded]) => {
-    if (action !== PAGE_ACTIONS.addLanguage || !loaded) return
+  [isUnknown, queryWorkspace],
+  ([unknown, workspace]) => {
+    if (import.meta.env.SSR || !unknown) return
+    if (!workspace || workspace !== filledFromMemory.value) return
+    filledFromMemory.value = ''
+    fillWorkspace(DEFAULT_WORKSPACE)
+  },
+  { immediate: true },
+)
+
+watch(
+  [pageAction, isResolved],
+  async ([action, resolved]) => {
+    if (action !== PAGE_ACTIONS.addLanguage || !resolved) return
     await clearPageAction()
     await addLanguage()
   },
@@ -111,23 +199,65 @@ watch(
 </script>
 
 <template>
-  <div class="space-y-3">
+  <DmsEmptyState
+    v-if="isUnknown"
+    :class="UNKNOWN_CLASS"
+    variant="no-result"
+    size="lg"
+    hatched
+    icon="i-ph-stack"
+    :title="$t('dms_lang.scope.unknown_title', { id: unknownId })"
+    :description="$t('dms_lang.scope.unknown_description')"
+    :actions="[
+      {
+        label: $t('dms_lang.scope.unknown_action'),
+        icon: 'i-ph-arrow-right',
+        to: workspacesLink,
+      },
+    ]"
+  />
+
+  <div v-else class="space-y-3">
     <div
-      class="dms-card flex flex-wrap items-center gap-x-3.5 gap-y-2.5 py-2 pl-2 pr-3.5"
+      class="dms-card flex flex-wrap items-center gap-x-3.5 gap-y-2.5 py-2 pr-3.5 pl-2"
     >
       <UDropdownMenu
         :items="menuItems"
+        :filter="menuFilter"
+        :filter-fields="MENU_FILTER_FIELDS"
         :content="{ align: 'start' }"
         :ui="{ content: 'w-80' }"
       >
+        <template #workspace-description="{ item }">
+          <span
+            v-if="item.summary"
+            class="text-muted block truncate"
+            :title="item.summary"
+          >
+            {{ item.summary }}
+          </span>
+          <span class="block truncate">{{ item.description }}</span>
+        </template>
+        <template #workspace-trailing="{ item }">
+          <UIcon
+            v-if="item.trailingIcon"
+            :name="item.trailingIcon"
+            class="size-4 shrink-0"
+            :class="
+              item.trailingIcon === 'i-ph-check'
+                ? 'text-primary'
+                : 'text-dimmed'
+            "
+          />
+        </template>
         <button
           type="button"
-          class="hover:bg-elevated/60 hover:border-default flex h-11 items-center gap-2.5 rounded-md border border-transparent pl-1.5 pr-2.5 text-left transition-colors"
+          class="hover:bg-elevated/60 hover:border-default flex h-11 items-center gap-2.5 rounded-md border border-transparent pr-2.5 pl-1.5 text-left transition-colors"
           :aria-label="$t('dms_lang.scope.switch')"
         >
           <DmsIconWell
             :icon="current ? KIND_ICONS[current.kind] : 'i-ph-stack'"
-            :tone="isEditable ? 'primary' : 'warning'"
+            :tone="!current ? 'neutral' : isEditable ? 'primary' : 'warning'"
             size="sm"
           />
           <span class="grid gap-px">
@@ -135,7 +265,7 @@ watch(
             <USkeleton v-if="!current" class="h-4 w-24" />
             <span
               v-else
-              class="text-highlighted text-sm font-semibold leading-tight"
+              class="text-highlighted text-sm leading-tight font-semibold"
             >
               {{ workspaceLabel(current) }}
             </span>
@@ -146,7 +276,17 @@ watch(
 
       <span class="bg-border hidden h-7 w-px sm:block" />
 
-      <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+      <div
+        v-if="!isResolved"
+        class="flex flex-wrap items-center gap-x-4 gap-y-1"
+        aria-busy="true"
+      >
+        <USkeleton class="h-5 w-20 rounded-full" />
+        <USkeleton class="h-4 w-24" />
+        <USkeleton class="h-4 w-16" />
+      </div>
+
+      <div v-else class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
         <DmsStatusPill
           dot="none"
           :tone="isEditable ? 'success' : 'warning'"
@@ -170,6 +310,20 @@ watch(
           </b>
           {{ $t('dms_lang.scope.keys', flat.totalKeys) }}
         </span>
+        <ULink
+          v-if="flat.baseMissing"
+          :to="baseMissingLink"
+          class="text-warning inline-flex items-center gap-1 hover:underline"
+        >
+          <UIcon name="i-ph-warning" class="size-4" />
+          {{
+            $t(
+              'dms_lang.scope.base_missing',
+              { n: formatCount(flat.baseMissing) },
+              flat.baseMissing,
+            )
+          }}
+        </ULink>
         <span
           v-if="flat.defaultLocale"
           class="text-muted inline-flex items-center gap-1.5"
@@ -180,7 +334,9 @@ watch(
         </span>
       </div>
 
+      <USkeleton v-if="!current" class="ml-auto h-3 w-40" />
       <p
+        v-else
         class="text-dimmed ml-auto min-w-0 truncate font-mono text-xs"
         :title="hint"
       >
@@ -196,5 +352,66 @@ watch(
       :title="$t('dms_lang.scope.server_read_only_title')"
       :description="$t('dms_lang.scope.server_read_only_description')"
     />
+
+    <div
+      v-if="isFirstRun"
+      class="dms-card flex flex-col items-center gap-3 px-4 py-8 text-center"
+    >
+      <p class="text-highlighted text-base font-semibold">
+        {{ $t('dms_lang.first_run.title', { name: current?.id }) }}
+      </p>
+      <p class="text-muted max-w-prose text-sm">
+        {{ $t('dms_lang.first_run.description') }}
+      </p>
+      <DmsCheckList
+        size="sm"
+        :items="[
+          {
+            id: 'created',
+            label: $t('dms_lang.first_run.created', {
+              base: nativeName(flat.defaultLocale),
+            }),
+            state: 'ok',
+          },
+          {
+            id: 'keys',
+            label: $t('dms_lang.first_run.keys'),
+            state: 'pending',
+          },
+          {
+            id: 'languages',
+            label: $t('dms_lang.first_run.languages'),
+            state: flat.locales.length > 1 ? 'ok' : 'pending',
+          },
+        ]"
+      />
+      <div class="flex flex-wrap justify-center gap-2">
+        <UButton
+          icon="i-ph-plus"
+          :label="$t('dms_lang.first_run.add_key')"
+          :to="addKeyLink"
+        />
+        <UButton
+          color="neutral"
+          variant="outline"
+          :label="$t('dms_lang.first_run.add_language')"
+          @click="addLanguage()"
+        />
+      </div>
+    </div>
   </div>
 </template>
+
+<style>
+/*
+ * Under "workspace not found", the other blocks of the page (KPI, tables,
+ * "Use in your app"…) would show the DMS load error, or the figures of the
+ * workspace as it was before another tab deleted it: the state replaces the
+ * whole page. The DMS has no way for a block to hide its siblings, so this
+ * targets the page stack it renders the top-level blocks in.
+ */
+.dms-page-stack:has(.dms-lang-unknown-workspace)
+  > :not(:has(.dms-lang-unknown-workspace)) {
+  display: none;
+}
+</style>

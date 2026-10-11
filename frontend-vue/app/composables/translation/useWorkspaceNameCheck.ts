@@ -11,22 +11,37 @@ const STATE_MESSAGES: Record<WorkspaceNameState, string> = {
   available: 'dms_lang.workspace_name.available',
 }
 
-/** Checks a workspace name as it is typed, before anything is sent. */
+/**
+ * Checks a workspace name as it is typed, before anything is sent. Ids are
+ * compared without case, as the server does. `freeze()` keeps the verdict
+ * once the name is sent: the list reloaded after a creation must not turn
+ * the closing dialog red with "already exists".
+ */
 export const useWorkspaceNameCheck = (name: Ref<string>, currentId = '') => {
   const { t } = useI18n()
   const { workspaces } = useI18nWorkspaces()
 
   const normalized = computed(() => normalizeWorkspaceId(name.value))
+  const frozenState = ref<WorkspaceNameState | null>(null)
 
-  const state = computed<WorkspaceNameState>(() => {
+  const liveState = computed<WorkspaceNameState>(() => {
     const id = normalized.value
     if (!id) return 'empty'
-    if (id === currentId) return 'unchanged'
+    if (id === normalizeWorkspaceId(currentId)) return 'unchanged'
     if (!isValidWorkspaceId(id)) return 'invalid'
-    if (workspaces.value.some((workspace) => workspace.id === id))
+    if (workspaces.value.some((workspace) => workspace.id.toLowerCase() === id))
       return 'taken'
     return 'available'
   })
+  const state = computed(() => frozenState.value ?? liveState.value)
+
+  function freeze(): void {
+    frozenState.value = liveState.value
+  }
+
+  function thaw(): void {
+    frozenState.value = null
+  }
 
   const message = computed(() =>
     t(STATE_MESSAGES[state.value], { name: normalized.value }),
@@ -36,5 +51,5 @@ export const useWorkspaceNameCheck = (name: Ref<string>, currentId = '') => {
     () => state.value === 'invalid' || state.value === 'taken',
   )
 
-  return { normalized, state, message, isValid, isError }
+  return { normalized, state, message, isValid, isError, freeze, thaw }
 }

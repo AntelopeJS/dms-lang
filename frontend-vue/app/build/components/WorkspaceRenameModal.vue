@@ -9,7 +9,7 @@ interface Props {
 const props = defineProps<Props>()
 const emit = defineEmits<{ close: [workspace: string | null] }>()
 
-const { renameWorkspace, fetchWorkspaces } = useI18nWorkspaces()
+const { renameWorkspace } = useI18nWorkspaces()
 const { tryMutate } = useMutationToast()
 const links = useLangLinks()
 
@@ -26,11 +26,14 @@ function close(workspace: string | null) {
 async function submit() {
   if (!check.isValid.value || isSubmitting.value) return
   isSubmitting.value = true
+  check.freeze()
   const id = check.normalized.value
   const ok = await tryMutate(() => renameWorkspace(props.workspace, id))
-  isSubmitting.value = false
-  if (!ok) return
-  await fetchWorkspaces()
+  if (!ok) {
+    check.thaw()
+    isSubmitting.value = false
+    return
+  }
   close(id)
 }
 </script>
@@ -63,7 +66,7 @@ async function submit() {
               :label="$t('dms_lang.workspace_rename.before')"
               size="xs"
             />
-            <code class="text-muted break-all font-mono text-xs">
+            <code class="text-muted font-mono text-xs break-all">
               {{ links.publicLocaleUrl(props.workspace) }}
             </code>
           </div>
@@ -73,7 +76,7 @@ async function submit() {
               :label="$t('dms_lang.workspace_rename.after')"
               size="xs"
             />
-            <code class="text-highlighted break-all font-mono text-xs">
+            <code class="text-highlighted font-mono text-xs break-all">
               {{
                 links.publicLocaleUrl(check.normalized.value || props.workspace)
               }}
@@ -88,6 +91,7 @@ async function submit() {
           color="neutral"
           variant="outline"
           :label="$t('dms_lang.actions.cancel')"
+          :disabled="isSubmitting"
           @click="close(null)"
         />
         <UButton

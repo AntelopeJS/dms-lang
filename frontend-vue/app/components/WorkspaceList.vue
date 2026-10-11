@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import UButton from '@nuxt/ui/components/Button.vue'
-import { useDmsRouter } from '#dms/frontend-module'
 import type { WorkspaceStats } from '../types/lang'
 import {
   COVERAGE_TEXT_CLASSES,
   coverageTone,
   resolveDefaultLocale,
 } from '../utils/translations'
+import { matchesWorkspace, sortWorkspaces } from '../utils/workspaces'
+import type { WorkspaceSort } from '../utils/workspaces'
 import LocaleTile from '../build/components/LocaleTile.vue'
 
 interface WorkspaceStat {
@@ -16,27 +17,86 @@ interface WorkspaceStat {
   tone?: string
 }
 
+interface WorkspacePill {
+  tone: 'neutral' | 'warning'
+  icon?: string
+  label: string
+}
+
 const KIND_ICONS: Record<WorkspaceStats['kind'], string> = {
   default: 'i-ph-file-code',
   added: 'i-ph-stack',
   modules: 'i-ph-puzzle-piece',
 }
 const EDITABLE_CONFIG = `"dms-lang": {\n  config: { editable: true },\n}`
+/** Below this many workspaces, searching and sorting them is noise. */
+const TOOLBAR_THRESHOLD = 4
+/** The sort picked last, remembered in this browser. */
+const SORT_STORAGE = 'dms-lang-workspaces-sort'
+const SORT_LABELS: Record<WorkspaceSort, string> = {
+  kind: 'dms_lang.workspaces.sort_kind',
+  name: 'dms_lang.workspaces.sort_name',
+  coverage: 'dms_lang.workspaces.sort_coverage',
+}
 
 const { t } = useI18n()
 const { formatCount } = useLangFormat()
 const { fallbackLocale } = useI18n()
 const { fetchSummary, selectedWorkspace, editable, fetchWorkspaces } =
   useI18nWorkspaces()
-const { createWorkspace } = useWorkspaceActions()
-const { pageAction, clearPageAction } = useWorkspaceRoute()
+const { createWorkspace, importWorkspace } = useWorkspaceActions()
+const { typeIcon, typeLabel } = useWorkspaceTypes()
+const { pageAction, clearPageAction, selectWorkspace } = useWorkspaceRoute()
+const { allows } = useWorkspaceContext()
 const links = useLangLinks()
-const router = useDmsRouter()
+
+const canCreate = computed(() => editable.value && allows('createWorkspace'))
 
 const summary = ref<WorkspaceStats[]>([])
 const isLoaded = ref(false)
 const hasError = ref(false)
 const isLoading = ref(false)
+const search = ref('')
+const sort = ref<WorkspaceSort>('kind')
+
+const sortItems = computed(() =>
+  (Object.keys(SORT_LABELS) as WorkspaceSort[]).map((value) => ({
+    value,
+    label: t(SORT_LABELS[value]),
+  })),
+)
+const hasToolbar = computed(
+  () => isLoaded.value && summary.value.length >= TOOLBAR_THRESHOLD,
+)
+const shown = computed(() =>
+  sortWorkspaces(
+    summary.value.filter((workspace) =>
+      matchesWorkspace(workspace, search.value, labelsOf(workspace)),
+    ),
+    sort.value,
+  ),
+)
+
+function isWorkspaceSort(value: unknown): value is WorkspaceSort {
+  return typeof value === 'string' && value in SORT_LABELS
+}
+
+function readSort(): WorkspaceSort | null {
+  try {
+    const stored = localStorage.getItem(SORT_STORAGE)
+    return isWorkspaceSort(stored) ? stored : null
+  } catch {
+    return null
+  }
+}
+
+function writeSort(value: WorkspaceSort) {
+  try {
+    localStorage.setItem(SORT_STORAGE, value)
+  } catch {
+    return
+  }
+}
 
 async function load() {
   isLoading.value = true
@@ -91,6 +151,31 @@ function statsOf(workspace: WorkspaceStats): WorkspaceStat[] {
   ]
 }
 
+function kindPill(workspace: WorkspaceStats): WorkspacePill {
+  if (workspace.type) {
+    return {
+      tone: 'neutral',
+      icon: typeIcon(workspace.type),
+      label: typeLabel(workspace.type),
+    }
+  }
+  const isModules = workspace.kind === 'modules'
+  return {
+    tone: isModules ? 'warning' : 'neutral',
+    icon: isModules ? 'i-ph-lock-simple' : undefined,
+    label: t(`dms_lang.workspace_kinds.${workspace.kind}.kind`),
+  }
+}
+
+function labelsOf(workspace: WorkspaceStats): string[] {
+  return [
+    kindPill(workspace).label,
+    t(`dms_lang.workspace_kinds.${workspace.kind}.label`, {
+      name: workspace.id,
+    }),
+  ]
+}
+
 function localeCodes(workspace: WorkspaceStats): string[] {
   const codes = workspace.locales.map((entry) => entry.code)
   return [
@@ -100,25 +185,31 @@ function localeCodes(workspace: WorkspaceStats): string[] {
 }
 
 async function open(workspace: WorkspaceStats) {
-  selectedWorkspace.value = workspace.id
-  await router.push(
-    workspace.kind === 'modules' ? links.translations() : links.overview(),
-  )
+  await selectWorkspace(workspace.id, {
+    page: workspace.kind === 'modules' ? 'translations' : 'overview',
+  })
 }
 
-async function create() {
-  const created = await createWorkspace()
-  if (!created) return
-  await load()
+function create() {
+  return createWorkspace()
 }
 
 usePageHeaderActions(() =>
-  editable.value
-    ? h(UButton, {
-        label: t('dms_lang.workspaces.new'),
-        icon: 'i-ph-plus',
-        onClick: create,
-      })
+  canCreate.value
+    ? [
+        h(UButton, {
+          label: t('dms_lang.workspace_import.open'),
+          icon: 'i-ph-upload-simple',
+          color: 'neutral',
+          variant: 'outline',
+          onClick: importWorkspace,
+        }),
+        h(UButton, {
+          label: t('dms_lang.workspaces.new'),
+          icon: 'i-ph-plus',
+          onClick: create,
+        }),
+      ]
     : null,
 )
 
@@ -127,12 +218,15 @@ watch(
   async ([action, loaded]) => {
     if (action !== PAGE_ACTIONS.newWorkspace || !loaded) return
     await clearPageAction()
-    if (editable.value) await create()
+    if (canCreate.value) await create()
   },
   { immediate: true },
 )
 
+watch(sort, writeSort)
+
 onMounted(() => {
+  sort.value = readSort() ?? sort.value
   load()
   fetchWorkspaces()
 })
@@ -171,6 +265,43 @@ onMounted(() => {
       ]"
     />
 
+    <div v-if="hasToolbar" class="flex flex-wrap items-center gap-2">
+      <UInput
+        v-model="search"
+        icon="i-ph-magnifying-glass"
+        size="sm"
+        class="min-w-48 flex-1"
+        :placeholder="$t('dms_lang.workspaces.search')"
+        :aria-label="$t('dms_lang.workspaces.search')"
+      />
+      <USelect
+        v-model="sort"
+        :items="sortItems"
+        size="sm"
+        class="w-56"
+        icon="i-ph-sort-ascending"
+        :aria-label="$t('dms_lang.workspaces.sort')"
+      />
+    </div>
+
+    <DmsEmptyState
+      v-if="isLoaded && summary.length && !shown.length"
+      variant="no-result"
+      size="lg"
+      hatched
+      icon="i-ph-magnifying-glass"
+      :title="$t('dms_lang.workspaces.no_match', { search: search.trim() })"
+      :actions="[
+        {
+          label: $t('dms_lang.workspaces.clear_search'),
+          icon: 'i-ph-x',
+          color: 'neutral',
+          variant: 'outline',
+          onClick: () => (search = ''),
+        },
+      ]"
+    />
+
     <div class="grid gap-4 lg:grid-cols-2">
       <template v-if="!isLoaded && !hasError">
         <DmsCard v-for="index in 4" :key="index" padded>
@@ -183,7 +314,7 @@ onMounted(() => {
       </template>
 
       <DmsCard
-        v-for="workspace in summary"
+        v-for="workspace in shown"
         :key="workspace.id"
         :padded="false"
         :selected="workspace.id === selectedWorkspace"
@@ -206,14 +337,8 @@ onMounted(() => {
                 </h3>
                 <DmsStatusPill
                   dot="none"
-                  :tone="workspace.kind === 'modules' ? 'warning' : 'neutral'"
                   size="sm"
-                  :icon="
-                    workspace.kind === 'modules'
-                      ? 'i-ph-lock-simple'
-                      : undefined
-                  "
-                  :label="$t(`dms_lang.workspace_kinds.${workspace.kind}.kind`)"
+                  v-bind="kindPill(workspace)"
                 />
                 <DmsStatusPill
                   dot="none"
@@ -224,14 +349,14 @@ onMounted(() => {
                   :label="$t('dms_lang.workspaces.current')"
                 />
               </div>
-              <p class="text-muted mt-0.5 text-xs">
+              <p class="text-muted mt-0.5 line-clamp-2 text-xs">
                 {{
+                  workspace.description ||
                   $t(`dms_lang.workspace_kinds.${workspace.kind}.description`)
                 }}
               </p>
             </div>
             <UButton
-              v-if="workspace.kind === 'added'"
               size="sm"
               color="neutral"
               variant="outline"
@@ -257,7 +382,7 @@ onMounted(() => {
             <span
               v-for="code in localeCodes(workspace)"
               :key="code"
-              class="border-default inline-flex items-center gap-1.5 rounded-md border py-0.5 pl-0.5 pr-2 font-mono text-xs"
+              class="border-default inline-flex items-center gap-1.5 rounded-md border py-0.5 pr-2 pl-0.5 font-mono text-xs"
             >
               <LocaleTile
                 :code="code"
@@ -326,9 +451,9 @@ onMounted(() => {
       </DmsCard>
 
       <button
-        v-if="isLoaded && editable"
+        v-if="isLoaded && canCreate"
         type="button"
-        class="border-default text-muted hover:border-primary/50 hover:text-highlighted rounded-(--dms-radius-card) flex min-h-56 flex-col items-center justify-center gap-3 border border-dashed p-6 text-center transition-colors"
+        class="border-default text-muted hover:border-primary/50 hover:text-highlighted flex min-h-56 flex-col items-center justify-center gap-3 rounded-(--dms-radius-card) border border-dashed p-6 text-center transition-colors"
         @click="create"
       >
         <DmsIconWell icon="i-ph-plus" tone="primary" size="lg" />

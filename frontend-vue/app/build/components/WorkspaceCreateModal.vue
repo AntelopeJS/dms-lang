@@ -1,36 +1,57 @@
 <script setup lang="ts">
+import type { WorkspaceDetails, WorkspaceType } from '../../types/lang'
+import type { WorkspaceBackup } from '../../composables/translation/useWorkspaceActions'
+import { canonicalLocale, searchLanguages } from '../../utils/languages'
 import LocaleTile from './LocaleTile.vue'
 import FormFieldRow from './form/FormFieldRow.vue'
 import FormRows from './form/FormRows.vue'
-import { SUGGESTED_LANGUAGE_CODES } from '../../utils/languages'
+import WorkspaceDetailsFields from './form/WorkspaceDetailsFields.vue'
 
-interface LanguageItem {
-  label: string
-  value: string
-  description: string
+interface Props {
+  /** A backup or a JSON of languages to create the workspace from. */
+  backup?: WorkspaceBackup
 }
 
 const DEFAULT_BASE = 'en'
 
+const props = withDefaults(defineProps<Props>(), { backup: undefined })
 const emit = defineEmits<{ close: [workspace: string | null] }>()
 
 const { t } = useI18n()
-const { createWorkspace, fetchWorkspaces } = useI18nWorkspaces()
+const { createWorkspace } = useI18nWorkspaces()
+const { importWorkspace } = useWorkspaceApi()
 const { tryMutate } = useMutationToast()
-const { nativeName } = useLocaleNames()
+const { fullName, findLanguages, languageOption } = useLocaleNames()
 const links = useLangLinks()
 
+const backupCodes = computed(() =>
+  Object.keys(props.backup?.messages ?? {}).map(
+    (code) => canonicalLocale(code) ?? code,
+  ),
+)
+const mode = computed(() => (props.backup ? 'import' : 'create'))
+
 const isOpen = ref(true)
-const name = ref('')
-const base = ref(DEFAULT_BASE)
+const name = ref(props.backup?.id ?? '')
+const base = ref(
+  canonicalLocale(props.backup?.defaultLocale ?? '') ??
+    backupCodes.value[0] ??
+    DEFAULT_BASE,
+)
+const baseSearch = ref('')
+const description = ref(props.backup?.description ?? '')
+const type = ref<WorkspaceType | undefined>(props.backup?.type)
 const isSubmitting = ref(false)
 const check = useWorkspaceNameCheck(name)
 
-const languageItems = computed<LanguageItem[]>(() =>
-  SUGGESTED_LANGUAGE_CODES.map((code) => ({
-    label: nativeName(code),
-    value: code,
-    description: code,
+const languageItems = computed(() =>
+  (props.backup
+    ? searchLanguages(backupCodes.value.map(languageOption), baseSearch.value)
+    : findLanguages(baseSearch.value)
+  ).map((option) => ({
+    label: option.name,
+    value: option.code,
+    description: option.localName,
   })),
 )
 
@@ -45,14 +66,35 @@ function close(workspace: string | null) {
   emit('close', workspace)
 }
 
+function detailsOf(): WorkspaceDetails {
+  const text = description.value.trim()
+  return {
+    ...(text ? { description: text } : {}),
+    ...(type.value ? { type: type.value } : {}),
+  }
+}
+
+function send(id: string): Promise<unknown> {
+  if (!props.backup)
+    return createWorkspace(id, { code: base.value }, detailsOf())
+  return importWorkspace(id, {
+    ...props.backup,
+    ...detailsOf(),
+    defaultLocale: base.value,
+  })
+}
+
 async function submit() {
   if (!check.isValid.value || isSubmitting.value) return
   isSubmitting.value = true
+  check.freeze()
   const id = check.normalized.value
-  const ok = await tryMutate(() => createWorkspace(id, { code: base.value }))
-  isSubmitting.value = false
-  if (!ok) return
-  await fetchWorkspaces()
+  const ok = await tryMutate(() => send(id))
+  if (!ok) {
+    check.thaw()
+    isSubmitting.value = false
+    return
+  }
   close(id)
 }
 </script>
@@ -60,8 +102,10 @@ async function submit() {
 <template>
   <UModal
     v-model:open="isOpen"
-    :title="$t('dms_lang.workspace_create.title')"
-    :description="$t('dms_lang.workspace_create.description')"
+    :title="$t(`dms_lang.workspace_${mode}.title`)"
+    :description="
+      $t(`dms_lang.workspace_${mode}.description`, backupCodes.length)
+    "
     :ui="{ content: 'sm:max-w-lg' }"
     @update:open="(open: boolean) => !open && close(null)"
   >
@@ -97,16 +141,44 @@ async function submit() {
               <USelectMenu
                 :id="id"
                 v-model="base"
+                v-model:search-term="baseSearch"
                 :items="languageItems"
                 value-key="value"
+                ignore-filter
+                :search-input="{
+                  placeholder: $t('dms_lang.language_add.search'),
+                }"
                 class="w-full"
+                :ui="{ content: 'min-w-80' }"
               >
                 <template #leading>
                   <LocaleTile :code="base" size="sm" />
                 </template>
+                <template #default>
+                  <span class="flex min-w-0 items-center gap-1.5">
+                    <span class="text-highlighted truncate">
+                      {{ fullName(base) }}
+                    </span>
+                    <span class="text-dimmed font-mono text-xs">
+                      · {{ base }}
+                    </span>
+                  </span>
+                </template>
+                <template #item-trailing="{ item }">
+                  <span class="text-dimmed font-mono text-xs">
+                    {{ item.value }}
+                  </span>
+                </template>
+                <template #empty>
+                  {{ $t('dms_lang.language_add.no_match') }}
+                </template>
               </USelectMenu>
             </template>
           </FormFieldRow>
+          <WorkspaceDetailsFields
+            v-model:description="description"
+            v-model:type="type"
+          />
         </FormRows>
         <div
           class="border-default flex items-center gap-2.5 rounded-md border border-dashed px-3 py-2"
@@ -124,13 +196,14 @@ async function submit() {
           color="neutral"
           variant="outline"
           :label="$t('dms_lang.actions.cancel')"
+          :disabled="isSubmitting"
           @click="close(null)"
         />
         <UButton
-          icon="i-ph-plus"
+          :icon="props.backup ? 'i-ph-upload-simple' : 'i-ph-plus'"
           :loading="isSubmitting"
           :disabled="!check.isValid.value"
-          :label="$t('dms_lang.workspace_create.submit')"
+          :label="$t(`dms_lang.workspace_${mode}.submit`)"
           @click="submit"
         />
       </div>

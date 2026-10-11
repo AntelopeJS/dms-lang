@@ -1,13 +1,84 @@
 import { h } from 'vue'
 import UButton from '@nuxt/ui/components/Button.vue'
+import type {
+  WorkspaceDetails,
+  WorkspaceLocale,
+  WorkspaceSummary,
+  WorkspaceType,
+} from '../../types/lang'
+import { typedLocaleCode } from '../../utils/languages'
 import WorkspaceCreateModal from '../../build/components/WorkspaceCreateModal.vue'
 import WorkspaceRenameModal from '../../build/components/WorkspaceRenameModal.vue'
 
 const JSON_INDENT = 2
+const REVOKE_DELAY_MS = 1000
+const JSON_FILE_TYPES = '.json,application/json'
+const JSON_EXTENSION_RE = /\.json$/i
+const BACKUP_FORMAT = 'dms-lang.workspace'
+const WORKSPACE_DESCRIPTION_MAX = 500
+const API_BASE = '/api/lang/translations'
+const ENDPOINTS = {
+  workspace: `${API_BASE}/workspace`,
+  backup: `${API_BASE}/backup`,
+  import: `${API_BASE}/import`,
+} as const
+
+const TYPE_ICONS: Record<WorkspaceType, string> = {
+  dms: 'i-ph-squares-four',
+  website: 'i-ph-globe',
+  mobile: 'i-ph-device-mobile',
+  other: 'i-ph-shapes',
+}
+
+type LocaleMessages = Record<string, Record<string, unknown>>
+
+/** A workspace saved as one JSON file: its manifest and every language file. */
+export interface WorkspaceBackup extends WorkspaceDetails {
+  format?: string
+  version?: number
+  id?: string
+  defaultLocale?: string
+  locales?: WorkspaceLocale[]
+  messages: LocaleMessages
+}
 
 interface DeleteImpact {
   files: number
   strings: number
+}
+
+interface DetailsChange {
+  description?: string | null
+  type?: WorkspaceType | null
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function isLocaleMessages(value: unknown): value is LocaleMessages {
+  if (!isRecord(value)) return false
+  const entries = Object.entries(value)
+  return (
+    entries.length > 0 &&
+    entries.every(
+      ([code, messages]) => typedLocaleCode(code) && isRecord(messages),
+    )
+  )
+}
+
+/**
+ * What a JSON file holds as a workspace: a backup (`messages` and its
+ * manifest), an export of every language (`{ <locale>: messages }`), or one
+ * language file named after its code (`it.json`). Null when it is none.
+ */
+function readBackup(content: unknown, fileName = ''): WorkspaceBackup | null {
+  if (isRecord(content) && isLocaleMessages(content.messages))
+    return content as unknown as WorkspaceBackup
+  if (isLocaleMessages(content)) return { messages: content }
+  const code = typedLocaleCode(fileName.replace(JSON_EXTENSION_RE, ''))
+  if (code && isRecord(content)) return { messages: { [code]: content } }
+  return null
 }
 
 function downloadFile(name: string, content: string, type: string): void {
@@ -16,62 +87,174 @@ function downloadFile(name: string, content: string, type: string): void {
   link.href = url
   link.download = name
   link.click()
-  URL.revokeObjectURL(url)
+  setTimeout(() => URL.revokeObjectURL(url), REVOKE_DELAY_MS)
 }
 
-/** Create, rename, back up and delete workspaces. */
+async function parseBackup(file: File): Promise<WorkspaceBackup | null> {
+  try {
+    return readBackup(JSON.parse(await file.text()), file.name)
+  } catch {
+    return null
+  }
+}
+
+function pickFile(accept: string): Promise<File | null> {
+  return new Promise((resolve) => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = accept
+    input.addEventListener('change', () => resolve(input.files?.[0] ?? null))
+    input.addEventListener('cancel', () => resolve(null))
+    input.click()
+  })
+}
+
+/** The kinds of app a workspace serves, as a picker offers them. */
+export const useWorkspaceTypes = () => {
+  const { t } = useI18n()
+  const typeItems = computed(() =>
+    (Object.keys(TYPE_ICONS) as WorkspaceType[]).map((value) => ({
+      value,
+      label: t(`dms_lang.workspace_types.${value}`),
+      icon: TYPE_ICONS[value],
+    })),
+  )
+  const typeIcon = (type: WorkspaceType) => TYPE_ICONS[type]
+  const typeOf = (value: unknown): WorkspaceType | undefined =>
+    typeof value === 'string' && value in TYPE_ICONS
+      ? (value as WorkspaceType)
+      : undefined
+  const typeLabel = (type: WorkspaceType) =>
+    t(`dms_lang.workspace_types.${type}`)
+  return {
+    typeItems,
+    typeIcon,
+    typeLabel,
+    typeOf,
+    descriptionMax: WORKSPACE_DESCRIPTION_MAX,
+  }
+}
+
+/** The routes behind a workspace's details, its backup and its import. */
+export const useWorkspaceApi = () => {
+  const { $authFetch } = useAuthFetch()
+  return {
+    updateWorkspace: (id: string, change: DetailsChange) =>
+      $authFetch<WorkspaceSummary>(ENDPOINTS.workspace, {
+        method: 'PATCH',
+        body: { id, ...change },
+      }),
+    fetchBackup: (workspace: string) =>
+      $authFetch<WorkspaceBackup>(ENDPOINTS.backup, { query: { workspace } }),
+    importWorkspace: (id: string, backup: WorkspaceBackup) =>
+      $authFetch<WorkspaceSummary>(ENDPOINTS.import, {
+        method: 'POST',
+        body: { ...backup, format: BACKUP_FORMAT, id },
+      }),
+  }
+}
+
+/** Create, import, rename, back up and delete workspaces. */
 export const useWorkspaceActions = () => {
   const { t } = useI18n()
   const toast = useToast()
   const overlay = useOverlay()
   const { confirm } = useConfirm()
   const { formatCount } = useLangFormat()
-  const {
-    selectedWorkspace,
-    fetchWorkspaces,
-    deleteWorkspace: removeWorkspace,
-    exportWorkspace,
-  } = useI18nWorkspaces()
-  const { reportFailure } = useMutationToast()
+  const { fetchWorkspaces, deleteWorkspace: removeWorkspace } =
+    useI18nWorkspaces()
+  const { selectWorkspace } = useWorkspaceRoute()
+  const api = useWorkspaceApi()
+  const { tryMutate, reportFailure } = useMutationToast()
   const links = useLangLinks()
 
-  async function createWorkspace(): Promise<string | null> {
-    const modal = overlay.create(WorkspaceCreateModal)
+  function succeed(title: string): void {
+    toast.add({ title, color: 'success', icon: 'i-ph-check-circle' })
+  }
+
+  async function openCreate(backup?: WorkspaceBackup): Promise<string | null> {
+    const modal = overlay.create(WorkspaceCreateModal, { props: { backup } })
     const created = (await modal.open()) as string | null
     if (!created) return null
-    selectedWorkspace.value = created
-    toast.add({
-      title: t('dms_lang.workspace_create.done', { name: created }),
-      color: 'success',
-      icon: 'i-ph-check-circle',
-    })
+    await fetchWorkspaces()
+    succeed(
+      t(`dms_lang.workspace_${backup ? 'import' : 'create'}.done`, {
+        name: created,
+      }),
+    )
+    await selectWorkspace(created, { page: 'workspace' })
     return created
+  }
+
+  const createWorkspace = () => openCreate()
+
+  async function importWorkspace(): Promise<string | null> {
+    const file = await pickFile(JSON_FILE_TYPES)
+    if (!file) return null
+    const backup = await parseBackup(file)
+    if (backup) return openCreate(backup)
+    toast.add({
+      title: t('dms_lang.workspace_import.invalid_title', { file: file.name }),
+      description: t('dms_lang.workspace_import.invalid_help'),
+      color: 'error',
+      icon: 'i-ph-warning-circle',
+    })
+    return null
   }
 
   async function renameWorkspace(workspace: string): Promise<string | null> {
     const modal = overlay.create(WorkspaceRenameModal, { props: { workspace } })
     const renamed = (await modal.open()) as string | null
     if (!renamed) return null
-    if (selectedWorkspace.value === workspace) selectedWorkspace.value = renamed
-    toast.add({
-      title: t('dms_lang.workspace_rename.done', { name: renamed }),
-      color: 'success',
-      icon: 'i-ph-check-circle',
-    })
+    await fetchWorkspaces()
+    succeed(t('dms_lang.workspace_rename.done', { name: renamed }))
+    await selectWorkspace(renamed, { replace: true })
     return renamed
+  }
+
+  async function updateDetails(id: string, change: DetailsChange) {
+    const ok = await tryMutate(() => api.updateWorkspace(id, change), {
+      title: t('dms_lang.workspace_details.save_failed'),
+    })
+    if (!ok) return false
+    await fetchWorkspaces()
+    refreshPageBlocks()
+    succeed(t('dms_lang.workspace_details.saved'))
+    return true
   }
 
   async function downloadBackup(workspace: string): Promise<void> {
     try {
-      const messages = await exportWorkspace(workspace)
+      const backup = await api.fetchBackup(workspace)
       downloadFile(
         `${workspace}.json`,
-        JSON.stringify(messages, null, JSON_INDENT),
+        JSON.stringify(backup, null, JSON_INDENT),
         'application/json',
       )
     } catch (error) {
       reportFailure(error, { title: t('dms_lang.errors.export_failed') })
     }
+  }
+
+  function deleteImpact(workspace: string, impact: DeleteImpact) {
+    return [
+      {
+        icon: 'i-ph-files',
+        label: t('dms_lang.workspace_delete.files'),
+        count: formatCount(impact.files),
+      },
+      {
+        icon: 'i-ph-text-aa',
+        label: t('dms_lang.workspace_delete.strings'),
+        count: formatCount(impact.strings),
+      },
+      {
+        icon: 'i-ph-plugs',
+        label: t('dms_lang.workspace_delete.url', {
+          url: links.publicLocaleUrl(workspace),
+        }),
+      },
+    ]
   }
 
   async function deleteWorkspace(
@@ -84,24 +267,7 @@ export const useWorkspaceActions = () => {
       color: 'error',
       confirmLabel: t('dms_lang.workspace_delete.submit'),
       confirmText: workspace,
-      impact: [
-        {
-          icon: 'i-ph-files',
-          label: t('dms_lang.workspace_delete.files'),
-          count: formatCount(impact.files),
-        },
-        {
-          icon: 'i-ph-text-aa',
-          label: t('dms_lang.workspace_delete.strings'),
-          count: formatCount(impact.strings),
-        },
-        {
-          icon: 'i-ph-plugs',
-          label: t('dms_lang.workspace_delete.url', {
-            url: links.publicLocaleUrl(workspace),
-          }),
-        },
-      ],
+      impact: deleteImpact(workspace, impact),
       body: () =>
         h(UButton, {
           icon: 'i-ph-download-simple',
@@ -117,12 +283,20 @@ export const useWorkspaceActions = () => {
         await fetchWorkspaces()
       },
     })
-    return deleted
+    if (!deleted) return false
+    succeed(t('dms_lang.workspace_delete.done', { name: workspace }))
+    await selectWorkspace(DEFAULT_WORKSPACE, {
+      page: 'workspaces',
+      replace: true,
+    })
+    return true
   }
 
   return {
     createWorkspace,
+    importWorkspace,
     renameWorkspace,
+    updateDetails,
     deleteWorkspace,
     downloadBackup,
     downloadFile,
