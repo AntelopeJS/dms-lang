@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useKeyboardPlatform } from '#dms-ui/app/composables/global/keyboardPlatform'
 import type { ShortcutKeys } from '../../utils/shortcuts'
 
 interface Props {

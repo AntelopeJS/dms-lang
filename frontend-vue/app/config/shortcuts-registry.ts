@@ -1,4 +1,3 @@
-import type { ComponentShortcuts } from '#dms-ui/app/types/shortcuts'
 import {
   KEY_PANEL_KEYS,
   MATRIX_KEYS,

@@ -2,7 +2,6 @@
 import { useWorkspaceFlatSync } from '../composables/translation/useWorkspaceFlat'
 import UButton from '@nuxt/ui/components/Button.vue'
 import DmsInstantSaveBadge from '#dms-ui/app/components/save-bar/InstantSaveBadge.vue'
-import { combineSaveStates } from '#dms-layout/app/composables/layout/useInstantSaveHeader'
 import type { WorkspaceType } from '../types/lang'
 import type { SaveState } from '../utils/keySaves'
 import LocaleTile from '../build/components/LocaleTile.vue'

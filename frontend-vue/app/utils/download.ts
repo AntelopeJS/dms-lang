@@ -1,5 +1,3 @@
-import { downloadFile } from '#dms-core/app/utils/downloadFile'
-
 const JSON_INDENT = 2
 const JSON_TYPE = 'application/json'
 /** Long enough for the browser to start the download before the URL goes. */

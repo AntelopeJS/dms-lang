@@ -1,5 +1,3 @@
-import type { ShortcutMetadata } from '#dms-ui/app/types/shortcuts'
-
 /** A key combination, each key named as `defineShortcuts` names it (`meta`, `enter`, `s`). */
 export type ShortcutKeys = readonly string[]
 
