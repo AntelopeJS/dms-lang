@@ -14,6 +14,7 @@ import { useQueueOrphans } from '../build/composables/useQueueOrphans'
 import { useQueueSave } from '../build/composables/useQueueSave'
 import { useQueueShortcuts } from '../build/composables/useQueueShortcuts'
 import { useQueueToasts } from '../build/composables/useQueueToasts'
+import { queueViewOf } from '../utils/queueView'
 
 const UP_NEXT = 4
 const URL_SYNC_MS = 400
@@ -23,9 +24,9 @@ defineOptions({ inheritAttrs: false })
 
 const { t } = useI18n()
 const { selectedWorkspace, exportWorkspace } = useI18nWorkspaces()
-const { flat, isLoaded } = useWorkspaceFlat()
+const { flat } = useWorkspaceFlat()
 useWorkspaceFlatSync()
-const { canManage, isUnknown, allows } = useWorkspaceContext()
+const { canManage, isUnknown, isResolved, allows } = useWorkspaceContext()
 const { nameAmong } = useLocaleNames()
 const { reportFailure } = useMutationToast()
 const { removeLanguage, makeBase } = useLanguageActions()
@@ -35,6 +36,13 @@ const toasts = useQueueToasts()
 const session = useQueueSession(UP_NEXT)
 const { locale, isBase, exists, namespace, current, isFinished } = session
 
+const view = computed(() =>
+  queueViewOf({
+    isResolved: isResolved.value,
+    exists: exists.value,
+    isBase: isBase.value,
+  }),
+)
 const nameOf = (code: string) => nameAmong(code, flat.value.locales)
 const languageName = computed(() => nameOf(locale.value))
 const editing = useQueueEditing(session)
@@ -179,7 +187,7 @@ onBeforeUnmount(() => clearTimeout(urlTimer))
 
 <template>
   <template v-if="!isUnknown">
-    <DmsCard v-if="!isLoaded" padded>
+    <DmsCard v-if="view === 'loading'" padded>
       <div class="space-y-4">
         <USkeleton class="h-5 w-1/3" />
         <USkeleton class="h-14 w-full" />
@@ -188,7 +196,7 @@ onBeforeUnmount(() => clearTimeout(urlTimer))
     </DmsCard>
 
     <DmsEmptyState
-      v-else-if="!exists"
+      v-else-if="view === 'unknown'"
       :variant="locale ? 'no-result' : undefined"
       :icon="locale ? undefined : 'i-ph-translate'"
       size="lg"
@@ -207,7 +215,7 @@ onBeforeUnmount(() => clearTimeout(urlTimer))
     />
 
     <DmsEmptyState
-      v-else-if="isBase"
+      v-else-if="view === 'base'"
       icon="i-ph-star"
       tone="primary"
       size="lg"
