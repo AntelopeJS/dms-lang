@@ -9,9 +9,10 @@ import { VStack } from "@antelopejs/interface-dms/base/stack";
 import type { Action } from "@antelopejs/interface-dms/component";
 import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
 import { languagesTable } from "./languages-table";
-import { LANG_MODULE_ID, manageCategory } from "./module";
+import { followTranslations, LANG_MODULE_ID, manageCategory } from "./module";
 import { LANG_API, PERMISSION_TEXTS } from "./texts";
 
+const PAGE_ID = "workspace";
 const TEXTS = `${PERMISSION_TEXTS}.workspace`;
 const GAP = "1rem";
 const MIN_COLUMN_WIDTH = "300px";
@@ -20,6 +21,7 @@ const ABOUT_ROWS = 5;
 const ENDPOINT_ROWS = 2;
 
 export const WORKSPACE_ACTIONS = {
+  edit: "edit",
   languages: "languages",
   rename: "rename",
   delete: "delete",
@@ -31,13 +33,18 @@ export const workspaceGeneral = CustomComponent("DmsLangWorkspaceGeneral")
     description: `${TEXTS}.general_description`,
     icon: "i-ph-sliders",
   })
+  .action(WORKSPACE_ACTIONS.edit, {
+    title: `${TEXTS}.edit`,
+    description: `${TEXTS}.edit_description`,
+    icon: "i-ph-note-pencil",
+  })
   .action(WORKSPACE_ACTIONS.languages, {
     title: `${TEXTS}.languages`,
     description: `${TEXTS}.languages_description`,
     icon: "i-ph-translate",
   });
 
-const SNIPPET_KINDS = ["i18next", "fetch", "curl"] as const;
+const SNIPPET_KINDS = ["vue", "i18next", "fetch", "curl"] as const;
 
 function snippetTabs() {
   const tabs = Tab({
@@ -105,12 +112,8 @@ const about = KeyValueList({
   icon: "i-ph-info",
 });
 
-const keysNote = Banner({
-  tone: "info",
-  size: "md",
-  icon: "i-ph-info",
-  title: "$dms_lang.workspace.keys_note_title",
-  description: "$dms_lang.workspace.keys_note_description",
+const notice = Banner({
+  fetchUrl: `${LANG_API}/notice?workspace={{query.workspace}}&page=${PAGE_ID}`,
 }).meta({
   name: `${TEXTS}.keys_note`,
   description: `${TEXTS}.keys_note_description`,
@@ -141,19 +144,23 @@ const main = VStack({ alignment: "stretch", spacing: GAP })
 const side = VStack({ alignment: "stretch", spacing: GAP })
   .meta({ name: `${TEXTS}.side`, icon: "i-ph-sidebar-simple" })
   .child("about", about)
-  .child("keysNote", keysNote);
+  .child("keysNote", notice);
 
 @RegisterPage()
-export class LangWorkspaceController extends PageController("workspace", {
+export class LangWorkspaceController extends PageController(PAGE_ID, {
   displayName: "$dms_lang.workspace.title",
   description: "$dms_lang.workspace.description",
   module: LANG_MODULE_ID,
   category: manageCategory,
   icon: "i-ph-gear-six",
   order: 1,
-  hidden: true,
-  validation: { requiredQueryParams: ["workspace"] },
 }) {
+  static scope = CustomComponent("DmsLangWorkspaceScope").meta({
+    name: `${PERMISSION_TEXTS}.scope`,
+    description: `${PERMISSION_TEXTS}.scope_description`,
+    icon: "i-ph-stack",
+  });
+
   static content = Grid({ gap: GAP, minColumnWidth: MIN_COLUMN_WIDTH })
     .meta({ name: `${TEXTS}.content`, icon: "i-ph-layout" })
     .child(
@@ -164,3 +171,5 @@ export class LangWorkspaceController extends PageController("workspace", {
         .child("side", side),
     );
 }
+
+followTranslations(manageCategory, PAGE_ID);

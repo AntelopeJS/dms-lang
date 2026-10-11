@@ -1,103 +1,136 @@
 import {
+  Context,
   Controller,
   Delete,
   Get,
-  JSONBody,
   Parameter,
   Post,
   Put,
+  type RequestContext,
+  Route,
 } from "@antelopejs/interface-api";
-import { assert } from "@antelopejs/interface-api-util";
 import { AuthOwnerOnly } from "@antelopejs/interface-dms/auth";
 import type { User } from "@antelopejs/interface-dms/auth/db";
 import { AuthUserWithPermission } from "@antelopejs/interface-dms/guards";
+import { PublishMessage } from "@antelopejs/interface-dms/realtime";
 import {
   createWorkspaceAction,
   deleteWorkspaceAction,
   editTranslationsAction,
+  editWorkspaceAction,
   manageKeysAction,
   manageLanguagesAction,
   renameWorkspaceAction,
 } from "../pages/actions";
-import { FALLBACK_LOCALE, listAllWorkspaces } from "../utils/catalog";
-import { getTranslationConfig } from "../utils/config";
+import { LANG_REALTIME_TOPIC } from "../pages/module";
 import { localeStats, workspaceAbout, workspaceKpis } from "../utils/blocks";
-import { exportWorkspace } from "../utils/export";
+import { JsonObjectBody, requireString } from "../utils/body";
+import { listAllWorkspaces, resolveWorkspaceId } from "../utils/catalog";
+import { getTranslationConfig } from "../utils/config";
 import {
+  backupWorkspace,
+  exportWorkspace,
+  importWorkspace,
+} from "../utils/export";
+import {
+  baseConfirm,
+  publicLocaleUrl,
+  publicOrigin,
   removalConfirm,
   type SnippetKind,
   workspaceEndpoint,
+  workspaceNotice,
   workspaceSnippet,
 } from "../utils/integration";
 import { listLanguages } from "../utils/languages";
-import { deleteKeyFor, renameKeyFor, upsertKeyFor } from "../utils/mutations";
+import {
+  createKeyFor,
+  deleteKeyFor,
+  removeOverrideFor,
+  renameKeyFor,
+  updateKeyFor,
+} from "../utils/mutations";
 import {
   ALL_WORKSPACE,
-  DEFAULT_WORKSPACE,
+  type FlatRow,
   resolveAggregatedFlat,
   resolveFlat,
+  resolveRow,
   resolveTranslationData,
   resolveTranslationsByPath,
 } from "../utils/resolve";
+import { markReviewedFor } from "../utils/review";
+import { summarizeWorkspaces } from "../utils/summary";
 import {
+  type AddedLocale,
   addLocale,
   assertEditable,
   createWorkspace,
   deleteWorkspace,
+  getWorkspaceSummary,
+  normalizeWorkspaceId,
   removeLocale,
   renameWorkspace,
   setWorkspaceDefaultLocale,
-  type WorkspaceLocale,
+  updateWorkspaceDetails,
+  type WorkspaceDetails,
+  type WorkspaceSummary,
 } from "../utils/workspaces";
-import { summarizeWorkspaces } from "../utils/summary";
 
-interface WorkspaceCreateBody {
-  id: string;
-  locale: WorkspaceLocale;
+type Body = Record<string, unknown>;
+
+interface KeyResult {
+  row?: FlatRow;
 }
 
-interface WorkspaceRenameBody {
-  id: string;
-  newId: string;
+interface DefaultLocaleResult {
+  defaultLocale: string;
 }
 
-interface WorkspaceDeleteBody {
-  id: string;
+const REALTIME_CHANGE = "changed";
+const PUBLIC_PATH = "/i18n";
+
+/** Tells the open pages that a workspace changed, so they reload their blocks and data. */
+function announce(workspace: string): void {
+  PublishMessage(LANG_REALTIME_TOPIC, REALTIME_CHANGE, {
+    payload: { workspace },
+  }).catch(() => undefined);
 }
 
-interface LocaleCreateBody {
-  workspace: string;
-  code: string;
-  name?: string;
-  flag?: string;
+function editableWorkspace(workspace: unknown): string {
+  assertEditable();
+  return resolveWorkspaceId(requireString(workspace, "workspace"));
 }
 
-interface LocaleDeleteBody {
-  workspace: string;
-  code: string;
+function keyResult(workspace: string, path: unknown): KeyResult {
+  announce(workspace);
+  return { row: resolveRow(workspace, String(path)) };
 }
 
-interface LocaleDefaultBody {
-  workspace: string;
-  code: string;
+function workspaceDetails(body: Body): WorkspaceDetails {
+  const details: WorkspaceDetails = {};
+  if ("description" in body) details.description = body.description as string;
+  if ("type" in body) details.type = body.type as WorkspaceDetails["type"];
+  return details;
 }
 
-interface KeyUpsertBody {
-  workspace: string;
-  path: string;
-  values?: Record<string, unknown>;
-  defaultLocale?: string;
+function permissionIds() {
+  return {
+    editTranslations: editTranslationsAction.permissionId,
+    manageKeys: manageKeysAction.permissionId,
+    manageLanguages: manageLanguagesAction.permissionId,
+    createWorkspace: createWorkspaceAction.permissionId,
+    renameWorkspace: renameWorkspaceAction.permissionId,
+    deleteWorkspace: deleteWorkspaceAction.permissionId,
+    editWorkspace: editWorkspaceAction.permissionId,
+  };
 }
 
-interface KeyRenameBody {
-  workspace: string;
-  path: string;
-  newPath: string;
-}
-
-interface KeyDeleteBody {
-  workspace: string;
-  path: string;
+function withPublicUrl(origin: string) {
+  return (workspace: WorkspaceSummary) => {
+    const publicUrl = publicLocaleUrl(origin, workspace.id);
+    return publicUrl === undefined ? workspace : { ...workspace, publicUrl };
+  };
 }
 
 @AuthOwnerOnly()
@@ -105,28 +138,45 @@ export class TranslationsController extends Controller(
   "/api/lang/translations",
 ) {
   @Get("/workspaces")
-  workspaces() {
+  workspaces(@Context() context: RequestContext) {
     const { editable } = getTranslationConfig();
-    return { editable, workspaces: listAllWorkspaces() };
+    const origin = publicOrigin(context);
+    return {
+      editable,
+      publicBaseUrl: `${origin}${PUBLIC_PATH}`,
+      permissions: permissionIds(),
+      workspaces: listAllWorkspaces().map(withPublicUrl(origin)),
+    };
   }
 
   @Get("/summary")
-  summary(@Parameter("defaultLocale", "query") defaultLocale?: string) {
+  summary(@Context() context: RequestContext) {
     const { editable } = getTranslationConfig();
+    const origin = publicOrigin(context);
     return {
       editable,
-      workspaces: summarizeWorkspaces(defaultLocale || FALLBACK_LOCALE),
+      workspaces: summarizeWorkspaces((workspace) =>
+        publicLocaleUrl(origin, workspace),
+      ),
     };
   }
 
   @Get("/kpis")
   kpis(@Parameter("workspace", "query") workspace?: string) {
-    return workspaceKpis(workspace || DEFAULT_WORKSPACE);
+    return workspaceKpis(resolveWorkspaceId(workspace));
   }
 
   @Get("/about")
   about(@Parameter("workspace", "query") workspace?: string) {
-    return workspaceAbout(workspace || DEFAULT_WORKSPACE);
+    return workspaceAbout(resolveWorkspaceId(workspace));
+  }
+
+  @Get("/notice")
+  notice(
+    @Parameter("workspace", "query") workspace?: string,
+    @Parameter("page", "query") page?: string,
+  ) {
+    return workspaceNotice(resolveWorkspaceId(workspace), page ?? "");
   }
 
   @Get("/locale-stats")
@@ -134,20 +184,40 @@ export class TranslationsController extends Controller(
     @Parameter("workspace", "query") workspace?: string,
     @Parameter("locale", "query") locale?: string,
   ) {
-    return localeStats(workspace || DEFAULT_WORKSPACE, locale ?? "");
+    return localeStats(resolveWorkspaceId(workspace), locale ?? "");
   }
 
   @Get("/languages")
-  languages(@Parameter("workspace", "query") workspace?: string) {
-    return listLanguages(workspace || DEFAULT_WORKSPACE);
+  languages(
+    @Parameter("workspace", "query") workspace?: string,
+    @Parameter("sortKey", "query") sortKey?: string,
+    @Parameter("sortDirection", "query") sortDirection?: string,
+  ) {
+    return listLanguages(resolveWorkspaceId(workspace), {
+      key: sortKey,
+      direction: sortDirection,
+    });
   }
 
   @Get("/languages/:workspace/:code/removal-confirm")
   languageRemovalConfirm(
+    @Context() context: RequestContext,
     @Parameter("workspace", "param") workspace: string,
     @Parameter("code", "param") code: string,
   ) {
-    return removalConfirm(workspace, code);
+    return removalConfirm(
+      resolveWorkspaceId(workspace),
+      code,
+      publicOrigin(context),
+    );
+  }
+
+  @Get("/languages/:workspace/:code/base-confirm")
+  languageBaseConfirm(
+    @Parameter("workspace", "param") workspace: string,
+    @Parameter("code", "param") code: string,
+  ) {
+    return baseConfirm(resolveWorkspaceId(workspace), code);
   }
 
   @Post("/languages/:workspace/:code/base")
@@ -155,9 +225,11 @@ export class TranslationsController extends Controller(
     @AuthUserWithPermission(manageLanguagesAction) _user: User,
     @Parameter("workspace", "param") workspace: string,
     @Parameter("code", "param") code: string,
-  ) {
-    assertEditable();
-    setWorkspaceDefaultLocale(workspace, code);
+  ): DefaultLocaleResult {
+    const id = editableWorkspace(workspace);
+    const defaultLocale = setWorkspaceDefaultLocale(id, code);
+    announce(id);
+    return { defaultLocale };
   }
 
   @Delete("/languages/:workspace/:code")
@@ -166,65 +238,63 @@ export class TranslationsController extends Controller(
     @Parameter("workspace", "param") workspace: string,
     @Parameter("code", "param") code: string,
   ) {
-    assertEditable();
-    removeLocale(workspace, code);
+    const id = editableWorkspace(workspace);
+    removeLocale(id, code);
+    announce(id);
   }
 
   @Get("/endpoint")
-  endpoint(@Parameter("workspace", "query") workspace?: string) {
-    return workspaceEndpoint(workspace || DEFAULT_WORKSPACE);
+  endpoint(
+    @Context() context: RequestContext,
+    @Parameter("workspace", "query") workspace?: string,
+  ) {
+    return workspaceEndpoint(
+      resolveWorkspaceId(workspace),
+      publicOrigin(context),
+    );
   }
 
   @Get("/snippet")
   snippet(
+    @Context() context: RequestContext,
     @Parameter("workspace", "query") workspace?: string,
     @Parameter("kind", "query") kind?: string,
   ) {
     return workspaceSnippet(
-      workspace || DEFAULT_WORKSPACE,
+      resolveWorkspaceId(workspace),
       (kind || "i18next") as SnippetKind,
+      publicOrigin(context),
     );
   }
 
   @Get("/export")
   export(@Parameter("workspace", "query") workspace?: string) {
-    return exportWorkspace(workspace || DEFAULT_WORKSPACE);
+    return exportWorkspace(resolveWorkspaceId(workspace));
+  }
+
+  @Get("/backup")
+  backup(@Parameter("workspace", "query") workspace?: string) {
+    return backupWorkspace(resolveWorkspaceId(workspace));
   }
 
   @Get("/tree")
-  tree(
-    @Parameter("defaultLocale", "query") defaultLocale?: string,
-    @Parameter("workspace", "query") workspace?: string,
-  ) {
-    const data = resolveTranslationData(
-      workspace || DEFAULT_WORKSPACE,
-      defaultLocale || FALLBACK_LOCALE,
-    );
+  tree(@Parameter("workspace", "query") workspace?: string) {
+    const data = resolveTranslationData(resolveWorkspaceId(workspace));
     return { tree: data.tree, totalKeys: data.totalKeys };
   }
 
   @Get("/progress")
-  progress(
-    @Parameter("defaultLocale", "query") defaultLocale?: string,
-    @Parameter("workspace", "query") workspace?: string,
-  ) {
-    const data = resolveTranslationData(
-      workspace || DEFAULT_WORKSPACE,
-      defaultLocale || FALLBACK_LOCALE,
-    );
+  progress(@Parameter("workspace", "query") workspace?: string) {
+    const data = resolveTranslationData(resolveWorkspaceId(workspace));
     return { localeProgress: data.localeProgress, totalKeys: data.totalKeys };
   }
 
   @Get("/flat")
-  flat(
-    @Parameter("defaultLocale", "query") defaultLocale?: string,
-    @Parameter("workspace", "query") workspace?: string,
-  ) {
-    const fallbackLocale = defaultLocale || FALLBACK_LOCALE;
-    if (workspace === ALL_WORKSPACE) {
-      return resolveAggregatedFlat(fallbackLocale);
+  flat(@Parameter("workspace", "query") workspace?: string) {
+    if (normalizeWorkspaceId(workspace) === ALL_WORKSPACE) {
+      return resolveAggregatedFlat();
     }
-    return resolveFlat(workspace || DEFAULT_WORKSPACE, fallbackLocale);
+    return resolveFlat(resolveWorkspaceId(workspace));
   }
 
   @Get("/by-path")
@@ -232,101 +302,168 @@ export class TranslationsController extends Controller(
     @Parameter("path", "query") path?: string,
     @Parameter("workspace", "query") workspace?: string,
   ) {
-    assert(path, 400, "Missing required query parameter: path");
+    const key = requireString(path, "path");
     const { translations, inherited } = resolveTranslationsByPath(
-      workspace || DEFAULT_WORKSPACE,
-      path,
+      resolveWorkspaceId(workspace),
+      key,
     );
-    return { path, translations, inherited };
+    return { path: key, translations, inherited };
   }
 
   @Post("/workspace")
   createWorkspace(
     @AuthUserWithPermission(createWorkspaceAction) _user: User,
-    @JSONBody() body: WorkspaceCreateBody,
-  ) {
+    @JsonObjectBody() body: Body,
+  ): WorkspaceSummary {
     assertEditable();
-    createWorkspace(body.id, body.locale);
+    const id = createWorkspace(body.id, body.locale, workspaceDetails(body));
+    announce(id);
+    return getWorkspaceSummary(id);
+  }
+
+  @Route("handler", "patch", "/workspace")
+  updateWorkspace(
+    @AuthUserWithPermission(editWorkspaceAction) _user: User,
+    @JsonObjectBody() body: Body,
+  ): WorkspaceSummary {
+    assertEditable();
+    const summary = updateWorkspaceDetails(
+      requireString(body.id, "id"),
+      workspaceDetails(body),
+    );
+    announce(summary.id);
+    return summary;
   }
 
   @Post("/workspace/rename")
   renameWorkspace(
     @AuthUserWithPermission(renameWorkspaceAction) _user: User,
-    @JSONBody() body: WorkspaceRenameBody,
-  ) {
+    @JsonObjectBody() body: Body,
+  ): WorkspaceSummary {
     assertEditable();
-    renameWorkspace(body.id, body.newId);
+    const previous = requireString(body.id, "id");
+    const id = renameWorkspace(previous, body.newId);
+    // Pages still open on the old id learn that it is gone.
+    announce(normalizeWorkspaceId(previous));
+    announce(id);
+    return getWorkspaceSummary(id);
   }
 
   @Delete("/workspace")
   deleteWorkspace(
     @AuthUserWithPermission(deleteWorkspaceAction) _user: User,
-    @JSONBody() body: WorkspaceDeleteBody,
+    @JsonObjectBody() body: Body,
   ) {
     assertEditable();
-    deleteWorkspace(body.id);
+    const id = requireString(body.id, "id");
+    deleteWorkspace(id);
+    announce(normalizeWorkspaceId(id));
+  }
+
+  @Post("/import")
+  importWorkspace(
+    @AuthUserWithPermission(createWorkspaceAction) _user: User,
+    @JsonObjectBody() body: Body,
+  ): WorkspaceSummary {
+    assertEditable();
+    const id = importWorkspace(body);
+    announce(id);
+    return getWorkspaceSummary(id);
   }
 
   @Post("/locale")
   addLocale(
     @AuthUserWithPermission(manageLanguagesAction) _user: User,
-    @JSONBody() body: LocaleCreateBody,
-  ) {
-    assertEditable();
-    addLocale(body.workspace, {
+    @JsonObjectBody() body: Body,
+  ): AddedLocale {
+    const id = editableWorkspace(body.workspace);
+    const added = addLocale(id, {
       code: body.code,
       name: body.name,
       flag: body.flag,
     });
+    announce(id);
+    return added;
   }
 
   @Delete("/locale")
   removeLocale(
     @AuthUserWithPermission(manageLanguagesAction) _user: User,
-    @JSONBody() body: LocaleDeleteBody,
+    @JsonObjectBody() body: Body,
   ) {
-    assertEditable();
-    removeLocale(body.workspace, body.code);
+    const id = editableWorkspace(body.workspace);
+    removeLocale(id, body.code);
+    announce(id);
   }
 
   @Post("/locale/default")
   setDefaultLocale(
     @AuthUserWithPermission(manageLanguagesAction) _user: User,
-    @JSONBody() body: LocaleDefaultBody,
-  ) {
-    assertEditable();
-    setWorkspaceDefaultLocale(body.workspace, body.code);
+    @JsonObjectBody() body: Body,
+  ): DefaultLocaleResult {
+    const id = editableWorkspace(body.workspace);
+    const defaultLocale = setWorkspaceDefaultLocale(id, body.code);
+    announce(id);
+    return { defaultLocale };
+  }
+
+  @Post("/key")
+  createKey(
+    @AuthUserWithPermission(manageKeysAction) _user: User,
+    @JsonObjectBody() body: Body,
+  ): KeyResult {
+    const id = editableWorkspace(body.workspace);
+    createKeyFor(id, body.path, body.values, body.before);
+    return keyResult(id, body.path);
   }
 
   @Put("/key")
-  upsertKey(
+  updateKey(
     @AuthUserWithPermission(editTranslationsAction) _user: User,
-    @JSONBody() body: KeyUpsertBody,
-  ) {
-    assertEditable();
-    upsertKeyFor(
-      body.workspace,
-      body.path,
-      body.values ?? {},
-      body.defaultLocale,
-    );
+    @JsonObjectBody() body: Body,
+  ): KeyResult {
+    const id = editableWorkspace(body.workspace);
+    updateKeyFor(id, body.path, body.values, body.expected);
+    return keyResult(id, body.path);
+  }
+
+  @Delete("/key/override")
+  removeOverride(
+    @AuthUserWithPermission(editTranslationsAction) _user: User,
+    @JsonObjectBody() body: Body,
+  ): KeyResult {
+    const id = editableWorkspace(body.workspace);
+    removeOverrideFor(id, body.path, body.locales);
+    return keyResult(id, body.path);
+  }
+
+  @Post("/key/reviewed")
+  markReviewed(
+    @AuthUserWithPermission(editTranslationsAction) _user: User,
+    @JsonObjectBody() body: Body,
+  ): KeyResult {
+    const id = editableWorkspace(body.workspace);
+    markReviewedFor(id, body.path, body.locales);
+    return keyResult(id, body.path);
   }
 
   @Post("/key/rename")
   renameKey(
     @AuthUserWithPermission(manageKeysAction) _user: User,
-    @JSONBody() body: KeyRenameBody,
-  ) {
-    assertEditable();
-    renameKeyFor(body.workspace, body.path, body.newPath);
+    @JsonObjectBody() body: Body,
+  ): KeyResult {
+    const id = editableWorkspace(body.workspace);
+    const path = renameKeyFor(id, body.path, body.newPath);
+    return keyResult(id, path);
   }
 
   @Delete("/key")
   deleteKey(
     @AuthUserWithPermission(manageKeysAction) _user: User,
-    @JSONBody() body: KeyDeleteBody,
+    @JsonObjectBody() body: Body,
   ) {
-    assertEditable();
-    deleteKeyFor(body.workspace, body.path);
+    const id = editableWorkspace(body.workspace);
+    deleteKeyFor(id, body.path);
+    announce(id);
   }
 }

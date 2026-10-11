@@ -1,123 +1,494 @@
-import { FALLBACK_LOCALE, listAllWorkspaces } from "./catalog";
-import { nativeName, publicLocaleUrl } from "./languages";
-import { isRowMissing, resolveFlat } from "./resolve";
+import type { RequestContext } from "@antelopejs/interface-api";
+import { PAGE_ACTION_QUERY, PAGE_ACTIONS } from "../pages/quick-actions";
 import type { BlockItems, KeyValueItem } from "./blocks";
+import {
+  FALLBACK_LOCALE,
+  listAllWorkspaces,
+  resolveWorkspaceId,
+} from "./catalog";
+import { fail } from "./errors";
+import { nativeName } from "./languages";
+import { findLocale } from "./locale-codes";
+import { type FlatResult, isRowMissing, resolveFlat } from "./resolve";
+import type { WorkspaceKind, WorkspaceSummary } from "./workspaces";
 
 const TEXTS = "dms_lang";
 const LOCALE_TOKEN = "{locale}";
+const PUBLIC_PREFIX = "/i18n";
 const PROJECT_FILES = "frontend-vue/i18n/locales/app-*.json";
+const FORWARDED_SEPARATOR = ",";
+const LANGUAGE_SEPARATOR = "-";
+const LISTED_KEYS = 20;
+const SHOWN_KEYS = 5;
 
-export type SnippetKind = "i18next" | "fetch" | "curl";
+export type SnippetKind = "vue" | "i18next" | "fetch" | "curl";
 
 export interface Snippet {
   code: string;
   language: "javascript" | "shell" | "text";
 }
 
-const SNIPPETS: Record<SnippetKind, (url: string, base: string) => Snippet> = {
-  i18next: (url, base) => ({
+interface SnippetInput {
+  url: string;
+  base: string;
+  locales: string[];
+}
+
+function firstHeader(context: RequestContext, name: string) {
+  const value = context.rawRequest.headers[name];
+  const header = Array.isArray(value) ? value[0] : value;
+  return header?.split(FORWARDED_SEPARATOR)[0]?.trim() || undefined;
+}
+
+/**
+ * The public origin of the backend, as the request reached it: a reverse
+ * proxy's `X-Forwarded-Proto` / `X-Forwarded-Host` first, then the `Host` the
+ * dashboard's own server calls it on. The one base every public URL is built on.
+ */
+export function publicOrigin(context: RequestContext): string {
+  const socket = context.rawRequest.socket as { encrypted?: boolean };
+  const protocol =
+    firstHeader(context, "x-forwarded-proto") ??
+    (socket.encrypted ? "https" : "http");
+  const host =
+    firstHeader(context, "x-forwarded-host") ??
+    firstHeader(context, "host") ??
+    context.url.host;
+  return `${protocol}://${host}`;
+}
+
+function summaryOf(workspace: string): WorkspaceSummary {
+  const id = resolveWorkspaceId(workspace);
+  return listAllWorkspaces().find(
+    (entry) => entry.id === id,
+  ) as WorkspaceSummary;
+}
+
+/**
+ * The public URL of a language of an added workspace (`{locale}` by default:
+ * the template). Undefined for the project files and the modules, which the
+ * public endpoint does not serve, and for an unknown workspace.
+ */
+export function publicLocaleUrl(
+  origin: string,
+  workspace: string,
+  locale = LOCALE_TOKEN,
+): string | undefined {
+  const summary = listAllWorkspaces().find((entry) => entry.id === workspace);
+  if (summary?.kind !== "added") return undefined;
+  return `${origin}${PUBLIC_PREFIX}/${workspace}/${locale}.json`;
+}
+
+function templateUrl(url: string, token: string): string {
+  return url.replace(LOCALE_TOKEN, token);
+}
+
+/**
+ * The workspace's codes and their languages: with `nonExplicitSupportedLngs`
+ * i18next accepts `pt-BR` only when `pt` is listed too.
+ */
+function supportedLanguages(locales: string[]): string[] {
+  const languages = locales.map((code) => code.split(LANGUAGE_SEPARATOR)[0]);
+  return [...new Set([...locales, ...languages])].sort();
+}
+
+const FORMAT_NOTE = [
+  "// Messages use the vue-i18n format: {name} placeholders, plurals written",
+  "// \"one | many\" and a literal @ escaped as {'@'}.",
+];
+
+const SNIPPETS: Record<SnippetKind, (input: SnippetInput) => Snippet> = {
+  vue: ({ url, base }) => ({
     language: "javascript",
     code: [
-      'import HttpBackend from "i18next-http-backend";',
+      'import { createI18n } from "vue-i18n";',
       "",
-      "i18next.use(HttpBackend).init({",
-      `  fallbackLng: "${base}",`,
-      `  backend: { loadPath: "${url.replace(LOCALE_TOKEN, "{{lng}}")}" },`,
+      `const base = "${base}";`,
+      "const locale = navigator.language;",
+      "const load = async (code) => {",
+      `  const response = await fetch(\`${templateUrl(url, "${code}")}\`);`,
+      "  return response.ok ? response.json() : {};",
+      "};",
+      "// A file leaves out the keys it has no text for: fr-BE falls back to fr,",
+      "// then to the base, so all three are loaded.",
+      'const codes = [...new Set([base, locale.split("-")[0], locale])];',
+      "const messages = Object.fromEntries(",
+      "  await Promise.all(codes.map(async (code) => [code, await load(code)])),",
+      ");",
+      "",
+      "export const i18n = createI18n({",
+      "  legacy: false,",
+      "  locale,",
+      "  fallbackLocale: base,",
+      "  messages,",
       "});",
     ].join("\n"),
   }),
-  fetch: (url, base) => ({
+  i18next: ({ url, base, locales }) => ({
     language: "javascript",
     code: [
-      `const locale = navigator.language || "${base}";`,
-      `const response = await fetch(\`${url.replace(LOCALE_TOKEN, "${locale}")}\`);`,
-      "const messages = await response.json();",
+      'import i18next from "i18next";',
+      'import HttpBackend from "i18next-http-backend";',
+      "",
+      ...FORMAT_NOTE,
+      "// i18next reads the placeholders with the interpolation below; it does not",
+      '// understand the "one | many" plurals.',
+      "await i18next.use(HttpBackend).init({",
+      "  lng: navigator.language,",
+      `  fallbackLng: "${base}",`,
+      `  supportedLngs: ${JSON.stringify(supportedLanguages(locales))},`,
+      "  nonExplicitSupportedLngs: true,",
+      '  interpolation: { prefix: "{", suffix: "}" },',
+      "  // The load path takes the same {…} placeholders.",
+      `  backend: { loadPath: "${templateUrl(url, "{lng}")}" },`,
+      "});",
     ].join("\n"),
   }),
-  curl: (url, base) => ({
+  fetch: ({ url, base }) => ({
+    language: "javascript",
+    code: [
+      'const isObject = (value) => typeof value === "object" && value !== null;',
+      "const merge = (target, source) => {",
+      "  for (const [key, value] of Object.entries(source)) {",
+      "    target[key] =",
+      "      isObject(value) && isObject(target[key])",
+      "        ? merge({ ...target[key] }, value)",
+      "        : value;",
+      "  }",
+      "  return target;",
+      "};",
+      "",
+      `async function loadMessages(locale = navigator.language, base = "${base}") {`,
+      "  // A file leaves out the keys it has no text for: the base, then the",
+      "  // language (fr), then the locale (fr-BE) fill them in, in that order.",
+      '  const codes = [...new Set([base, locale.split("-")[0], locale])];',
+      "  const files = await Promise.all(",
+      "    codes.map(async (code) => {",
+      `      const response = await fetch(\`${templateUrl(url, "${code}")}\`);`,
+      "      return response.ok ? response.json() : {};",
+      "    }),",
+      "  );",
+      "  return files.reduce(merge, {});",
+      "}",
+      "",
+      "const messages = await loadMessages();",
+    ].join("\n"),
+  }),
+  curl: ({ url, base }) => ({
     language: "shell",
-    code: `curl ${url.replace(LOCALE_TOKEN, base)}`,
+    code: `curl ${templateUrl(url, base)}`,
   }),
 };
 
-function kindOf(workspace: string): string | undefined {
-  return listAllWorkspaces().find((entry) => entry.id === workspace)?.kind;
+const LOCAL_SNIPPETS: Record<Exclude<WorkspaceKind, "added">, string[]> = {
+  default: [
+    "// Not served at a public URL: the dashboard loads these keys itself",
+    `// from ${PROJECT_FILES}. In a component of this dashboard:`,
+    "const { t } = useI18n();",
+    't("app.title");',
+  ],
+  modules: [
+    "// Not served at a public URL: each module ships these keys and the",
+    "// dashboard loads them itself. Override one in the project files",
+    `// (${PROJECT_FILES}) to change it; in a component:`,
+    "const { t } = useI18n();",
+    't("dms.button.save");',
+  ],
+};
+
+/** A ready-to-paste snippet loading the workspace in another app. */
+export function workspaceSnippet(
+  workspace: string,
+  kind: SnippetKind,
+  origin: string,
+): Snippet {
+  const summary = summaryOf(workspace);
+  const url = publicLocaleUrl(origin, summary.id);
+  if (summary.kind !== "added" || !url) {
+    const local = LOCAL_SNIPPETS[summary.kind as keyof typeof LOCAL_SNIPPETS];
+    return { language: "javascript", code: local.join("\n") };
+  }
+  const flat = resolveFlat(summary.id, FALLBACK_LOCALE);
+  const build = SNIPPETS[kind] ?? SNIPPETS.vue;
+  return build({
+    url,
+    base: flat.defaultLocale || FALLBACK_LOCALE,
+    locales: flat.locales,
+  });
+}
+
+const LOCAL_ENDPOINTS: Record<
+  Exclude<WorkspaceKind, "added">,
+  KeyValueItem[]
+> = {
+  default: [
+    {
+      id: "source",
+      label: `$${TEXTS}.endpoint.source_title`,
+      value: PROJECT_FILES,
+      type: "mono",
+      copy: true,
+    },
+    {
+      id: "loading",
+      label: `$${TEXTS}.endpoint.loading`,
+      value: { key: `${TEXTS}.endpoint.loading_default` },
+    },
+  ],
+  modules: [
+    {
+      id: "source",
+      label: `$${TEXTS}.endpoint.source_title`,
+      value: { key: `${TEXTS}.workspace_kinds.modules.files` },
+    },
+    {
+      id: "loading",
+      label: `$${TEXTS}.endpoint.loading`,
+      value: { key: `${TEXTS}.endpoint.loading_modules` },
+    },
+  ],
+};
+
+function publicEndpoint(url: string, base: string): KeyValueItem[] {
+  const example = templateUrl(url, base);
+  return [
+    { id: "url", label: "GET", value: url, type: "mono", copy: true },
+    {
+      id: "example",
+      label: `$${TEXTS}.endpoint.example`,
+      value: example,
+      type: "mono",
+      copy: true,
+    },
+    {
+      id: "fallback",
+      label: `$${TEXTS}.endpoint.fallback`,
+      value: { key: `${TEXTS}.endpoint.fallback_note` },
+    },
+    {
+      id: "access",
+      label: `$${TEXTS}.endpoint.access`,
+      value: { key: `${TEXTS}.endpoint.note` },
+    },
+  ];
 }
 
 /** The public URL of a workspace and how to reach it, as key / value rows. */
-export async function workspaceEndpoint(
+export function workspaceEndpoint(
   workspace: string,
-): Promise<BlockItems<KeyValueItem>> {
-  const kind = kindOf(workspace);
-  if (kind !== "added") {
-    const source =
-      kind === "default"
-        ? PROJECT_FILES
-        : `$${TEXTS}.workspace_kinds.modules.source`;
+  origin: string,
+): BlockItems<KeyValueItem> {
+  const summary = summaryOf(workspace);
+  const url = publicLocaleUrl(origin, summary.id);
+  if (summary.kind !== "added" || !url) {
     return {
-      items: [
-        {
-          id: "source",
-          label: `$${TEXTS}.endpoint.source_title`,
-          value: source,
-          type: kind === "default" ? "mono" : "text",
-          copy: kind === "default",
-        },
-      ],
+      items: LOCAL_ENDPOINTS[summary.kind as keyof typeof LOCAL_ENDPOINTS],
     };
   }
-  return {
-    items: [
-      {
-        id: "url",
-        label: "GET",
-        value: `/i18n/${workspace}/{locale}.json`,
-        type: "mono",
-        copyValue: await publicLocaleUrl(workspace),
-      },
-      {
-        id: "access",
-        label: `$${TEXTS}.endpoint.access`,
-        value: `$${TEXTS}.endpoint.note`,
-      },
-    ],
-  };
+  const base = resolveFlat(summary.id, FALLBACK_LOCALE).defaultLocale;
+  return { items: publicEndpoint(url, base || FALLBACK_LOCALE) };
 }
 
-/** A ready-to-paste snippet loading the workspace in another app. */
-export async function workspaceSnippet(
+export interface DialogImpact {
+  icon: string;
+  label: string;
+  count?: number;
+}
+
+export interface RemovalDialog {
+  title: string;
+  description: string;
+  params: Record<string, string>;
+  color: "error";
+  confirmLabel: string;
+  confirmText?: string;
+  impact: DialogImpact[];
+}
+
+/** The workspace's own code for `code`, matched on its canonical form; 404 when it has no such language. */
+function knownLocale(flat: FlatResult, code: string): string {
+  const found = findLocale(flat.locales, code);
+  if (found === undefined)
+    fail(404, "unknown_locale", `Unknown locale: ${code}`);
+  return found;
+}
+
+function countStrings(flat: FlatResult, code: string): number {
+  return flat.rows.filter((row) => !isRowMissing(row, code)).length;
+}
+
+/**
+ * The dialog confirming the removal of a language, worded by the server: the
+ * code to type only when texts would be lost, and where to save them first.
+ */
+export function removalConfirm(
   workspace: string,
-  kind: SnippetKind,
-): Promise<Snippet> {
-  const base =
-    resolveFlat(workspace, FALLBACK_LOCALE).defaultLocale || FALLBACK_LOCALE;
-  const build = SNIPPETS[kind] ?? SNIPPETS.i18next;
-  return build(await publicLocaleUrl(workspace), base);
-}
-
-/** The dialog confirming the removal of a language, worded by the server. */
-export async function removalConfirm(workspace: string, code: string) {
-  const flat = resolveFlat(workspace, FALLBACK_LOCALE);
-  const strings = flat.rows.filter((row) => !isRowMissing(row, code)).length;
-  return {
+  requested: string,
+  origin: string,
+): RemovalDialog {
+  const id = resolveWorkspaceId(workspace);
+  const flat = resolveFlat(id, FALLBACK_LOCALE);
+  const code = knownLocale(flat, requested);
+  const strings = countStrings(flat, code);
+  const dialog: RemovalDialog = {
     title: `$${TEXTS}.language_remove.title`,
     description: `$${TEXTS}.language_remove.description`,
     params: {
-      name: nativeName(code),
-      workspace,
-      url: await publicLocaleUrl(workspace, code),
+      name: nativeName(code, flat.locales),
+      workspace: id,
+      url: publicLocaleUrl(origin, id, code) ?? "",
       file: `${code}.json`,
     },
     color: "error",
     confirmLabel: `$${TEXTS}.language_remove.submit`,
-    confirmText: code,
-    impact: [
-      { icon: "i-ph-file", label: `$${TEXTS}.language_remove.file` },
-      {
-        icon: "i-ph-text-aa",
-        label: `$${TEXTS}.language_remove.strings`,
-        count: strings,
-      },
-    ],
+    impact: [{ icon: "i-ph-file", label: `$${TEXTS}.language_remove.file` }],
   };
+  if (!strings) return dialog;
+  dialog.description = `$${TEXTS}.language_remove.description_backup`;
+  dialog.confirmText = code;
+  dialog.impact.push({
+    icon: "i-ph-text-aa",
+    label: `$${TEXTS}.language_remove.strings`,
+    count: strings,
+  });
+  return dialog;
+}
+
+function keyImpact(keys: string[], missing: number) {
+  const shown = keys
+    .slice(0, SHOWN_KEYS)
+    .map((key) => ({ icon: "i-ph-key", label: key }));
+  const rest = missing - shown.length;
+  return rest > 0
+    ? [
+        ...shown,
+        {
+          icon: "i-ph-dots-three",
+          label: `$${TEXTS}.language_base.more_keys`,
+          count: rest,
+        },
+      ]
+    : shown;
+}
+
+/**
+ * The dialog confirming a new base language: the keys that have no text in
+ * it (then missing in the base), with their count and the first of them
+ * (`missing`, `keys`) for a caller that words its own dialog.
+ */
+export function baseConfirm(workspace: string, requested: string) {
+  const id = resolveWorkspaceId(workspace);
+  const flat = resolveFlat(id, FALLBACK_LOCALE);
+  const code = knownLocale(flat, requested);
+  const missingRows = flat.rows.filter((row) => isRowMissing(row, code));
+  const keys = missingRows.slice(0, LISTED_KEYS).map((row) => row.key);
+  const missing = missingRows.length;
+  return {
+    title: `$${TEXTS}.language_base.confirm_title`,
+    description: missing
+      ? `$${TEXTS}.language_base.confirm_missing`
+      : `$${TEXTS}.language_base.confirm_complete`,
+    params: { name: nativeName(code, flat.locales), count: missing },
+    icon: "i-ph-star",
+    color: "primary",
+    confirmLabel: `$${TEXTS}.language_base.confirm_submit`,
+    impact: keyImpact(keys, missing),
+    missing,
+    keys,
+  };
+}
+
+const PAGES_URL = "/modules/lang";
+
+export type NoticePage = "overview" | "workspace";
+
+type NoticeTone = "info" | "warning" | "primary";
+
+interface NoticeLink {
+  label: string;
+  to: string;
+  icon: string;
+  color?: "primary" | "neutral";
+  variant?: "solid" | "outline";
+}
+
+/** What the notice banner of a page says: a `Banner` block's content. */
+export interface Notice {
+  tone?: NoticeTone;
+  icon?: string;
+  title?: string;
+  description?: string;
+  actions?: NoticeLink[];
+}
+
+interface NoticeState {
+  summary: WorkspaceSummary;
+  flat: FlatResult;
+  page: NoticePage;
+}
+
+function pageUrl(page: string, workspace: string, action?: string): string {
+  const query = new URLSearchParams({ workspace });
+  if (action) query.set(PAGE_ACTION_QUERY, action);
+  return `${PAGES_URL}/${page}?${query.toString()}`;
+}
+
+function notice(
+  name: string,
+  tone: NoticeTone,
+  icon: string,
+  actions: NoticeLink[] = [],
+): Notice {
+  return {
+    tone,
+    icon,
+    title: `$${TEXTS}.notice.${name}_title`,
+    description: `$${TEXTS}.notice.${name}_description`,
+    actions,
+  };
+}
+
+function addLanguageLink(workspace: string): NoticeLink {
+  return {
+    label: `$${TEXTS}.languages.add`,
+    to: pageUrl("overview", workspace, PAGE_ACTIONS.addLanguage),
+    icon: "i-ph-plus",
+    color: "primary",
+    variant: "solid",
+  };
+}
+
+function addedNotice({ summary, flat, page }: NoticeState): Notice {
+  if (page === "workspace") return notice("keys", "info", "i-ph-info");
+  if (flat.totalKeys === 0 || flat.locales.length > 1) return {};
+  const actions = summary.editable ? [addLanguageLink(summary.id)] : [];
+  return notice("no_target", "info", "i-ph-translate", actions);
+}
+
+const KIND_NOTICES: Record<WorkspaceKind, (state: NoticeState) => Notice> = {
+  added: addedNotice,
+  default: () => ({}),
+  modules: () =>
+    notice("modules", "warning", "i-ph-puzzle-piece", [
+      {
+        label: `$${TEXTS}.notice.browse_keys`,
+        to: pageUrl("translations", "modules"),
+        icon: "i-ph-table",
+        color: "neutral",
+        variant: "outline",
+      },
+    ]),
+};
+
+/**
+ * The banner a page of the workspace opens with, or `{}` for none: what the
+ * modules keys are, the first steps of an empty workspace, how keys are
+ * shared between languages.
+ */
+export function workspaceNotice(workspace: string, page: string): Notice {
+  const summary = summaryOf(workspace);
+  const flat = resolveFlat(summary.id, FALLBACK_LOCALE);
+  const noticePage: NoticePage =
+    page === "workspace" ? "workspace" : "overview";
+  return KIND_NOTICES[summary.kind]({ summary, flat, page: noticePage });
 }

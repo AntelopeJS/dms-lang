@@ -1,9 +1,14 @@
 import { CustomComponent } from "@antelopejs/interface-dms/base/custom";
 import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
 import { countDefaultMissing } from "../utils/summary";
-import { LANG_MODULE_ID, translateCategory } from "./module";
+import {
+  followTranslations,
+  LANG_MODULE_ID,
+  translateCategory,
+} from "./module";
 import { PERMISSION_TEXTS } from "./texts";
 
+const PAGE_ID = "translations";
 const TEXTS = `${PERMISSION_TEXTS}.translations`;
 
 export const TRANSLATION_ACTIONS = {
@@ -12,8 +17,8 @@ export const TRANSLATION_ACTIONS = {
 } as const;
 
 @RegisterPage()
-export class LangTranslationsController extends PageController("translations", {
-  displayName: "$dms_lang.editor.title",
+export class LangTranslationsController extends PageController(PAGE_ID, {
+  displayName: "$dms_lang.editor.page_title",
   description: "$dms_lang.editor.description",
   module: LANG_MODULE_ID,
   category: translateCategory,
@@ -44,3 +49,5 @@ export class LangTranslationsController extends PageController("translations", {
     })
     .navBadge({ count: () => Promise.resolve(countDefaultMissing()) });
 }
+
+followTranslations(translateCategory, PAGE_ID);

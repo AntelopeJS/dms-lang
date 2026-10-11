@@ -1,20 +1,20 @@
-import { FALLBACK_LOCALE, listAllWorkspaces } from "./catalog";
+import {
+  FALLBACK_LOCALE,
+  listAllWorkspaces,
+  resolveWorkspaceId,
+} from "./catalog";
+import { coveragePercent, percentParam } from "./languages";
 import { dropsPlaceholder } from "./placeholders";
 import { type FlatResult, isRowMissing, resolveFlat } from "./resolve";
-import {
-  averageCoverage,
-  countTranslated,
-  sumMissing,
-  targetLocales,
-} from "./summary";
+import { countTranslated, sumMissing, targetLocales } from "./summary";
+import type { WorkspaceSummary } from "./workspaces";
 
 const TEXTS = "dms_lang";
-const FULL_COVERAGE = 100;
-const PERCENT = 100;
 const NAMESPACE_SEPARATOR = ".";
 const WORKSPACES_FOLDER = "i18n-workspaces";
 const HIGH_COVERAGE = 90;
 const MID_COVERAGE = 60;
+const NO_VALUE = "—";
 
 type Tone = "neutral" | "primary" | "success" | "warning" | "error";
 
@@ -31,7 +31,7 @@ interface NumberParam {
 
 interface ComposedText {
   key: string;
-  params?: Record<string, CountParam | NumberParam | string>;
+  params?: Record<string, CountParam | NumberParam | ComposedText | string>;
 }
 
 type BlockText = string | ComposedText;
@@ -67,9 +67,15 @@ function counted(key: string, value: number): ComposedText {
 function percent(value: number): ComposedText {
   return {
     key: `${TEXTS}.common.value`,
-    params: {
-      value: { type: "number", value: value / PERCENT, format: "percent" },
-    },
+    params: { value: percentParam(value) },
+  };
+}
+
+/** A number written in the reader's format ("2,439"). */
+function amount(value: number): ComposedText {
+  return {
+    key: `${TEXTS}.common.value`,
+    params: { value: { type: "number", value } },
   };
 }
 
@@ -78,15 +84,49 @@ function namespaceCount(flat: FlatResult): number {
     .size;
 }
 
-function missingTone(missing: number): Tone {
+/** Nothing to translate reads neutral, not as a success. */
+function missingTone(missing: number, hasWork: boolean): Tone {
+  if (!hasWork) return "neutral";
   return missing > 0 ? "warning" : "success";
+}
+
+/**
+ * Mean coverage of the target languages, rounded down so that one missing
+ * text keeps it under 100; undefined when there is nothing to cover.
+ */
+function meanCoverage(flat: FlatResult): number | undefined {
+  const targets = targetLocales(flat);
+  const total = flat.rows.length;
+  if (!total || !targets.length) return undefined;
+  const missing = sumMissing(flat);
+  return coveragePercent(
+    targets.length * total - missing,
+    targets.length * total,
+  );
+}
+
+/** How many namespaces the keys sit in, and next to it how many have no base text: the translators have nothing to start from. */
+function keysDetail(flat: FlatResult): Pick<StatItem, "detail" | "detailTone"> {
+  const namespaces = counted("kpis.keys_detail", namespaceCount(flat));
+  if (!flat.baseMissing) return { detail: namespaces };
+  return {
+    detail: {
+      key: `${TEXTS}.kpis.keys_detail_base_missing`,
+      params: {
+        namespaces,
+        missing: counted("kpis.keys_base_missing", flat.baseMissing),
+      },
+    },
+    detailTone: "warning",
+  };
 }
 
 /** The four headline figures of a workspace (Overview). */
 export function workspaceKpis(workspace: string): BlockItems<StatItem> {
-  const flat = resolveFlat(workspace, FALLBACK_LOCALE);
+  const flat = resolveFlat(resolveWorkspaceId(workspace), FALLBACK_LOCALE);
   const targets = targetLocales(flat).length;
   const missing = sumMissing(flat);
+  const coverage = meanCoverage(flat);
   return {
     items: [
       {
@@ -103,12 +143,12 @@ export function workspaceKpis(workspace: string): BlockItems<StatItem> {
         tone: "neutral",
         eyebrow: `$${TEXTS}.kpis.keys`,
         value: flat.totalKeys,
-        detail: counted("kpis.keys_detail", namespaceCount(flat)),
+        ...keysDetail(flat),
       },
       {
         id: "missing",
         icon: "i-ph-warning",
-        tone: missingTone(missing),
+        tone: missingTone(missing, coverage !== undefined),
         eyebrow: `$${TEXTS}.kpis.missing`,
         value: missing,
         detail: counted("kpis.missing_detail", targets),
@@ -118,26 +158,47 @@ export function workspaceKpis(workspace: string): BlockItems<StatItem> {
         icon: "i-ph-chart-bar",
         tone: "primary",
         eyebrow: `$${TEXTS}.kpis.coverage`,
-        value: flat.totalKeys ? percent(averageCoverage(flat)) : "—",
+        value: coverage === undefined ? NO_VALUE : percent(coverage),
         detail: `$${TEXTS}.kpis.coverage_detail`,
       },
     ],
   };
 }
 
-function folderOf(workspace: string, kind: string): string {
-  return kind === "added"
-    ? `${WORKSPACES_FOLDER}/${workspace}`
-    : `$${TEXTS}.workspace_kinds.${kind}.folder`;
+function folderOf(summary: WorkspaceSummary): BlockText {
+  return summary.kind === "added"
+    ? `${WORKSPACES_FOLDER}/${summary.id}`
+    : { key: `${TEXTS}.workspace_kinds.${summary.kind}.folder` };
 }
 
-/** Kind, size and folder of a workspace (workspace settings). */
+function detailItems(summary: WorkspaceSummary): KeyValueItem[] {
+  const items: KeyValueItem[] = [];
+  if (summary.description) {
+    items.push({
+      id: "description",
+      label: `$${TEXTS}.workspace_details.description_label`,
+      value: summary.description,
+    });
+  }
+  if (summary.type) {
+    items.push({
+      id: "type",
+      label: `$${TEXTS}.workspace_details.type_label`,
+      value: `$${TEXTS}.workspace_types.${summary.type}`,
+    });
+  }
+  return items;
+}
+
+/** Description, kind, size and folder of a workspace (workspace settings). */
 export function workspaceAbout(workspace: string): BlockItems<KeyValueItem> {
-  const summary = listAllWorkspaces().find((entry) => entry.id === workspace);
+  const id = resolveWorkspaceId(workspace);
+  const summary = listAllWorkspaces().find((entry) => entry.id === id);
   if (!summary) return { items: [] };
-  const flat = resolveFlat(workspace, FALLBACK_LOCALE);
+  const flat = resolveFlat(id, FALLBACK_LOCALE);
   return {
     items: [
+      ...detailItems(summary),
       {
         id: "kind",
         label: `$${TEXTS}.about.kind`,
@@ -152,19 +213,17 @@ export function workspaceAbout(workspace: string): BlockItems<KeyValueItem> {
       {
         id: "keys",
         label: `$${TEXTS}.about.keys`,
-        value: flat.totalKeys,
-        type: "mono",
+        value: amount(flat.totalKeys),
       },
       {
         id: "strings",
         label: `$${TEXTS}.about.strings`,
-        value: countTranslated(flat),
-        type: "mono",
+        value: amount(countTranslated(flat)),
       },
       {
         id: "folder",
         label: `$${TEXTS}.about.folder`,
-        value: folderOf(workspace, summary.kind),
+        value: folderOf(summary),
         type: "mono",
       },
     ],
@@ -177,24 +236,24 @@ function coverageTone(coverage: number): Tone {
   return "error";
 }
 
+function countIssues(flat: FlatResult, locale: string): number {
+  if (locale === flat.defaultLocale) return 0;
+  return flat.rows.filter((row) =>
+    dropsPlaceholder(row.values[flat.defaultLocale], row.values[locale]),
+  ).length;
+}
+
 /** Translated, missing and placeholder issues of one language (Language page). */
 export function localeStats(
   workspace: string,
   locale: string,
 ): BlockItems<StatItem> {
-  const flat = resolveFlat(workspace, FALLBACK_LOCALE);
+  const flat = resolveFlat(resolveWorkspaceId(workspace), FALLBACK_LOCALE);
   if (!flat.locales.includes(locale)) return { items: [] };
   const missing = flat.rows.filter((row) => isRowMissing(row, locale)).length;
   const translated = flat.rows.length - missing;
-  const coverage = flat.rows.length
-    ? Math.round((translated / flat.rows.length) * PERCENT)
-    : FULL_COVERAGE;
-  const issues =
-    locale === flat.defaultLocale
-      ? 0
-      : flat.rows.filter((row) =>
-          dropsPlaceholder(row.values[flat.defaultLocale], row.values[locale]),
-        ).length;
+  const coverage = coveragePercent(translated, flat.rows.length);
+  const issues = countIssues(flat, locale);
   return {
     items: [
       {
@@ -215,7 +274,7 @@ export function localeStats(
       {
         id: "missing",
         icon: "i-ph-warning",
-        tone: missingTone(missing),
+        tone: missingTone(missing, flat.rows.length > 0),
         eyebrow: `$${TEXTS}.progress.missing`,
         value: missing,
       },

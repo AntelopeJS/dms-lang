@@ -20,17 +20,21 @@ import {
 import { localeStats, workspaceAbout, workspaceKpis } from "../utils/blocks";
 import { exportWorkspace } from "../utils/export";
 import {
+  baseConfirm,
   removalConfirm,
   workspaceEndpoint,
+  workspaceNotice,
   workspaceSnippet,
 } from "../utils/integration";
 import { listLanguages } from "../utils/languages";
 import { initializeLocaleRegistry } from "../utils/registry";
 import { resolveFlat } from "../utils/resolve";
 import { countDefaultMissing, summarizeWorkspaces } from "../utils/summary";
-import { addLocale, createWorkspace, upsertKey } from "../utils/workspaces";
+import { createKeyFor } from "../utils/mutations";
+import { addLocale, createWorkspace } from "../utils/workspaces";
 
 const WORKSPACE = "storefront";
+const ORIGIN = "http://127.0.0.1:5021";
 
 interface LocaleTree {
   [key: string]: string | LocaleTree;
@@ -91,7 +95,7 @@ function describeBlockRoutes(): void {
       total: 2,
       canManage: true,
     });
-    expect(base?.rank).to.be.below(italian?.rank ?? 0);
+    expect(base?.coverage).to.be.below(italian?.coverage ?? 0);
     expect(italian).to.include({
       isBase: false,
       translated: 1,
@@ -102,17 +106,33 @@ function describeBlockRoutes(): void {
   });
 
   it("words the removal of a language and serves the app snippets", async () => {
-    const dialog = await removalConfirm(WORKSPACE, "it-IT");
+    const dialog = removalConfirm(WORKSPACE, "it-IT", ORIGIN);
     expect(dialog).to.include({ confirmText: "it-IT", color: "error" });
     expect(dialog.impact[1]).to.include({ count: 1 });
     expect(dialog.params.url).to.match(/\/i18n\/storefront\/it-IT\.json$/);
-    const endpoint = await workspaceEndpoint(WORKSPACE);
+    const endpoint = workspaceEndpoint(WORKSPACE, ORIGIN);
     expect(endpoint.items[0]).to.include({
-      value: `/i18n/${WORKSPACE}/{locale}.json`,
+      value: `${ORIGIN}/i18n/${WORKSPACE}/{locale}.json`,
     });
-    const curl = await workspaceSnippet(WORKSPACE, "curl");
+    const curl = workspaceSnippet(WORKSPACE, "curl", ORIGIN);
     expect(curl).to.include({ language: "shell" });
     expect(curl.code).to.match(/^curl .*\/i18n\/storefront\/en-GB\.json$/);
+    const local = workspaceSnippet("default", "fetch", ORIGIN);
+    expect(local.code).not.to.contain(`${ORIGIN}/i18n/`);
+  });
+
+  it("lists the keys a new base language has no text for", () => {
+    const dialog = baseConfirm(WORKSPACE, "it-IT");
+    expect(dialog).to.include({ missing: 1 });
+    expect(dialog.keys).to.deep.equal(["checkout.title"]);
+  });
+
+  it("words the notices of the overview and the settings", () => {
+    expect(workspaceNotice(WORKSPACE, "workspace").title).to.equal(
+      "$dms_lang.notice.keys_title",
+    );
+    expect(workspaceNotice("modules", "overview").tone).to.equal("warning");
+    expect(workspaceNotice("default", "overview")).to.deep.equal({});
   });
 }
 
@@ -138,11 +158,11 @@ describe("[integration] workspace summary, export and overrides", () => {
     });
     createWorkspace(WORKSPACE, { code: "en-GB" });
     addLocale(WORKSPACE, { code: "it-IT" });
-    upsertKey(WORKSPACE, "checkout.cta", {
+    createKeyFor(WORKSPACE, "checkout.cta", {
       "en-GB": "Pay {amount}",
       "it-IT": "Paga",
     });
-    upsertKey(WORKSPACE, "checkout.title", { "en-GB": "Checkout" });
+    createKeyFor(WORKSPACE, "checkout.title", { "en-GB": "Checkout" });
   });
 
   after(() => {
@@ -158,7 +178,7 @@ describe("[integration] workspace summary, export and overrides", () => {
   });
 
   it("summarizes the size and coverage of a created workspace", () => {
-    const storefront = summarizeWorkspaces("en").find(
+    const storefront = summarizeWorkspaces().find(
       (workspace) => workspace.id === WORKSPACE,
     );
     expect(storefront).to.include({
@@ -178,7 +198,7 @@ describe("[integration] workspace summary, export and overrides", () => {
     const body = rows.find((row) => row.key === "summaryFixture.body");
     expect(title?.overridden).to.equal(true);
     expect(body?.overridden).to.equal(false);
-    const stats = summarizeWorkspaces("en");
+    const stats = summarizeWorkspaces();
     const modules = stats.find((workspace) => workspace.id === "modules");
     const project = stats.find((workspace) => workspace.id === "default");
     expect(modules?.overrides).to.be.at.least(1);

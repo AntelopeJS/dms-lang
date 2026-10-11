@@ -1,63 +1,74 @@
-import { HTTPResult } from "@antelopejs/interface-api";
-import { deleteOwnKey, renameOwnKey, upsertOwnKey } from "./own";
-import { type WorkspaceKind, workspaceKind } from "./resolve";
-import { deleteKey, renameKey, upsertKey } from "./workspaces";
-
-interface KeyWriter {
-  upsert(
-    workspace: string,
-    path: string,
-    values: Record<string, unknown>,
-    defaultLocale?: string,
-  ): void;
-  rename(workspace: string, path: string, newPath: string): void;
-  remove(workspace: string, path: string): void;
-}
+import { fail } from "./errors";
+import {
+  createKey,
+  deleteKey,
+  type KeyStore,
+  removeOverride,
+  renameKey,
+  updateKey,
+} from "./keys";
+import { ownKeyStore } from "./own";
+import { trackSources } from "./review";
+import {
+  type WorkspaceKind,
+  workspaceKeyStore,
+  workspaceKind,
+} from "./workspaces";
 
 function readOnly(): never {
-  throw new HTTPResult(
+  return fail(
     403,
-    "The modules workspace is read-only; override into default",
+    "read_only",
+    "The modules workspace is read-only; override its keys in the project files",
   );
 }
 
-const KEY_WRITERS: Record<WorkspaceKind, KeyWriter> = {
-  default: {
-    upsert: (_workspace, path, values, defaultLocale) =>
-      upsertOwnKey(path, values, defaultLocale),
-    rename: (_workspace, path, newPath) => renameOwnKey(path, newPath),
-    remove: (_workspace, path) => deleteOwnKey(path),
-  },
-  modules: { upsert: readOnly, rename: readOnly, remove: readOnly },
-  added: {
-    upsert: (workspace, path, values) => upsertKey(workspace, path, values),
-    rename: (workspace, path, newPath) => renameKey(workspace, path, newPath),
-    remove: (workspace, path) => deleteKey(workspace, path),
-  },
+const KEY_STORES: Record<WorkspaceKind, (workspace: string) => KeyStore> = {
+  default: () => ownKeyStore(),
+  modules: readOnly,
+  added: (workspace) => trackSources(workspaceKeyStore(workspace), workspace),
 };
 
-export function upsertKeyFor(
+function storeOf(workspace: string): KeyStore {
+  return KEY_STORES[workspaceKind(workspace)](workspace);
+}
+
+export function createKeyFor(
   workspace: string,
-  path: string,
-  values: Record<string, unknown>,
-  defaultLocale?: string,
+  path: unknown,
+  values: unknown,
+  before?: unknown,
 ): void {
-  KEY_WRITERS[workspaceKind(workspace)].upsert(
-    workspace,
-    path,
-    values,
-    defaultLocale,
-  );
+  createKey(storeOf(workspace), path, values, before);
+}
+
+export function updateKeyFor(
+  workspace: string,
+  path: unknown,
+  values: unknown,
+  expected?: unknown,
+): void {
+  updateKey(storeOf(workspace), path, values, expected);
 }
 
 export function renameKeyFor(
   workspace: string,
-  path: string,
-  newPath: string,
-): void {
-  KEY_WRITERS[workspaceKind(workspace)].rename(workspace, path, newPath);
+  path: unknown,
+  newPath: unknown,
+): string {
+  return renameKey(storeOf(workspace), path, newPath);
 }
 
-export function deleteKeyFor(workspace: string, path: string): void {
-  KEY_WRITERS[workspaceKind(workspace)].remove(workspace, path);
+export function deleteKeyFor(workspace: string, path: unknown): void {
+  deleteKey(storeOf(workspace), path);
+}
+
+export function removeOverrideFor(
+  workspace: string,
+  path: unknown,
+  locales?: unknown,
+): void {
+  if (workspaceKind(workspace) !== "default")
+    fail(400, "not_an_override", "Only the project files override module keys");
+  removeOverride(storeOf(workspace), path, locales);
 }

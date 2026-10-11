@@ -3,9 +3,14 @@ import { Grid, GridRow } from "@antelopejs/interface-dms/base/grid";
 import { StatGroup } from "@antelopejs/interface-dms/base/stat-group";
 import { VStack } from "@antelopejs/interface-dms/base/stack";
 import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
-import { LANG_MODULE_ID, translateCategory } from "./module";
+import {
+  followTranslations,
+  LANG_MODULE_ID,
+  translateCategory,
+} from "./module";
 import { LANG_API, PERMISSION_TEXTS } from "./texts";
 
+const PAGE_ID = "language";
 const TEXTS = `${PERMISSION_TEXTS}.language`;
 const GAP = "1rem";
 const MIN_COLUMN_WIDTH = "320px";
@@ -25,6 +30,10 @@ const progress = StatGroup({
   label: "$dms_lang.progress.label",
   fetchUrl: `${LANG_API}/locale-stats?workspace={{query.workspace}}&locale={{query.locale}}`,
   skeletonCount: STAT_COUNT,
+  empty: {
+    title: "$dms_lang.progress.empty_title",
+    description: "$dms_lang.progress.empty_description",
+  },
 }).meta({
   name: `${TEXTS}.progress`,
   description: `${TEXTS}.progress_description`,
@@ -43,15 +52,13 @@ const side = VStack({ alignment: "stretch", spacing: GAP })
   .child("namespaces", namespaces);
 
 @RegisterPage()
-export class LangLanguageController extends PageController("language", {
-  displayName: "$dms_lang.language.title",
+export class LangLanguageController extends PageController(PAGE_ID, {
+  displayName: "$dms_lang.language.page_title",
   description: "$dms_lang.language.description",
   module: LANG_MODULE_ID,
   category: translateCategory,
   icon: "i-ph-text-aa",
   order: 2,
-  hidden: true,
-  validation: { requiredQueryParams: ["locale"] },
 }) {
   static scope = CustomComponent("DmsLangWorkspaceScope").meta({
     name: `${PERMISSION_TEXTS}.scope`,
@@ -69,3 +76,5 @@ export class LangLanguageController extends PageController("language", {
         .child("side", side),
     );
 }
+
+followTranslations(translateCategory, PAGE_ID);

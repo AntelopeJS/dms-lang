@@ -31,6 +31,11 @@ export const createWorkspaceAction = requireAction(
   WORKSPACE_LIST_ACTIONS.create,
 );
 
+export const editWorkspaceAction = requireAction(
+  workspaceGeneral,
+  WORKSPACE_ACTIONS.edit,
+);
+
 export const manageLanguagesAction = requireAction(
   workspaceGeneral,
   WORKSPACE_ACTIONS.languages,

@@ -1,71 +1,24 @@
-import {
-  deleteAtPath,
-  readJson,
-  setAtPath,
-  validateKeyPath,
-  writeJson,
-} from "./json";
-import { getLocaleCodes, getOwnWriteTarget } from "./registry";
-import { getValueAtPath } from "./tree";
+import { fail } from "./errors";
+import { readJsonForWrite, writeJson } from "./json";
+import type { KeyStore } from "./keys";
+import { getLocaleCodes, getOwnWriteTarget, loadMessages } from "./registry";
+import { projectBaseLocale } from "./catalog";
 
-export function upsertOwnKey(
-  path: string,
-  values: Record<string, unknown>,
-  defaultLocale?: string,
-): void {
-  const segments = validateKeyPath(path);
-
-  const targets = new Set(Object.keys(values));
-  if (defaultLocale) targets.add(defaultLocale);
-
-  for (const locale of targets) {
-    const target = getOwnWriteTarget(locale);
-    if (!target) continue;
-
-    const isDefault = locale === defaultLocale;
-    const hasValue = Object.hasOwn(values, locale);
-    const value = values[locale];
-
-    const data = readJson(target);
-    if (hasValue && (value === null || value === "")) {
-      if (isDefault) setAtPath(data, segments, "");
-      else deleteAtPath(data, segments);
-    } else if (hasValue) {
-      setAtPath(data, segments, value);
-    } else if (isDefault && getValueAtPath(data, path) === undefined) {
-      setAtPath(data, segments, "");
-    }
-    writeJson(target, data);
-  }
+function writeTarget(locale: string): string {
+  const target = getOwnWriteTarget(locale);
+  if (target === null)
+    fail(400, "unknown_locale", `No project file for locale ${locale}`);
+  return target;
 }
 
-export function renameOwnKey(path: string, newPath: string): void {
-  const from = validateKeyPath(path);
-  const to = validateKeyPath(newPath);
-
-  for (const locale of getLocaleCodes("own")) {
-    const target = getOwnWriteTarget(locale);
-    if (!target) continue;
-
-    const data = readJson(target);
-    const value = getValueAtPath(data, path);
-    if (value === undefined) continue;
-
-    deleteAtPath(data, from);
-    setAtPath(data, to, value);
-    writeJson(target, data);
-  }
-}
-
-export function deleteOwnKey(path: string): void {
-  const segments = validateKeyPath(path);
-
-  for (const locale of getLocaleCodes("own")) {
-    const target = getOwnWriteTarget(locale);
-    if (!target) continue;
-
-    const data = readJson(target);
-    deleteAtPath(data, segments);
-    writeJson(target, data);
-  }
+/** The key store of the project files (default): the modules are a read-only layer under them. */
+export function ownKeyStore(): KeyStore {
+  return {
+    locales: getLocaleCodes("own"),
+    baseLocale: projectBaseLocale(),
+    messages: loadMessages("own"),
+    reference: loadMessages("external"),
+    load: (locale) => readJsonForWrite(writeTarget(locale)),
+    save: (locale, data) => writeJson(writeTarget(locale), data),
+  };
 }

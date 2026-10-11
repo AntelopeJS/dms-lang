@@ -1,16 +1,20 @@
-import { ButtonVariant } from "@antelopejs/interface-dms/base/types/button";
+import { Banner } from "@antelopejs/interface-dms/base/banner";
 import { CustomComponent } from "@antelopejs/interface-dms/base/custom";
 import { Grid, GridRow } from "@antelopejs/interface-dms/base/grid";
 import { KeyValueList } from "@antelopejs/interface-dms/base/key-value-list";
-import { DefaultLayout } from "@antelopejs/interface-dms/base/layouts";
 import { StatGroup } from "@antelopejs/interface-dms/base/stat-group";
 import { VStack } from "@antelopejs/interface-dms/base/stack";
 import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
 import { manageLanguagesAction } from "./actions";
 import { languagesTable } from "./languages-table";
-import { LANG_MODULE_ID, translateCategory } from "./module";
+import {
+  followTranslations,
+  LANG_MODULE_ID,
+  translateCategory,
+} from "./module";
 import { LANG_API, PERMISSION_TEXTS } from "./texts";
 
+const PAGE_ID = "overview";
 const TEXTS = `${PERMISSION_TEXTS}.overview`;
 const SIDE_GAP = "1rem";
 const MIN_COLUMN_WIDTH = "320px";
@@ -47,42 +51,26 @@ const side = VStack({ alignment: "stretch", spacing: SIDE_GAP })
   .child("endpoint", endpoint);
 
 @RegisterPage()
-export class LangOverviewController extends PageController(
-  "overview",
-  {
-    displayName: "$dms_lang.overview.title",
-    description: "$dms_lang.overview.description",
-    module: LANG_MODULE_ID,
-    category: translateCategory,
-    icon: "i-ph-gauge",
-    order: 0,
-  },
-  DefaultLayout({
-    headerActions: [
-      {
-        id: "add-language",
-        label: "$dms_lang.languages.add",
-        icon: "i-ph-plus",
-        variant: ButtonVariant.outline,
-        color: "neutral",
-        target: { type: "quickAction", id: "lang-add-language" },
-      },
-      {
-        id: "translate-missing",
-        label: "$dms_lang.quick_actions.translate_missing",
-        icon: "i-ph-translate",
-        target: {
-          type: "page",
-          url: "/modules/lang/translations?filter=missing",
-        },
-      },
-    ],
-  }),
-) {
+export class LangOverviewController extends PageController(PAGE_ID, {
+  displayName: "$dms_lang.overview.title",
+  description: "$dms_lang.overview.description",
+  module: LANG_MODULE_ID,
+  category: translateCategory,
+  icon: "i-ph-gauge",
+  order: 0,
+}) {
   static scope = CustomComponent("DmsLangWorkspaceScope").meta({
     name: `${PERMISSION_TEXTS}.scope`,
     description: `${PERMISSION_TEXTS}.scope_description`,
     icon: "i-ph-stack",
+  });
+
+  static notice = Banner({
+    fetchUrl: `${API}/notice?workspace={{query.workspace}}&page=${PAGE_ID}`,
+  }).meta({
+    name: `${TEXTS}.notice`,
+    description: `${TEXTS}.notice_description`,
+    icon: "i-ph-info",
   });
 
   static kpis = StatGroup({
@@ -106,3 +94,5 @@ export class LangOverviewController extends PageController(
         .child("side", side),
     );
 }
+
+followTranslations(translateCategory, PAGE_ID);

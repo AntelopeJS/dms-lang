@@ -10,13 +10,16 @@ import { LANG_API } from "./texts";
 const TEXTS = "$dms_lang.languages";
 const NAME_SIZE = 280;
 const COVERAGE_SIZE = 220;
-const MANAGEABLE = {
+const EDITABLE_BASE = {
   and: [
-    { field: "isBase", equals: false },
-    { field: "canManage", equals: true },
+    { field: "isBase", equals: true },
+    { field: "canEdit", equals: true },
   ],
 };
+const TARGET = { field: "isBase", equals: false };
+const MANAGEABLE = { and: [TARGET, { field: "canManage", equals: true }] };
 const LANGUAGE_URL = `${LANG_API}/languages/{workspace}/{code}`;
+const PAGES_URL = "/modules/lang";
 
 const columns = {
   name: {
@@ -46,28 +49,25 @@ const columns = {
       totalField: "total",
     }),
     size: COVERAGE_SIZE,
-    order: 2,
-  },
-  rank: {
-    name: `${TEXTS}.column_rank`,
-    type: new DefaultDataTypes.NumberType(),
-    isVisible: false,
     sortable: true,
-    order: 3,
+    order: 2,
   },
 };
 
 /**
  * The languages of the workspace in the URL (`?workspace=`), least complete
- * first with the base pinned on top: translate, make base, remove.
+ * first with the base pinned on top under any sort: translate, make base,
+ * remove.
  */
 export function languagesTable(manageLanguages: Action) {
   return TableView.fromSource({
     caption: `${TEXTS}.title`,
     fetchUrl: `${LANG_API}/languages?workspace={{query.workspace}}`,
     columns,
-    defaultSort: { field: "rank" },
-    layout: "compact",
+    // The route sorts, so that the base stays pinned on top under any sort.
+    capabilities: { sort: true },
+    defaultSort: { field: "coverage" },
+    layout: "full",
     labelKey: "name",
     rowActions: {
       custom: [
@@ -76,8 +76,22 @@ export function languagesTable(manageLanguages: Action) {
           icon: "i-ph-translate",
           target: {
             type: "page",
-            url: "/modules/lang/language?workspace={workspace}&locale={code}",
+            url: `${PAGES_URL}/language?workspace={workspace}&locale={code}`,
           },
+          rule: TARGET,
+          isVisible: true,
+          showLabel: true,
+          variant: ButtonVariant.outline,
+          isDefault: true,
+        },
+        {
+          label: `${TEXTS}.edit_base`,
+          icon: "i-ph-table",
+          target: {
+            type: "page",
+            url: `${PAGES_URL}/translations?workspace={workspace}`,
+          },
+          rule: EDITABLE_BASE,
           isVisible: true,
           showLabel: true,
           variant: ButtonVariant.outline,
@@ -92,6 +106,7 @@ export function languagesTable(manageLanguages: Action) {
             method: "POST",
             successMessage: "$dms_lang.language_base.done_generic",
           },
+          confirm: { from: `${LANGUAGE_URL}/base-confirm` },
           rule: MANAGEABLE,
           permission: manageLanguages,
         },

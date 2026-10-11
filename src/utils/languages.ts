@@ -1,20 +1,39 @@
-import { GetClientBaseUrl } from "@antelopejs/interface-dms/client-base-url";
 import { FALLBACK_LOCALE, listAllWorkspaces } from "./catalog";
-import { getTranslationConfig } from "./config";
-import { isRowMissing, resolveFlat } from "./resolve";
+import { type FlatResult, isRowMissing, resolveFlat } from "./resolve";
 
 const TEXTS = "dms_lang";
 const PERCENT = 100;
-const NATIVE_DISPLAY: Intl.DisplayNamesOptions = {
+const LANGUAGE_NAME: Intl.DisplayNamesOptions = {
   type: "language",
+  fallback: "none",
+};
+const REGIONAL_NAME: Intl.DisplayNamesOptions = {
+  type: "language",
+  languageDisplay: "standard",
   fallback: "none",
 };
 const LANGUAGE_SEPARATOR = /[-_]/;
 const BASE_RANK = -1;
 
+interface CountParam {
+  type: "count";
+  value: number;
+}
+
+interface PercentParam {
+  type: "number";
+  value: number;
+  format: "percent";
+}
+
 interface ComposedText {
   key: string;
-  params?: Record<string, string | { type: "count"; value: number }>;
+  params?: Record<string, string | CountParam | PercentParam>;
+}
+
+interface Subline {
+  text: ComposedText;
+  tone: "dimmed" | "warning";
 }
 
 export interface LanguageRow {
@@ -22,13 +41,17 @@ export interface LanguageRow {
   code: string;
   workspace: string;
   name: string;
-  detail: ComposedText;
+  detail: Subline;
   isBase: boolean;
+  /** The texts can be edited (not the modules, nor a read-only module config). */
+  canEdit: boolean;
+  /** Languages can be added, removed and made base (added workspaces). */
   canManage: boolean;
   translated: number;
   total: number;
   missing: number;
-  rank: number;
+  /** The base first (-1), then the least complete: the order the table opens on. */
+  coverage: number;
 }
 
 export interface LanguageRows {
@@ -36,70 +59,182 @@ export interface LanguageRows {
   total: number;
 }
 
-export function nativeName(code: string): string {
-  const language = code.split(LANGUAGE_SEPARATOR)[0];
+interface LanguageCounts {
+  code: string;
+  isBase: boolean;
+  translated: number;
+  total: number;
+  missing: number;
+}
+
+/**
+ * Share of `total` that is translated, rounded down: a language missing a
+ * single key never reads 100.
+ */
+export function coveragePercent(translated: number, total: number): number {
+  return total ? Math.floor((translated / total) * PERCENT) : PERCENT;
+}
+
+export function percentParam(coverage: number): PercentParam {
+  return { type: "number", value: coverage / PERCENT, format: "percent" };
+}
+
+function languageOf(code: string): string {
+  return code.split(LANGUAGE_SEPARATOR)[0];
+}
+
+function displayName(
+  code: string,
+  subject: string,
+  options: Intl.DisplayNamesOptions,
+): string {
   try {
-    const name =
-      new Intl.DisplayNames([code], NATIVE_DISPLAY).of(language) ?? code;
+    const name = new Intl.DisplayNames([code], options).of(subject) ?? code;
     return name.charAt(0).toLocaleUpperCase(code) + name.slice(1);
   } catch {
     return code;
   }
 }
 
-function canManageWorkspace(workspace: string): boolean {
-  const summary = listAllWorkspaces().find((entry) => entry.id === workspace);
-  return summary?.kind === "added" && getTranslationConfig().editable;
+/**
+ * The name of a language in that language, without its region ("Português")
+ * unless another of `siblings` is the same language ("Português (Brasil)").
+ */
+export function nativeName(code: string, siblings: string[] = []): string {
+  const language = languageOf(code);
+  const isShared = siblings.some(
+    (other) => other !== code && languageOf(other) === language,
+  );
+  return isShared
+    ? displayName(code, code, REGIONAL_NAME)
+    : displayName(code, language, LANGUAGE_NAME);
 }
 
-function detailOf(
-  code: string,
-  isBase: boolean,
-  translated: number,
-  total: number,
-): ComposedText {
-  const count = { type: "count" as const, value: translated };
-  return isBase
-    ? { key: `${TEXTS}.languages.detail_base`, params: { code, n: count } }
+interface WorkspaceRights {
+  canEdit: boolean;
+  canManage: boolean;
+}
+
+function rightsOf(workspace: string): WorkspaceRights {
+  const summary = listAllWorkspaces().find((entry) => entry.id === workspace);
+  const canEdit = summary?.editable === true;
+  return { canEdit, canManage: canEdit && summary?.kind === "added" };
+}
+
+function count(value: number): CountParam {
+  return { type: "count", value };
+}
+
+function baseDetail({ code, translated, missing }: LanguageCounts): Subline {
+  return missing
+    ? {
+        text: {
+          key: `${TEXTS}.languages.detail_base_missing`,
+          params: { code, n: count(missing) },
+        },
+        tone: "warning",
+      }
     : {
-        key: `${TEXTS}.languages.detail`,
-        params: { code, n: count, total: String(total) },
+        text: {
+          key: `${TEXTS}.languages.detail_base`,
+          params: { code, n: count(translated) },
+        },
+        tone: "dimmed",
       };
 }
 
-/** The languages of a workspace, as rows of a source table. */
-export function listLanguages(workspace: string): LanguageRows {
-  const flat = resolveFlat(workspace, FALLBACK_LOCALE);
-  const canManage = canManageWorkspace(workspace);
-  const total = flat.rows.length;
-  const results = flat.locales.map((code) => {
-    const missing = flat.rows.filter((row) => isRowMissing(row, code)).length;
-    const translated = total - missing;
-    const isBase = code === flat.defaultLocale;
-    const coverage = total
-      ? Math.round((translated / total) * PERCENT)
-      : PERCENT;
+function targetDetail({
+  code,
+  translated,
+  total,
+  missing,
+}: LanguageCounts): Subline {
+  if (!missing) {
     return {
-      _id: code,
-      code,
-      workspace,
-      name: nativeName(code),
-      detail: detailOf(code, isBase, translated, total),
-      isBase,
-      canManage,
-      translated,
-      total,
-      missing: isBase ? 0 : missing,
-      rank: isBase ? BASE_RANK : coverage,
+      text: { key: `${TEXTS}.languages.detail_complete`, params: { code } },
+      tone: "dimmed",
     };
-  });
-  return { results, total: results.length };
+  }
+  return {
+    text: {
+      key: `${TEXTS}.languages.detail`,
+      params: {
+        code,
+        percent: percentParam(coveragePercent(translated, total)),
+        n: count(missing),
+      },
+    },
+    tone: "dimmed",
+  };
 }
 
-export async function publicLocaleUrl(
+function countsOf(flat: FlatResult, code: string): LanguageCounts {
+  const total = flat.rows.length;
+  const missing = flat.rows.filter((row) => isRowMissing(row, code)).length;
+  return {
+    code,
+    isBase: code === flat.defaultLocale,
+    translated: total - missing,
+    total,
+    missing,
+  };
+}
+
+/** The sort the table asks for (`sortKey`, `sortDirection` of a source route). */
+export interface LanguageSort {
+  key?: string;
+  direction?: string;
+}
+
+const DESCENDING = "desc";
+
+const SORTED_COLUMNS: Record<
+  string,
+  (a: LanguageRow, b: LanguageRow) => number
+> = {
+  name: (a, b) => a.name.localeCompare(b.name),
+  coverage: (a, b) => a.coverage - b.coverage,
+};
+
+function compareRows(sort: LanguageSort) {
+  const column = SORTED_COLUMNS[sort.key ?? ""] ?? SORTED_COLUMNS.coverage;
+  const direction = sort.direction === DESCENDING ? -1 : 1;
+  return (a: LanguageRow, b: LanguageRow) =>
+    Number(b.isBase) - Number(a.isBase) ||
+    direction * column(a, b) ||
+    a.name.localeCompare(b.name);
+}
+
+/**
+ * The languages of a workspace, as rows of a source table: the base pinned
+ * first whatever the sort, then the least complete (or the sort asked for),
+ * then by name. Without a sort the rows come in the order the table opens on.
+ */
+export function listLanguages(
   workspace: string,
-  locale = "{locale}",
-): Promise<string> {
-  const base = (await GetClientBaseUrl()) ?? "";
-  return `${base}/i18n/${workspace}/${locale}.json`;
+  sort: LanguageSort = {},
+): LanguageRows {
+  const flat = resolveFlat(workspace, FALLBACK_LOCALE);
+  const rights = rightsOf(workspace);
+  const results = flat.locales
+    .map((code) => {
+      const counts = countsOf(flat, code);
+      return {
+        _id: code,
+        code,
+        workspace,
+        name: nativeName(code, flat.locales),
+        detail: counts.isBase ? baseDetail(counts) : targetDetail(counts),
+        isBase: counts.isBase,
+        ...rights,
+        translated: counts.translated,
+        total: counts.total,
+        missing: counts.missing,
+        coverage: counts.isBase
+          ? BASE_RANK
+          : coveragePercent(counts.translated, counts.total),
+      };
+    })
+    .sort(compareRows(sort));
+  return { results, total: results.length };
 }

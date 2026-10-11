@@ -1,9 +1,10 @@
 import { CustomComponent } from "@antelopejs/interface-dms/base/custom";
 import { StatGroup } from "@antelopejs/interface-dms/base/stat-group";
 import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
-import { LANG_MODULE_ID, manageCategory } from "./module";
+import { followTranslations, LANG_MODULE_ID, manageCategory } from "./module";
 import { PERMISSION_TEXTS } from "./texts";
 
+const PAGE_ID = "workspaces";
 const TEXTS = `${PERMISSION_TEXTS}.workspaces`;
 const KINDS = "$dms_lang.workspaces.kinds";
 
@@ -12,7 +13,7 @@ export const WORKSPACE_LIST_ACTIONS = {
 } as const;
 
 @RegisterPage()
-export class LangWorkspacesController extends PageController("workspaces", {
+export class LangWorkspacesController extends PageController(PAGE_ID, {
   displayName: "$dms_lang.workspaces.title",
   description: "$dms_lang.workspaces.description",
   module: LANG_MODULE_ID,
@@ -67,3 +68,5 @@ export class LangWorkspacesController extends PageController("workspaces", {
       icon: "i-ph-plus",
     });
 }
+
+followTranslations(manageCategory, PAGE_ID);
