@@ -1,10 +1,13 @@
 import { expect } from "chai";
 import { HTTPResult } from "@antelopejs/interface-api";
 
+const MESSAGE_KEY_RE = /^\$dms_lang\.errors\.[a-z_]+$/;
+
 interface ErrorBody {
   code: string;
   message: string;
   current?: Record<string, string | null>;
+  [detail: string]: unknown;
 }
 
 /** The status and JSON body of the HTTP error `run` throws. */
@@ -31,8 +34,6 @@ export function expectError(
 ): ErrorBody {
   const { status: actual, body } = errorOf(run);
   expect([actual, body.code]).to.deep.equal([status, code]);
-  expect(body.message)
-    .to.be.a("string")
-    .and.not.match(/[A-Z]:\\|\/tmp\//);
+  expect(body.message).to.match(MESSAGE_KEY_RE);
   return body;
 }

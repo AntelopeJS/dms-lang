@@ -1,5 +1,6 @@
 import { projectBaseLocale, modulesBaseLocale } from "./catalog";
 import { check } from "./errors";
+import type { ImportInput } from "../validation/workspace.schema";
 import { isPlainObject, validateKeyPath } from "./json";
 import { findLocale, normalizeLocaleCode } from "./locale-codes";
 import { getLocaleCodes, loadMessages } from "./registry";
@@ -86,12 +87,7 @@ export function backupWorkspace(workspace: string): WorkspaceBackup {
 
 function assertTexts(node: unknown, path: string, locale: string): void {
   if (typeof node === "string") return;
-  check(
-    isPlainObject(node),
-    400,
-    "invalid_value",
-    `The ${locale} value of ${path || "the file"} must be a text or an object of texts`,
-  );
+  check(isPlainObject(node), "invalid_value", { locale, path });
   for (const [key, child] of Object.entries(node)) {
     const childPath = path ? `${path}.${key}` : key;
     validateKeyPath(childPath);
@@ -99,28 +95,24 @@ function assertTexts(node: unknown, path: string, locale: string): void {
   }
 }
 
-function importedLocales(
-  body: Record<string, unknown>,
-  messages: Record<string, unknown>,
-): WorkspaceLocale[] {
-  const declared = Array.isArray(body.locales)
-    ? (body.locales as WorkspaceLocale[])
-    : Object.keys(messages).map((code) => ({ code }));
+function importedLocales(backup: ImportInput): WorkspaceLocale[] {
+  const declared =
+    backup.locales ?? Object.keys(backup.messages).map((code) => ({ code }));
   const locales: WorkspaceLocale[] = [];
   for (const locale of declared) {
-    const code = normalizeLocaleCode(locale?.code);
+    const code = normalizeLocaleCode(locale.code);
     check(
       findLocale(
         locales.map((entry) => entry.code),
         code,
       ) === undefined,
-      409,
       "locale_exists",
-      `The backup lists ${code} twice`,
+      { locale: code },
+      "duplicate_locale",
     );
     locales.push({ ...locale, code });
   }
-  check(locales.length > 0, 400, "invalid_body", "The backup has no language");
+  check(locales.length > 0, "invalid_body", {}, "no_locale");
   return locales;
 }
 
@@ -134,12 +126,7 @@ function importedMessages(
       locales.map((entry) => entry.code),
       code,
     );
-    check(
-      locale !== undefined,
-      400,
-      "unknown_locale",
-      `The backup has texts for an undeclared language: ${code}`,
-    );
+    check(locale !== undefined, "undeclared_locale", { locale: code });
     assertTexts(tree, "", locale);
     result[locale] = tree as Record<string, unknown>;
   }
@@ -150,31 +137,24 @@ function importedMessages(
  * Creates an added workspace from a backup (or from an older export `{ <locale>: messages }`
  * passed as `messages`). Returns the id of the new workspace.
  */
-export function importWorkspace(body: Record<string, unknown>): string {
-  check(
-    isPlainObject(body.messages),
-    400,
-    "invalid_body",
-    "Missing field: messages",
-  );
-  const messages = body.messages;
-  const locales = importedLocales(body, messages);
+export function importWorkspace(backup: ImportInput): string {
+  const locales = importedLocales(backup);
   const codes = locales.map((locale) => locale.code);
   const base =
-    typeof body.defaultLocale === "string"
-      ? findLocale(codes, body.defaultLocale)
-      : codes[0];
+    backup.defaultLocale === undefined
+      ? codes[0]
+      : findLocale(codes, backup.defaultLocale);
   check(
     base !== undefined,
-    400,
-    "unknown_locale",
-    "The base language is not one of the backup languages",
+    "undeclared_locale",
+    { locale: backup.defaultLocale },
+    "unknown_base_locale",
   );
-  return writeNewWorkspace(body.id, {
+  return writeNewWorkspace(backup.id, {
     defaultLocale: base,
     locales,
-    messages: importedMessages(messages, locales),
-    description: body.description as string | undefined,
-    type: body.type as WorkspaceDetails["type"],
+    messages: importedMessages(backup.messages, locales),
+    description: backup.description,
+    type: backup.type,
   });
 }

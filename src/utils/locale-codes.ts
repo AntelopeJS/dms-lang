@@ -29,14 +29,12 @@ function isKnownLanguage(canonical: string): boolean {
 }
 
 /** A code given by a client, canonical, of a language and region the platform knows; 400 otherwise. */
-export function normalizeLocaleCode(code: unknown): string {
-  const canonical =
-    typeof code === "string" ? canonicalLocale(code) : undefined;
+export function normalizeLocaleCode(code: string): string {
+  const canonical = canonicalLocale(code);
   check(
     canonical !== undefined && isKnownLanguage(canonical),
-    400,
     "invalid_locale",
-    `Invalid or unknown language code: ${String(code)}`,
+    { locale: code },
   );
   return canonical;
 }

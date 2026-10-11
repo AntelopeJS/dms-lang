@@ -3,6 +3,7 @@ import {
   createKey,
   deleteKey,
   type KeyStore,
+  type LocaleTexts,
   removeOverride,
   renameKey,
   updateKey,
@@ -16,11 +17,7 @@ import {
 } from "./workspaces";
 
 function readOnly(): never {
-  return fail(
-    403,
-    "read_only",
-    "The modules workspace is read-only; override its keys in the project files",
-  );
+  return fail("read_only", {}, "modules_read_only");
 }
 
 const KEY_STORES: Record<WorkspaceKind, (workspace: string) => KeyStore> = {
@@ -35,40 +32,40 @@ function storeOf(workspace: string): KeyStore {
 
 export function createKeyFor(
   workspace: string,
-  path: unknown,
-  values: unknown,
-  before?: unknown,
+  path: string,
+  values: LocaleTexts,
+  before?: string | null,
 ): void {
   createKey(storeOf(workspace), path, values, before);
 }
 
 export function updateKeyFor(
   workspace: string,
-  path: unknown,
-  values: unknown,
-  expected?: unknown,
+  path: string,
+  values: LocaleTexts,
+  expected?: LocaleTexts,
 ): void {
   updateKey(storeOf(workspace), path, values, expected);
 }
 
 export function renameKeyFor(
   workspace: string,
-  path: unknown,
-  newPath: unknown,
+  path: string,
+  newPath: string,
 ): string {
   return renameKey(storeOf(workspace), path, newPath);
 }
 
-export function deleteKeyFor(workspace: string, path: unknown): void {
+export function deleteKeyFor(workspace: string, path: string): void {
   deleteKey(storeOf(workspace), path);
 }
 
 export function removeOverrideFor(
   workspace: string,
-  path: unknown,
-  locales?: unknown,
+  path: string,
+  locales?: string[],
 ): void {
   if (workspaceKind(workspace) !== "default")
-    fail(400, "not_an_override", "Only the project files override module keys");
+    fail("not_an_override", { path }, "override_project_only");
   removeOverride(storeOf(workspace), path, locales);
 }

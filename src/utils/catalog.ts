@@ -59,13 +59,9 @@ export function listAllWorkspaces(): WorkspaceSummary[] {
  * The id of an existing workspace, lower-cased (ids are case-insensitive); an empty id is the
  * project files. 404 `unknown_workspace` without any disk path otherwise.
  */
-export function resolveWorkspaceId(workspace: unknown): string {
+export function resolveWorkspaceId(workspace?: string): string {
   const id = normalizeWorkspaceId(workspace) || DEFAULT_WORKSPACE;
   if (id === DEFAULT_WORKSPACE || id === MODULES_WORKSPACE || hasWorkspace(id))
     return id;
-  return fail(
-    404,
-    "unknown_workspace",
-    `Unknown workspace: ${String(workspace)}`,
-  );
+  return fail("unknown_workspace", { id: workspace });
 }

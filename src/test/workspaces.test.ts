@@ -33,6 +33,7 @@ import {
   removeLocale,
   setWorkspaceDefaultLocale,
 } from "../utils/workspaces";
+import type { SortDirection, SortedColumn } from "../validation/query.schema";
 import { expectError } from "./errors";
 
 const WORKSPACE = "core-shop";
@@ -101,7 +102,8 @@ describe("[integration] workspace data model", () => {
       404,
       "unknown_workspace",
     );
-    expect(body.message).to.equal("Unknown workspace: nope");
+    expect(body.message).to.equal("$dms_lang.errors.unknown_workspace");
+    expect(body.id).to.equal("nope");
     expectError(() => resolveFlat("nope"), 404, "unknown_workspace");
   });
 
@@ -194,8 +196,8 @@ function describeLanguages(): void {
   });
 
   it("keeps the base on top whatever the sort of the languages", () => {
-    const codes = (key?: string, direction?: string) =>
-      listLanguages(WORKSPACE, { key, direction }).results.map(
+    const codes = (sortKey?: SortedColumn, sortDirection?: SortDirection) =>
+      listLanguages(WORKSPACE, { sortKey, sortDirection }).results.map(
         (row) => row.code,
       );
     expect(codes("name")).to.deep.equal(["en-GB", "fr", "nl"]);

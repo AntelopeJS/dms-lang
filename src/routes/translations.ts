@@ -24,7 +24,7 @@ import {
 } from "../pages/actions";
 import { LANG_REALTIME_TOPIC } from "../pages/module";
 import { localeStats, workspaceAbout, workspaceKpis } from "../utils/blocks";
-import { JsonObjectBody, requireString } from "../utils/body";
+import { JsonBody } from "../utils/body";
 import { listAllWorkspaces, resolveWorkspaceId } from "../utils/catalog";
 import { getTranslationConfig } from "../utils/config";
 import {
@@ -37,7 +37,6 @@ import {
   publicLocaleUrl,
   publicOrigin,
   removalConfirm,
-  type SnippetKind,
   workspaceEndpoint,
   workspaceNotice,
   workspaceSnippet,
@@ -73,11 +72,12 @@ import {
   renameWorkspace,
   setWorkspaceDefaultLocale,
   updateWorkspaceDetails,
-  type WorkspaceDetails,
   type WorkspaceSummary,
 } from "../utils/workspaces";
-
-type Body = Record<string, unknown>;
+import { keySchema } from "../validation/key.schema";
+import { querySchema } from "../validation/query.schema";
+import { validate } from "../validation/validate";
+import { workspaceSchema } from "../validation/workspace.schema";
 
 interface KeyResult {
   row?: FlatRow;
@@ -97,21 +97,14 @@ function announce(workspace: string): void {
   }).catch(() => undefined);
 }
 
-function editableWorkspace(workspace: unknown): string {
+function editableWorkspace(workspace: string): string {
   assertEditable();
-  return resolveWorkspaceId(requireString(workspace, "workspace"));
+  return resolveWorkspaceId(workspace);
 }
 
-function keyResult(workspace: string, path: unknown): KeyResult {
+function keyResult(workspace: string, path: string): KeyResult {
   announce(workspace);
-  return { row: resolveRow(workspace, String(path)) };
-}
-
-function workspaceDetails(body: Body): WorkspaceDetails {
-  const details: WorkspaceDetails = {};
-  if ("description" in body) details.description = body.description as string;
-  if ("type" in body) details.type = body.type as WorkspaceDetails["type"];
-  return details;
+  return { row: resolveRow(workspace, path) };
 }
 
 function permissionIds() {
@@ -176,7 +169,8 @@ export class TranslationsController extends Controller(
     @Parameter("workspace", "query") workspace?: string,
     @Parameter("page", "query") page?: string,
   ) {
-    return workspaceNotice(resolveWorkspaceId(workspace), page ?? "");
+    const query = validate(querySchema.notice, { page });
+    return workspaceNotice(resolveWorkspaceId(workspace), query.page);
   }
 
   @Get("/locale-stats")
@@ -193,10 +187,8 @@ export class TranslationsController extends Controller(
     @Parameter("sortKey", "query") sortKey?: string,
     @Parameter("sortDirection", "query") sortDirection?: string,
   ) {
-    return listLanguages(resolveWorkspaceId(workspace), {
-      key: sortKey,
-      direction: sortDirection,
-    });
+    const sort = validate(querySchema.languages, { sortKey, sortDirection });
+    return listLanguages(resolveWorkspaceId(workspace), sort);
   }
 
   @Get("/languages/:workspace/:code/removal-confirm")
@@ -226,6 +218,7 @@ export class TranslationsController extends Controller(
     @Parameter("workspace", "param") workspace: string,
     @Parameter("code", "param") code: string,
   ): DefaultLocaleResult {
+    validate(workspaceSchema.language, { workspace, code });
     const id = editableWorkspace(workspace);
     const defaultLocale = setWorkspaceDefaultLocale(id, code);
     announce(id);
@@ -238,6 +231,7 @@ export class TranslationsController extends Controller(
     @Parameter("workspace", "param") workspace: string,
     @Parameter("code", "param") code: string,
   ) {
+    validate(workspaceSchema.language, { workspace, code });
     const id = editableWorkspace(workspace);
     removeLocale(id, code);
     announce(id);
@@ -260,9 +254,10 @@ export class TranslationsController extends Controller(
     @Parameter("workspace", "query") workspace?: string,
     @Parameter("kind", "query") kind?: string,
   ) {
+    const query = validate(querySchema.snippet, { kind: kind || undefined });
     return workspaceSnippet(
       resolveWorkspaceId(workspace),
-      (kind || "i18next") as SnippetKind,
+      query.kind,
       publicOrigin(context),
     );
   }
@@ -302,7 +297,7 @@ export class TranslationsController extends Controller(
     @Parameter("path", "query") path?: string,
     @Parameter("workspace", "query") workspace?: string,
   ) {
-    const key = requireString(path, "path");
+    const key = path ?? "";
     const { translations, inherited } = resolveTranslationsByPath(
       resolveWorkspaceId(workspace),
       key,
@@ -313,24 +308,23 @@ export class TranslationsController extends Controller(
   @Post("/workspace")
   createWorkspace(
     @AuthUserWithPermission(createWorkspaceAction) _user: User,
-    @JsonObjectBody() body: Body,
+    @JsonBody() body: unknown,
   ): WorkspaceSummary {
+    const { id, locale, ...details } = validate(workspaceSchema.create, body);
     assertEditable();
-    const id = createWorkspace(body.id, body.locale, workspaceDetails(body));
-    announce(id);
-    return getWorkspaceSummary(id);
+    const created = createWorkspace(id, locale, details);
+    announce(created);
+    return getWorkspaceSummary(created);
   }
 
   @Route("handler", "patch", "/workspace")
   updateWorkspace(
     @AuthUserWithPermission(editWorkspaceAction) _user: User,
-    @JsonObjectBody() body: Body,
+    @JsonBody() body: unknown,
   ): WorkspaceSummary {
+    const { id, ...details } = validate(workspaceSchema.update, body);
     assertEditable();
-    const summary = updateWorkspaceDetails(
-      requireString(body.id, "id"),
-      workspaceDetails(body),
-    );
+    const summary = updateWorkspaceDetails(id, details);
     announce(summary.id);
     return summary;
   }
@@ -338,12 +332,11 @@ export class TranslationsController extends Controller(
   @Post("/workspace/rename")
   renameWorkspace(
     @AuthUserWithPermission(renameWorkspaceAction) _user: User,
-    @JsonObjectBody() body: Body,
+    @JsonBody() body: unknown,
   ): WorkspaceSummary {
+    const { id: previous, newId } = validate(workspaceSchema.rename, body);
     assertEditable();
-    const previous = requireString(body.id, "id");
-    const id = renameWorkspace(previous, body.newId);
-    // Pages still open on the old id learn that it is gone.
+    const id = renameWorkspace(previous, newId);
     announce(normalizeWorkspaceId(previous));
     announce(id);
     return getWorkspaceSummary(id);
@@ -352,10 +345,10 @@ export class TranslationsController extends Controller(
   @Delete("/workspace")
   deleteWorkspace(
     @AuthUserWithPermission(deleteWorkspaceAction) _user: User,
-    @JsonObjectBody() body: Body,
+    @JsonBody() body: unknown,
   ) {
+    const { id } = validate(workspaceSchema.remove, body);
     assertEditable();
-    const id = requireString(body.id, "id");
     deleteWorkspace(id);
     announce(normalizeWorkspaceId(id));
   }
@@ -363,10 +356,11 @@ export class TranslationsController extends Controller(
   @Post("/import")
   importWorkspace(
     @AuthUserWithPermission(createWorkspaceAction) _user: User,
-    @JsonObjectBody() body: Body,
+    @JsonBody() body: unknown,
   ): WorkspaceSummary {
+    const backup = validate(workspaceSchema.import, body);
     assertEditable();
-    const id = importWorkspace(body);
+    const id = importWorkspace(backup);
     announce(id);
     return getWorkspaceSummary(id);
   }
@@ -374,14 +368,11 @@ export class TranslationsController extends Controller(
   @Post("/locale")
   addLocale(
     @AuthUserWithPermission(manageLanguagesAction) _user: User,
-    @JsonObjectBody() body: Body,
+    @JsonBody() body: unknown,
   ): AddedLocale {
-    const id = editableWorkspace(body.workspace);
-    const added = addLocale(id, {
-      code: body.code,
-      name: body.name,
-      flag: body.flag,
-    });
+    const { workspace, ...locale } = validate(workspaceSchema.addLocale, body);
+    const id = editableWorkspace(workspace);
+    const added = addLocale(id, locale);
     announce(id);
     return added;
   }
@@ -389,20 +380,22 @@ export class TranslationsController extends Controller(
   @Delete("/locale")
   removeLocale(
     @AuthUserWithPermission(manageLanguagesAction) _user: User,
-    @JsonObjectBody() body: Body,
+    @JsonBody() body: unknown,
   ) {
-    const id = editableWorkspace(body.workspace);
-    removeLocale(id, body.code);
+    const { workspace, code } = validate(workspaceSchema.language, body);
+    const id = editableWorkspace(workspace);
+    removeLocale(id, code);
     announce(id);
   }
 
   @Post("/locale/default")
   setDefaultLocale(
     @AuthUserWithPermission(manageLanguagesAction) _user: User,
-    @JsonObjectBody() body: Body,
+    @JsonBody() body: unknown,
   ): DefaultLocaleResult {
-    const id = editableWorkspace(body.workspace);
-    const defaultLocale = setWorkspaceDefaultLocale(id, body.code);
+    const { workspace, code } = validate(workspaceSchema.language, body);
+    const id = editableWorkspace(workspace);
+    const defaultLocale = setWorkspaceDefaultLocale(id, code);
     announce(id);
     return { defaultLocale };
   }
@@ -410,60 +403,66 @@ export class TranslationsController extends Controller(
   @Post("/key")
   createKey(
     @AuthUserWithPermission(manageKeysAction) _user: User,
-    @JsonObjectBody() body: Body,
+    @JsonBody() body: unknown,
   ): KeyResult {
-    const id = editableWorkspace(body.workspace);
-    createKeyFor(id, body.path, body.values, body.before);
-    return keyResult(id, body.path);
+    const input = validate(keySchema.create, body);
+    const id = editableWorkspace(input.workspace);
+    createKeyFor(id, input.path, input.values, input.before);
+    return keyResult(id, input.path);
   }
 
   @Put("/key")
   updateKey(
     @AuthUserWithPermission(editTranslationsAction) _user: User,
-    @JsonObjectBody() body: Body,
+    @JsonBody() body: unknown,
   ): KeyResult {
-    const id = editableWorkspace(body.workspace);
-    updateKeyFor(id, body.path, body.values, body.expected);
-    return keyResult(id, body.path);
+    const input = validate(keySchema.update, body);
+    const id = editableWorkspace(input.workspace);
+    updateKeyFor(id, input.path, input.values, input.expected);
+    return keyResult(id, input.path);
   }
 
   @Delete("/key/override")
   removeOverride(
     @AuthUserWithPermission(editTranslationsAction) _user: User,
-    @JsonObjectBody() body: Body,
+    @JsonBody() body: unknown,
   ): KeyResult {
-    const id = editableWorkspace(body.workspace);
-    removeOverrideFor(id, body.path, body.locales);
-    return keyResult(id, body.path);
+    const input = validate(keySchema.locales, body);
+    const id = editableWorkspace(input.workspace);
+    removeOverrideFor(id, input.path, input.locales);
+    return keyResult(id, input.path);
   }
 
   @Post("/key/reviewed")
   markReviewed(
     @AuthUserWithPermission(editTranslationsAction) _user: User,
-    @JsonObjectBody() body: Body,
+    @JsonBody() body: unknown,
   ): KeyResult {
-    const id = editableWorkspace(body.workspace);
-    markReviewedFor(id, body.path, body.locales);
-    return keyResult(id, body.path);
+    const input = validate(keySchema.locales, body);
+    const id = editableWorkspace(input.workspace);
+    markReviewedFor(id, input.path, input.locales);
+    return keyResult(id, input.path);
   }
 
   @Post("/key/rename")
   renameKey(
     @AuthUserWithPermission(manageKeysAction) _user: User,
-    @JsonObjectBody() body: Body,
+    @JsonBody() body: unknown,
   ): KeyResult {
-    const id = editableWorkspace(body.workspace);
-    const path = renameKeyFor(id, body.path, body.newPath);
+    const input = validate(keySchema.rename, body);
+    const id = editableWorkspace(input.workspace);
+    const path = renameKeyFor(id, input.path, input.newPath);
     return keyResult(id, path);
   }
 
   @Delete("/key")
   deleteKey(
     @AuthUserWithPermission(manageKeysAction) _user: User,
-    @JsonObjectBody() body: Body,
+    @JsonBody() body: unknown,
   ) {
-    const id = editableWorkspace(body.workspace);
-    deleteKeyFor(id, body.path);
+    const input = validate(keySchema.remove, body);
+    const id = editableWorkspace(input.workspace);
+    deleteKeyFor(id, input.path);
     announce(id);
   }
 }

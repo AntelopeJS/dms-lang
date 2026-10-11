@@ -105,10 +105,5 @@ export function assertMessageSyntax(locale: string, message: string): void {
   const problems = messageProblems(message);
   if (problems.length === 0) return;
   const details = messageProblemDetails(message);
-  fail(
-    400,
-    "invalid_message",
-    `The ${locale} text is not a valid message: ${details.join("; ")}.`,
-    { locale, problems, details },
-  );
+  fail("invalid_message", { locale, problems, details });
 }

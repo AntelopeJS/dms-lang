@@ -6,8 +6,7 @@ import { projectBaseLocale } from "./catalog";
 
 function writeTarget(locale: string): string {
   const target = getOwnWriteTarget(locale);
-  if (target === null)
-    fail(400, "unknown_locale", `No project file for locale ${locale}`);
+  if (target === null) fail("undeclared_locale", { locale }, "no_project_file");
   return target;
 }
 

@@ -20,6 +20,9 @@ importers:
       '@antelopejs/interface-dms':
         specifier: '>=0.5.4 <1.0.0'
         version: 0.5.4(56146dfb9d8ae60ee5b2205fd432b1da)
+      zod:
+        specifier: ~3.24.2
+        version: 3.24.4
     devDependencies:
       '@antelopejs/core':
         specifier: 1.14.0

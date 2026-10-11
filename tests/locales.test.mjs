@@ -185,3 +185,24 @@ test("every key the code names exists", () => {
     .map(({ key, file }) => `${file}: ${key}`);
   assert.deepEqual([...new Set(missing)], []);
 });
+
+test("every error reason of the API has a message", () => {
+  const source = readFileSync(join(ROOT, "src/utils/errors.ts"), "utf8");
+  const statuses = source.slice(
+    source.indexOf("ERROR_STATUS = {"),
+    source.indexOf("} as const"),
+  );
+  const reasons = source.slice(
+    source.indexOf("export type ErrorReason"),
+    source.indexOf("export type ErrorDetails"),
+  );
+  const keys = [
+    ...[...statuses.matchAll(/^\s+(\w+):/gm)].map((match) => match[1]),
+    ...[...reasons.matchAll(/"(\w+)"/g)].map((match) => match[1]),
+  ];
+  assert.ok(keys.length > 30, "the error reasons were found");
+  assert.deepEqual(
+    keys.filter((key) => !en.has(`dms_lang.errors.${key}`)),
+    [],
+  );
+});

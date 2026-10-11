@@ -91,14 +91,14 @@ export function outdatedLocales(
 /** Marks the translations of a key of an added workspace as checked against its current base text. */
 export function markReviewedFor(
   workspace: string,
-  path: unknown,
-  locales?: unknown,
+  path: string,
+  locales?: string[],
 ): void {
   check(
     workspaceKind(workspace) === "added",
-    400,
     "invalid_body",
-    "Only the translations of an added workspace are tracked for review",
+    { workspace },
+    "review_added_only",
   );
   markReviewed(
     trackSources(workspaceKeyStore(workspace), workspace),

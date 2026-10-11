@@ -33,6 +33,7 @@ import { expectError } from "./errors";
 interface InvalidMessageBody {
   message: string;
   problems?: string[];
+  details?: string[];
 }
 
 /** An in-memory key store: `files` is what the writes produce. */
@@ -195,11 +196,6 @@ describe("[unit] an undone deletion puts the key back in place", () => {
       "empty",
       "total",
     ]);
-    expectError(
-      () => createKey(memoryStore(files), "cart.more", { en: "x" }, 42),
-      400,
-      "invalid_body",
-    );
   });
 
   it("appends a key whose sibling is gone and refuses a sibling from another namespace", () => {
@@ -306,23 +302,8 @@ describe("[unit] key updates never lose a text", () => {
 });
 
 describe("[unit] key writes validate their input", () => {
-  it("accepts only texts and null as values", () => {
+  it("refuses a key without text or with a language the workspace lacks", () => {
     const store = memoryStore(storefront());
-    expectError(
-      () => createKey(store, "a.obj", { en: { nested: "o" } }),
-      400,
-      "invalid_value",
-    );
-    expectError(
-      () => createKey(store, "a.num", { en: 42 }),
-      400,
-      "invalid_value",
-    );
-    expectError(
-      () => createKey(store, "a.bool", { fr: true }),
-      400,
-      "invalid_value",
-    );
     expectError(
       () => createKey(store, "a.blank", { en: " " }),
       400,
@@ -331,7 +312,7 @@ describe("[unit] key writes validate their input", () => {
     expectError(
       () => createKey(store, "a.de", { de: "x" }),
       400,
-      "unknown_locale",
+      "undeclared_locale",
     );
   });
 
@@ -388,8 +369,11 @@ describe("[unit] key writes validate their input", () => {
     expect((body as InvalidMessageBody).problems).to.deep.equal([
       "invalid_placeholder",
     ]);
-    expect(body.message).to.contain("{prénom}");
-    expect(body.message).not.to.contain("invalid_placeholder");
+    expect(body.message).to.equal("$dms_lang.errors.invalid_message");
+    expect(String((body as InvalidMessageBody).details)).to.contain("{prénom}");
+    expect(String((body as InvalidMessageBody).details)).not.to.contain(
+      "invalid_placeholder",
+    );
     expect(messageProblemDetails("a@b {x y}")).to.have.length(2);
   });
 });
@@ -400,7 +384,7 @@ describe("[unit] language codes", () => {
     expect(normalizeLocaleCode("zh-hant-tw")).to.equal("zh-Hant-TW");
     expect(normalizeLocaleCode("EN-gb")).to.equal("en-GB");
     expect(canonicalLocale("not a code")).to.equal(undefined);
-    for (const code of ["xyz", "fr-XY", "", 42]) {
+    for (const code of ["xyz", "fr-XY", ""]) {
       expectError(() => normalizeLocaleCode(code), 400, "invalid_locale");
     }
   });

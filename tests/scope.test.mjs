@@ -4,8 +4,6 @@ import { honestCoverage } from "../frontend-vue/app/composables/translation/useL
 import {
   isConflict,
   serverErrorCode,
-  serverMessage,
-  statusMessageKey,
 } from "../frontend-vue/app/composables/translation/useMutationToast.ts";
 import {
   matchesWorkspace,
@@ -19,42 +17,6 @@ test("honestCoverage never rounds a gap up to 100", () => {
   assert.equal(honestCoverage(0, 3), 0);
   assert.equal(honestCoverage(1, 1000), 0);
   assert.equal(honestCoverage(0, 0), 100);
-});
-
-test("serverMessage reads a JSON body, a text body or nothing", () => {
-  assert.equal(
-    serverMessage({
-      status: 409,
-      data: {
-        message: "Workspace already exists: a",
-        code: "workspace_exists",
-      },
-    }),
-    "Workspace already exists: a",
-  );
-  assert.equal(
-    serverMessage({ status: 409, data: "Workspace already exists: b" }),
-    "Workspace already exists: b",
-  );
-  assert.equal(serverMessage({ status: 409, statusMessage: "Conflict" }), "");
-  assert.equal(serverMessage(undefined), "");
-  assert.equal(
-    serverMessage({ status: 502, data: "<html>Bad gateway</html>" }),
-    "",
-  );
-});
-
-test("a failure without a message falls back on a sentence for its status", () => {
-  assert.equal(
-    statusMessageKey({ status: 409 }),
-    "dms_lang.errors.status.conflict",
-  );
-  assert.equal(
-    statusMessageKey({ statusCode: 403 }),
-    "dms_lang.errors.status.forbidden",
-  );
-  assert.equal(statusMessageKey({ status: 500 }), undefined);
-  assert.equal(statusMessageKey(new Error("network")), undefined);
 });
 
 test("conflicts and error codes are recognised", () => {

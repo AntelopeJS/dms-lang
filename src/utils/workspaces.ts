@@ -69,37 +69,25 @@ const RESERVED_IDS = new Set([
   ALL_WORKSPACE,
 ]);
 const LOCALE_FILE_RE = /^[A-Z]{2,3}(?:[-_][A-Z0-9]{2,8})*$/i;
-const DESCRIPTION_MAX_LENGTH = 500;
 
 export function assertEditable(): void {
-  check(
-    getTranslationConfig().editable,
-    403,
-    "read_only",
-    "i18n workspace editing is disabled",
-  );
+  check(getTranslationConfig().editable, "read_only");
 }
 
 /** A workspace id, lower-cased: ids are case-insensitive. */
-export function normalizeWorkspaceId(id: unknown): string {
-  return typeof id === "string" ? id.trim().toLowerCase() : "";
+export function normalizeWorkspaceId(id = ""): string {
+  return id.trim().toLowerCase();
 }
 
-export function validateWorkspaceId(id: unknown): string {
+export function validateWorkspaceId(id: string): string {
   const normalized = normalizeWorkspaceId(id);
-  check(
-    WORKSPACE_ID_RE.test(normalized),
-    400,
-    "invalid_workspace_id",
-    `Invalid workspace id: ${String(id)}. Use lowercase letters, digits, "_" and "-".`,
-  );
+  check(WORKSPACE_ID_RE.test(normalized), "invalid_workspace_id", { id });
   return normalized;
 }
 
 function getWorkspacesDir(): string {
   const dir = getTranslationConfig().workspacesDir;
-  if (!dir)
-    fail(500, "server_error", "i18n workspaces directory is not configured");
+  if (!dir) fail("server_error", {}, "not_configured");
   return resolve(dir);
 }
 
@@ -127,12 +115,7 @@ function workspaceFolders(): Map<string, string> {
 function insideRoot(name: string): string {
   const root = getWorkspacesDir();
   const dir = resolve(root, name);
-  check(
-    dir.startsWith(root + sep),
-    400,
-    "invalid_workspace_id",
-    "Invalid workspace id",
-  );
+  check(dir.startsWith(root + sep), "invalid_workspace_id", { id: name });
   return dir;
 }
 
@@ -141,33 +124,26 @@ interface NewWorkspaceFolder {
   dir: string;
 }
 
-function newWorkspaceDir(id: unknown): NewWorkspaceFolder {
+function newWorkspaceDir(id: string): NewWorkspaceFolder {
   const normalized = validateWorkspaceId(id);
-  check(
-    !RESERVED_IDS.has(normalized),
-    400,
-    "reserved_workspace",
-    `"${normalized}" is a reserved workspace name`,
-  );
-  check(
-    !workspaceFolders().has(normalized),
-    409,
-    "workspace_exists",
-    `Workspace already exists: ${normalized}`,
-  );
+  check(!RESERVED_IDS.has(normalized), "reserved_workspace", {
+    id: normalized,
+  });
+  check(!workspaceFolders().has(normalized), "workspace_exists", {
+    id: normalized,
+  });
   return { id: normalized, dir: insideRoot(normalized) };
 }
 
 /** Whether an added workspace exists (case-insensitive). */
-export function hasWorkspace(id: unknown): boolean {
+export function hasWorkspace(id: string): boolean {
   return workspaceFolders().has(normalizeWorkspaceId(id));
 }
 
 /** The folder of an existing added workspace, or 404 without any disk path. */
-function workspaceDir(id: unknown): string {
+function workspaceDir(id: string): string {
   const folder = workspaceFolders().get(normalizeWorkspaceId(id));
-  if (folder === undefined)
-    fail(404, "unknown_workspace", `Unknown workspace: ${String(id)}`);
+  if (folder === undefined) fail("unknown_workspace", { id });
   return insideRoot(folder);
 }
 
@@ -288,65 +264,53 @@ export function readWorkspaceLocale(
   return { code: served, messages: readJson(localeFile(dir, served)) };
 }
 
-function validateDescription(description: unknown): string | undefined {
-  if (description === undefined || description === null) return undefined;
-  check(
-    typeof description === "string" &&
-      description.length <= DESCRIPTION_MAX_LENGTH,
-    400,
-    "invalid_body",
-    `The description must be a text of at most ${DESCRIPTION_MAX_LENGTH} characters`,
-  );
-  return description.trim() || undefined;
+/** The description and type a request sends: `null` or an empty value clears them. */
+export interface DetailsInput {
+  description?: string | null;
+  type?: WorkspaceType | "" | null;
 }
 
-function validateType(type: unknown): WorkspaceType | undefined {
-  if (type === undefined || type === null || type === "") return undefined;
-  check(
-    WORKSPACE_TYPES.includes(type as WorkspaceType),
-    400,
-    "invalid_body",
-    `Unknown workspace type: ${JSON.stringify(type)} (expected ${WORKSPACE_TYPES.join(", ")})`,
-  );
-  return type as WorkspaceType;
+function cleanDescription(description?: string | null): string | undefined {
+  return description?.trim() || undefined;
 }
 
-/** The description and type of a body, validated; `undefined` fields are left out. */
-export function validateDetails(input: WorkspaceDetails): WorkspaceDetails {
+function cleanType(
+  type?: WorkspaceType | "" | null,
+): WorkspaceType | undefined {
+  return type || undefined;
+}
+
+/** The description and type of a validated request; empty fields are left out. */
+export function cleanDetails(input: DetailsInput): WorkspaceDetails {
   return storedDetails({
-    description: validateDescription(input.description),
-    type: validateType(input.type),
+    description: cleanDescription(input.description),
+    type: cleanType(input.type),
   });
 }
 
-function validateLocaleEntry(locale: unknown): WorkspaceLocale {
-  check(
-    locale !== null && typeof locale === "object",
-    400,
-    "invalid_body",
-    "Missing field: locale",
-  );
-  const { code, name, flag } = locale as WorkspaceLocale;
+/** A language entry as stored: its canonical code, its name and flag when not empty. */
+export function validateLocaleEntry(locale: WorkspaceLocale): WorkspaceLocale {
+  const { code, name, flag } = locale;
   const entry: WorkspaceLocale = { code: normalizeLocaleCode(code) };
   if (typeof name === "string" && name.trim() !== "") entry.name = name.trim();
   if (typeof flag === "string" && flag.trim() !== "") entry.flag = flag.trim();
   return entry;
 }
 
-export interface WorkspaceSeed extends WorkspaceDetails {
+export interface WorkspaceSeed extends DetailsInput {
   defaultLocale: string;
   locales: WorkspaceLocale[];
   messages: LocaleMessages;
 }
 
 /** Writes a new workspace folder from validated content. */
-export function writeNewWorkspace(rawId: unknown, seed: WorkspaceSeed): string {
+export function writeNewWorkspace(rawId: string, seed: WorkspaceSeed): string {
   const { id, dir } = newWorkspaceDir(rawId);
   mkdirSync(dir, { recursive: true });
   writeManifestAt(dir, {
     defaultLocale: seed.defaultLocale,
     locales: seed.locales,
-    ...validateDetails(seed),
+    ...cleanDetails(seed),
   });
   for (const locale of seed.locales) {
     writeJson(localeFile(dir, locale.code), seed.messages[locale.code] ?? {});
@@ -355,9 +319,9 @@ export function writeNewWorkspace(rawId: unknown, seed: WorkspaceSeed): string {
 }
 
 export function createWorkspace(
-  id: unknown,
-  locale: unknown,
-  details: WorkspaceDetails = {},
+  id: string,
+  locale: WorkspaceLocale,
+  details: DetailsInput = {},
 ): string {
   const entry = validateLocaleEntry(locale);
   return writeNewWorkspace(id, {
@@ -370,20 +334,17 @@ export function createWorkspace(
 
 export function updateWorkspaceDetails(
   id: string,
-  details: WorkspaceDetails,
+  details: DetailsInput,
 ): WorkspaceSummary {
-  const changes = {
-    description: validateDescription(details.description),
-    type: validateType(details.type),
-  };
   const manifest = updateManifest(id, (current) => {
-    if ("description" in details) current.description = changes.description;
-    if ("type" in details) current.type = changes.type;
+    if ("description" in details)
+      current.description = cleanDescription(details.description);
+    if ("type" in details) current.type = cleanType(details.type);
   });
   return summaryOf(normalizeWorkspaceId(id), manifest);
 }
 
-export function renameWorkspace(id: string, newId: unknown): string {
+export function renameWorkspace(id: string, newId: string): string {
   const from = workspaceDir(id);
   const target = newWorkspaceDir(newId);
   renameSync(from, target.dir);
@@ -399,18 +360,15 @@ export interface AddedLocale {
   sameLanguage: string[];
 }
 
-export function addLocale(id: string, locale: unknown): AddedLocale {
+export function addLocale(id: string, locale: WorkspaceLocale): AddedLocale {
   const entry = validateLocaleEntry(locale);
   const dir = workspaceDir(id);
   const manifest = readManifestAt(dir);
   const codes = manifest.locales.map((l) => l.code);
   const existing = findLocale(codes, entry.code);
-  check(
-    existing === undefined,
-    409,
-    "locale_exists",
-    `Locale already exists: ${existing ?? entry.code}`,
-  );
+  check(existing === undefined, "locale_exists", {
+    locale: existing ?? entry.code,
+  });
   writeJson(localeFile(dir, entry.code), {});
   manifest.locales.push(entry);
   if (!manifest.defaultLocale) manifest.defaultLocale = entry.code;
@@ -425,25 +383,19 @@ export function addLocale(id: string, locale: unknown): AddedLocale {
 /** The stored code of a locale of a workspace, matched on its canonical form; 404 when absent. */
 export function workspaceLocaleCode(
   manifest: WorkspaceManifest,
-  code: unknown,
+  code: string,
 ): string {
   const codes = manifest.locales.map((locale) => locale.code);
-  const found = typeof code === "string" ? findLocale(codes, code) : undefined;
-  if (found === undefined)
-    fail(404, "unknown_locale", `Unknown locale: ${String(code)}`);
+  const found = findLocale(codes, code);
+  if (found === undefined) fail("unknown_locale", { locale: code });
   return found;
 }
 
-export function removeLocale(id: string, code: unknown): void {
+export function removeLocale(id: string, code: string): void {
   const dir = workspaceDir(id);
   const manifest = readManifestAt(dir);
   const stored = workspaceLocaleCode(manifest, code);
-  check(
-    stored !== manifest.defaultLocale,
-    409,
-    "base_locale",
-    "This is the base language: choose another base language before removing it",
-  );
+  check(stored !== manifest.defaultLocale, "base_locale", { locale: stored });
   const filePath = localeFile(dir, stored);
   if (existsSync(filePath)) unlinkSync(filePath);
   manifest.locales = manifest.locales.filter((l) => l.code !== stored);
@@ -451,7 +403,7 @@ export function removeLocale(id: string, code: unknown): void {
   writeManifestAt(dir, manifest);
 }
 
-export function setWorkspaceDefaultLocale(id: string, code: unknown): string {
+export function setWorkspaceDefaultLocale(id: string, code: string): string {
   const dir = workspaceDir(id);
   const manifest = readManifestAt(dir);
   const stored = workspaceLocaleCode(manifest, code);

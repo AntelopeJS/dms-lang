@@ -1,3 +1,4 @@
+import type { LanguageSort, SortedColumn } from "../validation/query.schema";
 import { FALLBACK_LOCALE, listAllWorkspaces } from "./catalog";
 import { type FlatResult, isRowMissing, resolveFlat } from "./resolve";
 
@@ -180,25 +181,19 @@ function countsOf(flat: FlatResult, code: string): LanguageCounts {
   };
 }
 
-/** The sort the table asks for (`sortKey`, `sortDirection` of a source route). */
-export interface LanguageSort {
-  key?: string;
-  direction?: string;
-}
-
 const DESCENDING = "desc";
+const DEFAULT_COLUMN = "coverage";
 
-const SORTED_COLUMNS: Record<
-  string,
-  (a: LanguageRow, b: LanguageRow) => number
-> = {
+type RowOrder = (a: LanguageRow, b: LanguageRow) => number;
+
+const SORTED_COLUMNS: Record<SortedColumn, RowOrder> = {
   name: (a, b) => a.name.localeCompare(b.name),
   coverage: (a, b) => a.coverage - b.coverage,
 };
 
-function compareRows(sort: LanguageSort) {
-  const column = SORTED_COLUMNS[sort.key ?? ""] ?? SORTED_COLUMNS.coverage;
-  const direction = sort.direction === DESCENDING ? -1 : 1;
+function compareRows(sort: LanguageSort): RowOrder {
+  const column = SORTED_COLUMNS[sort.sortKey ?? DEFAULT_COLUMN];
+  const direction = sort.sortDirection === DESCENDING ? -1 : 1;
   return (a: LanguageRow, b: LanguageRow) =>
     Number(b.isBase) - Number(a.isBase) ||
     direction * column(a, b) ||

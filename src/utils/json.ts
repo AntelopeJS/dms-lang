@@ -7,30 +7,24 @@ const FORBIDDEN_SEGMENTS = new Set(["__proto__", "prototype", "constructor"]);
 
 export type NodeKind = "missing" | "leaf" | "branch";
 
-function splitKeyPath(path: unknown): string[] {
-  check(
-    typeof path === "string" && path.length > 0,
-    400,
-    "invalid_key_path",
-    "Missing key path",
-  );
+function splitKeyPath(path: string): string[] {
   const segments = path.split(".");
   check(
-    segments.every(
-      (segment) =>
-        segment.length > 0 &&
-        segment.trim() === segment &&
-        !FORBIDDEN_SEGMENTS.has(segment),
-    ),
-    400,
+    path.length > 0 &&
+      segments.every(
+        (segment) =>
+          segment.length > 0 &&
+          segment.trim() === segment &&
+          !FORBIDDEN_SEGMENTS.has(segment),
+      ),
     "invalid_key_path",
-    `Invalid key path: ${path}`,
+    { path },
   );
   return segments;
 }
 
 /** The segments of the path of a key that may already exist (module keys keep their own naming). */
-export function validateKeyPath(path: unknown): string[] {
+export function validateKeyPath(path: string): string[] {
   return splitKeyPath(path);
 }
 
@@ -38,13 +32,13 @@ export function validateKeyPath(path: unknown): string[] {
  * The segments of a path a key is created or renamed to: letters, digits, `_` and `-`,
  * at most 128 characters per segment, never `__proto__`, `prototype` or `constructor`.
  */
-export function validateNewKeyPath(path: unknown): string[] {
+export function validateNewKeyPath(path: string): string[] {
   const segments = splitKeyPath(path);
   check(
     segments.every((segment) => NEW_SEGMENT_RE.test(segment)),
-    400,
     "invalid_key_path",
-    `Invalid key path: ${String(path)}. Use letters, digits, "_" and "-" separated by dots.`,
+    { path },
+    "invalid_new_key_path",
   );
   return segments;
 }
@@ -70,11 +64,7 @@ export function readJsonForWrite(path: string): Record<string, unknown> {
   if (!existsSync(path)) return {};
   const parsed = parseOrUndefined(readFileSync(path, "utf-8"));
   if (isPlainObject(parsed)) return parsed;
-  return fail(
-    500,
-    "server_error",
-    `The translation file ${basename(path)} is not a valid JSON object; fix it before editing.`,
-  );
+  return fail("server_error", { file: basename(path) }, "corrupt_file");
 }
 
 interface JsonLayout {

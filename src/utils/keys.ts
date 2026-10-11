@@ -87,33 +87,15 @@ function assertFreePath(
   segments: string[],
 ): void {
   const path = segments.join(".");
-  check(
-    !hasLeaf(messages, segments),
-    409,
-    "key_exists",
-    `The key ${path} already exists`,
-  );
-  check(
-    !hasLeaf(reference, segments),
-    409,
-    "module_key",
-    `${path} is a module key: override it instead of creating it`,
-  );
+  check(!hasLeaf(messages, segments), "key_exists", { path });
+  check(!hasLeaf(reference, segments), "module_key", { path });
   const both = { ...prefixed(messages, "own"), ...prefixed(reference, "ref") };
   if (hasBranch(both, segments)) {
     const size = namespaceSize(both, path);
-    fail(409, "key_conflict", `${path} is a namespace holding ${size} key(s)`, {
-      conflicts: [path],
-    });
+    fail("key_conflict", { path, size, conflicts: [path] });
   }
   const prefix = leafPrefix(both, segments);
-  check(
-    prefix === undefined,
-    409,
-    "key_conflict",
-    `${prefix} is already a key: no key can be created under it`,
-    { conflicts: [prefix] },
-  );
+  check(prefix === undefined, "key_conflict", { path, conflicts: [prefix] });
 }
 
 function prefixed(messages: LocaleMessages, tag: string): LocaleMessages {
@@ -127,44 +109,24 @@ function prefixed(messages: LocaleMessages, tag: string): LocaleMessages {
 
 function storeLocale(store: KeyStore, code: string): string {
   const found = findLocale(store.locales, code);
-  if (found === undefined)
-    fail(400, "unknown_locale", `Unknown locale for this workspace: ${code}`);
+  if (found === undefined) fail("undeclared_locale", { locale: code });
   return found;
 }
 
-function textOf(locale: string, value: unknown): string | null {
-  check(
-    value === null || typeof value === "string",
-    400,
-    "invalid_value",
-    `The ${locale} value must be a text or null`,
-  );
-  if (value === null || value.trim() === "") return null;
-  return value;
+function textOf(value: string | null): string | null {
+  return value === null || value.trim() === "" ? null : value;
 }
 
-function parseTexts(
-  store: KeyStore,
-  values: unknown,
-  field: string,
-): LocaleTexts {
-  if (values === undefined || values === null) return {};
-  check(
-    isPlainObject(values),
-    400,
-    "invalid_body",
-    `${field} must be an object`,
-  );
+/** The texts of a request on the locales of the store; an empty text is no text. */
+function parseTexts(store: KeyStore, values: LocaleTexts = {}): LocaleTexts {
   const texts: LocaleTexts = {};
-  for (const [code, value] of Object.entries(values)) {
-    const locale = storeLocale(store, code);
-    texts[locale] = textOf(locale, value);
-  }
+  for (const [code, value] of Object.entries(values))
+    texts[storeLocale(store, code)] = textOf(value);
   return texts;
 }
 
-function validateTexts(store: KeyStore, values: unknown): LocaleTexts {
-  const texts = parseTexts(store, values, "values");
+function validateTexts(store: KeyStore, values: LocaleTexts): LocaleTexts {
+  const texts = parseTexts(store, values);
   for (const [locale, text] of Object.entries(texts)) {
     if (text !== null) assertMessageSyntax(locale, text);
   }
@@ -183,9 +145,9 @@ function assertExpected(
   store: KeyStore,
   path: string,
   texts: LocaleTexts,
-  expected: unknown,
+  expected?: LocaleTexts,
 ): void {
-  const wanted = parseTexts(store, expected, "expected");
+  const wanted = parseTexts(store, expected);
   const changed = Object.entries(wanted).filter(
     ([locale, text]) => currentText(store.messages[locale], path) !== text,
   );
@@ -193,7 +155,7 @@ function assertExpected(
   const current: LocaleTexts = {};
   for (const locale of new Set([...Object.keys(texts), ...Object.keys(wanted)]))
     current[locale] = currentText(store.messages[locale], path);
-  fail(409, "conflict", `${path} was changed by someone else`, { current });
+  fail("conflict", { path, current });
 }
 
 function countTexts(messages: LocaleMessages, path: string): number {
@@ -225,23 +187,17 @@ function applyTexts(
 function siblingNames(
   store: KeyStore,
   segments: string[],
-  before: unknown,
+  before?: string | null,
 ): string[] | undefined {
   if (before === undefined || before === null) return undefined;
-  check(
-    typeof before === "string",
-    400,
-    "invalid_body",
-    "before must be the key path the new key goes before",
-  );
   const sibling = validateKeyPath(before);
   const parent = segments.slice(0, -1);
   check(
     sibling.length === segments.length &&
       sibling.slice(0, -1).join(".") === parent.join("."),
-    400,
     "invalid_body",
-    `before must be a key path next to ${segments.join(".")}`,
+    { before },
+    "invalid_before",
   );
   const files = [store.baseLocale, ...store.locales].map(
     (locale) => store.messages[locale],
@@ -269,18 +225,18 @@ function applyInMemory(
  */
 export function createKey(
   store: KeyStore,
-  path: unknown,
-  values: unknown,
-  before?: unknown,
+  path: string,
+  values: LocaleTexts,
+  before?: string | null,
 ): void {
   const segments = validateNewKeyPath(path);
   const siblings = siblingNames(store, segments, before);
   const texts = validateTexts(store, values);
   check(
     Object.values(texts).some((text) => text !== null),
-    400,
     "invalid_value",
-    "A new key needs at least one text",
+    { path },
+    "empty_key",
   );
   assertFreePath(store.messages, store.reference, segments);
   const written = Object.fromEntries(
@@ -302,15 +258,10 @@ function assertKeyOf(store: KeyStore, segments: string[]): void {
   check(
     !hasBranch(store.messages, segments) &&
       !hasBranch(store.reference, segments),
-    400,
     "not_a_key",
-    `${path} is a namespace, not a key`,
+    { path },
   );
-  fail(
-    404,
-    "key_not_found",
-    `The key ${path} does not exist (it may have been deleted)`,
-  );
+  fail("key_not_found", { path });
 }
 
 function assertWritable(
@@ -321,12 +272,11 @@ function assertWritable(
   for (const locale of Object.keys(texts)) {
     const single = { [locale]: store.messages[locale] ?? {} };
     const prefix = leafPrefix(single, segments);
+    const path = segments.join(".");
     check(
       prefix === undefined && !hasBranch(single, segments),
-      409,
       "key_conflict",
-      `${segments.join(".")} clashes with ${prefix ?? "a namespace"} in ${locale}`,
-      { conflicts: [prefix ?? segments.join(".")] },
+      { path, locale, conflicts: [prefix ?? path] },
     );
   }
 }
@@ -334,9 +284,9 @@ function assertWritable(
 /** Changes the texts of an existing key; 404 when it no longer exists, 409 when `expected` is stale. */
 export function updateKey(
   store: KeyStore,
-  path: unknown,
-  values: unknown,
-  expected?: unknown,
+  path: string,
+  values: LocaleTexts,
+  expected?: LocaleTexts,
 ): void {
   const segments = validateKeyPath(path);
   const key = segments.join(".");
@@ -349,9 +299,8 @@ export function updateKey(
     countTexts(next, key) > 0 ||
       hasLeaf(store.reference, segments) ||
       countTexts(store.messages, key) === 0,
-    409,
     "last_value",
-    `This is the last text of ${key}: delete the key instead`,
+    { path: key },
   );
   applyTexts(store, segments, texts);
   store.track?.({ path: key, texts, messages: next });
@@ -360,37 +309,25 @@ export function updateKey(
 function assertOwnKey(store: KeyStore, segments: string[]): void {
   const path = segments.join(".");
   if (hasLeaf(store.messages, segments)) return;
-  check(
-    !hasBranch(store.messages, segments),
-    400,
-    "not_a_key",
-    `${path} is a namespace, not a key`,
-  );
+  check(!hasBranch(store.messages, segments), "not_a_key", { path });
   fail(
-    404,
     "key_not_found",
-    hasLeaf(store.reference, segments)
-      ? `${path} is a module key: it cannot be renamed or deleted here`
-      : `The key ${path} does not exist (it may have been deleted)`,
+    { path },
+    hasLeaf(store.reference, segments) ? "module_key_locked" : "key_not_found",
   );
 }
 
 /** Moves a key in every locale; 409 when the target holds a key or a namespace. */
 export function renameKey(
   store: KeyStore,
-  path: unknown,
-  newPath: unknown,
+  path: string,
+  newPath: string,
 ): string {
   const from = validateKeyPath(path);
   const to = validateNewKeyPath(newPath);
   const source = from.join(".");
   const target = to.join(".");
-  check(
-    source !== target,
-    400,
-    "invalid_key_path",
-    "The new path is the current path",
-  );
+  check(source !== target, "invalid_key_path", { path }, "same_key_path");
   assertOwnKey(store, from);
   const remaining = structuredClone(store.messages);
   for (const data of layersOf(remaining)) deleteAtPath(data, from);
@@ -408,7 +345,7 @@ export function renameKey(
 }
 
 /** Deletes a key in every locale; a namespace is refused. */
-export function deleteKey(store: KeyStore, path: unknown): void {
+export function deleteKey(store: KeyStore, path: string): void {
   const segments = validateKeyPath(path);
   assertOwnKey(store, segments);
   const key = segments.join(".");
@@ -422,32 +359,20 @@ export function deleteKey(store: KeyStore, path: unknown): void {
 }
 
 /** The locales a request names (`locales`, a list of codes), every locale of the store when absent. */
-function targetLocales(store: KeyStore, locales: unknown): string[] {
-  check(
-    locales === undefined || Array.isArray(locales),
-    400,
-    "invalid_body",
-    "locales must be a list of codes",
-  );
+function targetLocales(store: KeyStore, locales?: string[]): string[] {
   return locales
-    ? (locales as unknown[]).map((code) => storeLocale(store, String(code)))
+    ? locales.map((code) => storeLocale(store, code))
     : store.locales;
 }
 
 /** Removes the project values of a module key so the module text shows again. */
 export function removeOverride(
   store: KeyStore,
-  path: unknown,
-  locales?: unknown,
+  path: string,
+  locales?: string[],
 ): void {
   const segments = validateKeyPath(path);
-  const key = segments.join(".");
-  check(
-    hasLeaf(store.reference, segments),
-    404,
-    "not_an_override",
-    `${key} is not a module key`,
-  );
+  check(hasLeaf(store.reference, segments), "not_an_override", { path });
   for (const locale of targetLocales(store, locales)) {
     if (nodeKindAt(store.messages[locale], segments) !== "leaf") continue;
     const data = store.load(locale);
@@ -464,8 +389,8 @@ export function removeOverride(
  */
 export function markReviewed(
   store: KeyStore,
-  path: unknown,
-  locales?: unknown,
+  path: string,
+  locales?: string[],
 ): void {
   const segments = validateKeyPath(path);
   const key = segments.join(".");

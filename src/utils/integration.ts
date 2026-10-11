@@ -21,7 +21,9 @@ const LANGUAGE_SEPARATOR = "-";
 const LISTED_KEYS = 20;
 const SHOWN_KEYS = 5;
 
-export type SnippetKind = "vue" | "i18next" | "fetch" | "curl";
+export const SNIPPET_KINDS = ["vue", "i18next", "fetch", "curl"] as const;
+
+export type SnippetKind = (typeof SNIPPET_KINDS)[number];
 
 export interface Snippet {
   code: string;
@@ -308,8 +310,7 @@ export interface RemovalDialog {
 /** The workspace's own code for `code`, matched on its canonical form; 404 when it has no such language. */
 function knownLocale(flat: FlatResult, code: string): string {
   const found = findLocale(flat.locales, code);
-  if (found === undefined)
-    fail(404, "unknown_locale", `Unknown locale: ${code}`);
+  if (found === undefined) fail("unknown_locale", { locale: code });
   return found;
 }
 
@@ -400,7 +401,9 @@ export function baseConfirm(workspace: string, requested: string) {
 
 const PAGES_URL = "/modules/lang";
 
-export type NoticePage = "overview" | "workspace";
+export const NOTICE_PAGES = ["overview", "workspace"] as const;
+
+export type NoticePage = (typeof NOTICE_PAGES)[number];
 
 type NoticeTone = "info" | "warning" | "primary";
 

@@ -8,6 +8,7 @@ import {
   Prefix,
   type RequestContext,
 } from "@antelopejs/interface-api";
+import { errorResult } from "../utils/errors";
 import { readWorkspaceLocale } from "../utils/workspaces";
 
 const JSON_SUFFIX_RE = /\.json$/i;
@@ -47,12 +48,8 @@ export class PublicLocalesController extends Controller("/i18n") {
     context.response.addHeader("Cache-Control", CACHE_POLICY);
     const locale = rawLocale.replace(JSON_SUFFIX_RE, "");
     const served = readWorkspaceLocale(workspace, locale);
-    if (served === null) {
-      return new HTTPResult(404, {
-        message: `No such locale: ${workspace}/${locale}`,
-        code: "unknown_locale",
-      });
-    }
+    if (served === null)
+      return errorResult("unknown_locale", { workspace, locale });
     context.response.addHeader("Content-Language", served.code);
     return served.messages;
   }

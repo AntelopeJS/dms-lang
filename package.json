@@ -47,7 +47,8 @@
     "@antelopejs/interface-api": ">=0.0.14 <1.0.0",
     "@antelopejs/interface-api-util": ">=0.1.2 <1.0.0",
     "@antelopejs/interface-core": ">=0.1.1 <1.0.0",
-    "@antelopejs/interface-dms": ">=0.5.4 <1.0.0"
+    "@antelopejs/interface-dms": ">=0.5.4 <1.0.0",
+    "zod": "~3.24.2"
   },
   "devDependencies": {
     "@antelopejs/core": "1.14.0",
