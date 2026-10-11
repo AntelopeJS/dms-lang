@@ -59,7 +59,25 @@
 			"server_error": "Le serveur n'a pas pu traiter la requête.",
 			"corrupt_file": "Un fichier de traduction n'est pas un JSON valide : corrigez-le avant de modifier.",
 			"corrupt_manifest": "Le fichier de réglages de l'espace de travail n'est pas un JSON valide : corrigez-le avant de modifier.",
-			"not_configured": "Le dossier des espaces de travail n'est pas configuré."
+			"not_configured": "Le dossier des espaces de travail n'est pas configuré.",
+			"message_syntax": {
+				"expected_token": "Il manque un caractère là où le message en attend un.",
+				"invalid_token_in_placeholder": "Un nom de variable n'est pas valide : lettres sans accent, chiffres, _ et -, en commençant par une lettre ou _.",
+				"unterminated_single_quote_in_placeholder": "Une apostrophe ouverte entre accolades n'est jamais fermée.",
+				"unknown_escape_sequence": "Une barre oblique inverse dans un littéral entre apostrophes commence une séquence d'échappement inconnue.",
+				"invalid_unicode_escape_sequence": "Une séquence d'échappement \\u n'est pas valide.",
+				"unbalanced_closing_brace": "Une accolade fermante n'a pas d'accolade ouvrante : écrivez {'}'} pour l'afficher.",
+				"unterminated_closing_brace": "Une accolade n'est jamais fermée : écrivez {'{'} pour l'afficher.",
+				"empty_placeholder": "Une variable est vide.",
+				"not_allow_nest_placeholder": "Une variable ne peut pas contenir d'autre accolade.",
+				"invalid_linked_format": "Un {'@'} isolé casse le message : échappez-le en littéral entre apostrophes.",
+				"must_have_messages_in_plural": "Une forme plurielle est vide.",
+				"unexpected_empty_linked_modifier": "Un message lié a un modificateur vide.",
+				"unexpected_empty_linked_key": "Un message lié n'a pas de clé : échappez un {'@'} isolé en littéral entre apostrophes.",
+				"unexpected_lexical_analysis": "Le message ne se compile pas.",
+				"unhandled_codegen_node_type": "Le message ne se compile pas.",
+				"unhandled_minifier_node_type": "Le message ne se compile pas."
+			}
 		},
 		"overview": {
 			"title": "Vue d'ensemble",
@@ -642,7 +660,10 @@
 			"unclosed_literal": "Apostrophe non fermée dans {tokens}",
 			"spaces": "Espace ou saut de ligne en début ou en fin de texte : il s'affichera dans l'application",
 			"escape": "Échapper",
-			"replace": "Remplacer par {token}"
+			"replace": "Remplacer par {token}",
+			"invalid_escape": "Séquence d'échappement inconnue dans {tokens}",
+			"empty_plural": "Une forme plurielle est vide : retirez le {tokens} en trop",
+			"invalid_syntax": "Ce texte ne se compile pas comme un message près de {tokens}"
 		},
 		"about": {
 			"title": "À propos",

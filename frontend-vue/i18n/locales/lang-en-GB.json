@@ -59,7 +59,25 @@
 			"server_error": "The server could not complete the request.",
 			"corrupt_file": "A translation file is not valid JSON: fix it before editing.",
 			"corrupt_manifest": "The workspace settings file is not valid JSON: fix it before editing.",
-			"not_configured": "The workspaces folder is not configured."
+			"not_configured": "The workspaces folder is not configured.",
+			"message_syntax": {
+				"expected_token": "A character is missing where the message expects one.",
+				"invalid_token_in_placeholder": "A variable name is not valid: use unaccented letters, digits, _ and -, starting with a letter or _.",
+				"unterminated_single_quote_in_placeholder": "A quote opened in braces is never closed.",
+				"unknown_escape_sequence": "A backslash in a quoted literal starts an unknown escape sequence.",
+				"invalid_unicode_escape_sequence": "A \\u escape sequence is not valid.",
+				"unbalanced_closing_brace": "A closing brace has no opening brace: write {'}'} to show it.",
+				"unterminated_closing_brace": "A brace is never closed: write {'{'} to show it.",
+				"empty_placeholder": "A variable is empty.",
+				"not_allow_nest_placeholder": "A variable cannot hold another brace.",
+				"invalid_linked_format": "A lone {'@'} breaks the message: escape it as a quoted literal.",
+				"must_have_messages_in_plural": "A plural form is empty.",
+				"unexpected_empty_linked_modifier": "A linked message has an empty modifier.",
+				"unexpected_empty_linked_key": "A linked message has no key: escape a lone {'@'} as a quoted literal.",
+				"unexpected_lexical_analysis": "The message does not compile.",
+				"unhandled_codegen_node_type": "The message does not compile.",
+				"unhandled_minifier_node_type": "The message does not compile."
+			}
 		},
 		"overview": {
 			"title": "Overview",
@@ -642,7 +660,10 @@
 			"unclosed_literal": "Unclosed quote in {tokens}",
 			"spaces": "Space or line break at the start or end: it shows in the app",
 			"escape": "Escape",
-			"replace": "Replace with {token}"
+			"replace": "Replace with {token}",
+			"invalid_escape": "Unknown escape sequence in {tokens}",
+			"empty_plural": "A plural form is empty: remove the extra {tokens}",
+			"invalid_syntax": "This text does not compile as a message near {tokens}"
 		},
 		"about": {
 			"title": "About",

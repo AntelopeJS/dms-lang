@@ -1,3 +1,4 @@
+import { baseCompile, CompileErrorCodes } from '@intlify/message-compiler'
 import type {
   FlatTranslationRow,
   FlatTranslations,
@@ -25,6 +26,9 @@ export type MessageSyntaxKind =
   | 'emptyPlaceholder'
   | 'invalidPlaceholder'
   | 'unclosedLiteral'
+  | 'invalidEscape'
+  | 'emptyPlural'
+  | 'invalidSyntax'
 
 export type MessageIssueKind =
   MessageSyntaxKind | 'missing' | 'extra' | 'plural' | 'spaces'
@@ -85,7 +89,7 @@ const CLOSE_BRACE = '}'
 const QUOTE = "'"
 const LINKED_MARK = '@'
 const PLURAL_SEPARATOR = '|'
-/** What vue-i18n compiles as a variable, the rule the server applies too. */
+/** What the scanner reads as a variable, to highlight and rename it. */
 const PLACEHOLDER_NAME = /^(?:[A-Za-z_][\w$-]*|\d+)$/
 const LITERAL_PATTERN = /\s*'((?:[^'\\\n]|\\.)*)'\s*\}/y
 const LITERAL_ESCAPE = /\\u([0-9a-fA-F]{4})|\\(.)/g
@@ -113,6 +117,9 @@ export const MESSAGE_ISSUE_LABELS: Record<MessageIssueKind, string> = {
   emptyPlaceholder: 'dms_lang.message_issue.empty_placeholder',
   invalidPlaceholder: 'dms_lang.message_issue.invalid_placeholder',
   unclosedLiteral: 'dms_lang.message_issue.unclosed_literal',
+  invalidEscape: 'dms_lang.message_issue.invalid_escape',
+  emptyPlural: 'dms_lang.message_issue.empty_plural',
+  invalidSyntax: 'dms_lang.message_issue.invalid_syntax',
 }
 
 const SYNTAX_ESCAPES: Partial<Record<MessageIssueKind, string>> = {
@@ -259,8 +266,9 @@ const SPECIAL_READERS: Record<
 /**
  * Splits a message written in the vue-i18n syntax into text, `{name}`
  * variables, `{'@'}` literals, `@:key` links and `|` plural separators, and
- * lists what vue-i18n would refuse to compile. Joining the parts' `raw` gives
- * the text back.
+ * marks the bare characters {@link escapeMessage} writes as literals. Joining
+ * the parts' `raw` gives the text back. Whether a message compiles is the
+ * vue-i18n compiler's call (see {@link checkMessage}).
  */
 export function scanMessage(message: unknown): MessageScan {
   const text = stringValue(message)
@@ -371,17 +379,129 @@ export function missingPlaceholders(base: unknown, value: unknown): string[] {
   return placeholdersOf(base).filter((name) => !present.has(name))
 }
 
-function syntaxIssues(scan: MessageScan): MessageIssue[] {
-  const byKind = new Map<MessageSyntaxKind, MessageSyntaxError[]>()
-  for (const error of scan.errors) {
+type CompileErrorName = keyof typeof CompileErrorCodes
+
+/** What each error of the vue-i18n compiler means to a translator; any other is `invalidSyntax`. */
+const COMPILE_ERROR_KINDS: Partial<
+  Record<CompileErrorName, MessageSyntaxKind>
+> = {
+  INVALID_TOKEN_IN_PLACEHOLDER: 'invalidPlaceholder',
+  UNTERMINATED_SINGLE_QUOTE_IN_PLACEHOLDER: 'unclosedLiteral',
+  UNKNOWN_ESCAPE_SEQUENCE: 'invalidEscape',
+  INVALID_UNICODE_ESCAPE_SEQUENCE: 'invalidEscape',
+  UNBALANCED_CLOSING_BRACE: 'strayBrace',
+  UNTERMINATED_CLOSING_BRACE: 'unclosedBrace',
+  NOT_ALLOW_NEST_PLACEHOLDER: 'unclosedBrace',
+  EMPTY_PLACEHOLDER: 'emptyPlaceholder',
+  INVALID_LINKED_FORMAT: 'bareAt',
+  UNEXPECTED_EMPTY_LINKED_KEY: 'bareAt',
+  UNEXPECTED_EMPTY_LINKED_MODIFIER: 'bareAt',
+  MUST_HAVE_MESSAGES_IN_PLURAL: 'emptyPlural',
+}
+
+const COMPILE_ERROR_NAMES = new Map<number, CompileErrorName>(
+  Object.entries(CompileErrorCodes).map(([name, code]) => [
+    code,
+    name as CompileErrorName,
+  ]),
+)
+
+const FIXED_TOKENS: Partial<Record<MessageSyntaxKind, string>> = {
+  bareAt: LINKED_MARK,
+  unclosedBrace: OPEN_BRACE,
+  strayBrace: CLOSE_BRACE,
+  emptyPlural: PLURAL_SEPARATOR,
+}
+
+interface CompileIssue {
+  kind: MessageSyntaxKind
+  offset: number
+}
+
+function compileErrors(text: string): CompileIssue[] {
+  const errors: CompileIssue[] = []
+  baseCompile(text, {
+    onError: (error) => {
+      const name = COMPILE_ERROR_NAMES.get(error.code)
+      errors.push({
+        kind: (name && COMPILE_ERROR_KINDS[name]) || 'invalidSyntax',
+        offset: error.location?.start.offset ?? 0,
+      })
+    },
+  })
+  return errors
+}
+
+/** The `{…}` around an offset, up to its `}` (or the end of the text). */
+function placeholderAt(text: string, offset: number): string {
+  const start = Math.max(text.lastIndexOf(OPEN_BRACE, offset), 0)
+  const close = text.indexOf(CLOSE_BRACE, offset)
+  return text.slice(start, close < 0 ? text.length : close + 1)
+}
+
+/** The `}` closing the placeholder an unclosed brace opens, when one does before the next `{`. */
+function closingBraceOf(text: string, offset: number): number {
+  const close = text.indexOf(CLOSE_BRACE, offset)
+  const reopen = text.indexOf(OPEN_BRACE, offset)
+  return reopen >= 0 && reopen < close ? -1 : close
+}
+
+/**
+ * vue-i18n reads `{a b}` as a brace never closed then a stray one: to a
+ * translator it is one variable whose name is not valid.
+ */
+function mergeBrokenPlaceholders(
+  text: string,
+  errors: CompileIssue[],
+): CompileIssue[] {
+  const closings = new Set<number>()
+  const merged = errors.map((error) => {
+    if (error.kind !== 'unclosedBrace') return error
+    const close = closingBraceOf(text, error.offset)
+    if (close < 0) return error
+    closings.add(close)
+    return { ...error, kind: 'invalidPlaceholder' as const }
+  })
+  return merged.filter(
+    (error) => error.kind !== 'strayBrace' || !closings.has(error.offset),
+  )
+}
+
+const PLACEHOLDER_KINDS = new Set<MessageSyntaxKind>([
+  'invalidPlaceholder',
+  'emptyPlaceholder',
+  'unclosedLiteral',
+  'invalidEscape',
+])
+
+function tokenOf(text: string, issue: CompileIssue): string {
+  const fixed = FIXED_TOKENS[issue.kind]
+  if (fixed) return fixed
+  return PLACEHOLDER_KINDS.has(issue.kind)
+    ? placeholderAt(text, issue.offset)
+    : text.charAt(issue.offset)
+}
+
+/** A generic compile error only counts when nothing more precise explains the text. */
+function withoutGeneric(errors: CompileIssue[]): CompileIssue[] {
+  const precise = errors.filter((error) => error.kind !== 'invalidSyntax')
+  return precise.length ? precise : errors
+}
+
+/** The errors the vue-i18n compiler finds in a message, one issue per kind. */
+function syntaxIssues(text: string): MessageIssue[] {
+  const errors = withoutGeneric(
+    mergeBrokenPlaceholders(text, compileErrors(text)),
+  ).sort((a, b) => a.offset - b.offset)
+  const byKind = new Map<MessageSyntaxKind, CompileIssue[]>()
+  for (const error of errors)
     byKind.set(error.kind, [...(byKind.get(error.kind) ?? []), error])
-  }
-  return [...byKind].map(([kind, errors]) => ({
+  return [...byKind].map(([kind, found]) => ({
     kind,
     severity: 'error',
-    tokens: [...new Set(errors.map((error) => error.raw))],
-    count: errors.length,
-    index: errors[0].start,
+    tokens: [...new Set(found.map((error) => tokenOf(text, error)))],
+    count: found.length,
+    index: found[0].offset,
   }))
 }
 
@@ -457,7 +577,10 @@ function comparisonIssues(
 export function checkMessage(base: unknown, value: unknown): MessageIssue[] {
   if (isLocaleValueMissing(value)) return []
   const scan = scanMessage(value)
-  const issues = [...syntaxIssues(scan), ...spacesIssue(base, value)]
+  const issues = [
+    ...syntaxIssues(stringValue(value)),
+    ...spacesIssue(base, value),
+  ]
   if (isLocaleValueMissing(base)) return issues
   return [...issues, ...comparisonIssues(scanMessage(base), scan)]
 }

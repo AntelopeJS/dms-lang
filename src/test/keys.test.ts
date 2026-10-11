@@ -19,10 +19,7 @@ import {
   updateKey,
 } from "../utils/keys";
 import { canonicalLocale, normalizeLocaleCode } from "../utils/locale-codes";
-import {
-  messageProblemDetails,
-  messageProblems,
-} from "../utils/message-syntax";
+import { type MessageIssue, messageIssues } from "../utils/message-syntax";
 import { createKeyFor, updateKeyFor } from "../utils/mutations";
 import { resolveFlat } from "../utils/resolve";
 import { markReviewedFor } from "../utils/review";
@@ -32,8 +29,14 @@ import { expectError } from "./errors";
 
 interface InvalidMessageBody {
   message: string;
+  locale?: string;
   problems?: string[];
   details?: string[];
+  issues?: MessageIssue[];
+}
+
+function problemsOf(message: string): string[] {
+  return messageIssues(message).map((issue) => issue.problem);
 }
 
 /** An in-memory key store: `files` is what the writes produce. */
@@ -342,39 +345,38 @@ describe("[unit] key writes validate their input", () => {
       "invalid_message",
     );
     expect(
-      messageProblems("jane{'@'}example.com {name} @:nav.home @.lower:a"),
+      problemsOf("jane{'@'}example.com {name} @:nav.home @.lower:a"),
     ).to.deep.equal([]);
-    expect(messageProblems("Hello {name")).to.deep.equal(["unclosed_brace"]);
-    expect(messageProblems("a } b")).to.deep.equal(["unbalanced_brace"]);
-    expect(messageProblems("{first-name} | {count} items")).to.deep.equal([]);
+    expect(problemsOf("Hello {name")).to.deep.equal([
+      "unterminated_closing_brace",
+    ]);
+    expect(problemsOf("a } b")).to.deep.equal(["unbalanced_closing_brace"]);
+    expect(problemsOf("{first-name} | {count} items")).to.deep.equal([]);
   });
 
   it("applies the vue-i18n rule for variable names, the one the interface applies", () => {
     for (const name of ["prénom", "user.name", "名前", "$amount", "1a"])
-      expect(messageProblems(`Hi {${name}}`), name).to.deep.equal([
-        "invalid_placeholder",
-      ]);
+      expect(problemsOf(`Hi {${name}}`), name).not.to.deep.equal([]);
     for (const name of ["name", "_x", "first-name", "a$b", "0", " name "])
-      expect(messageProblems(`Hi {${name}}`), name).to.deep.equal([]);
+      expect(problemsOf(`Hi {${name}}`), name).to.deep.equal([]);
   });
 
-  it("explains each problem once in a readable message, without the codes", () => {
+  it("names each problem once with its sentence key and where it starts", () => {
     const store = memoryStore(storefront());
     const body = expectError(
       () =>
         updateKey(store, "nav.home", { fr: "Texte {company} pour {prénom}" }),
       400,
       "invalid_message",
-    );
-    expect((body as InvalidMessageBody).problems).to.deep.equal([
-      "invalid_placeholder",
+    ) as InvalidMessageBody;
+    expect(body.problems).to.deep.equal(["invalid_token_in_placeholder"]);
+    expect(body.details).to.deep.equal([
+      "$dms_lang.errors.message_syntax.invalid_token_in_placeholder",
     ]);
-    expect(body.message).to.equal("$dms_lang.errors.invalid_message");
-    expect(String((body as InvalidMessageBody).details)).to.contain("{prénom}");
-    expect(String((body as InvalidMessageBody).details)).not.to.contain(
-      "invalid_placeholder",
-    );
-    expect(messageProblemDetails("a@b {x y}")).to.have.length(2);
+    expect(body.issues).to.deep.equal([
+      { problem: "invalid_token_in_placeholder", offset: 22 },
+    ]);
+    expect(body.locale).to.equal("fr");
   });
 });
 

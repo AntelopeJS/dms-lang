@@ -322,3 +322,13 @@ test("a key path is dot-separated safe segments", () => {
   assert.equal(isValidKeyPath("a.__proto__.b"), false);
   assert.equal(isValidKeyPath("x".repeat(129)), false);
 });
+
+test("the vue-i18n compiler decides what does not compile", () => {
+  const syntax = (value) => issueSummary("", value).map((issue) => issue.kind);
+  assert.deepEqual(syntax("a | | b"), ["emptyPlural"]);
+  assert.deepEqual(syntax("{'a\\q'}"), ["invalidEscape"]);
+  assert.deepEqual(syntax("{first-name} | {count} items @.upper:{x}"), []);
+  const [invalid] = checkMessage("", "Hi {a b} and {c d}");
+  assert.deepEqual(invalid.tokens, ["{a b}", "{c d}"]);
+  assert.equal(invalid.index, 6);
+});

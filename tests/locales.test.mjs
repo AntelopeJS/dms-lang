@@ -206,3 +206,13 @@ test("every error reason of the API has a message", () => {
     [],
   );
 });
+
+test("every error of the message compiler has a sentence", async () => {
+  const { CompileErrorCodes } = await import("@intlify/message-compiler");
+  assert.deepEqual(
+    Object.keys(CompileErrorCodes)
+      .map((name) => `dms_lang.errors.message_syntax.${name.toLowerCase()}`)
+      .filter((key) => !en.has(key)),
+    [],
+  );
+});
