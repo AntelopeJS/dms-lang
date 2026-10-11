@@ -4,8 +4,9 @@ import type {
   ComposedTextCountParam,
   ComposedTextNumberParam,
 } from "@antelopejs/interface-dms/base/types";
-import { listAllWorkspaces } from "./catalog";
+import { findWorkspace } from "./catalog";
 import { coveragePercent, FULL_COVERAGE } from "./coverage";
+import { languageOf } from "./locale-codes";
 import { type FlatResult, isRowMissing, resolveFlat } from "./resolve";
 
 const TEXTS = "dms_lang";
@@ -18,7 +19,6 @@ const REGIONAL_NAME: Intl.DisplayNamesOptions = {
   languageDisplay: "standard",
   fallback: "none",
 };
-const LANGUAGE_SEPARATOR = /[-_]/;
 const BASE_RANK = -1;
 
 interface Subline {
@@ -65,10 +65,6 @@ export function percentParam(coverage: number): ComposedTextNumberParam {
   };
 }
 
-function languageOf(code: string): string {
-  return code.split(LANGUAGE_SEPARATOR)[0];
-}
-
 function displayName(
   code: string,
   subject: string,
@@ -102,9 +98,8 @@ interface WorkspaceRights {
 }
 
 function rightsOf(workspace: string): WorkspaceRights {
-  const summary = listAllWorkspaces().find((entry) => entry.id === workspace);
-  const canEdit = summary?.editable === true;
-  return { canEdit, canManage: canEdit && summary?.kind === "added" };
+  const { editable, kind } = findWorkspace(workspace);
+  return { canEdit: editable, canManage: editable && kind === "added" };
 }
 
 function count(value: number): ComposedTextCountParam {

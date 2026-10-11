@@ -148,6 +148,19 @@ export function leafPrefixOf(
   return undefined;
 }
 
+function defineEntry(
+  node: Record<string, unknown>,
+  name: string,
+  value: unknown,
+): void {
+  Object.defineProperty(node, name, {
+    value,
+    enumerable: true,
+    writable: true,
+    configurable: true,
+  });
+}
+
 export function setAtPath(
   obj: Record<string, unknown>,
   segments: string[],
@@ -160,35 +173,11 @@ export function setAtPath(
   for (let i = 0; i < segments.length - 1; i++) {
     const seg = segments[i];
     if (seg === undefined) return;
-    if (!Object.hasOwn(current, seg) || !isPlainObject(current[seg])) {
-      Object.defineProperty(current, seg, {
-        value: {},
-        enumerable: true,
-        writable: true,
-        configurable: true,
-      });
-    }
+    if (!Object.hasOwn(current, seg) || !isPlainObject(current[seg]))
+      defineEntry(current, seg, {});
     current = current[seg] as Record<string, unknown>;
   }
-  Object.defineProperty(current, last, {
-    value,
-    enumerable: true,
-    writable: true,
-    configurable: true,
-  });
-}
-
-function defineEntry(
-  node: Record<string, unknown>,
-  name: string,
-  value: unknown,
-): void {
-  Object.defineProperty(node, name, {
-    value,
-    enumerable: true,
-    writable: true,
-    configurable: true,
-  });
+  defineEntry(current, last, value);
 }
 
 /** Moves the property `name` of an object right before its property `before`. */

@@ -7,13 +7,14 @@ import {
   listWorkspaces,
   MODULES_WORKSPACE,
   normalizeWorkspaceId,
+  type WorkspaceLocale,
   type WorkspaceSummary,
 } from "./workspaces";
 
 /** The fallback locale of the DMS i18n config: the base language of the project files and the modules. */
 export const FALLBACK_LOCALE = "en";
 
-function localeEntries(codes: string[]) {
+function localeEntries(codes: string[]): WorkspaceLocale[] {
   return codes.map((code) => ({ code }));
 }
 
@@ -64,4 +65,12 @@ export function resolveWorkspaceId(workspace?: string): string {
   if (id === DEFAULT_WORKSPACE || id === MODULES_WORKSPACE || hasWorkspace(id))
     return id;
   return fail("unknown_workspace", { id: workspace });
+}
+
+/** The summary of an existing workspace, by any id {@link resolveWorkspaceId} accepts; 404 otherwise. */
+export function findWorkspace(workspace?: string): WorkspaceSummary {
+  const id = resolveWorkspaceId(workspace);
+  const summary = listAllWorkspaces().find((entry) => entry.id === id);
+  if (summary === undefined) fail("unknown_workspace", { id: workspace });
+  return summary;
 }

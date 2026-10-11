@@ -42,15 +42,16 @@ import {
   workspaceSnippet,
 } from "../utils/integration";
 import { listLanguages } from "../utils/languages";
+import { keyStoreOf, reviewStoreOf } from "../utils/key-stores";
 import {
-  createKeyFor,
-  deleteKeyFor,
-  removeOverrideFor,
-  renameKeyFor,
-  updateKeyFor,
-} from "../utils/mutations";
+  createKey,
+  deleteKey,
+  markReviewed,
+  removeOverride,
+  renameKey,
+  updateKey,
+} from "../utils/keys";
 import { type FlatRow, resolveFlat, resolveRow } from "../utils/resolve";
-import { markReviewedFor } from "../utils/review";
 import { summarizeWorkspaces } from "../utils/summary";
 import {
   type AddedLocale,
@@ -348,7 +349,7 @@ export class TranslationsController extends Controller(
   ): KeyResult {
     const input = validate(keySchema.create, body);
     const id = editableWorkspace(input.workspace);
-    createKeyFor(id, input.path, input.values, input.before);
+    createKey(keyStoreOf(id), input.path, input.values, input.before);
     return keyResult(id, input.path);
   }
 
@@ -359,7 +360,7 @@ export class TranslationsController extends Controller(
   ): KeyResult {
     const input = validate(keySchema.update, body);
     const id = editableWorkspace(input.workspace);
-    updateKeyFor(id, input.path, input.values, input.expected);
+    updateKey(keyStoreOf(id), input.path, input.values, input.expected);
     return keyResult(id, input.path);
   }
 
@@ -370,7 +371,7 @@ export class TranslationsController extends Controller(
   ): KeyResult {
     const input = validate(keySchema.locales, body);
     const id = editableWorkspace(input.workspace);
-    removeOverrideFor(id, input.path, input.locales);
+    removeOverride(keyStoreOf(id), input.path, input.locales);
     return keyResult(id, input.path);
   }
 
@@ -381,7 +382,7 @@ export class TranslationsController extends Controller(
   ): KeyResult {
     const input = validate(keySchema.locales, body);
     const id = editableWorkspace(input.workspace);
-    markReviewedFor(id, input.path, input.locales);
+    markReviewed(reviewStoreOf(id), input.path, input.locales);
     return keyResult(id, input.path);
   }
 
@@ -392,7 +393,7 @@ export class TranslationsController extends Controller(
   ): KeyResult {
     const input = validate(keySchema.rename, body);
     const id = editableWorkspace(input.workspace);
-    const path = renameKeyFor(id, input.path, input.newPath);
+    const path = renameKey(keyStoreOf(id), input.path, input.newPath);
     return keyResult(id, path);
   }
 
@@ -403,7 +404,7 @@ export class TranslationsController extends Controller(
   ) {
     const input = validate(keySchema.remove, body);
     const id = editableWorkspace(input.workspace);
-    deleteKeyFor(id, input.path);
+    deleteKey(keyStoreOf(id), input.path);
     announce(id);
   }
 }

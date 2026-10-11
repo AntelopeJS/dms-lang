@@ -13,14 +13,10 @@ import type {
   ConfirmDialogSerialized,
 } from "@antelopejs/interface-dms/base/types";
 import type { BlockItems } from "./blocks";
-import {
-  FALLBACK_LOCALE,
-  listAllWorkspaces,
-  resolveWorkspaceId,
-} from "./catalog";
+import { FALLBACK_LOCALE, findWorkspace } from "./catalog";
 import { fail } from "./errors";
 import { nativeName } from "./languages";
-import { findLocale } from "./locale-codes";
+import { findLocale, languageOf } from "./locale-codes";
 import { type FlatResult, isRowMissing, resolveFlat } from "./resolve";
 import type { WorkspaceKind, WorkspaceSummary } from "./workspaces";
 
@@ -29,7 +25,6 @@ const LOCALE_TOKEN = "{locale}";
 const PUBLIC_PREFIX = "/i18n";
 const PROJECT_FILES = "frontend-vue/i18n/locales/app-*.json";
 const FORWARDED_SEPARATOR = ",";
-const LANGUAGE_SEPARATOR = "-";
 const LISTED_KEYS = 20;
 const SHOWN_KEYS = 5;
 
@@ -71,13 +66,6 @@ export function publicOrigin(context: RequestContext): string {
   return `${protocol}://${host}`;
 }
 
-function summaryOf(workspace: string): WorkspaceSummary {
-  const id = resolveWorkspaceId(workspace);
-  return listAllWorkspaces().find(
-    (entry) => entry.id === id,
-  ) as WorkspaceSummary;
-}
-
 /** What decides whether a workspace is served publicly, and under which id. */
 export type PublicWorkspace = Pick<WorkspaceSummary, "id" | "kind">;
 
@@ -104,7 +92,7 @@ function templateUrl(url: string, token: string): string {
  * i18next accepts `pt-BR` only when `pt` is listed too.
  */
 function supportedLanguages(locales: string[]): string[] {
-  const languages = locales.map((code) => code.split(LANGUAGE_SEPARATOR)[0]);
+  const languages = locales.map(languageOf);
   return [...new Set([...locales, ...languages])].sort();
 }
 
@@ -218,7 +206,7 @@ export function workspaceSnippet(
   kind: SnippetKind,
   origin: string,
 ): Snippet {
-  const summary = summaryOf(workspace);
+  const summary = findWorkspace(workspace);
   const url = publicLocaleUrl(origin, summary);
   if (summary.kind !== "added" || !url) {
     const local = LOCAL_SNIPPETS[summary.kind as keyof typeof LOCAL_SNIPPETS];
@@ -294,7 +282,7 @@ export function workspaceEndpoint(
   workspace: string,
   origin: string,
 ): BlockItems<KeyValueListItem> {
-  const summary = summaryOf(workspace);
+  const summary = findWorkspace(workspace);
   const url = publicLocaleUrl(origin, summary);
   if (summary.kind !== "added" || !url) {
     return {
@@ -331,7 +319,7 @@ export function removalConfirm(
   requested: string,
   origin: string,
 ): ConfirmDialogSerialized {
-  const summary = summaryOf(workspace);
+  const summary = findWorkspace(workspace);
   const flat = resolveFlat(summary.id);
   const code = knownLocale(flat, requested);
   const strings = countStrings(flat, code);
@@ -385,8 +373,7 @@ function keyImpact(keys: string[], missing: number): ConfirmDialogImpact[] {
  * (`missing`, `keys`) for a caller that words its own dialog.
  */
 export function baseConfirm(workspace: string, requested: string): BaseConfirm {
-  const id = resolveWorkspaceId(workspace);
-  const flat = resolveFlat(id);
+  const flat = resolveFlat(findWorkspace(workspace).id);
   const code = knownLocale(flat, requested);
   const missingRows = flat.rows.filter((row) => isRowMissing(row, code));
   const keys = missingRows.slice(0, LISTED_KEYS).map((row) => row.key);
@@ -482,7 +469,7 @@ export function workspaceNotice(
   workspace: string,
   page: NoticePage,
 ): BannerContent {
-  const summary = summaryOf(workspace);
+  const summary = findWorkspace(workspace);
   const flat = resolveFlat(summary.id);
   return KIND_NOTICES[summary.kind]({ summary, flat, page });
 }

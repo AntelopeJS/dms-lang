@@ -1,13 +1,10 @@
 import { createHash } from "node:crypto";
-import { check } from "./errors";
-import { type KeyChange, type KeyStore, markReviewed } from "./keys";
+import type { KeyChange, KeyStore } from "./keys";
 import { getValueAtPath, isMissing, type LocaleMessages } from "./tree";
 import {
   type TranslationSources,
   updateManifest,
   type WorkspaceManifest,
-  workspaceKeyStore,
-  workspaceKind,
 } from "./workspaces";
 
 const HASH_LENGTH = 12;
@@ -86,23 +83,4 @@ export function outdatedLocales(
       );
     })
     .map(([locale]) => locale);
-}
-
-/** Marks the translations of a key of an added workspace as checked against its current base text. */
-export function markReviewedFor(
-  workspace: string,
-  path: string,
-  locales?: string[],
-): void {
-  check(
-    workspaceKind(workspace) === "added",
-    "invalid_body",
-    { workspace },
-    "review_added_only",
-  );
-  markReviewed(
-    trackSources(workspaceKeyStore(workspace), workspace),
-    path,
-    locales,
-  );
 }

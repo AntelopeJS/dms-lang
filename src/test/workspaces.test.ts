@@ -23,7 +23,8 @@ import {
   workspaceSnippet,
 } from "../utils/integration";
 import { listLanguages } from "../utils/languages";
-import { createKeyFor, updateKeyFor } from "../utils/mutations";
+import { keyStoreOf } from "../utils/key-stores";
+import { createKey, updateKey } from "../utils/keys";
 import { resolveFlat } from "../utils/resolve";
 import {
   addLocale,
@@ -77,8 +78,11 @@ describe("[integration] workspace data model", () => {
     );
     addLocale(WORKSPACE, { code: "fr" });
     addLocale(WORKSPACE, { code: "nl" });
-    createKeyFor(WORKSPACE, "home.title", { "en-GB": "Home", fr: "Accueil" });
-    createKeyFor(WORKSPACE, "home.cta", { "en-GB": "Buy" });
+    createKey(keyStoreOf(WORKSPACE), "home.title", {
+      "en-GB": "Home",
+      fr: "Accueil",
+    });
+    createKey(keyStoreOf(WORKSPACE), "home.cta", { "en-GB": "Buy" });
   });
 
   after(() => {
@@ -159,13 +163,13 @@ describe("[integration] workspace data model", () => {
   });
 
   it("flags a translation written for an older base text", () => {
-    updateKeyFor(WORKSPACE, "home.title", { fr: "Accueil" });
-    updateKeyFor(WORKSPACE, "home.title", { "en-GB": "Homepage" });
+    updateKey(keyStoreOf(WORKSPACE), "home.title", { fr: "Accueil" });
+    updateKey(keyStoreOf(WORKSPACE), "home.title", { "en-GB": "Homepage" });
     const row = resolveFlat(WORKSPACE).rows.find(
       (entry) => entry.key === "home.title",
     );
     expect(row?.outdated).to.deep.equal(["fr"]);
-    updateKeyFor(WORKSPACE, "home.title", { fr: "Page d'accueil" });
+    updateKey(keyStoreOf(WORKSPACE), "home.title", { fr: "Page d'accueil" });
     const fixed = resolveFlat(WORKSPACE).rows.find(
       (entry) => entry.key === "home.title",
     );

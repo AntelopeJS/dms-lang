@@ -20,9 +20,8 @@ import {
 } from "../utils/keys";
 import { canonicalLocale, normalizeLocaleCode } from "../utils/locale-codes";
 import { type MessageIssue, messageIssues } from "../utils/message-syntax";
-import { createKeyFor, updateKeyFor } from "../utils/mutations";
+import { keyStoreOf, reviewStoreOf } from "../utils/key-stores";
 import { resolveFlat } from "../utils/resolve";
-import { markReviewedFor } from "../utils/review";
 import type { LocaleMessages } from "../utils/tree";
 import { addLocale, createWorkspace } from "../utils/workspaces";
 import { expectError } from "./errors";
@@ -432,7 +431,10 @@ describe("[integration] review tracking and file layout", () => {
     });
     createWorkspace(workspace, { code: "en" });
     addLocale(workspace, { code: "fr" });
-    createKeyFor(workspace, "home.title", { en: "Home", fr: "Accueil" });
+    createKey(keyStoreOf(workspace), "home.title", {
+      en: "Home",
+      fr: "Accueil",
+    });
   });
 
   after(() => {
@@ -444,9 +446,9 @@ describe("[integration] review tracking and file layout", () => {
     resolveFlat(workspace).rows.find((row) => row.key === path)?.outdated;
 
   it("takes a translation out of To review without changing its text", () => {
-    updateKeyFor(workspace, "home.title", { en: "Homepage" });
+    updateKey(keyStoreOf(workspace), "home.title", { en: "Homepage" });
     expect(outdatedOf("home.title")).to.deep.equal(["fr"]);
-    markReviewedFor(workspace, "home.title", ["fr"]);
+    markReviewed(reviewStoreOf(workspace), "home.title", ["fr"]);
     expect(outdatedOf("home.title")).to.equal(undefined);
     expect(
       JSON.parse(
@@ -454,7 +456,7 @@ describe("[integration] review tracking and file layout", () => {
       ),
     ).to.deep.equal({ home: { title: "Accueil" } });
     expectError(
-      () => markReviewedFor("default", "home.title"),
+      () => markReviewed(reviewStoreOf("default"), "home.title"),
       400,
       "invalid_body",
     );

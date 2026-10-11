@@ -44,7 +44,6 @@
 			"key_not_found": "This key no longer exists. It may have been deleted.",
 			"module_key_locked": "This is a module key: it cannot be renamed or deleted here.",
 			"not_an_override": "This key does not override a module key.",
-			"override_project_only": "Only the project files override module keys.",
 			"review_added_only": "Only the translations of a created workspace are tracked for review.",
 			"conflict": "Someone changed this text in the meantime.",
 			"key_exists": "This key already exists.",

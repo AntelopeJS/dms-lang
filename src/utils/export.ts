@@ -1,4 +1,4 @@
-import { projectBaseLocale, modulesBaseLocale } from "./catalog";
+import { findWorkspace } from "./catalog";
 import { check } from "./errors";
 import type { ImportInput } from "../validation/workspace.schema";
 import {
@@ -9,10 +9,9 @@ import {
 } from "./json";
 import { assertMessageSyntax } from "./message-syntax";
 import { findLocale } from "./locale-codes";
-import { getLocaleCodes, loadMessages } from "./registry";
+import { loadMessages } from "./registry";
 import { leafPaths, type LocaleMessages } from "./tree";
 import {
-  getWorkspaceManifest,
   loadWorkspaceMessages,
   type WorkspaceDetails,
   type WorkspaceKind,
@@ -34,12 +33,6 @@ export interface WorkspaceBackup extends WorkspaceDetails {
   messages: LocaleMessages;
 }
 
-interface BackupSource extends WorkspaceDetails {
-  defaultLocale: string;
-  locales: WorkspaceLocale[];
-  messages: LocaleMessages;
-}
-
 const EXPORTERS: Record<WorkspaceKind, (workspace: string) => LocaleMessages> =
   {
     default: () => loadMessages("own"),
@@ -51,44 +44,19 @@ export function exportWorkspace(workspace: string): LocaleMessages {
   return EXPORTERS[workspaceKind(workspace)](workspace);
 }
 
-function codeEntries(codes: string[]): WorkspaceLocale[] {
-  return codes.map((code) => ({ code }));
-}
-
-const BACKUP_SOURCES: Record<
-  WorkspaceKind,
-  (workspace: string) => BackupSource
-> = {
-  default: () => ({
-    defaultLocale: projectBaseLocale(),
-    locales: codeEntries(getLocaleCodes("own")),
-    messages: loadMessages("own"),
-  }),
-  modules: () => ({
-    defaultLocale: modulesBaseLocale(),
-    locales: codeEntries(getLocaleCodes("external")),
-    messages: loadMessages("external"),
-  }),
-  added: (workspace) => {
-    const { defaultLocale, locales, description, type } =
-      getWorkspaceManifest(workspace);
-    return {
-      defaultLocale,
-      locales,
-      description,
-      type,
-      messages: loadWorkspaceMessages(workspace),
-    };
-  },
-};
-
 /** Everything needed to recreate a workspace: its languages, its base, its details and its texts. */
 export function backupWorkspace(workspace: string): WorkspaceBackup {
+  const { id, defaultLocale, locales, description, type } =
+    findWorkspace(workspace);
   return {
     format: BACKUP_FORMAT,
     version: BACKUP_VERSION,
-    id: workspace,
-    ...BACKUP_SOURCES[workspaceKind(workspace)](workspace),
+    id,
+    defaultLocale,
+    locales,
+    description,
+    type,
+    messages: exportWorkspace(id),
   };
 }
 

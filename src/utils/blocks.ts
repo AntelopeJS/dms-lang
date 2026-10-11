@@ -5,7 +5,7 @@ import type {
   ComposedText,
   Tone,
 } from "@antelopejs/interface-dms/base/types";
-import { listAllWorkspaces, resolveWorkspaceId } from "./catalog";
+import { findWorkspace, resolveWorkspaceId } from "./catalog";
 import { coveragePercent } from "./coverage";
 import { percentParam } from "./languages";
 import { findLocale } from "./locale-codes";
@@ -151,10 +151,8 @@ function detailItems(summary: WorkspaceSummary): KeyValueListItem[] {
 export function workspaceAbout(
   workspace: string,
 ): BlockItems<KeyValueListItem> {
-  const id = resolveWorkspaceId(workspace);
-  const summary = listAllWorkspaces().find((entry) => entry.id === id);
-  if (!summary) return { items: [] };
-  const flat = resolveFlat(id);
+  const summary = findWorkspace(workspace);
+  const flat = resolveFlat(summary.id);
   return {
     items: [
       ...detailItems(summary),

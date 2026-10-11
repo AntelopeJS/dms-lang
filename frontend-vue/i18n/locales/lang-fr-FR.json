@@ -44,7 +44,6 @@
 			"key_not_found": "Cette clé n'existe plus. Elle a peut-être été supprimée.",
 			"module_key_locked": "C'est une clé de module : elle ne peut être ni renommée ni supprimée ici.",
 			"not_an_override": "Cette clé ne surcharge pas une clé de module.",
-			"override_project_only": "Seuls les fichiers du projet surchargent les clés des modules.",
 			"review_added_only": "Seules les traductions d'un espace de travail créé sont suivies pour la relecture.",
 			"conflict": "Quelqu'un a modifié ce texte entre-temps.",
 			"key_exists": "Cette clé existe déjà.",

@@ -30,7 +30,8 @@ import { listLanguages } from "../utils/languages";
 import { initializeLocaleRegistry } from "../utils/registry";
 import { resolveFlat } from "../utils/resolve";
 import { countDefaultMissing, summarizeWorkspaces } from "../utils/summary";
-import { createKeyFor } from "../utils/mutations";
+import { keyStoreOf } from "../utils/key-stores";
+import { createKey } from "../utils/keys";
 import { addLocale, createWorkspace } from "../utils/workspaces";
 
 const WORKSPACE = "storefront";
@@ -159,11 +160,11 @@ describe("[integration] workspace summary, export and overrides", () => {
     });
     createWorkspace(WORKSPACE, { code: "en-GB" });
     addLocale(WORKSPACE, { code: "it-IT" });
-    createKeyFor(WORKSPACE, "checkout.cta", {
+    createKey(keyStoreOf(WORKSPACE), "checkout.cta", {
       "en-GB": "Pay {amount}",
       "it-IT": "Paga",
     });
-    createKeyFor(WORKSPACE, "checkout.title", { "en-GB": "Checkout" });
+    createKey(keyStoreOf(WORKSPACE), "checkout.title", { "en-GB": "Checkout" });
   });
 
   after(() => {

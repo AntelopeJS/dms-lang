@@ -48,7 +48,6 @@ export type ErrorReason =
   | "empty_key"
   | "module_key_locked"
   | "modules_read_only"
-  | "override_project_only"
   | "review_added_only"
   | "no_project_file"
   | "duplicate_locale"

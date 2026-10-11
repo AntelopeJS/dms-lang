@@ -1,11 +1,9 @@
+import { isPlainObject } from "./json";
+
 export type TranslationValue = string | number | boolean | null | undefined;
 
 export interface LocaleMessages {
   [locale: string]: Record<string, unknown>;
-}
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 export function deepMerge(
@@ -19,9 +17,9 @@ export function deepMerge(
 
   for (const key of Object.keys(source)) {
     const value = source[key];
-    if (isObject(value)) {
+    if (isPlainObject(value)) {
       const current = result[key];
-      result[key] = deepMerge(isObject(current) ? current : {}, value);
+      result[key] = deepMerge(isPlainObject(current) ? current : {}, value);
     } else {
       result[key] = value;
     }
@@ -72,6 +70,6 @@ export function leafPaths(
 ): string[] {
   return Object.entries(keys).flatMap(([key, value]) => {
     const path = prefix ? `${prefix}.${key}` : key;
-    return isObject(value) ? leafPaths(value, path) : [path];
+    return isPlainObject(value) ? leafPaths(value, path) : [path];
   });
 }
