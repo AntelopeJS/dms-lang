@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { watchDebounced } from '@vueuse/core'
 import type { TranslationFilter } from '../../../types/lang'
 import type {
   MatrixCounts,
@@ -39,7 +40,6 @@ const { t } = useI18n()
 const { formatCount } = useLangFormat()
 
 const searchInput = ref(filters.value.search)
-let searchTimer: ReturnType<typeof setTimeout> | undefined
 
 const filterItems = computed(() =>
   (Object.keys(FILTER_LABELS) as TranslationFilter[]).map((value) => ({
@@ -107,15 +107,14 @@ watch(
   },
 )
 
-watch(searchInput, (value) => {
-  clearTimeout(searchTimer)
-  searchTimer = setTimeout(() => {
+watchDebounced(
+  searchInput,
+  (value) => {
     if (value !== filters.value.search)
       filters.value = { ...filters.value, search: value }
-  }, SEARCH_DELAY_MS)
-})
-
-onBeforeUnmount(() => clearTimeout(searchTimer))
+  },
+  { debounce: SEARCH_DELAY_MS },
+)
 </script>
 
 <template>

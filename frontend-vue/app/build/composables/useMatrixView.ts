@@ -1,3 +1,4 @@
+import { StorageSerializers, useStorage } from '@vueuse/core'
 import { useDmsRouter } from '#dms/frontend-module'
 import {
   EMPTY_FILTERS,
@@ -51,30 +52,11 @@ interface StoredColumns {
   hidden: string[]
 }
 
-function readColumns(workspace: string): StoredColumns | null {
-  try {
-    const stored = localStorage.getItem(`${COLUMNS_STORAGE}${workspace}`)
-    const parsed = stored
-      ? (JSON.parse(stored) as Partial<StoredColumns>)
-      : null
-    if (!Array.isArray(parsed?.shown)) return null
-    return {
-      shown: parsed.shown.map(String),
-      hidden: Array.isArray(parsed.hidden) ? parsed.hidden.map(String) : [],
-    }
-  } catch {
-    return null
-  }
-}
-
-function writeColumns(workspace: string, columns: StoredColumns) {
-  try {
-    localStorage.setItem(
-      `${COLUMNS_STORAGE}${workspace}`,
-      JSON.stringify(columns),
-    )
-  } catch {
-    return
+function columnsOf(stored: Partial<StoredColumns> | null): StoredColumns | null {
+  if (!Array.isArray(stored?.shown)) return null
+  return {
+    shown: stored.shown.map(String),
+    hidden: Array.isArray(stored.hidden) ? stored.hidden.map(String) : [],
   }
 }
 
@@ -92,6 +74,12 @@ export function useMatrixView() {
 
   const filters = ref<MatrixFilterState>(filtersOf(route.query))
   const order = ref<string[]>([])
+  const storedColumns = useStorage<Partial<StoredColumns> | null>(
+    () => `${COLUMNS_STORAGE}${selectedWorkspace.value}`,
+    null,
+    undefined,
+    { serializer: StorageSerializers.object },
+  )
 
   watch(
     () => route.query,
@@ -120,7 +108,7 @@ export function useMatrixView() {
   /** The stored columns, then the languages added since (hidden ones stay hidden). */
   function restoreOrder() {
     const codes = flat.value.locales
-    const stored = readColumns(selectedWorkspace.value)
+    const stored = columnsOf(storedColumns.value)
     if (!stored) {
       order.value = defaultOrder(codes)
       return
@@ -134,10 +122,10 @@ export function useMatrixView() {
 
   function saveOrder(next: string[]) {
     order.value = next
-    writeColumns(selectedWorkspace.value, {
+    storedColumns.value = {
       shown: next,
       hidden: flat.value.locales.filter((code) => !next.includes(code)),
-    })
+    }
   }
 
   watch(

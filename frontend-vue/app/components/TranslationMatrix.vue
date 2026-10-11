@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { ComponentPublicInstance } from 'vue'
+import { useElementSize, useIntersectionObserver } from '@vueuse/core'
 import { useWorkspaceFlatSync } from '../composables/translation/useWorkspaceFlat'
 import UButton from '@nuxt/ui/components/Button.vue'
 import UDropdownMenu from '@nuxt/ui/components/DropdownMenu.vue'
@@ -50,11 +52,6 @@ const ARROW_STEPS: Record<string, [number, number]> = {
   ArrowLeft: [0, -1],
   ArrowRight: [0, 1],
 }
-const BAR_CLASSES: Record<'success' | 'warning' | 'error', string> = {
-  success: 'bg-success',
-  warning: 'bg-warning',
-  error: 'bg-error',
-}
 
 const { t } = useI18n()
 const { formatCount } = useLangFormat()
@@ -90,10 +87,14 @@ const drafts = ref<Record<string, string>>({})
 // page remounts) while it is open.
 let editingWorkspace = ''
 let isEditingBase = false
-const width = ref(Number.POSITIVE_INFINITY)
-const root = useTemplateRef<{ $el?: HTMLElement }>('root')
+const root = useTemplateRef<ComponentPublicInstance>('root')
 const scroller = useTemplateRef<HTMLElement>('scroller')
 const sentinel = useTemplateRef<HTMLElement>('sentinel')
+const rootElement = computed<HTMLElement | undefined>(() => root.value?.$el)
+const { width } = useElementSize(rootElement, {
+  width: Number.POSITIVE_INFINITY,
+  height: 0,
+})
 
 const saves = useCellSaves(
   (address) => rowOf(address),
@@ -464,7 +465,7 @@ function jumpToMissing(step: JumpStep) {
   view.reveal(target.key)
   startEdit(target.key, target.code)
   nextTick(() =>
-    root.value?.$el
+    rootElement.value
       ?.querySelector('[data-editing]')
       ?.scrollIntoView({ block: 'center', inline: 'nearest' }),
   )
@@ -494,7 +495,7 @@ function onGridKeydown(event: KeyboardEvent) {
   if (!step || !cell || isTyping(event.target)) return
   const row = Number(cell.dataset.row) + step[0]
   const column = Number(cell.dataset.col) + step[1]
-  const target = root.value?.$el?.querySelector<HTMLElement>(
+  const target = rootElement.value?.querySelector<HTMLElement>(
     `td[data-row="${row}"][data-col="${column}"] button`,
   )
   if (!target) return
@@ -697,38 +698,26 @@ watch(
   { immediate: true },
 )
 
-let resizeObserver: ResizeObserver | undefined
-let scrollObserver: IntersectionObserver | undefined
-
-function observeEnd(element: HTMLElement | null) {
-  scrollObserver?.disconnect()
-  if (!element) return
-  scrollObserver = new IntersectionObserver(
-    (entries) => {
-      if (entries.some((entry) => entry.isIntersecting)) view.showMore()
-    },
-    {
-      root: isCompact.value ? null : scroller.value,
-      rootMargin: SCROLL_MARGIN,
-    },
-  )
-  scrollObserver.observe(element)
-}
-
-// A new observer reports at once: rows keep coming while the end stays in view.
-watch([sentinel, isCompact, () => view.renderedRows.value.length], () =>
-  nextTick(() => observeEnd(sentinel.value)),
+const endObserver = useIntersectionObserver(
+  sentinel,
+  (entries) => {
+    if (entries.some((entry) => entry.isIntersecting)) view.showMore()
+  },
+  {
+    root: () => (isCompact.value ? null : scroller.value),
+    rootMargin: SCROLL_MARGIN,
+  },
 )
 
-onMounted(() => {
-  window.addEventListener('keydown', onKeydown)
-  const element = root.value?.$el
-  if (!element) return
-  resizeObserver = new ResizeObserver(([entry]) => {
-    width.value = entry.contentRect.width
-  })
-  resizeObserver.observe(element)
-})
+watch(
+  () => view.renderedRows.value.length,
+  () => {
+    endObserver.pause()
+    endObserver.resume()
+  },
+)
+
+onMounted(() => window.addEventListener('keydown', onKeydown))
 
 const matrixPath = route.path
 
@@ -737,8 +726,6 @@ onBeforeUnmount(() => {
   // saved. Leaving the page asked first (useUnsavedChanges).
   if (route.path === matrixPath) leaveEditing()
   window.removeEventListener('keydown', onKeydown)
-  resizeObserver?.disconnect()
-  scrollObserver?.disconnect()
 })
 </script>
 
@@ -985,19 +972,13 @@ onBeforeUnmount(() => {
                   }}
                 </span>
               </div>
-              <div
-                class="bg-elevated mt-2 h-0.5 w-full overflow-hidden rounded-full"
-              >
-                <div
-                  class="h-full rounded-full"
-                  :class="
-                    column.isBase
-                      ? 'bg-primary'
-                      : BAR_CLASSES[coverageTone(column.coverage)]
-                  "
-                  :style="{ width: `${column.coverage}%` }"
-                />
-              </div>
+              <DmsMeter
+                class="mt-2"
+                :value="column.coverage"
+                :max="100"
+                size="xs"
+                :tone="column.isBase ? 'primary' : coverageTone(column.coverage)"
+              />
             </th>
           </tr>
         </thead>

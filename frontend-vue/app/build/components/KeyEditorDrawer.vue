@@ -11,6 +11,7 @@ const keptDrafts = new Map<string, KeptDrafts>()
 </script>
 
 <script setup lang="ts">
+import { useMediaQuery } from '@vueuse/core'
 import type { FlatTranslationRow } from '../../types/lang'
 import { storedText, type SaveState } from '../../utils/keySaves'
 import {
@@ -102,7 +103,7 @@ const fieldStates = ref<Record<string, SaveState>>({})
 const fieldErrors = ref<Record<string, string>>({})
 const blocked = ref<Record<string, boolean>>({})
 const states = useSaveStates(fieldStates)
-const isWide = ref(false)
+const isWide = useMediaQuery(WIDE_SCREEN_QUERY)
 const body = useTemplateRef<HTMLElement>('body')
 let isClosing = false
 let queue: Promise<unknown> = Promise.resolve()
@@ -558,14 +559,7 @@ watch(
   },
 )
 
-onMounted(() => {
-  const query = window.matchMedia(WIDE_SCREEN_QUERY)
-  const follow = () => (isWide.value = query.matches)
-  follow()
-  query.addEventListener('change', follow)
-  onBeforeUnmount(() => query.removeEventListener('change', follow))
-  show(key.value)
-})
+onMounted(() => show(key.value))
 </script>
 
 <template>
