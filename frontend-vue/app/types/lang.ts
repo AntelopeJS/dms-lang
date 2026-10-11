@@ -2,6 +2,8 @@ export type TranslationValue = string | number | boolean | null | undefined
 
 export type WorkspaceKind = 'default' | 'modules' | 'added'
 
+export type WorkspaceType = 'dms' | 'website' | 'mobile' | 'other'
+
 export interface WorkspaceLocale {
   code: string
   name?: string
@@ -14,7 +16,29 @@ export interface WorkspaceSummary {
   editable: boolean
   defaultLocale: string
   locales: WorkspaceLocale[]
+  description?: string
+  type?: WorkspaceType
+  /** Public URL of a language file, with a `{locale}` placeholder; added workspaces only. */
+  publicUrl?: string
 }
+
+export interface WorkspaceDetails {
+  description?: string
+  type?: WorkspaceType
+}
+
+/** DMS permission ids guarding each kind of write, as /workspaces lists them. */
+export interface WorkspacePermissionIds {
+  editTranslations: string
+  manageKeys: string
+  manageLanguages: string
+  createWorkspace: string
+  renameWorkspace: string
+  deleteWorkspace: string
+  editWorkspace: string
+}
+
+export type WorkspacePermission = keyof WorkspacePermissionIds
 
 export interface WorkspaceStats extends WorkspaceSummary {
   baseLocale: string
@@ -25,6 +49,9 @@ export interface WorkspaceStats extends WorkspaceSummary {
   localeProgress: Record<string, number>
   localeMissing: Record<string, number>
   overrides: number
+  baseMissing?: number
+  incompleteKeys?: number
+  targets?: number
 }
 
 export interface FlatTranslationRow {
@@ -34,6 +61,10 @@ export interface FlatTranslationRow {
   inherited?: Record<string, TranslationValue>
   /** The project files redefine this module key. */
   overridden?: boolean
+  /** In the modules workspace, the values the project files redefine. */
+  overrides?: Record<string, string>
+  /** Languages translated from an older base text. */
+  outdated?: string[]
 }
 
 export interface FlatTranslations {
@@ -43,6 +74,8 @@ export interface FlatTranslations {
   localeProgress: Record<string, number>
   localeMissing: Record<string, number>
   totalKeys: number
+  baseMissing?: number
+  incompleteKeys?: number
 }
 
 export interface LanguageCoverage {

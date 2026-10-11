@@ -12,6 +12,8 @@ export const LANG_PAGES = {
 
 export type LangPage = keyof typeof LANG_PAGES
 
+export type PageQuery = Record<string, string | undefined>
+
 /** The query a page reads to open one of its dialogs on arrival. */
 export const PAGE_ACTION_QUERY = 'action'
 
@@ -21,7 +23,11 @@ export const PAGE_ACTIONS = {
   newWorkspace: 'new-workspace',
 } as const
 
-function withQuery(path: string, query: Record<string, string | undefined>) {
+export const LOCALE_PLACEHOLDER = '{locale}'
+
+const PUBLIC_PATH = '/i18n'
+
+export function linkWithQuery(path: string, query: PageQuery): string {
   const params = new URLSearchParams()
   for (const [name, value] of Object.entries(query)) {
     if (value) params.set(name, value)
@@ -30,22 +36,40 @@ function withQuery(path: string, query: Record<string, string | undefined>) {
   return search ? `${path}?${search}` : path
 }
 
-const LOCALE_PLACEHOLDER = '{locale}'
+/** The module page a path shows, if it is one. */
+export function langPageOf(path: string): LangPage | undefined {
+  const entries = Object.entries(LANG_PAGES) as [LangPage, string][]
+  return entries.find(([, pagePath]) => pagePath === path)?.[0]
+}
 
-/** Links to the pages of the module, carrying the workspace they act on. */
+/**
+ * Links to the pages of the module, each carrying the selected workspace, and
+ * the public URL the server gives a workspace's language files.
+ */
 export const useLangLinks = () => {
-  const { selectedWorkspace } = useI18nWorkspaces()
-  const baseUrl = useDmsRuntimeConfig().public.dms.baseURL
+  const { selectedWorkspace, workspaces, publicBaseUrl } = useI18nWorkspaces()
+  const runtimeBase = useDmsRuntimeConfig().public.dms.baseURL
 
-  function publicLocaleUrl(workspace: string, locale = LOCALE_PLACEHOLDER) {
-    return `${baseUrl}/i18n/${workspace}/${locale}.json`
+  function publicBase(): string {
+    return publicBaseUrl.value || `${runtimeBase}${PUBLIC_PATH}`
   }
 
-  function pageLink(
-    page: LangPage,
-    query: Record<string, string | undefined> = {},
-  ): string {
-    return withQuery(LANG_PAGES[page], {
+  /**
+   * The URL another app loads a language from: the one the server computed
+   * for an existing workspace, built on the server's base for a name being
+   * chosen. Empty for the workspaces `/i18n` does not serve.
+   */
+  function publicLocaleUrl(workspace: string, locale = LOCALE_PLACEHOLDER) {
+    const known = workspaces.value.find((entry) => entry.id === workspace)
+    if (known && known.kind !== 'added') return ''
+    const template =
+      known?.publicUrl ??
+      `${publicBase()}/${workspace}/${LOCALE_PLACEHOLDER}.json`
+    return template.replace(LOCALE_PLACEHOLDER, locale)
+  }
+
+  function pageLink(page: LangPage, query: PageQuery = {}): string {
+    return linkWithQuery(LANG_PAGES[page], {
       workspace: selectedWorkspace.value,
       ...query,
     })
@@ -54,16 +78,12 @@ export const useLangLinks = () => {
   return {
     pageLink,
     publicLocaleUrl,
-    overview: () => pageLink('overview'),
-    translations: (query: Record<string, string | undefined> = {}) =>
-      pageLink('translations', query),
-    language: (
-      locale: string,
-      query: Record<string, string | undefined> = {},
-    ) => pageLink('language', { locale, ...query }),
-    workspaces: (query: Record<string, string | undefined> = {}) =>
-      withQuery(LANG_PAGES.workspaces, query),
-    workspaceSettings: (workspace: string) =>
-      withQuery(LANG_PAGES.workspace, { workspace }),
+    overview: (query: PageQuery = {}) => pageLink('overview', query),
+    translations: (query: PageQuery = {}) => pageLink('translations', query),
+    language: (locale: string, query: PageQuery = {}) =>
+      pageLink('language', { locale, ...query }),
+    workspaces: (query: PageQuery = {}) => pageLink('workspaces', query),
+    workspaceSettings: (workspace?: string) =>
+      pageLink('workspace', workspace ? { workspace } : {}),
   }
 }
