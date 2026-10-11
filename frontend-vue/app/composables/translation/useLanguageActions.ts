@@ -23,6 +23,7 @@ export const useLanguageActions = () => {
   const { confirm } = useConfirm()
   const { $authFetch } = useAuthFetch()
   const { formatCount } = useLangFormat()
+  const { reportFailure } = useMutationToast()
   const { selectedWorkspace, removeLocale, setDefaultLocale } =
     useI18nWorkspaces()
   const { canManage } = useWorkspaceContext()
@@ -139,25 +140,18 @@ export const useLanguageActions = () => {
     return true
   }
 
-  function localBaseImpact(code: string): BaseImpact {
-    const keys = flat.value.rows
-      .filter((row) => isLocaleValueMissing(row.values[code]))
-      .map((row) => row.key)
-    return { missing: keys.length, keys }
-  }
-
+  /** The keys without a text in a language, as the server counts them; none when it refused. */
   async function baseImpact(
     workspace: string,
     code: string,
-  ): Promise<BaseImpact> {
+  ): Promise<BaseImpact | null> {
     try {
-      const impact = await $authFetch<Partial<BaseImpact>>(
+      return await $authFetch<BaseImpact>(
         `${LANGUAGES_API}/${encodeURIComponent(workspace)}/${encodeURIComponent(code)}/base-confirm`,
       )
-      if (typeof impact.missing !== 'number') return localBaseImpact(code)
-      return { missing: impact.missing, keys: impact.keys ?? [] }
-    } catch {
-      return localBaseImpact(code)
+    } catch (error) {
+      reportFailure(error)
+      return null
     }
   }
 
@@ -199,6 +193,7 @@ export const useLanguageActions = () => {
     const workspace = selectedWorkspace.value
     const name = nativeName(code)
     const impact = await baseImpact(workspace, code)
+    if (!impact) return false
     const confirmed = await confirm({
       title: t('dms_lang.language_base.confirm_title', { name }),
       description: t('dms_lang.language_base.confirm_description', { name }),

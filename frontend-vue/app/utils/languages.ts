@@ -256,6 +256,14 @@ export function sharesLanguage(code: string, codes: string[]): boolean {
   )
 }
 
+/** The direction a language is written in, as the `dir` attribute takes it. */
+export type TextDirection = 'rtl' | 'ltr'
+
 export function isRightToLeft(code: string): boolean {
   return RTL_LANGUAGES.has(languageOf(code).toLowerCase())
+}
+
+/** The `dir` of a text in a language: right to left for Arabic, Hebrew, Persian… */
+export function textDirection(code: string): TextDirection {
+  return isRightToLeft(code) ? 'rtl' : 'ltr'
 }

@@ -5,6 +5,7 @@ import {
   lastSubtag,
   searchLanguages,
   sharesLanguage,
+  textDirection,
   typedLocaleCode,
 } from "../frontend-vue/app/utils/languages.ts";
 
@@ -110,4 +111,12 @@ test("variants of one language are told apart", () => {
   assert.equal(sharesLanguage("pt-BR", ["pt-BR", "pt-PT", "en"]), true);
   assert.equal(sharesLanguage("en", ["pt-BR", "pt-PT", "en"]), false);
   assert.equal(lastSubtag("zh-Hant-TW"), "TW");
+});
+
+test("Arabic, Hebrew and Persian are written right to left, in any region", () => {
+  assert.equal(textDirection("ar"), "rtl");
+  assert.equal(textDirection("he-IL"), "rtl");
+  assert.equal(textDirection("fa_IR"), "rtl");
+  assert.equal(textDirection("fr"), "ltr");
+  assert.equal(textDirection("en-GB"), "ltr");
 });

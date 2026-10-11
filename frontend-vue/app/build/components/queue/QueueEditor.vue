@@ -9,6 +9,7 @@ import {
   replacePlaceholder,
   stringValue,
 } from '../../../utils/translations'
+import { textDirection } from '../../../utils/languages'
 import LocaleTile from '../LocaleTile.vue'
 import PlaceholderText from '../PlaceholderText.vue'
 import { useQueue } from '../../composables/useQueueContext'
@@ -162,6 +163,7 @@ defineExpose({
       </div>
       <div
         class="border-default bg-(--dms-bg-muted) rounded-md border px-3.5 py-3 text-base"
+        :dir="textDirection(baseLocale)"
       >
         <PlaceholderText
           v-if="baseText"
@@ -182,7 +184,9 @@ defineExpose({
         class="text-muted flex items-start gap-2 text-sm"
       >
         <LocaleTile :code="code" size="sm" />
-        <span>{{ stringValue(props.row.values[code]) }}</span>
+        <span :dir="textDirection(code)">
+          {{ stringValue(props.row.values[code]) }}
+        </span>
       </p>
     </div>
 
@@ -292,6 +296,7 @@ defineExpose({
         :color="fieldColor"
         :highlight="true"
         :placeholder="baseText"
+        :dir="textDirection(locale)"
         :ui="{ base: 'text-base' }"
       />
 

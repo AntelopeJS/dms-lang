@@ -1,4 +1,3 @@
-import type { WorkspaceLocale } from '../../types/lang'
 import {
   SEARCHABLE_LANGUAGE_CODES,
   SUGGESTED_LANGUAGE_CODES,
@@ -161,8 +160,6 @@ export const useLocaleNames = () => {
     /** The native name, with the region only when another language of `codes` shares it. */
     nameAmong: (code: string, codes: string[]) =>
       sharesLanguage(code, codes) ? fullName(code) : nativeName(code),
-    workspaceLocaleName: (entry: WorkspaceLocale) =>
-      entry.name || nativeName(entry.code),
     languageOption: (code: string) => languageOption(code, uiLocales()),
     findLanguages: (search: string) => findLanguages(search, uiLocales()),
   }
