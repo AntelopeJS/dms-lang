@@ -5,10 +5,10 @@ import type {
   ComposedTextNumberParam,
 } from "@antelopejs/interface-dms/base/types";
 import { listAllWorkspaces } from "./catalog";
+import { coveragePercent, FULL_COVERAGE } from "./coverage";
 import { type FlatResult, isRowMissing, resolveFlat } from "./resolve";
 
 const TEXTS = "dms_lang";
-const PERCENT = 100;
 const LANGUAGE_NAME: Intl.DisplayNamesOptions = {
   type: "language",
   fallback: "none",
@@ -57,16 +57,12 @@ interface LanguageCounts {
   missing: number;
 }
 
-/**
- * Share of `total` that is translated, rounded down: a language missing a
- * single key never reads 100.
- */
-export function coveragePercent(translated: number, total: number): number {
-  return total ? Math.floor((translated / total) * PERCENT) : PERCENT;
-}
-
 export function percentParam(coverage: number): ComposedTextNumberParam {
-  return { type: "number", value: coverage / PERCENT, format: "percent" };
+  return {
+    type: "number",
+    value: coverage / FULL_COVERAGE,
+    format: "percent",
+  };
 }
 
 function languageOf(code: string): string {

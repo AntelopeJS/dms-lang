@@ -5,6 +5,7 @@ import LocaleTile from '../build/components/LocaleTile.vue'
 import {
   HIGH_COVERAGE,
   MID_COVERAGE,
+  coveragePercent,
   coverageTone,
   namespaceCoverage,
 } from '../utils/translations'
@@ -67,7 +68,7 @@ const neediest = computed(() => targets.value[0] ?? '')
 const neediestMissing = computed(() => missingCount(neediest.value))
 
 function shownCoverage(entry: NamespaceCoverage, code: string): number {
-  return honestCoverage(entry.keys - (entry.missing[code] ?? 0), entry.keys)
+  return coveragePercent(entry.keys - (entry.missing[code] ?? 0), entry.keys)
 }
 
 function cellLink(entry: NamespaceCoverage, code: string): string {

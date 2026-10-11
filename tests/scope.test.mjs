@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { honestCoverage } from "../frontend-vue/app/composables/translation/useLangFormat.ts";
+import { coveragePercent } from "../frontend-vue/app/utils/translations.ts";
 import {
   isConflict,
   serverErrorCode,
@@ -10,13 +10,14 @@ import {
   sortWorkspaces,
 } from "../frontend-vue/app/utils/workspaces.ts";
 
-test("honestCoverage never rounds a gap up to 100", () => {
-  assert.equal(honestCoverage(200, 201), 99);
-  assert.equal(honestCoverage(201, 201), 100);
-  assert.equal(honestCoverage(2, 3), 66);
-  assert.equal(honestCoverage(0, 3), 0);
-  assert.equal(honestCoverage(1, 1000), 0);
-  assert.equal(honestCoverage(0, 0), 100);
+test("coverage never rounds a gap up to 100", () => {
+  assert.equal(coveragePercent(200, 201), 99);
+  assert.equal(coveragePercent(201, 201), 100);
+  assert.equal(coveragePercent(2, 3), 66);
+  assert.equal(coveragePercent(0, 3), 0);
+  assert.equal(coveragePercent(1, 1000), 0);
+  assert.equal(coveragePercent(0, 0), 100);
+  assert.equal(coveragePercent(29, 100), 29);
 });
 
 test("conflicts and error codes are recognised", () => {

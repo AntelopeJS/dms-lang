@@ -1,6 +1,6 @@
 import { listAllWorkspaces } from "./catalog";
 import { type FlatResult, isRowMissing, resolveFlat } from "./resolve";
-import { FULL_PROGRESS } from "./tree";
+import { coveragePercent, FULL_COVERAGE } from "./coverage";
 import {
   DEFAULT_WORKSPACE,
   MODULES_WORKSPACE,
@@ -24,8 +24,6 @@ export interface WorkspaceStats extends WorkspaceSummary {
 
 /** The public URL template of a workspace, `undefined` when it is not served publicly. */
 export type PublicUrlOf = (workspace: string) => string | undefined;
-
-const ALMOST_FULL = FULL_PROGRESS - 1;
 
 export function countTranslated(flat: FlatResult): number {
   return flat.rows.reduce(
@@ -52,18 +50,15 @@ export function sumMissing(flat: FlatResult): number {
 }
 
 /**
- * The mean coverage of the target languages, rounded down and never 100 while a text is
- * missing. 100 without any target language: check {@link targetLocales} to show "—" instead.
+ * The coverage of the target languages: the share of their texts that exist.
+ * Every language has the same keys, so it is also the mean of their exact
+ * coverages, rounded once by {@link coveragePercent}. `undefined` when there
+ * is nothing to cover: no target language or no key.
  */
-export function averageCoverage(flat: FlatResult): number {
-  const targets = targetLocales(flat);
-  if (targets.length === 0) return FULL_PROGRESS;
-  const sum = targets.reduce(
-    (total, locale) => total + (flat.localeProgress[locale] ?? 0),
-    0,
-  );
-  const coverage = Math.floor(sum / targets.length);
-  return sumMissing(flat) > 0 ? Math.min(coverage, ALMOST_FULL) : coverage;
+export function targetCoverage(flat: FlatResult): number | undefined {
+  const expected = targetLocales(flat).length * flat.totalKeys;
+  if (expected === 0) return undefined;
+  return coveragePercent(expected - sumMissing(flat), expected);
 }
 
 function describeWorkspace(
@@ -77,7 +72,7 @@ function describeWorkspace(
     totalKeys: flat.totalKeys,
     translatedStrings: countTranslated(flat),
     missing: sumMissing(flat),
-    coverage: averageCoverage(flat),
+    coverage: targetCoverage(flat) ?? FULL_COVERAGE,
     targets: targetLocales(flat).length,
     baseMissing: flat.baseMissing,
     incompleteKeys: flat.incompleteKeys,

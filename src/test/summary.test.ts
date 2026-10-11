@@ -190,6 +190,17 @@ describe("[integration] workspace summary, export and overrides", () => {
       coverage: 50,
     });
     expect(storefront?.localeMissing).to.deep.equal({ "en-GB": 0, "it-IT": 1 });
+    expect(storefront?.localeProgress).to.deep.equal({
+      "en-GB": 100,
+      "it-IT": 50,
+    });
+    const kpi = workspaceKpis(WORKSPACE).items.find(
+      (item) => item.id === "coverage",
+    );
+    expect(kpi?.value).to.deep.equal({
+      key: "dms_lang.common.value",
+      params: { value: { type: "number", value: 0.5, format: "percent" } },
+    });
   });
 
   it("flags the module keys the project files redefine", () => {

@@ -649,9 +649,14 @@ export function replacePlaceholder(
     .join('')
 }
 
+/**
+ * The share of `total` that is translated, in whole percent rounded down, so
+ * that one missing text keeps it under 100 (200 of 201 reads 99). Nothing to
+ * translate reads 100. The rule the server rounds every coverage with.
+ */
 export function coveragePercent(translated: number, total: number): number {
-  if (total === 0) return FULL_COVERAGE
-  return Math.round((translated / total) * FULL_COVERAGE)
+  if (total <= 0) return FULL_COVERAGE
+  return Math.floor((Math.max(translated, 0) * FULL_COVERAGE) / total)
 }
 
 export function coverageTone(

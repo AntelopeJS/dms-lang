@@ -6,10 +6,16 @@ import type {
   Tone,
 } from "@antelopejs/interface-dms/base/types";
 import { listAllWorkspaces, resolveWorkspaceId } from "./catalog";
-import { coveragePercent, percentParam } from "./languages";
+import { coveragePercent } from "./coverage";
+import { percentParam } from "./languages";
 import { dropsPlaceholder } from "./placeholders";
 import { type FlatResult, isRowMissing, resolveFlat } from "./resolve";
-import { countTranslated, sumMissing, targetLocales } from "./summary";
+import {
+  countTranslated,
+  sumMissing,
+  targetCoverage,
+  targetLocales,
+} from "./summary";
 import type { WorkspaceSummary } from "./workspaces";
 
 const TEXTS = "dms_lang";
@@ -53,21 +59,6 @@ function missingTone(missing: number, hasWork: boolean): Tone {
   return missing > 0 ? "warning" : "success";
 }
 
-/**
- * Mean coverage of the target languages, rounded down so that one missing
- * text keeps it under 100; undefined when there is nothing to cover.
- */
-function meanCoverage(flat: FlatResult): number | undefined {
-  const targets = targetLocales(flat);
-  const total = flat.rows.length;
-  if (!total || !targets.length) return undefined;
-  const missing = sumMissing(flat);
-  return coveragePercent(
-    targets.length * total - missing,
-    targets.length * total,
-  );
-}
-
 /** How many namespaces the keys sit in, and next to it how many have no base text: the translators have nothing to start from. */
 function keysDetail(
   flat: FlatResult,
@@ -91,7 +82,7 @@ export function workspaceKpis(workspace: string): BlockItems<StatGroupItem> {
   const flat = resolveFlat(resolveWorkspaceId(workspace));
   const targets = targetLocales(flat).length;
   const missing = sumMissing(flat);
-  const coverage = meanCoverage(flat);
+  const coverage = targetCoverage(flat);
   return {
     items: [
       {

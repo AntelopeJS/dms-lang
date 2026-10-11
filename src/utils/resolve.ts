@@ -1,4 +1,5 @@
 import { modulesBaseLocale, projectBaseLocale } from "./catalog";
+import { coveragePercent } from "./coverage";
 import { getLocaleCodes, loadMessages } from "./registry";
 import { outdatedLocales } from "./review";
 import {
@@ -7,7 +8,6 @@ import {
   isMissing,
   leafPaths,
   type LocaleMessages,
-  progressOf,
   type TranslationValue,
   unionKeys,
 } from "./tree";
@@ -156,7 +156,10 @@ function summarizeRows(context: FlatContext, rows: FlatRow[]): FlatResult {
   for (const locale of context.locales) {
     const missing = countMissing(rows, locale);
     localeMissing[locale] = missing;
-    localeProgress[locale] = progressOf(rows.length - missing, rows.length);
+    localeProgress[locale] = coveragePercent(
+      rows.length - missing,
+      rows.length,
+    );
   }
   const targets = context.locales.filter(
     (locale) => locale !== context.defaultLocale,

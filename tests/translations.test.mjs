@@ -109,7 +109,7 @@ test("a local edit recomputes the counts without touching the source", () => {
   const counted = refreshCounts(next);
   assert.equal(flat.rows[0].values.it, undefined);
   assert.deepEqual(counted.localeMissing, { en: 0, fr: 0, it: 1 });
-  assert.deepEqual(counted.localeProgress, { en: 100, fr: 100, it: 67 });
+  assert.deepEqual(counted.localeProgress, { en: 100, fr: 100, it: 66 });
 });
 
 test("language codes are canonicalised and right-to-left scripts detected", () => {

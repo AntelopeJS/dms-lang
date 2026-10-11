@@ -4,9 +4,6 @@ export interface LocaleMessages {
   [locale: string]: Record<string, unknown>;
 }
 
-export const PROGRESS_PRECISION_FACTOR = 10000;
-export const FULL_PROGRESS = 100;
-
 function isObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
@@ -77,12 +74,4 @@ export function leafPaths(
     const path = prefix ? `${prefix}.${key}` : key;
     return isObject(value) ? leafPaths(value, path) : [path];
   });
-}
-
-/** Coverage in percent with two decimals, rounded down so that it never reads 100 while a text is missing. */
-export function progressOf(existing: number, total: number): number {
-  if (total <= 0) return 0;
-  return (
-    Math.floor((existing / total) * PROGRESS_PRECISION_FACTOR) / FULL_PROGRESS
-  );
 }
