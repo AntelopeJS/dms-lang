@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import UButton from '@nuxt/ui/components/Button.vue'
-import type { WorkspaceStats } from '../types/lang'
+import type { WorkspaceKind, WorkspaceStats } from '../types/lang'
 import { COVERAGE_TEXT_CLASSES, coverageTone } from '../utils/translations'
 import {
   PUBLIC_URL_METHOD,
@@ -28,6 +28,11 @@ const EDITABLE_CONFIG = `"dms-lang": {\n  config: { editable: true },\n}`
 const TOOLBAR_THRESHOLD = 4
 /** The sort picked last, remembered in this browser. */
 const SORT_STORAGE = 'dms-lang-workspaces-sort'
+const OPEN_LABELS: Record<WorkspaceKind, string> = {
+  default: 'dms_lang.workspaces.switch',
+  added: 'dms_lang.workspaces.switch',
+  modules: 'dms_lang.workspaces.browse',
+}
 const SORT_LABELS: Record<WorkspaceSort, string> = {
   kind: 'dms_lang.workspaces.sort_kind',
   name: 'dms_lang.workspaces.sort_name',
@@ -174,6 +179,13 @@ function localeCodes(workspace: WorkspaceStats): string[] {
     ...codes.filter((code) => code === workspace.baseLocale),
     ...codes.filter((code) => code !== workspace.baseLocale),
   ]
+}
+
+/** What opening a workspace does: open the one shown, browse the modules, switch to another. */
+function openLabel(workspace: WorkspaceStats): string {
+  if (workspace.id === selectedWorkspace.value)
+    return t('dms_lang.workspaces.open')
+  return t(OPEN_LABELS[workspace.kind])
 }
 
 async function open(workspace: WorkspaceStats) {
@@ -434,13 +446,7 @@ onMounted(() => {
               color="neutral"
               variant="ghost"
               trailing-icon="i-ph-arrow-right"
-              :label="
-                workspace.id === selectedWorkspace
-                  ? $t('dms_lang.workspaces.open')
-                  : workspace.kind === 'modules'
-                    ? $t('dms_lang.workspaces.browse')
-                    : $t('dms_lang.workspaces.switch')
-              "
+              :label="openLabel(workspace)"
               @click="open(workspace)"
             />
           </div>

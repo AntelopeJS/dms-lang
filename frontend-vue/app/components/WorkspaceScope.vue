@@ -177,8 +177,10 @@ const firstRunActions = computed(() => [
   },
 ])
 
-// A page opened without `?workspace=` names the one it shows: the one
-// remembered, or the project files once that one turns out to be gone.
+/**
+ * The workspace a page opened without `?workspace=` was given: the one
+ * remembered, or the project files once that one turns out to be gone.
+ */
 const filledFromMemory = useDmsState<string>(
   'dms-lang-workspace-filled',
   () => '',

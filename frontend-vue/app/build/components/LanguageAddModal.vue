@@ -4,6 +4,10 @@ import FormFieldRow from './form/FormFieldRow.vue'
 import FormRows from './form/FormRows.vue'
 import { canonicalLocale, hasSubtags, languageOf } from '../../utils/languages'
 
+interface Emits {
+  close: [added: boolean]
+}
+
 interface Props {
   workspace: string
   existing: string[]
@@ -13,7 +17,7 @@ interface Props {
 const LOCALE_EXISTS = 'locale_exists'
 
 const props = defineProps<Props>()
-const emit = defineEmits<{ close: [added: boolean] }>()
+const emit = defineEmits<Emits>()
 
 const { t } = useI18n()
 const toast = useToast()

@@ -8,6 +8,10 @@ import FormFieldRow from './form/FormFieldRow.vue'
 import FormRows from './form/FormRows.vue'
 import WorkspaceDetailsFields from './form/WorkspaceDetailsFields.vue'
 
+interface Emits {
+  close: [workspace: string | null]
+}
+
 interface Props {
   /** A backup or a JSON of languages to create the workspace from. */
   backup?: WorkspaceBackup
@@ -16,7 +20,7 @@ interface Props {
 const DEFAULT_BASE = 'en'
 
 const props = withDefaults(defineProps<Props>(), { backup: undefined })
-const emit = defineEmits<{ close: [workspace: string | null] }>()
+const emit = defineEmits<Emits>()
 
 const { t } = useI18n()
 const { createWorkspace } = useI18nWorkspaces()

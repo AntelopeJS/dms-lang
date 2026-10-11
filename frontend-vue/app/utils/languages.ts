@@ -192,6 +192,10 @@ function isSpelledCode(search: string): boolean {
   return hasSubtags(search) && typedLocaleCode(search) !== null
 }
 
+/**
+ * How well a language answers one needle. A code (`fr-fr`) is never read as
+ * words: "fr" would start "Français".
+ */
 function rankFor(candidate: LanguageCandidate, needle: string) {
   const code = candidate.code.toLowerCase()
   if (code === needle) return MATCH_RANKS.exactCode
@@ -200,7 +204,6 @@ function rankFor(candidate: LanguageCandidate, needle: string) {
   const names = candidate.names.map(folded)
   if (names.some((name) => name.startsWith(search)))
     return MATCH_RANKS.namePrefix
-  // A code ("fr-fr") is not two words: "fr" would start "Français".
   if (isSpelledCode(needle)) return undefined
   const needleWords = wordsOf(search)
   if (!needleWords.length) return undefined
