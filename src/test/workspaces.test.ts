@@ -17,11 +17,8 @@ import {
   type TranslationConfig,
 } from "../utils/config";
 import { backupWorkspace, importWorkspace } from "../utils/export";
-import {
-  baseConfirm,
-  removalConfirm,
-  workspaceSnippet,
-} from "../utils/integration";
+import { baseConfirm, removalConfirm } from "../utils/dialogs";
+import { workspaceSnippet } from "../utils/snippets";
 import { listLanguages } from "../utils/languages";
 import { keyStoreOf } from "../utils/key-stores";
 import { createKey, updateKey } from "../utils/keys";

@@ -1,5 +1,6 @@
 import * as z from "zod";
-import { NOTICE_PAGES, SNIPPET_KINDS } from "../utils/integration";
+import { NOTICE_PAGES } from "../utils/notices";
+import { SNIPPET_KINDS } from "../utils/snippets";
 
 const SORTED_COLUMNS = ["name", "coverage"] as const;
 const SORT_DIRECTIONS = ["asc", "desc"] as const;

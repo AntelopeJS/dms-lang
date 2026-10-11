@@ -27,20 +27,20 @@ import { localeStats, workspaceAbout, workspaceKpis } from "../utils/blocks";
 import { JsonBody } from "../utils/body";
 import { listAllWorkspaces, resolveWorkspaceId } from "../utils/catalog";
 import { getTranslationConfig } from "../utils/config";
+import { LANG_API, PUBLIC_PATH } from "../utils/constants";
 import {
   backupWorkspace,
   exportWorkspace,
   importWorkspace,
 } from "../utils/export";
+import { baseConfirm, removalConfirm } from "../utils/dialogs";
+import { workspaceNotice } from "../utils/notices";
 import {
-  baseConfirm,
   publicLocaleUrl,
   publicOrigin,
-  removalConfirm,
   workspaceEndpoint,
-  workspaceNotice,
-  workspaceSnippet,
-} from "../utils/integration";
+} from "../utils/public-url";
+import { workspaceSnippet } from "../utils/snippets";
 import { listLanguages } from "../utils/languages";
 import { keyStoreOf, reviewStoreOf } from "../utils/key-stores";
 import {
@@ -81,7 +81,6 @@ interface DefaultLocaleResult {
 }
 
 const REALTIME_CHANGE = "changed";
-const PUBLIC_PATH = "/i18n";
 
 /** Tells the open pages that a workspace changed, so they reload their blocks and data. */
 function announce(workspace: string): void {
@@ -120,9 +119,7 @@ function withPublicUrl(origin: string) {
 }
 
 @AuthOwnerOnly()
-export class TranslationsController extends Controller(
-  "/api/lang/translations",
-) {
+export class TranslationsController extends Controller(LANG_API) {
   @Get("/workspaces")
   workspaces(@Context() context: RequestContext) {
     const { editable } = getTranslationConfig();

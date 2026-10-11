@@ -8,6 +8,7 @@ import {
   Prefix,
   type RequestContext,
 } from "@antelopejs/interface-api";
+import { PUBLIC_PATH } from "../utils/constants";
 import { errorResult } from "../utils/errors";
 import { readWorkspaceLocale } from "../utils/workspaces";
 
@@ -27,7 +28,7 @@ function openToAnyOrigin(response: HTTPResult): void {
 }
 
 /** The translation files of the added workspaces, public and readable from any site. */
-export class PublicLocalesController extends Controller("/i18n") {
+export class PublicLocalesController extends Controller(PUBLIC_PATH) {
   @Prefix("options", "/:workspace/:locale", BEFORE_API_CORS)
   preflight() {
     const response = new HTTPResult(204, null);

@@ -6,7 +6,7 @@ import {
   LANG_MODULE_ID,
   translateCategory,
 } from "./module";
-import { PERMISSION_TEXTS } from "./texts";
+import { PERMISSION_TEXTS } from "../utils/constants";
 
 const PAGE_ID = "translations";
 const TEXTS = `${PERMISSION_TEXTS}.translations`;

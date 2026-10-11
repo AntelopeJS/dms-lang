@@ -5,11 +5,11 @@ import type {
   ComposedTextNumberParam,
 } from "@antelopejs/interface-dms/base/types";
 import { findWorkspace } from "./catalog";
+import { LANG_TEXTS } from "./constants";
 import { coveragePercent, FULL_COVERAGE } from "./coverage";
 import { languageOf } from "./locale-codes";
 import { type FlatResult, isRowMissing, resolveFlat } from "./resolve";
 
-const TEXTS = "dms_lang";
 const LANGUAGE_NAME: Intl.DisplayNamesOptions = {
   type: "language",
   fallback: "none",
@@ -110,14 +110,14 @@ function baseDetail({ code, translated, missing }: LanguageCounts): Subline {
   return missing
     ? {
         text: {
-          key: `${TEXTS}.languages.detail_base_missing`,
+          key: `${LANG_TEXTS}.languages.detail_base_missing`,
           params: { code, n: count(missing) },
         },
         tone: "warning",
       }
     : {
         text: {
-          key: `${TEXTS}.languages.detail_base`,
+          key: `${LANG_TEXTS}.languages.detail_base`,
           params: { code, n: count(translated) },
         },
         tone: "dimmed",
@@ -132,13 +132,16 @@ function targetDetail({
 }: LanguageCounts): Subline {
   if (!missing) {
     return {
-      text: { key: `${TEXTS}.languages.detail_complete`, params: { code } },
+      text: {
+        key: `${LANG_TEXTS}.languages.detail_complete`,
+        params: { code },
+      },
       tone: "dimmed",
     };
   }
   return {
     text: {
-      key: `${TEXTS}.languages.detail`,
+      key: `${LANG_TEXTS}.languages.detail`,
       params: {
         code,
         percent: percentParam(coveragePercent(translated, total)),

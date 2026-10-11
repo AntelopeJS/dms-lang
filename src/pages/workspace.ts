@@ -10,7 +10,8 @@ import type { Action } from "@antelopejs/interface-dms/component";
 import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
 import { languagesTable } from "./languages-table";
 import { followTranslations, LANG_MODULE_ID, manageCategory } from "./module";
-import { LANG_API, PERMISSION_TEXTS } from "./texts";
+import { LANG_API, PERMISSION_TEXTS } from "../utils/constants";
+import { SNIPPET_KINDS } from "../utils/snippets";
 
 const PAGE_ID = "workspace";
 const TEXTS = `${PERMISSION_TEXTS}.workspace`;
@@ -43,8 +44,6 @@ export const workspaceGeneral = CustomComponent("DmsLangWorkspaceGeneral")
     description: `${TEXTS}.languages_description`,
     icon: "i-ph-translate",
   });
-
-const SNIPPET_KINDS = ["vue", "i18next", "fetch", "curl"] as const;
 
 function snippetTabs() {
   const tabs = Tab({

@@ -8,7 +8,7 @@ import {
   LANG_MODULE_ID,
   translateCategory,
 } from "./module";
-import { LANG_API, PERMISSION_TEXTS } from "./texts";
+import { LANG_API, PERMISSION_TEXTS } from "../utils/constants";
 
 const PAGE_ID = "language";
 const TEXTS = `${PERMISSION_TEXTS}.language`;

@@ -2,7 +2,7 @@ import { CustomComponent } from "@antelopejs/interface-dms/base/custom";
 import { StatGroup } from "@antelopejs/interface-dms/base/stat-group";
 import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
 import { followTranslations, LANG_MODULE_ID, manageCategory } from "./module";
-import { PERMISSION_TEXTS } from "./texts";
+import { PERMISSION_TEXTS } from "../utils/constants";
 
 const PAGE_ID = "workspaces";
 const TEXTS = `${PERMISSION_TEXTS}.workspaces`;

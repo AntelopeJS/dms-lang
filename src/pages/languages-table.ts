@@ -5,7 +5,7 @@ import {
   TableView,
 } from "@antelopejs/interface-dms/base/table-view";
 import type { Action } from "@antelopejs/interface-dms/component";
-import { LANG_API } from "./texts";
+import { LANG_API, PAGES_URL } from "../utils/constants";
 
 const TEXTS = "$dms_lang.languages";
 const NAME_SIZE = 280;
@@ -19,7 +19,6 @@ const EDITABLE_BASE = {
 const TARGET = { field: "isBase", equals: false };
 const MANAGEABLE = { and: [TARGET, { field: "canManage", equals: true }] };
 const LANGUAGE_URL = `${LANG_API}/languages/{workspace}/{code}`;
-const PAGES_URL = "/modules/lang";
 
 const columns = {
   name: {

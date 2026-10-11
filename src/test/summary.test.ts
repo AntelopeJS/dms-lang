@@ -19,13 +19,10 @@ import {
 } from "../utils/config";
 import { localeStats, workspaceAbout, workspaceKpis } from "../utils/blocks";
 import { exportWorkspace } from "../utils/export";
-import {
-  baseConfirm,
-  removalConfirm,
-  workspaceEndpoint,
-  workspaceNotice,
-  workspaceSnippet,
-} from "../utils/integration";
+import { baseConfirm, removalConfirm } from "../utils/dialogs";
+import { workspaceNotice } from "../utils/notices";
+import { workspaceEndpoint } from "../utils/public-url";
+import { workspaceSnippet } from "../utils/snippets";
 import { listLanguages } from "../utils/languages";
 import { initializeLocaleRegistry } from "../utils/registry";
 import { resolveFlat } from "../utils/resolve";

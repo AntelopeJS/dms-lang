@@ -6,6 +6,7 @@ import type {
   Tone,
 } from "@antelopejs/interface-dms/base/types";
 import { findWorkspace, resolveWorkspaceId } from "./catalog";
+import { LANG_TEXTS } from "./constants";
 import { coveragePercent } from "./coverage";
 import { percentParam } from "./languages";
 import { findLocale } from "./locale-codes";
@@ -19,7 +20,6 @@ import {
 } from "./summary";
 import type { WorkspaceSummary } from "./workspaces";
 
-const TEXTS = "dms_lang";
 const NAMESPACE_SEPARATOR = ".";
 const WORKSPACES_FOLDER = "i18n-workspaces";
 const HIGH_COVERAGE = 90;
@@ -31,12 +31,15 @@ export interface BlockItems<T> {
 }
 
 function counted(key: string, value: number): ComposedText {
-  return { key: `${TEXTS}.${key}`, params: { n: { type: "count", value } } };
+  return {
+    key: `${LANG_TEXTS}.${key}`,
+    params: { n: { type: "count", value } },
+  };
 }
 
 function percent(value: number): ComposedText {
   return {
-    key: `${TEXTS}.common.value`,
+    key: `${LANG_TEXTS}.common.value`,
     params: { value: percentParam(value) },
   };
 }
@@ -44,7 +47,7 @@ function percent(value: number): ComposedText {
 /** A number written in the reader's format ("2,439"). */
 function amount(value: number): ComposedText {
   return {
-    key: `${TEXTS}.common.value`,
+    key: `${LANG_TEXTS}.common.value`,
     params: { value: { type: "number", value } },
   };
 }
@@ -68,7 +71,7 @@ function keysDetail(
   if (!flat.baseMissing) return { detail: namespaces };
   return {
     detail: {
-      key: `${TEXTS}.kpis.keys_detail_base_missing`,
+      key: `${LANG_TEXTS}.kpis.keys_detail_base_missing`,
       params: {
         namespaces,
         missing: counted("kpis.keys_base_missing", flat.baseMissing),
@@ -90,7 +93,7 @@ export function workspaceKpis(workspace: string): BlockItems<StatGroupItem> {
         id: "languages",
         icon: "i-ph-globe",
         tone: "primary",
-        eyebrow: `$${TEXTS}.kpis.languages`,
+        eyebrow: `$${LANG_TEXTS}.kpis.languages`,
         value: flat.locales.length,
         detail: counted("kpis.languages_detail", targets),
       },
@@ -98,7 +101,7 @@ export function workspaceKpis(workspace: string): BlockItems<StatGroupItem> {
         id: "keys",
         icon: "i-ph-key",
         tone: "neutral",
-        eyebrow: `$${TEXTS}.kpis.keys`,
+        eyebrow: `$${LANG_TEXTS}.kpis.keys`,
         value: flat.totalKeys,
         ...keysDetail(flat),
       },
@@ -106,7 +109,7 @@ export function workspaceKpis(workspace: string): BlockItems<StatGroupItem> {
         id: "missing",
         icon: "i-ph-warning",
         tone: missingTone(missing, coverage !== undefined),
-        eyebrow: `$${TEXTS}.kpis.missing`,
+        eyebrow: `$${LANG_TEXTS}.kpis.missing`,
         value: missing,
         detail: counted("kpis.missing_detail", targets),
       },
@@ -114,9 +117,9 @@ export function workspaceKpis(workspace: string): BlockItems<StatGroupItem> {
         id: "coverage",
         icon: "i-ph-chart-bar",
         tone: "primary",
-        eyebrow: `$${TEXTS}.kpis.coverage`,
+        eyebrow: `$${LANG_TEXTS}.kpis.coverage`,
         value: coverage === undefined ? NO_VALUE : percent(coverage),
-        detail: `$${TEXTS}.kpis.coverage_detail`,
+        detail: `$${LANG_TEXTS}.kpis.coverage_detail`,
       },
     ],
   };
@@ -125,7 +128,7 @@ export function workspaceKpis(workspace: string): BlockItems<StatGroupItem> {
 function folderOf(summary: WorkspaceSummary): BlockText {
   return summary.kind === "added"
     ? `${WORKSPACES_FOLDER}/${summary.id}`
-    : { key: `${TEXTS}.workspace_kinds.${summary.kind}.folder` };
+    : { key: `${LANG_TEXTS}.workspace_kinds.${summary.kind}.folder` };
 }
 
 function detailItems(summary: WorkspaceSummary): KeyValueListItem[] {
@@ -133,15 +136,15 @@ function detailItems(summary: WorkspaceSummary): KeyValueListItem[] {
   if (summary.description) {
     items.push({
       id: "description",
-      label: `$${TEXTS}.workspace_details.description_label`,
+      label: `$${LANG_TEXTS}.workspace_details.description_label`,
       value: summary.description,
     });
   }
   if (summary.type) {
     items.push({
       id: "type",
-      label: `$${TEXTS}.workspace_details.type_label`,
-      value: `$${TEXTS}.workspace_types.${summary.type}`,
+      label: `$${LANG_TEXTS}.workspace_details.type_label`,
+      value: `$${LANG_TEXTS}.workspace_types.${summary.type}`,
     });
   }
   return items;
@@ -158,28 +161,28 @@ export function workspaceAbout(
       ...detailItems(summary),
       {
         id: "kind",
-        label: `$${TEXTS}.about.kind`,
-        value: `$${TEXTS}.workspace_kinds.${summary.kind}.kind`,
+        label: `$${LANG_TEXTS}.about.kind`,
+        value: `$${LANG_TEXTS}.workspace_kinds.${summary.kind}.kind`,
       },
       {
         id: "editable",
-        label: `$${TEXTS}.about.editable`,
-        value: `$${TEXTS}.about.${summary.editable ? "yes" : "no"}`,
+        label: `$${LANG_TEXTS}.about.editable`,
+        value: `$${LANG_TEXTS}.about.${summary.editable ? "yes" : "no"}`,
         tone: summary.editable ? "success" : "warning",
       },
       {
         id: "keys",
-        label: `$${TEXTS}.about.keys`,
+        label: `$${LANG_TEXTS}.about.keys`,
         value: amount(flat.totalKeys),
       },
       {
         id: "strings",
-        label: `$${TEXTS}.about.strings`,
+        label: `$${LANG_TEXTS}.about.strings`,
         value: amount(countTranslated(flat)),
       },
       {
         id: "folder",
-        label: `$${TEXTS}.about.folder`,
+        label: `$${LANG_TEXTS}.about.folder`,
         value: folderOf(summary),
         type: "mono",
       },
@@ -210,7 +213,7 @@ function localeStatItems(flat: FlatResult, locale: string): StatGroupItem[] {
       id: "coverage",
       icon: "i-ph-chart-donut",
       tone: coverageTone(coverage),
-      eyebrow: `$${TEXTS}.progress.coverage`,
+      eyebrow: `$${LANG_TEXTS}.progress.coverage`,
       value: percent(coverage),
       detail: counted("progress.coverage_detail", flat.rows.length),
     },
@@ -218,21 +221,21 @@ function localeStatItems(flat: FlatResult, locale: string): StatGroupItem[] {
       id: "translated",
       icon: "i-ph-check-circle",
       tone: "success",
-      eyebrow: `$${TEXTS}.progress.translated`,
+      eyebrow: `$${LANG_TEXTS}.progress.translated`,
       value: translated,
     },
     {
       id: "missing",
       icon: "i-ph-warning",
       tone: missingTone(missing, flat.rows.length > 0),
-      eyebrow: `$${TEXTS}.progress.missing`,
+      eyebrow: `$${LANG_TEXTS}.progress.missing`,
       value: missing,
     },
     {
       id: "issues",
       icon: "i-ph-brackets-curly",
       tone: issues ? "error" : "success",
-      eyebrow: `$${TEXTS}.progress.issues`,
+      eyebrow: `$${LANG_TEXTS}.progress.issues`,
       value: issues,
     },
   ];
