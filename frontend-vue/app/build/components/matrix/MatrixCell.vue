@@ -1,48 +1,109 @@
 <script setup lang="ts">
 import PlaceholderText from '../PlaceholderText.vue'
-import { formatTokens, missingPlaceholders } from '../../../utils/translations'
+import {
+  checkMessage,
+  escapeMessage,
+  formatTokens,
+  hasBlockingIssue,
+  messageIssueText,
+  type MessageIssue,
+} from '../../../utils/translations'
+import type { CellFailure, CellState } from './useCellSaves'
 
-export type CellState = 'idle' | 'saving' | 'saved' | 'error'
+/** Where the editor goes once a cell is saved. */
+export type CellMove = 'stay' | 'down' | 'next' | 'previous'
 
 interface Props {
   value: string
   baseValue: string
   inherited?: string
+  /** In the modules workspace, the project's text that replaces the module's. */
+  override?: string
   isBase: boolean
   editable: boolean
   isEditing: boolean
   state: CellState
-  failedDraft?: string
+  failure?: CellFailure
+  rowKey: string
+  languageName: string
+  /** Translated from an older base text. */
+  isOutdated?: boolean
   maxLength?: number
+  /** The other's text when the cell changed elsewhere while being edited ('': removed). */
+  changedElsewhere?: string
 }
 
 interface Emits {
   edit: []
-  save: [value: string]
+  commit: [move: CellMove]
   cancel: []
   retry: []
-  next: []
+  discard: []
+  /** Write the bare `@` and lone braces of the unsaved text as literals. */
+  escape: []
+  openPanel: []
+  review: []
 }
+
+type KeyHandler = (event: KeyboardEvent) => (() => void) | undefined
+
+const LONG_TEXT = 150
+const MULTILINE = '\n'
+const PLURAL_SEPARATOR = '|'
+const SYNTAX_KINDS = new Set(['bareAt', 'unclosedBrace', 'strayBrace'])
 
 const props = withDefaults(defineProps<Props>(), {
   inherited: undefined,
-  failedDraft: undefined,
+  override: undefined,
+  failure: undefined,
+  isOutdated: false,
   maxLength: undefined,
+  changedElsewhere: undefined,
 })
 const emit = defineEmits<Emits>()
+const draft = defineModel<string>('draft', { default: '' })
 
-const draft = ref('')
+const { t } = useI18n()
 const isCommitted = ref(false)
 const textarea = useTemplateRef<{ textareaRef?: HTMLTextAreaElement }>(
   'textarea',
 )
 
 const isMissing = computed(() => props.value === '')
-const issues = computed(() =>
-  props.isBase ? [] : missingPlaceholders(props.baseValue, props.value),
+const shown = computed(() => (props.isEditing ? draft.value : props.value))
+const issues = computed<MessageIssue[]>(() =>
+  checkMessage(props.isBase ? '' : props.baseValue, shown.value),
 )
-const counterLimit = computed(
-  () => props.maxLength ?? Math.max(props.baseValue.length * 2, 60),
+const missingTokens = computed(() =>
+  issues.value
+    .filter((issue) => issue.kind === 'missing')
+    .flatMap((issue) => issue.tokens),
+)
+const canEscape = computed(() => isEscapable(issues.value))
+/** The unsaved text does not compile: it is fixed or escaped, not sent again as is. */
+const failureIssues = computed<MessageIssue[]>(() =>
+  props.failure ? checkMessage('', props.failure.draft) : [],
+)
+const isFailureInvalid = computed(() => hasBlockingIssue(failureIssues.value))
+const hasError = computed(() =>
+  issues.value.some((issue) => issue.severity === 'error'),
+)
+const suggestsPanel = computed(
+  () =>
+    props.baseValue.length > LONG_TEXT ||
+    props.baseValue.includes(MULTILINE) ||
+    props.baseValue.includes(PLURAL_SEPARATOR),
+)
+const isOverLimit = computed(
+  () => props.maxLength !== undefined && draft.value.length > props.maxLength,
+)
+const ariaLabel = computed(() =>
+  t(
+    isMissing.value
+      ? 'dms_lang.matrix.aria_translate'
+      : 'dms_lang.matrix.aria_edit',
+    { key: props.rowKey, language: props.languageName },
+  ),
 )
 
 watch(
@@ -50,17 +111,23 @@ watch(
   (editing) => {
     if (!editing) return
     isCommitted.value = false
-    draft.value = props.failedDraft ?? props.value
-    nextTick(() => textarea.value?.textareaRef?.focus())
+    nextTick(() => {
+      const element = textarea.value?.textareaRef
+      element?.focus()
+      element?.setSelectionRange(element.value.length, element.value.length)
+    })
   },
   { immediate: true },
 )
 
-function commit() {
+function isEscapable(list: MessageIssue[]): boolean {
+  return list.some((issue) => SYNTAX_KINDS.has(issue.kind))
+}
+
+function commit(move: CellMove) {
   if (isCommitted.value) return
   isCommitted.value = true
-  if (draft.value === props.value) emit('cancel')
-  else emit('save', draft.value)
+  emit('commit', move)
 }
 
 function cancel() {
@@ -68,14 +135,53 @@ function cancel() {
   emit('cancel')
 }
 
-function commitAndNext() {
-  commit()
-  emit('next')
+function openPanel() {
+  isCommitted.value = true
+  emit('openPanel')
+}
+
+const KEY_HANDLERS: Record<string, KeyHandler> = {
+  Escape: () => cancel,
+  Tab: (event) => () => commit(event.shiftKey ? 'previous' : 'next'),
+  Enter: (event) => {
+    if (event.altKey) return undefined
+    const hasModifier = event.ctrlKey || event.metaKey
+    if (hasModifier && event.shiftKey) return openPanel
+    if (hasModifier) return () => commit('stay')
+    return event.shiftKey ? undefined : () => commit('down')
+  },
+}
+
+function onKeydown(event: KeyboardEvent) {
+  if (event.isComposing) return
+  const action = KEY_HANDLERS[event.key]?.(event)
+  if (!action) return
+  event.preventDefault()
+  event.stopPropagation()
+  action()
+}
+
+function insertToken(token: string) {
+  const separator = draft.value && !draft.value.endsWith(' ') ? ' ' : ''
+  draft.value = `${draft.value}${separator}{${token}}`
+  textarea.value?.textareaRef?.focus()
+}
+
+function escapeDraft() {
+  draft.value = escapeMessage(draft.value)
+  textarea.value?.textareaRef?.focus()
 }
 </script>
 
 <template>
   <div v-if="isEditing" class="space-y-1">
+    <p
+      v-if="!props.isBase && props.baseValue"
+      class="text-dimmed line-clamp-2 px-1 text-xs"
+      :title="props.baseValue"
+    >
+      <PlaceholderText :text="props.baseValue" />
+    </p>
     <UTextarea
       ref="textarea"
       v-model="draft"
@@ -83,80 +189,213 @@ function commitAndNext() {
       :rows="1"
       :maxrows="8"
       :placeholder="props.inherited || props.baseValue"
+      :color="hasError ? 'error' : undefined"
+      :highlight="hasError"
+      :aria-label="ariaLabel"
       class="w-full"
       :ui="{ base: 'text-sm' }"
-      @keydown.esc.prevent.stop="cancel"
-      @keydown.meta.enter.prevent="commit"
-      @keydown.ctrl.enter.prevent="commit"
-      @keydown.tab.exact.prevent="commitAndNext"
-      @blur="commit"
+      @keydown="onKeydown"
+      @blur="commit('stay')"
     />
+    <p
+      v-if="props.changedElsewhere !== undefined"
+      class="text-warning flex items-start gap-1 px-1 text-[10.5px]"
+      role="status"
+    >
+      <UIcon name="i-ph-arrows-clockwise" class="mt-px size-3 shrink-0" />
+      <span class="min-w-0">
+        {{ $t('dms_lang.matrix.changed_elsewhere') }}
+        <PlaceholderText
+          v-if="props.changedElsewhere"
+          :text="props.changedElsewhere"
+          class="text-default"
+        />
+        <span v-else class="italic">
+          {{ $t('dms_lang.matrix.current_none') }}
+        </span>
+      </span>
+    </p>
+    <ul v-if="issues.length" class="space-y-0.5 px-1">
+      <li
+        v-for="issue in issues"
+        :key="issue.kind"
+        class="flex items-start gap-1 text-[10.5px]"
+        :class="issue.severity === 'error' ? 'text-error' : 'text-warning'"
+      >
+        <UIcon name="i-ph-warning" class="mt-px size-3 shrink-0" />
+        {{ messageIssueText(issue, t) }}
+      </li>
+    </ul>
     <div
-      class="text-dimmed flex items-center justify-between font-mono text-[10.5px]"
+      v-if="missingTokens.length || canEscape"
+      class="flex flex-wrap gap-1 px-1"
+    >
+      <UButton
+        v-for="token in missingTokens"
+        :key="token"
+        size="xs"
+        color="warning"
+        variant="soft"
+        :label="$t('dms_lang.drawer.insert', { token: formatTokens([token]) })"
+        @mousedown.prevent
+        @click="insertToken(token)"
+      />
+      <UButton
+        v-if="canEscape"
+        size="xs"
+        color="error"
+        variant="soft"
+        :label="$t('dms_lang.message_issue.escape')"
+        @mousedown.prevent
+        @click="escapeDraft"
+      />
+    </div>
+    <div
+      class="text-dimmed flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-[10.5px]"
     >
       <span class="inline-flex items-center gap-1">
-        <UKbd size="sm">⌘</UKbd>
-        <UKbd size="sm">↵</UKbd>
-        {{ $t('dms_lang.matrix.save') }}
+        <UKbd size="sm" value="enter" />
+        {{ $t('dms_lang.matrix.shortcut_save_down') }}
       </span>
-      <span :class="draft.length > counterLimit ? 'text-warning' : undefined">
-        {{ draft.length }} / {{ counterLimit }}
+      <span class="inline-flex items-center gap-1">
+        <UKbd size="sm" value="shift" />
+        <UKbd size="sm" value="enter" />
+        {{ $t('dms_lang.matrix.shortcut_newline') }}
       </span>
+      <span class="inline-flex items-center gap-1">
+        <UKbd size="sm" value="escape" />
+        {{ $t('dms_lang.matrix.shortcut_cancel') }}
+      </span>
+      <span
+        v-if="props.maxLength !== undefined"
+        class="font-mono"
+        :class="isOverLimit ? 'text-warning' : undefined"
+      >
+        {{ draft.length }} / {{ props.maxLength }}
+      </span>
+      <span v-else-if="!props.isBase && props.baseValue" class="font-mono">
+        {{
+          $t('dms_lang.matrix.length', {
+            count: draft.length,
+            base: props.baseValue.length,
+          })
+        }}
+      </span>
+      <UButton
+        v-if="props.isOutdated && !isMissing"
+        size="xs"
+        color="info"
+        variant="soft"
+        icon="i-ph-check"
+        class="ml-auto"
+        :label="$t('dms_lang.drawer.mark_reviewed')"
+        :title="$t('dms_lang.drawer.outdated')"
+        @mousedown.prevent
+        @click="emit('review')"
+      />
+      <UButton
+        size="xs"
+        :color="suggestsPanel ? 'primary' : 'neutral'"
+        :variant="suggestsPanel ? 'soft' : 'ghost'"
+        icon="i-ph-arrows-out-simple"
+        :class="props.isOutdated && !isMissing ? undefined : 'ml-auto'"
+        :label="
+          suggestsPanel
+            ? $t('dms_lang.matrix.panel_suggested')
+            : $t('dms_lang.matrix.open_panel')
+        "
+        :title="$t('dms_lang.matrix.open_panel')"
+        @mousedown.prevent
+        @click="openPanel"
+      />
     </div>
   </div>
 
-  <div v-else-if="props.state === 'error'" class="space-y-1">
-    <div
-      class="border-error/40 bg-error/5 text-default rounded-md border px-2.5 py-1.5 text-sm"
+  <div v-else-if="props.failure" class="space-y-1">
+    <button
+      type="button"
+      class="border-error/40 bg-error/5 text-default line-clamp-3 w-full rounded-md border px-2.5 py-1.5 text-left text-sm"
+      :aria-label="ariaLabel"
+      :disabled="!props.editable"
+      @click="emit('edit')"
     >
-      {{ props.failedDraft }}
-    </div>
-    <div class="flex items-center justify-between text-xs">
-      <span class="text-error inline-flex items-center gap-1">
-        <UIcon name="i-ph-warning-circle" class="size-3.5" />
-        {{ $t('dms_lang.matrix.not_saved') }}
+      <PlaceholderText v-if="props.failure.draft" :text="props.failure.draft" />
+      <span v-else class="text-dimmed italic">—</span>
+    </button>
+    <p class="text-error flex items-start gap-1 text-xs">
+      <UIcon name="i-ph-warning-circle" class="mt-0.5 size-3.5 shrink-0" />
+      <span>
+        {{ $t('dms_lang.matrix.not_saved') }} · {{ props.failure.message }}
       </span>
+    </p>
+    <p
+      v-if="props.failure.isConflict"
+      class="border-default text-dimmed line-clamp-3 rounded-md border border-dashed px-2.5 py-1.5 text-xs"
+    >
+      {{ $t('dms_lang.matrix.current_label') }}
+      <PlaceholderText
+        v-if="props.value"
+        :text="props.value"
+        class="text-default"
+      />
+      <span v-else class="italic">
+        {{ $t('dms_lang.matrix.current_none') }}
+      </span>
+    </p>
+    <div class="flex flex-wrap justify-end gap-1">
+      <UButton
+        size="xs"
+        color="neutral"
+        variant="ghost"
+        :label="$t('dms_lang.matrix.discard')"
+        @click="emit('discard')"
+      />
+      <UButton
+        v-if="isFailureInvalid && isEscapable(failureIssues)"
+        size="xs"
+        color="error"
+        variant="soft"
+        :label="$t('dms_lang.message_issue.escape')"
+        @click="emit('escape')"
+      />
       <UButton
         size="xs"
         color="error"
         variant="soft"
-        :label="$t('dms_lang.actions.retry')"
+        :label="
+          isFailureInvalid
+            ? $t('dms_lang.matrix.fix')
+            : props.failure.isConflict
+              ? $t('dms_lang.matrix.overwrite')
+              : $t('dms_lang.actions.retry')
+        "
         @click="emit('retry')"
       />
     </div>
   </div>
 
-  <button
-    v-else-if="isMissing && !props.inherited && props.editable && !props.isBase"
-    type="button"
-    class="border-warning/40 bg-warning/5 hover:bg-warning/10 flex w-full items-center gap-2 rounded-md border border-dashed px-2.5 py-1.5 text-left transition-colors"
-    @click="emit('edit')"
-  >
-    <span
-      class="text-warning font-mono text-[10px] font-bold uppercase tracking-wider"
-    >
-      {{ $t('dms_lang.matrix.missing') }}
-    </span>
-    <span class="text-dimmed min-w-0 truncate text-xs italic">
-      {{ $t('dms_lang.matrix.translate') }}
-    </span>
-  </button>
-
   <component
     :is="props.editable ? 'button' : 'div'"
     v-else
     :type="props.editable ? 'button' : undefined"
-    class="group/cell w-full rounded-md px-2.5 py-1.5 text-left text-sm"
+    :aria-label="props.editable && isMissing ? ariaLabel : undefined"
+    data-matrix-cell
+    class="group/cell block w-full rounded-md px-2.5 py-1.5 text-left text-sm"
     :class="[
       props.editable
         ? 'hover:bg-elevated/70 cursor-text transition-colors'
         : '',
       issues.length ? 'ring-warning/50 bg-warning/5 ring-1 ring-inset' : '',
+      isMissing && !props.inherited && props.editable
+        ? 'border-warning/40 bg-warning/5 hover:bg-warning/10 border border-dashed'
+        : '',
     ]"
     @click="props.editable && emit('edit')"
   >
-    <span v-if="isMissing && props.inherited" class="space-y-0.5">
-      <span class="text-dimmed block italic">{{ props.inherited }}</span>
+    <span v-if="isMissing && props.inherited" class="block space-y-0.5">
+      <span class="text-dimmed line-clamp-3 italic">
+        {{ props.inherited }}
+      </span>
       <span
         class="text-dimmed flex items-center gap-1 font-mono text-[10px] uppercase"
       >
@@ -164,23 +403,68 @@ function commitAndNext() {
         {{ $t('dms_lang.matrix.inherited') }}
       </span>
     </span>
-    <span v-else-if="isMissing" class="text-dimmed italic">—</span>
-    <PlaceholderText v-else :text="props.value" class="text-default" />
     <span
-      v-if="issues.length"
-      class="text-warning mt-1 flex items-center gap-1 font-mono text-[10.5px]"
+      v-else-if="isMissing && (props.editable || props.isBase)"
+      class="flex items-center gap-2"
     >
-      <UIcon name="i-ph-warning" class="size-3" />
-      {{
-        $t('dms_lang.matrix.placeholder_missing', {
-          tokens: formatTokens(issues),
-        })
-      }}
+      <span
+        class="text-warning font-mono text-[10px] font-bold tracking-wider uppercase"
+      >
+        {{
+          props.isBase
+            ? $t('dms_lang.matrix.source_missing')
+            : $t('dms_lang.matrix.missing')
+        }}
+      </span>
+      <span
+        v-if="props.editable"
+        class="text-dimmed min-w-0 truncate text-xs italic"
+      >
+        {{ $t('dms_lang.matrix.translate') }}
+      </span>
+    </span>
+    <span v-else-if="isMissing" class="text-dimmed italic">—</span>
+    <span v-else-if="props.override" class="block space-y-0.5">
+      <PlaceholderText
+        :text="props.override"
+        class="text-default line-clamp-3"
+      />
+      <span
+        class="text-dimmed line-clamp-2 text-xs line-through"
+        :title="$t('dms_lang.matrix.module_text')"
+      >
+        {{ props.value }}
+      </span>
+    </span>
+    <span
+      v-else
+      class="line-clamp-3"
+      :title="props.value.length > LONG_TEXT ? props.value : undefined"
+    >
+      <PlaceholderText :text="props.value" class="text-default" />
+    </span>
+    <span
+      v-for="issue in issues"
+      :key="issue.kind"
+      class="mt-1 flex items-start gap-1 font-mono text-[10.5px]"
+      :class="issue.severity === 'error' ? 'text-error' : 'text-warning'"
+    >
+      <UIcon name="i-ph-warning" class="mt-px size-3 shrink-0" />
+      {{ messageIssueText(issue, t) }}
+    </span>
+    <span
+      v-if="props.isOutdated && !isMissing"
+      class="text-info mt-1 flex items-center gap-1 font-mono text-[10.5px]"
+      :title="$t('dms_lang.drawer.outdated')"
+    >
+      <UIcon name="i-ph-clock-counter-clockwise" class="size-3" />
+      {{ $t('dms_lang.matrix.outdated') }}
     </span>
     <span
       v-if="props.state === 'saving' || props.state === 'saved'"
       class="mt-1 flex items-center gap-1 text-[10.5px]"
       :class="props.state === 'saved' ? 'text-success' : 'text-dimmed'"
+      role="status"
     >
       <UIcon
         :name="props.state === 'saved' ? 'i-ph-check' : 'i-ph-circle-notch'"

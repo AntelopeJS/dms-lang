@@ -1,6 +1,31 @@
 import KeyAddModal from '../../build/components/KeyAddModal.vue'
 import KeyRenameModal from '../../build/components/KeyRenameModal.vue'
-import type { FlatTranslationRow } from '../../types/lang'
+import type { FlatTranslationRow, FlatTranslations } from '../../types/lang'
+
+const FLAT_ENDPOINT = '/api/lang/translations/flat'
+/** Statuses a server without `POST /key` answers: the key is then written with `PUT`. */
+const MISSING_ROUTE_STATUSES = new Set([404, 405])
+
+interface WriteFailure {
+  status?: number
+  statusCode?: number
+  data?: { code?: string }
+}
+
+/** The written values of a row, without the languages it lacks. */
+export function filledValues(row: FlatTranslationRow): Record<string, string> {
+  const values: Record<string, string> = {}
+  for (const [locale, value] of Object.entries(row.values)) {
+    if (!isLocaleValueMissing(value)) values[locale] = stringValue(value)
+  }
+  return values
+}
+
+function isMissingRoute(error: unknown): boolean {
+  const failure = error as WriteFailure
+  const status = failure?.status ?? failure?.statusCode ?? 0
+  return MISSING_ROUTE_STATUSES.has(status) && !failure?.data?.code
+}
 
 /** Add, rename and delete translation keys of the selected workspace. */
 export const useKeyActions = () => {
@@ -8,39 +33,75 @@ export const useKeyActions = () => {
   const toast = useToast()
   const overlay = useOverlay()
   const { confirm } = useConfirm()
+  const { $authFetch } = useAuthFetch()
   const {
     selectedWorkspace,
     deleteKey: removeKey,
     upsertKey,
+    createKey,
+    revertOverride,
   } = useI18nWorkspaces()
   const { flat, reload } = useWorkspaceFlat()
-  const { nativeName } = useLocaleNames()
+  const { isDefault } = useWorkspaceContext()
   const { tryMutate } = useMutationToast()
 
   const existingKeys = computed(() => flat.value.rows.map((row) => row.key))
+
+  /** Creates a key, with `PUT` on a server that has no `POST /key` yet. */
+  async function writeNewKey(
+    workspace: string,
+    path: string,
+    values: Record<string, string>,
+    before?: string,
+  ): Promise<void> {
+    try {
+      await createKey(workspace, path, values, before)
+    } catch (error) {
+      if (!isMissingRoute(error)) throw error
+      await upsertKey(workspace, path, values, flat.value.defaultLocale)
+    }
+  }
+
+  /** The keys the installed modules provide, which the project files can override. */
+  async function moduleRows(): Promise<FlatTranslationRow[]> {
+    if (!isDefault.value) return []
+    try {
+      const modules = await $authFetch<Partial<FlatTranslations>>(
+        FLAT_ENDPOINT,
+        { query: { workspace: MODULES_WORKSPACE } },
+      )
+      return modules?.rows ?? []
+    } catch {
+      return []
+    }
+  }
 
   async function addKey(): Promise<string[]> {
     const modal = overlay.create(KeyAddModal, {
       props: {
         workspace: selectedWorkspace.value,
         baseLocale: flat.value.defaultLocale,
-        baseName: nativeName(flat.value.defaultLocale),
+        locales: flat.value.locales,
         existingKeys: existingKeys.value,
+        moduleRows: await moduleRows(),
+        writeNewKey,
       },
+      destroyOnClose: true,
     })
-    const added = ((await modal.open()) as string[] | undefined) ?? []
-    if (added.length) await reload()
-    return added
+    return ((await modal.open()) as string[] | undefined) ?? []
   }
 
   async function renameKey(path: string): Promise<string | null> {
+    const modules = await moduleRows()
     const modal = overlay.create(KeyRenameModal, {
       props: {
         workspace: selectedWorkspace.value,
         path,
         languageCount: flat.value.locales.length,
         existingKeys: existingKeys.value,
+        moduleKeys: modules.map((row) => row.key),
       },
+      destroyOnClose: true,
     })
     const renamed = (await modal.open()) as string | null
     if (!renamed) return null
@@ -53,22 +114,13 @@ export const useKeyActions = () => {
     return renamed
   }
 
-  function filledValues(row: FlatTranslationRow): Record<string, string> {
-    const values: Record<string, string> = {}
-    for (const [locale, value] of Object.entries(row.values)) {
-      if (!isLocaleValueMissing(value)) values[locale] = stringValue(value)
-    }
-    return values
-  }
-
-  async function restoreKey(workspace: string, row: FlatTranslationRow) {
+  async function restoreKey(
+    workspace: string,
+    row: FlatTranslationRow,
+    before?: string,
+  ) {
     const ok = await tryMutate(() =>
-      upsertKey(
-        workspace,
-        row.key,
-        filledValues(row),
-        flat.value.defaultLocale,
-      ),
+      writeNewKey(workspace, row.key, filledValues(row), before),
     )
     if (!ok) return
     await reload()
@@ -79,9 +131,9 @@ export const useKeyActions = () => {
     })
   }
 
-  function announceDeleted(workspace: string, row: FlatTranslationRow): void {
+  function announce(title: string, undo: () => Promise<void>): void {
     toast.add({
-      title: t('dms_lang.key_delete.done', { path: row.key }),
+      title,
       color: 'neutral',
       icon: 'i-ph-trash',
       actions: [
@@ -89,7 +141,7 @@ export const useKeyActions = () => {
           label: t('dms_lang.actions.undo'),
           color: 'neutral',
           variant: 'outline',
-          onClick: () => restoreKey(workspace, row),
+          onClick: () => undo(),
         },
       ],
     })
@@ -99,13 +151,14 @@ export const useKeyActions = () => {
     const workspace = selectedWorkspace.value
     const row = flat.value.rows.find((entry) => entry.key === path)
     const filled = row ? Object.keys(filledValues(row)) : []
+    const before = nextSiblingPath(existingKeys.value, path)
     const deleted = await confirm({
       title: t('dms_lang.key_delete.title', { path }),
-      description: t('dms_lang.key_delete.description', {
-        count: filled.length,
-        locales: filled.join(', '),
-        workspace,
-      }),
+      description: t(
+        'dms_lang.key_delete.description',
+        { count: filled.length, locales: filled.join(', '), workspace },
+        filled.length,
+      ),
       color: 'error',
       confirmLabel: t('dms_lang.key_delete.submit'),
       onConfirm: async () => {
@@ -114,9 +167,58 @@ export const useKeyActions = () => {
     })
     if (!deleted) return false
     await reload()
-    if (row) announceDeleted(workspace, row)
+    if (row)
+      announce(t('dms_lang.key_delete.done', { path }), () =>
+        restoreKey(workspace, row, before),
+      )
     return true
   }
 
-  return { addKey, renameKey, deleteKey, existingKeys }
+  async function restoreOverride(workspace: string, row: FlatTranslationRow) {
+    const ok = await tryMutate(() =>
+      upsertKey(
+        workspace,
+        row.key,
+        filledValues(row),
+        flat.value.defaultLocale,
+      ),
+    )
+    if (ok) await reload()
+  }
+
+  /** Drops the project text of a module key: the module text shows again. */
+  async function revertToModule(path: string): Promise<boolean> {
+    const workspace = selectedWorkspace.value
+    const row = flat.value.rows.find((entry) => entry.key === path)
+    const filled = row ? Object.keys(filledValues(row)) : []
+    const reverted = await confirm({
+      title: t('dms_lang.key_revert.title', { path }),
+      description: t(
+        'dms_lang.key_revert.description',
+        { count: filled.length, locales: filled.join(', ') },
+        filled.length,
+      ),
+      color: 'warning',
+      confirmLabel: t('dms_lang.key_revert.submit'),
+      onConfirm: async () => {
+        await revertOverride(workspace, path)
+      },
+    })
+    if (!reverted) return false
+    await reload()
+    if (row)
+      announce(t('dms_lang.key_revert.done', { path }), () =>
+        restoreOverride(workspace, row),
+      )
+    return true
+  }
+
+  return {
+    addKey,
+    renameKey,
+    deleteKey,
+    revertToModule,
+    writeNewKey,
+    existingKeys,
+  }
 }

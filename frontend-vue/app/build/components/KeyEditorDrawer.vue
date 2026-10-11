@@ -1,11 +1,29 @@
+<script lang="ts">
+/** A field's stored text when its edit began: what the save expects to replace. */
+type EditStarts = Record<string, string | null>
+
+interface KeptDrafts {
+  drafts: Record<string, string>
+  starts: EditStarts
+}
+
+/** Text a closing panel could not save, given back when its key opens again. */
+const keptDrafts = new Map<string, KeptDrafts>()
+</script>
+
 <script setup lang="ts">
 import type { FlatTranslationRow } from '../../types/lang'
 import {
+  checkMessage,
+  escapeMessage,
   formatTokens,
+  hasBlockingIssue,
   isLocaleValueMissing,
-  missingPlaceholders,
+  messageIssueText,
   placeholdersOf,
+  replacePlaceholder,
   stringValue,
+  type MessageIssue,
 } from '../../utils/translations'
 import LocaleTile from './LocaleTile.vue'
 import PlaceholderText from './PlaceholderText.vue'
@@ -17,36 +35,96 @@ interface Props {
   manageKeys: boolean
   /** A key the workspace does not hold yet (a module key being overridden). */
   seed?: FlatTranslationRow
+  /** Language whose field gets the focus when a key opens. */
+  focusLocale?: string
+  /** Text typed elsewhere (a matrix cell) for the key that opens. */
+  initialDrafts?: Record<string, string>
+  open?: boolean
+}
+
+interface ReviewResult {
+  row?: FlatTranslationRow
+}
+
+/** The module texts of a key, kept when its last override goes and the row leaves the project files. */
+interface KnownInherited {
+  key: string
+  inherited: FlatTranslationRow['inherited']
 }
 
 type DrawerResult = 'saved' | 'renamed' | 'deleted' | 'closed'
+type FieldState = 'idle' | 'saving' | 'saved' | 'error' | 'blocked'
+type FieldStatus = 'missing' | 'inherited' | 'overridden' | 'outdated' | 'done'
 
 const KEY_SEPARATOR = '.'
+const DRAFT_ID_SEPARATOR = '\u0000'
+const WIDE_SCREEN_QUERY = '(min-width: 1024px)'
+const SAVED_FLASH_MS = 1800
+const CONFLICT_CODE = 'conflict'
+const REVIEWED_ENDPOINT = '/api/lang/translations/key/reviewed'
+const BASE_MISSING_LABEL = 'dms_lang.matrix.source_missing'
+const FIELD_STATUS_LABELS: Record<FieldStatus, string> = {
+  missing: 'dms_lang.matrix.missing',
+  inherited: 'dms_lang.drawer.inherited',
+  overridden: 'dms_lang.drawer.overridden',
+  outdated: 'dms_lang.drawer.outdated',
+  done: '',
+}
 
-const props = defineProps<Props>()
-const emit = defineEmits<{ close: [result: DrawerResult] }>()
+const props = withDefaults(defineProps<Props>(), {
+  seed: undefined,
+  focusLocale: undefined,
+  initialDrafts: undefined,
+  open: true,
+})
+const emit = defineEmits<{
+  close: [result: DrawerResult]
+  'update:open': [open: boolean]
+  navigate: [key: string]
+  override: [key: string]
+}>()
 
 const { t } = useI18n()
 const toast = useToast()
 const { selectedWorkspace, upsertKey } = useI18nWorkspaces()
-const { flat, update } = useWorkspaceFlat()
+const { flat, update, reload } = useWorkspaceFlat()
 const { nativeName } = useLocaleNames()
-const { tryMutate } = useMutationToast()
-const { renameKey, deleteKey } = useKeyActions()
+const { renameKey, deleteKey, revertToModule } = useKeyActions()
+const { errorMessage, serverErrorCode, reportFailure } = useMutationToast()
+const { confirm } = useConfirm()
+const { $authFetch } = useAuthFetch()
 
-const isOpen = ref(true)
-const index = ref(props.startIndex)
+const canOverride = Boolean(getCurrentInstance()?.vnode.props?.onOverride)
+const isOpen = ref(props.open)
+const currentKey = ref(props.keys[props.startIndex] ?? '')
 const drafts = ref<Record<string, string>>({})
-const isSaving = ref(false)
+const editStarts = ref<EditStarts>({})
+const knownInherited = ref<KnownInherited | null>(null)
+const fieldStates = ref<Record<string, FieldState>>({})
+const fieldErrors = ref<Record<string, string>>({})
+const isWide = ref(false)
+const body = useTemplateRef<HTMLElement>('body')
+let hasSaved = false
+let isClosing = false
+let queue: Promise<unknown> = Promise.resolve()
 
-const key = computed(() => props.keys[index.value] ?? '')
+const key = computed(() => currentKey.value)
+const position = computed(() => props.keys.indexOf(key.value))
+const storedRow = computed(() =>
+  flat.value.rows.find((entry) => entry.key === key.value),
+)
+const isStored = computed(() => storedRow.value !== undefined)
 const row = computed<FlatTranslationRow>(
   () =>
-    flat.value.rows.find((entry) => entry.key === key.value) ??
-    props.seed ?? { key: key.value, values: {} },
+    storedRow.value ??
+    (props.seed?.key === key.value ? props.seed : undefined) ?? {
+      key: key.value,
+      values: {},
+      inherited: knownInheritedOf(key.value),
+    },
 )
 const base = computed(() => flat.value.defaultLocale)
-const baseText = computed(() => stringValue(row.value.values[base.value]))
+const baseText = computed(() => draftOf(base.value))
 const locales = computed(() => [
   base.value,
   ...flat.value.locales.filter((code) => code !== base.value),
@@ -54,115 +132,496 @@ const locales = computed(() => [
 const crumbs = computed(() =>
   key.value.split(KEY_SEPARATOR).slice(0, -1).join(' › '),
 )
-const changed = computed(() =>
-  Object.entries(drafts.value).filter(
-    ([code, value]) => value !== stringValue(row.value.values[code]),
-  ),
-)
+const changedCodes = computed(() => locales.value.filter(isChanged))
 const missingCount = computed(
-  () =>
-    locales.value.filter((code) => isLocaleValueMissing(draftOf(code))).length,
+  () => locales.value.filter((code) => statusOf(code) === 'missing').length,
 )
 const issueCount = computed(
   () => locales.value.filter((code) => issuesOf(code).length > 0).length,
 )
-
-const isStored = computed(() =>
-  flat.value.rows.some((entry) => entry.key === key.value),
+const hasInherited = computed(() =>
+  Object.values(row.value.inherited ?? {}).some(
+    (value) => !isLocaleValueMissing(value),
+  ),
+)
+const pendingCount = computed(() => locales.value.filter(isWaiting).length)
+const isBusy = computed(() =>
+  Object.values(fieldStates.value).includes('saving'),
 )
 
-function placeholderOf(code: string): string | undefined {
+function ownOf(code: string): string {
+  return isStored.value ? stringValue(row.value.values[code]) : ''
+}
+
+function inheritedOf(code: string): string {
   const inherited = row.value.inherited?.[code]
   if (!isLocaleValueMissing(inherited)) return stringValue(inherited)
-  return code === base.value ? undefined : baseText.value
+  return isStored.value ? '' : stringValue(row.value.values[code])
+}
+
+/** What a field shows before any typing: the own text, else the module's. */
+function baselineOf(code: string): string {
+  return ownOf(code) || inheritedOf(code)
 }
 
 function draftOf(code: string): string {
-  return drafts.value[code] ?? stringValue(row.value.values[code])
+  return drafts.value[code] ?? baselineOf(code)
 }
 
-function issuesOf(code: string): string[] {
-  if (code === base.value) return []
-  return missingPlaceholders(baseText.value, draftOf(code))
+function isChanged(code: string): boolean {
+  const draft = drafts.value[code]
+  if (draft === undefined || draft === baselineOf(code)) return false
+  return Boolean(draft.trim()) || Boolean(ownOf(code))
+}
+
+function storedOf(code: string): string | null {
+  return ownOf(code) || null
+}
+
+/** The text a save of the field expects to replace: the one shown when its edit began. */
+function expectedOf(code: string): string | null {
+  return code in editStarts.value ? editStarts.value[code] : storedOf(code)
+}
+
+/** Someone else saved the field while it was being edited: the typed text waits for a choice. */
+function hasConflict(code: string): boolean {
+  return (
+    isChanged(code) &&
+    code in editStarts.value &&
+    editStarts.value[code] !== storedOf(code)
+  )
+}
+
+/** A field left unsaved: in conflict, refused by the server or not valid. */
+function isWaiting(code: string): boolean {
+  const state = fieldStates.value[code]
+  return hasConflict(code) || state === 'error' || state === 'blocked'
+}
+
+function startEdit(code: string) {
+  if (code in editStarts.value) return
+  editStarts.value = { ...editStarts.value, [code]: storedOf(code) }
+}
+
+function setEditStart(code: string, value: string | null | undefined) {
+  const { [code]: _previous, ...rest } = editStarts.value
+  editStarts.value = value === undefined ? rest : { ...rest, [code]: value }
+}
+
+function statusOf(code: string): FieldStatus {
+  if (!draftOf(code).trim()) return 'missing'
+  if (isChanged(code)) return 'done'
+  if (!ownOf(code) && inheritedOf(code)) return 'inherited'
+  if (ownOf(code) && row.value.inherited?.[code]) return 'overridden'
+  if (row.value.outdated?.includes(code)) return 'outdated'
+  return 'done'
+}
+
+function issuesOf(code: string): MessageIssue[] {
+  return checkMessage(code === base.value ? '' : baseText.value, draftOf(code))
+}
+
+function issueOfKind(code: string, kind: MessageIssue['kind']) {
+  return issuesOf(code).find((issue) => issue.kind === kind)
+}
+
+function setFieldState(code: string, state: FieldState, error = '') {
+  fieldStates.value = { ...fieldStates.value, [code]: state }
+  fieldErrors.value = { ...fieldErrors.value, [code]: error }
 }
 
 function setDraft(code: string, value: string) {
+  startEdit(code)
   drafts.value = { ...drafts.value, [code]: value }
+  if (fieldStates.value[code] === 'blocked') setFieldState(code, 'idle')
 }
 
-function insertToken(code: string, token: string) {
+function discardDraft(code: string) {
+  const { [code]: _dropped, ...rest } = drafts.value
+  drafts.value = rest
+  setEditStart(code, undefined)
+  setFieldState(code, 'idle')
+}
+
+/** Saves the typed text over what someone else saved meanwhile. */
+function overwrite(code: string) {
+  setEditStart(code, storedOf(code))
+  save([code])
+}
+
+function draftId(workspace: string, path: string): string {
+  return `${workspace}${DRAFT_ID_SEPARATOR}${path}`
+}
+
+function fieldInput(code: string): HTMLTextAreaElement | null {
+  return (
+    body.value?.querySelector<HTMLTextAreaElement>(
+      `[data-locale="${code}"] textarea`,
+    ) ?? null
+  )
+}
+
+async function focusField(code?: string, caret?: number) {
+  if (!code) return
+  await nextTick()
+  const input = fieldInput(code)
+  if (!input) return
+  input.scrollIntoView({ block: 'nearest' })
+  input.focus()
+  if (caret !== undefined) input.setSelectionRange(caret, caret)
+}
+
+/** Writes a token where the caret is (over the selection) and keeps the focus there. */
+function insertAtCaret(code: string, token: string) {
+  const input = fieldInput(code)
   const current = draftOf(code)
-  setDraft(
-    code,
-    `${current}${current.endsWith(' ') || !current ? '' : ' '}{${token}}`,
-  )
+  const start = input?.selectionStart ?? current.length
+  const end = input?.selectionEnd ?? current.length
+  setDraft(code, `${current.slice(0, start)}${token}${current.slice(end)}`)
+  focusField(code, start + token.length)
 }
 
-function go(step: number) {
-  const next = index.value + step
-  if (next < 0 || next >= props.keys.length) return
-  drafts.value = {}
-  index.value = next
+function rewrite(code: string, value: string) {
+  setDraft(code, value)
+  focusField(code)
 }
 
-async function save(goNext = false) {
-  if (!changed.value.length || isSaving.value) return goNext ? go(1) : undefined
-  isSaving.value = true
-  const values = Object.fromEntries(changed.value)
-  const count = changed.value.length
-  const workspace = selectedWorkspace.value
-  const ok = await tryMutate(
-    () => upsertKey(workspace, key.value, values, base.value),
-    { title: t('dms_lang.drawer.save_failed', { key: key.value }) },
-  )
-  isSaving.value = false
-  if (!ok) return
-  applySaved(values)
-  toast.add({
-    title: t('dms_lang.drawer.saved', { count, key: key.value }),
-    color: 'success',
-    icon: 'i-ph-check-circle',
-  })
-  drafts.value = {}
-  if (goNext) go(1)
-}
-
-function applySaved(values: Record<string, string>) {
+function applyRow(
+  path: string,
+  values: Record<string, string>,
+  saved?: FlatTranslationRow,
+) {
+  const seed = props.seed?.key === path ? props.seed : undefined
   update(selectedWorkspace.value, (next) => {
-    let target = next.rows.find((entry) => entry.key === key.value)
-    if (!target) {
-      target = { key: key.value, values: {} }
-      next.rows.push(target)
+    const index = next.rows.findIndex((entry) => entry.key === path)
+    const target = saved ?? {
+      ...(index >= 0
+        ? next.rows[index]
+        : { key: path, inherited: seed?.inherited ?? knownInheritedOf(path) }),
+      values: { ...(index >= 0 ? next.rows[index].values : {}) },
     }
-    for (const [code, value] of Object.entries(values)) {
-      target.values[code] = value === '' ? undefined : value
-    }
+    if (!saved)
+      for (const [code, value] of Object.entries(values))
+        target.values[code] = value.trim() ? value : undefined
+    if (index >= 0) next.rows[index] = target
+    else next.rows.push(target)
   })
 }
 
-function close(result: DrawerResult) {
+function knownInheritedOf(path: string) {
+  return knownInherited.value?.key === path
+    ? knownInherited.value.inherited
+    : undefined
+}
+
+function settle(codes: string[], values: Record<string, string>) {
+  const rest = { ...drafts.value }
+  for (const code of codes) {
+    const isDone = rest[code] === values[code]
+    if (isDone) delete rest[code]
+    setEditStart(code, isDone ? undefined : values[code].trim() || null)
+    setFieldState(code, 'saved')
+    setTimeout(() => {
+      if (fieldStates.value[code] === 'saved') setFieldState(code, 'idle')
+    }, SAVED_FLASH_MS)
+  }
+  drafts.value = rest
+}
+
+function collect(codes: string[]) {
+  const values: Record<string, string> = {}
+  const expected: Record<string, string | null> = {}
+  for (const code of codes.filter(isChanged)) {
+    if (hasConflict(code)) continue
+    if (hasBlockingIssue(issuesOf(code))) {
+      setFieldState(code, 'blocked')
+      continue
+    }
+    values[code] = draftOf(code)
+    expected[code] = expectedOf(code)
+  }
+  return { values, expected }
+}
+
+function isClearingBase(codes: string[]): boolean {
+  const code = base.value
+  return (
+    codes.includes(code) &&
+    isChanged(code) &&
+    !draftOf(code).trim() &&
+    !inheritedOf(code)
+  )
+}
+
+/** Emptying the base text asks first, as in the matrix; declined, the text comes back. */
+async function confirmBaseClear(codes: string[]) {
+  if (!isClearingBase(codes)) return
+  const isConfirmed = await confirm({
+    title: t('dms_lang.matrix.clear_base_title', { key: key.value }),
+    description: t('dms_lang.matrix.clear_base_description'),
+    color: 'warning',
+    confirmLabel: t('dms_lang.matrix.clear_base_confirm'),
+  })
+  if (!isConfirmed) discardDraft(base.value)
+}
+
+/** Saves the given fields of the shown key; false while one stays unsaved. */
+async function persist(codes: string[]): Promise<boolean> {
+  const path = key.value
+  const workspace = selectedWorkspace.value
+  await confirmBaseClear(codes)
+  if (key.value !== path) return false
+  const { values, expected } = collect(codes)
+  const sent = Object.keys(values)
+  const isBlocked = codes.some(
+    (code) => fieldStates.value[code] === 'blocked' || hasConflict(code),
+  )
+  if (!sent.length) return !isBlocked
+  sent.forEach((code) => setFieldState(code, 'saving'))
+  try {
+    const response = await upsertKey(
+      workspace,
+      path,
+      values,
+      base.value,
+      expected,
+    )
+    applyRow(path, values, response?.row)
+    if (key.value === path) settle(sent, values)
+    hasSaved = true
+    return !isBlocked
+  } catch (error) {
+    sent.forEach((code) => setFieldState(code, 'error', errorMessage(error)))
+    if (serverErrorCode(error) === CONFLICT_CODE) await reload()
+    return false
+  }
+}
+
+function save(codes: string[]): Promise<boolean> {
+  const run = queue.then(() => persist(codes))
+  queue = run.catch(() => undefined)
+  return run
+}
+
+function saveField(code: string) {
+  if (isChanged(code)) save([code])
+}
+
+async function flush(): Promise<boolean> {
+  await queue
+  return save(changedCodes.value)
+}
+
+/** Text typed elsewhere starts its edit now: its save expects the text shown at this point. */
+function takeDrafts(typed: Record<string, string> | undefined) {
+  for (const code of Object.keys(typed ?? {})) startEdit(code)
+  drafts.value = { ...drafts.value, ...typed }
+}
+
+function show(path: string) {
+  const workspace = selectedWorkspace.value
+  const kept = keptDrafts.get(draftId(workspace, path))
+  keptDrafts.delete(draftId(workspace, path))
+  currentKey.value = path
+  fieldStates.value = {}
+  fieldErrors.value = {}
+  drafts.value = { ...kept?.drafts }
+  editStarts.value = { ...kept?.starts }
+  if (path === props.keys[props.startIndex]) takeDrafts(props.initialDrafts)
+  focusField(props.focusLocale)
+}
+
+async function go(step: number) {
+  const next =
+    props.keys[(position.value < 0 ? props.startIndex : position.value) + step]
+  if (next === undefined) return
+  if (!(await flush())) return
+  show(next)
+  emit('navigate', next)
+}
+
+async function saveAndNext() {
+  if (!(await flush())) return
+  if (position.value < props.keys.length - 1) go(1)
+}
+
+function finish(result: DrawerResult) {
   isOpen.value = false
-  emit('close', result)
+  emit('update:open', false)
+  emit('close', result === 'closed' && hasSaved ? 'saved' : result)
+}
+
+async function requestClose(result: DrawerResult = 'closed') {
+  if (isClosing || !isOpen.value) return
+  isClosing = true
+  const isSaved = await flush()
+  isClosing = false
+  if (isSaved) finish(result)
+}
+
+/** Closed from outside (the matrix, the Back button): nothing typed is dropped. */
+async function closeFromOutside() {
+  const path = key.value
+  const workspace = selectedWorkspace.value
+  const isSaved = await flush()
+  isOpen.value = false
+  if (!isSaved) keepDrafts(workspace, path)
+  emit('close', hasSaved ? 'saved' : 'closed')
+}
+
+function keepDrafts(workspace: string, path: string) {
+  const codes = changedCodes.value
+  keptDrafts.set(draftId(workspace, path), {
+    drafts: Object.fromEntries(codes.map((code) => [code, draftOf(code)])),
+    starts: Object.fromEntries(codes.map((code) => [code, expectedOf(code)])),
+  })
+  toast.add({
+    title: t('dms_lang.drawer.unsaved_kept', { key: path }),
+    description: t('dms_lang.drawer.unsaved_kept_description'),
+    color: 'warning',
+    icon: 'i-ph-warning',
+  })
+}
+
+function onToggle(open: boolean) {
+  if (!open) requestClose()
+}
+
+function onDismissAttempt() {
+  if (!isWide.value) requestClose()
+}
+
+/** Escape typed in the page next to a side panel belongs to the page. */
+function onEscape() {
+  const panel = body.value?.closest('[role="dialog"]')
+  if (isWide.value && !panel?.contains(document.activeElement)) return
+  requestClose()
+}
+
+function onOpenAutoFocus(event: Event) {
+  if (!props.focusLocale) return
+  event.preventDefault()
+  focusField(props.focusLocale)
 }
 
 async function rename() {
-  if (await renameKey(key.value)) close('renamed')
+  if (!(await flush())) return
+  const renamed = await renameKey(key.value)
+  if (renamed) finish('renamed')
+}
+
+/** Acknowledges "To review" without changing the text. */
+async function markReviewed(code: string) {
+  const path = key.value
+  const workspace = selectedWorkspace.value
+  try {
+    const response = await $authFetch<ReviewResult>(REVIEWED_ENDPOINT, {
+      method: 'POST',
+      body: { workspace, path, locales: [code] },
+    })
+    applyRow(path, {}, response?.row)
+    toast.add({
+      title: t('dms_lang.drawer.reviewed', { code, key: path }),
+      color: 'success',
+      icon: 'i-ph-check',
+    })
+  } catch (error) {
+    reportFailure(error)
+  }
 }
 
 async function remove() {
-  if (await deleteKey(key.value)) close('deleted')
+  if (!(await flush())) return
+  const isDone = hasInherited.value
+    ? await revertToModule(key.value)
+    : await deleteKey(key.value)
+  if (isDone) finish('deleted')
 }
+
+/** Another key was asked while a field waits (a conflict, an invalid text): the panel stays and says why. */
+function stayOnKey() {
+  toast.add({
+    title: t('dms_lang.drawer.stays_title', { key: key.value }),
+    description: t('dms_lang.drawer.stays_description'),
+    color: 'warning',
+    icon: 'i-ph-warning',
+  })
+  const waiting = locales.value.find(isWaiting)
+  if (waiting) fieldInput(waiting)?.scrollIntoView({ block: 'nearest' })
+}
+
+// The page asks for another key: the panel always answers with the key it
+// shows (`navigate`), so the page drops what it handed over only once taken.
+watch(
+  () => [props.keys[props.startIndex], props.initialDrafts] as const,
+  async ([target], _previous, onCleanup) => {
+    if (target === undefined) return
+    if (target === key.value) {
+      takeDrafts(props.initialDrafts)
+      return focusField(props.focusLocale)
+    }
+    let isSuperseded = false
+    onCleanup(() => (isSuperseded = true))
+    const isSaved = await flush()
+    if (isSuperseded) return
+    if (isSaved) show(target)
+    else stayOnKey()
+    emit('navigate', key.value)
+  },
+)
+
+watch(
+  () => props.focusLocale,
+  (code) => focusField(code),
+)
+
+watch(
+  storedRow,
+  (stored) => {
+    if (stored?.inherited && Object.keys(stored.inherited).length)
+      knownInherited.value = { key: stored.key, inherited: stored.inherited }
+  },
+  { immediate: true },
+)
+
+watch(
+  () => props.open,
+  (open) => {
+    if (open && !isOpen.value) {
+      hasSaved = false
+      isOpen.value = true
+      show(props.keys[props.startIndex] ?? key.value)
+    } else if (!open && isOpen.value) closeFromOutside()
+  },
+)
+
+onMounted(() => {
+  const query = window.matchMedia(WIDE_SCREEN_QUERY)
+  const follow = () => (isWide.value = query.matches)
+  follow()
+  query.addEventListener('change', follow)
+  onBeforeUnmount(() => query.removeEventListener('change', follow))
+  show(key.value)
+})
 </script>
 
 <template>
   <USlideover
-    v-model:open="isOpen"
+    :open="isOpen"
     :title="key"
+    :modal="!isWide"
+    :overlay="!isWide"
+    :dismissible="false"
+    :content="{
+      onOpenAutoFocus,
+      onEscapeKeyDown: onEscape,
+    }"
     :ui="{ content: 'sm:max-w-xl', body: 'space-y-3' }"
-    @update:open="(open: boolean) => !open && close('closed')"
+    @update:open="onToggle"
+    @close:prevent="onDismissAttempt"
   >
     <template #title>
-      <span class="break-all font-mono">{{ key }}</span>
+      <span class="font-mono break-all">{{ key }}</span>
     </template>
     <template #description>
       <span class="block space-y-2">
@@ -178,15 +637,15 @@ async function remove() {
         />
         <span class="flex flex-wrap items-center gap-1.5">
           <DmsStatusPill
-            dot="none"
             v-if="missingCount"
+            dot="none"
             tone="warning"
             size="sm"
             :label="$t('dms_lang.drawer.missing', missingCount)"
           />
           <DmsStatusPill
-            dot="none"
             v-if="issueCount"
+            dot="none"
             tone="error"
             size="sm"
             icon="i-ph-warning"
@@ -209,7 +668,7 @@ async function remove() {
         color="neutral"
         variant="ghost"
         size="xs"
-        :disabled="index === 0"
+        :disabled="position <= 0"
         :aria-label="$t('dms_lang.drawer.previous')"
         @click="go(-1)"
       />
@@ -218,149 +677,357 @@ async function remove() {
         color="neutral"
         variant="ghost"
         size="xs"
-        :disabled="index >= props.keys.length - 1"
+        :disabled="position < 0 || position >= props.keys.length - 1"
         :aria-label="$t('dms_lang.drawer.next')"
         @click="go(1)"
       />
     </template>
 
     <template #body>
-      <div v-for="code in locales" :key="`${key}-${code}`" class="space-y-1.5">
-        <div class="flex items-center gap-2 text-sm">
-          <LocaleTile :code="code" size="sm" :is-base="code === base" />
-          <span class="text-highlighted font-medium">
-            {{ nativeName(code) }}
-          </span>
-          <span class="text-dimmed font-mono text-xs">{{ code }}</span>
-          <DmsStatusPill
-            dot="none"
-            v-if="code === base"
-            tone="neutral"
-            size="sm"
-            :label="$t('dms_lang.common.base')"
-          />
-          <span class="ml-auto text-xs">
-            <span
-              v-if="issuesOf(code).length"
-              class="text-error inline-flex items-center gap-1 font-mono"
-            >
-              <UIcon name="i-ph-warning" class="size-3.5" />
-              {{
-                $t('dms_lang.matrix.placeholder_missing', {
-                  tokens: formatTokens(issuesOf(code)),
-                })
-              }}
+      <div ref="body" class="space-y-4">
+        <div
+          v-for="code in locales"
+          :key="`${key}-${code}`"
+          :data-locale="code"
+          class="space-y-1.5"
+        >
+          <div class="flex items-center gap-2 text-sm">
+            <LocaleTile :code="code" size="sm" :is-base="code === base" />
+            <span class="text-highlighted font-medium">
+              {{ nativeName(code) }}
             </span>
-            <span
-              v-else-if="isLocaleValueMissing(draftOf(code))"
-              class="text-warning font-mono font-semibold uppercase"
-            >
-              {{ $t('dms_lang.matrix.missing') }}
-            </span>
-            <UIcon
-              v-else-if="code !== base"
-              name="i-ph-check"
-              class="text-success size-4"
+            <span class="text-dimmed font-mono text-xs">{{ code }}</span>
+            <DmsStatusPill
+              v-if="code === base"
+              dot="none"
+              tone="neutral"
+              size="sm"
+              :label="$t('dms_lang.common.base')"
             />
-          </span>
-        </div>
-        <UTextarea
-          v-if="props.editable"
-          :model-value="draftOf(code)"
-          autoresize
-          :rows="1"
-          :maxrows="10"
-          class="w-full"
-          :color="issuesOf(code).length ? 'error' : undefined"
-          :highlight="issuesOf(code).length > 0"
-          :placeholder="placeholderOf(code)"
-          @update:model-value="(value: string) => setDraft(code, value)"
-          @keydown.meta.enter.prevent="save(true)"
-          @keydown.ctrl.enter.prevent="save(true)"
-        />
-        <div
-          v-else
-          class="border-default bg-(--dms-bg-muted) rounded-md border px-3 py-2 text-sm"
-        >
-          <PlaceholderText v-if="draftOf(code)" :text="draftOf(code)" />
-          <span v-else class="text-dimmed">—</span>
-        </div>
-        <div
-          v-if="props.editable && issuesOf(code).length"
-          class="flex items-start justify-between gap-3 text-xs"
-        >
-          <span class="text-error">
-            {{
-              $t('dms_lang.drawer.issue_help', {
-                tokens: formatTokens(issuesOf(code)),
-              })
-            }}
-          </span>
-          <UButton
-            v-for="token in issuesOf(code)"
-            :key="token"
-            size="xs"
-            color="error"
-            variant="soft"
-            :label="
-              $t('dms_lang.drawer.insert', { token: formatTokens([token]) })
-            "
-            @click="insertToken(code, token)"
+            <span class="ml-auto inline-flex items-center gap-1.5 text-xs">
+              <span
+                v-if="hasConflict(code)"
+                class="text-error inline-flex items-center gap-1 font-medium"
+              >
+                <UIcon name="i-ph-warning" class="size-3.5" />
+                {{ $t('dms_lang.drawer.conflict') }}
+              </span>
+              <template v-else-if="fieldStates[code] === 'saving'">
+                <UIcon name="i-ph-circle-notch" class="size-3.5 animate-spin" />
+                <span class="text-dimmed">
+                  {{ $t('dms_lang.drawer.saving') }}
+                </span>
+              </template>
+              <span
+                v-else-if="fieldStates[code] === 'saved'"
+                class="text-success inline-flex items-center gap-1"
+              >
+                <UIcon name="i-ph-check" class="size-3.5" />
+                {{ $t('dms_lang.drawer.saved_state') }}
+              </span>
+              <template
+                v-else-if="
+                  fieldStates[code] === 'error' ||
+                  fieldStates[code] === 'blocked'
+                "
+              >
+                <span class="text-error font-medium">
+                  {{ $t('dms_lang.drawer.not_saved') }}
+                </span>
+                <UButton
+                  v-if="fieldStates[code] === 'error'"
+                  size="xs"
+                  color="neutral"
+                  variant="link"
+                  :label="$t('dms_lang.actions.retry')"
+                  @click="save([code])"
+                />
+                <UButton
+                  size="xs"
+                  color="neutral"
+                  variant="link"
+                  :label="$t('dms_lang.drawer.discard')"
+                  @click="discardDraft(code)"
+                />
+              </template>
+              <span
+                v-else-if="statusOf(code) === 'missing'"
+                class="text-warning font-mono font-semibold uppercase"
+              >
+                {{
+                  $t(
+                    code === base
+                      ? BASE_MISSING_LABEL
+                      : FIELD_STATUS_LABELS.missing,
+                  )
+                }}
+              </span>
+              <template v-else-if="statusOf(code) !== 'done'">
+                <span
+                  :class="
+                    statusOf(code) === 'outdated'
+                      ? 'text-warning font-medium'
+                      : 'text-dimmed'
+                  "
+                >
+                  {{ $t(FIELD_STATUS_LABELS[statusOf(code)]) }}
+                </span>
+                <UButton
+                  v-if="statusOf(code) === 'overridden' && props.editable"
+                  size="xs"
+                  color="neutral"
+                  variant="link"
+                  :label="$t('dms_lang.drawer.use_module')"
+                  @click="(setDraft(code, ''), save([code]))"
+                />
+                <UButton
+                  v-else-if="statusOf(code) === 'outdated' && props.editable"
+                  size="xs"
+                  color="neutral"
+                  variant="link"
+                  icon="i-ph-check"
+                  :label="$t('dms_lang.drawer.mark_reviewed')"
+                  @click="markReviewed(code)"
+                />
+              </template>
+              <UIcon
+                v-else-if="code !== base && !issuesOf(code).length"
+                name="i-ph-check"
+                class="text-success size-4"
+              />
+            </span>
+          </div>
+          <UTextarea
+            v-if="props.editable"
+            :model-value="draftOf(code)"
+            autoresize
+            :rows="1"
+            :maxrows="10"
+            class="w-full"
+            :color="issuesOf(code).length ? 'error' : undefined"
+            :highlight="issuesOf(code).length > 0"
+            @update:model-value="(value: string) => setDraft(code, value)"
+            @blur="saveField(code)"
+            @keydown.meta.enter.prevent="saveAndNext"
+            @keydown.ctrl.enter.prevent="saveAndNext"
           />
+          <div
+            v-else
+            class="border-default rounded-md border bg-(--dms-bg-muted) px-3 py-2 text-sm"
+          >
+            <PlaceholderText v-if="draftOf(code)" :text="draftOf(code)" />
+            <span v-else class="text-dimmed">—</span>
+            <p
+              v-if="row.overrides?.[code]"
+              class="text-dimmed border-default mt-2 border-t pt-2 text-xs"
+            >
+              {{ $t('dms_lang.drawer.project_value') }}
+              <PlaceholderText
+                :text="row.overrides[code]"
+                class="text-default"
+              />
+            </p>
+          </div>
+          <div
+            v-if="hasConflict(code)"
+            class="border-error/40 space-y-1.5 rounded-md border px-3 py-2 text-xs"
+          >
+            <p class="text-dimmed">
+              <template v-if="ownOf(code)">
+                {{ $t('dms_lang.drawer.conflict_value') }}
+                <PlaceholderText :text="ownOf(code)" class="text-default" />
+              </template>
+              <template v-else>
+                {{ $t('dms_lang.drawer.conflict_empty') }}
+              </template>
+            </p>
+            <p class="text-dimmed">{{ $t('dms_lang.drawer.conflict_help') }}</p>
+            <div class="flex flex-wrap gap-1.5">
+              <UButton
+                size="xs"
+                color="error"
+                variant="soft"
+                :label="$t('dms_lang.drawer.overwrite')"
+                @mousedown.prevent
+                @click="overwrite(code)"
+              />
+              <UButton
+                size="xs"
+                color="neutral"
+                variant="outline"
+                :label="$t('dms_lang.drawer.discard')"
+                @mousedown.prevent
+                @click="discardDraft(code)"
+              />
+            </div>
+          </div>
+          <p v-else-if="fieldErrors[code]" class="text-error text-xs">
+            {{ fieldErrors[code] }}
+          </p>
+          <div
+            v-if="props.editable && issuesOf(code).length"
+            class="space-y-1 text-xs"
+          >
+            <div
+              v-for="issue in issuesOf(code)"
+              :key="issue.kind"
+              class="flex flex-wrap items-center gap-x-3 gap-y-1"
+            >
+              <span
+                :class="
+                  issue.severity === 'error' ? 'text-error' : 'text-warning'
+                "
+              >
+                {{ messageIssueText(issue, t) }}
+                <template v-if="issue.kind === 'missing'">
+                  {{
+                    $t(
+                      'dms_lang.drawer.issue_help',
+                      { tokens: formatTokens(issue.tokens) },
+                      issue.count,
+                    )
+                  }}
+                </template>
+              </span>
+              <template v-if="issue.kind === 'missing'">
+                <UButton
+                  v-for="token in issue.tokens"
+                  :key="token"
+                  size="xs"
+                  color="error"
+                  variant="soft"
+                  :label="
+                    $t('dms_lang.drawer.insert', {
+                      token: formatTokens([token]),
+                    })
+                  "
+                  @mousedown.prevent
+                  @click="insertAtCaret(code, formatTokens([token]))"
+                />
+                <UButton
+                  v-if="
+                    issue.tokens.length === 1 &&
+                    issueOfKind(code, 'extra')?.tokens.length === 1
+                  "
+                  size="xs"
+                  color="error"
+                  variant="soft"
+                  :label="
+                    $t('dms_lang.message_issue.replace', {
+                      token: formatTokens(issue.tokens),
+                    })
+                  "
+                  @mousedown.prevent
+                  @click="
+                    rewrite(
+                      code,
+                      replacePlaceholder(
+                        draftOf(code),
+                        issueOfKind(code, 'extra')?.tokens[0] ?? '',
+                        issue.tokens[0],
+                      ),
+                    )
+                  "
+                />
+              </template>
+              <UButton
+                v-else-if="
+                  issue.severity === 'error' &&
+                  escapeMessage(draftOf(code)) !== draftOf(code)
+                "
+                size="xs"
+                color="error"
+                variant="soft"
+                icon="i-ph-magic-wand"
+                :label="$t('dms_lang.message_issue.escape')"
+                @mousedown.prevent
+                @click="rewrite(code, escapeMessage(draftOf(code)))"
+              />
+            </div>
+          </div>
+          <p
+            v-else-if="
+              props.editable &&
+              code !== base &&
+              baseText &&
+              statusOf(code) === 'missing'
+            "
+            class="text-dimmed text-xs"
+          >
+            {{ $t('dms_lang.drawer.reference') }}
+            <PlaceholderText :text="baseText" />
+          </p>
         </div>
-        <p
-          v-else-if="
-            props.editable &&
-            code !== base &&
-            baseText &&
-            isLocaleValueMissing(draftOf(code))
-          "
-          class="text-dimmed text-xs"
-        >
-          {{ $t('dms_lang.drawer.reference') }}
-          <PlaceholderText :text="baseText" />
-        </p>
       </div>
     </template>
 
     <template #footer>
-      <div class="flex w-full items-center gap-2">
-        <template v-if="props.manageKeys && isStored">
-          <UButton
-            icon="i-ph-pencil-simple"
-            color="neutral"
-            variant="ghost"
-            size="sm"
-            :label="$t('dms_lang.drawer.rename')"
-            @click="rename"
-          />
-          <UButton
-            icon="i-ph-trash"
-            color="error"
-            variant="ghost"
-            size="sm"
-            :label="$t('dms_lang.drawer.delete')"
-            @click="remove"
-          />
-        </template>
-        <div class="flex-1" />
-        <span
+      <div class="w-full space-y-2">
+        <div
           v-if="props.editable"
-          class="text-dimmed hidden items-center gap-1 text-xs sm:inline-flex"
+          class="text-dimmed flex items-center justify-between gap-2 text-xs"
         >
-          <UKbd size="sm">⌘</UKbd>
-          <UKbd size="sm">↵</UKbd>
-          {{ $t('dms_lang.drawer.save_next') }}
-        </span>
-        <UButton
-          v-if="props.editable"
-          icon="i-ph-check"
-          size="sm"
-          :loading="isSaving"
-          :disabled="!changed.length"
-          :label="$t('dms_lang.drawer.save')"
-          @click="save()"
-        />
+          <span aria-live="polite">
+            <template v-if="isBusy">
+              {{ $t('dms_lang.drawer.saving') }}
+            </template>
+            <span v-else-if="pendingCount" class="text-error">
+              {{ $t('dms_lang.drawer.unsaved_count', pendingCount) }}
+            </span>
+            <template v-else>{{ $t('dms_lang.drawer.autosave') }}</template>
+          </span>
+          <span class="hidden items-center gap-1 sm:inline-flex">
+            <UKbd size="sm" value="meta" />
+            <UKbd size="sm" value="enter" />
+            {{ $t('dms_lang.drawer.save_next') }}
+          </span>
+        </div>
+        <div class="flex w-full items-center gap-2">
+          <template v-if="props.manageKeys && isStored">
+            <UButton
+              v-if="!hasInherited"
+              icon="i-ph-pencil-simple"
+              color="neutral"
+              variant="ghost"
+              size="sm"
+              :label="$t('dms_lang.drawer.rename')"
+              @click="rename"
+            />
+            <UButton
+              :icon="
+                hasInherited ? 'i-ph-arrow-counter-clockwise' : 'i-ph-trash'
+              "
+              :color="hasInherited ? 'neutral' : 'error'"
+              variant="ghost"
+              size="sm"
+              :label="
+                hasInherited
+                  ? $t('dms_lang.drawer.revert_module')
+                  : $t('dms_lang.drawer.delete')
+              "
+              @click="remove"
+            />
+          </template>
+          <UButton
+            v-if="!props.editable && canOverride"
+            icon="i-ph-git-fork"
+            color="neutral"
+            variant="outline"
+            size="sm"
+            :label="$t('dms_lang.override.action')"
+            @click="emit('override', key)"
+          />
+          <div class="flex-1" />
+          <UButton
+            v-if="props.editable"
+            icon="i-ph-check"
+            size="sm"
+            :loading="isBusy"
+            :disabled="!changedCodes.length"
+            :label="$t('dms_lang.drawer.save')"
+            @click="flush()"
+          />
+        </div>
       </div>
     </template>
   </USlideover>

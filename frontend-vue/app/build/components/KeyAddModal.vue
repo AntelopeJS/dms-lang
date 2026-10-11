@@ -1,57 +1,173 @@
 <script setup lang="ts">
-import { namespaceOf } from '../../utils/translations'
+import type { FlatTranslationRow } from '../../types/lang'
+import {
+  checkMessage,
+  escapeMessage,
+  hasBlockingIssue,
+  isValidKeyPath,
+  keyPathConflict,
+  messageIssueText,
+  namespaceOf,
+  stringValue,
+  type KeyPathConflict,
+  type MessageIssue,
+} from '../../utils/translations'
 import FormFieldRow from './form/FormFieldRow.vue'
 import FormRows from './form/FormRows.vue'
 
 interface Props {
   workspace: string
   baseLocale: string
-  baseName: string
+  /** Every language of the workspace; the base is listed first whatever its place. */
+  locales?: string[]
   existingKeys: string[]
+  /** Project files only: the keys the installed modules provide. */
+  moduleRows?: FlatTranslationRow[]
+  writeNewKey?: (
+    workspace: string,
+    path: string,
+    values: Record<string, string>,
+  ) => Promise<void>
 }
 
-const KEY_PATH_RE = /^[\w-]+(\.[\w-]+)*$/
+/** Languages shown before the "more languages" toggle. */
+const VISIBLE_LOCALES = 3
+
+const CONFLICT_LABELS: Record<KeyPathConflict['kind'], string> = {
+  exists: 'dms_lang.key_add.path_taken',
+  namespace: 'dms_lang.key_add.path_namespace_conflict',
+  leafParent: 'dms_lang.key_add.path_parent_conflict',
+}
+
+const MODULE_CONFLICT_LABELS: Record<KeyPathConflict['kind'], string> = {
+  exists: 'dms_lang.key_add.module_override',
+  namespace: 'dms_lang.key_add.module_namespace',
+  leafParent: 'dms_lang.key_add.module_parent',
+}
 
 const props = defineProps<Props>()
 const emit = defineEmits<{ close: [added: string[]] }>()
 
 const { t } = useI18n()
+const { errorMessage } = useMutationToast()
 const toast = useToast()
-const { upsertKey } = useI18nWorkspaces()
-const { tryMutate } = useMutationToast()
+const { upsertKey, createKey } = useI18nWorkspaces()
+const { nativeName } = useLocaleNames()
+const { reload } = useWorkspaceFlat()
 
 const isOpen = ref(true)
 const path = ref('')
-const baseText = ref('')
+const values = ref<Record<string, string>>({})
 const addAnother = ref(false)
+const showAll = ref(false)
 const isSubmitting = ref(false)
+const submitError = ref('')
 const added = ref<string[]>([])
 const form = useTemplateRef<HTMLFormElement>('form')
 
 const trimmedPath = computed(() => path.value.trim())
-const isTaken = computed(
-  () =>
-    props.existingKeys.includes(trimmedPath.value) ||
-    added.value.includes(trimmedPath.value),
+const orderedLocales = computed(() => [
+  props.baseLocale,
+  ...(props.locales ?? []).filter((code) => code !== props.baseLocale),
+])
+const shownLocales = computed(() =>
+  showAll.value
+    ? orderedLocales.value
+    : orderedLocales.value.slice(0, VISIBLE_LOCALES),
 )
-const isValid = computed(
-  () => KEY_PATH_RE.test(trimmedPath.value) && !isTaken.value,
+const hiddenCount = computed(
+  () => orderedLocales.value.length - shownLocales.value.length,
 )
-
+const moduleRow = computed(() =>
+  props.moduleRows?.find((row) => row.key === trimmedPath.value),
+)
+const isOverride = computed(() => Boolean(moduleRow.value))
+const conflict = computed(() =>
+  keyPathConflict(trimmedPath.value, [...props.existingKeys, ...added.value]),
+)
+const moduleConflict = computed(() =>
+  isOverride.value
+    ? null
+    : keyPathConflict(
+        trimmedPath.value,
+        (props.moduleRows ?? []).map((row) => row.key),
+      ),
+)
+const pathError = computed(() => {
+  if (!trimmedPath.value) return ''
+  if (!isValidKeyPath(trimmedPath.value))
+    return t('dms_lang.key_add.path_invalid')
+  if (conflict.value) return conflictText(conflict.value, CONFLICT_LABELS)
+  if (moduleConflict.value)
+    return conflictText(moduleConflict.value, MODULE_CONFLICT_LABELS)
+  return submitError.value
+})
 const pathHelp = computed(() => {
   if (!trimmedPath.value) return t('dms_lang.key_add.path_help')
-  if (isTaken.value) return t('dms_lang.key_add.path_taken')
-  if (!KEY_PATH_RE.test(trimmedPath.value))
-    return t('dms_lang.key_add.path_invalid')
+  if (isOverride.value)
+    return t('dms_lang.key_add.module_override', { path: trimmedPath.value })
   const namespace = namespaceOf(trimmedPath.value)
   const siblings = props.existingKeys.filter(
     (key) => namespaceOf(key) === namespace,
   ).length
-  return t('dms_lang.key_add.path_namespace', { namespace, count: siblings })
+  return t(
+    'dms_lang.key_add.path_namespace',
+    { namespace, count: siblings },
+    siblings,
+  )
 })
-const hasPathError = computed(
-  () => Boolean(trimmedPath.value) && !isValid.value,
+const written = computed(() =>
+  Object.fromEntries(
+    orderedLocales.value
+      .map((code) => [code, valueOf(code).trim() ? valueOf(code) : ''])
+      .filter(([code, value]) => value && value !== moduleTextOf(code)),
+  ),
 )
+const hasBlockedValue = computed(() =>
+  orderedLocales.value.some((code) => hasBlockingIssue(issuesOf(code))),
+)
+const isValid = computed(
+  () =>
+    Boolean(trimmedPath.value) &&
+    !pathError.value &&
+    Object.keys(written.value).length > 0 &&
+    !hasBlockedValue.value,
+)
+
+watch(trimmedPath, () => (submitError.value = ''))
+
+function conflictText(
+  found: KeyPathConflict,
+  labels: Record<KeyPathConflict['kind'], string>,
+): string {
+  return t(
+    labels[found.kind],
+    {
+      path: trimmedPath.value,
+      parent: found.keys[0],
+      example: found.keys[0],
+      count: found.keys.length,
+    },
+    found.keys.length,
+  )
+}
+
+function moduleTextOf(code: string): string {
+  return stringValue(moduleRow.value?.values[code])
+}
+
+function valueOf(code: string): string {
+  return values.value[code] ?? moduleTextOf(code)
+}
+
+function setValue(code: string, value: string) {
+  values.value = { ...values.value, [code]: value }
+}
+
+function issuesOf(code: string): MessageIssue[] {
+  const base = code === props.baseLocale ? '' : valueOf(props.baseLocale)
+  return checkMessage(base, valueOf(code))
+}
 
 function close() {
   isOpen.value = false
@@ -60,21 +176,32 @@ function close() {
 
 function resetForNext() {
   path.value = ''
-  baseText.value = ''
+  values.value = {}
   nextTick(() => form.value?.querySelector('input')?.focus())
+}
+
+function write(key: string): Promise<unknown> {
+  if (isOverride.value)
+    return upsertKey(props.workspace, key, written.value, props.baseLocale)
+  if (props.writeNewKey)
+    return props.writeNewKey(props.workspace, key, written.value)
+  return createKey(props.workspace, key, written.value)
 }
 
 async function submit() {
   if (!isValid.value || isSubmitting.value) return
   isSubmitting.value = true
   const key = trimmedPath.value
-  const values = { [props.baseLocale]: baseText.value }
-  const ok = await tryMutate(() =>
-    upsertKey(props.workspace, key, values, props.baseLocale),
-  )
-  isSubmitting.value = false
-  if (!ok) return
+  try {
+    await write(key)
+  } catch (error) {
+    submitError.value = errorMessage(error)
+    return
+  } finally {
+    isSubmitting.value = false
+  }
   added.value = [...added.value, key]
+  void reload()
   toast.add({
     title: t('dms_lang.key_add.added', { key }),
     color: 'success',
@@ -100,8 +227,8 @@ async function submit() {
         <FormRows has-required>
           <FormFieldRow
             :label="$t('dms_lang.key_add.path')"
-            :help="hasPathError ? undefined : pathHelp"
-            :error="hasPathError ? pathHelp : null"
+            :help="pathError ? undefined : pathHelp"
+            :error="pathError || null"
             required
           >
             <template #default="{ id }">
@@ -115,9 +242,22 @@ async function submit() {
               />
             </template>
           </FormFieldRow>
-          <FormFieldRow :label="props.baseName">
+          <FormFieldRow
+            v-for="code in shownLocales"
+            :key="code"
+            :label="nativeName(code)"
+            :error="
+              issuesOf(code).length
+                ? issuesOf(code)
+                    .map((issue) => messageIssueText(issue, t))
+                    .join(' · ')
+                : null
+            "
+          >
             <template #label-extra>
+              <span class="text-dimmed font-mono text-xs">{{ code }}</span>
               <DmsStatusPill
+                v-if="code === props.baseLocale"
                 dot="none"
                 tone="neutral"
                 size="sm"
@@ -127,16 +267,41 @@ async function submit() {
             <template #default="{ id }">
               <DmsTextarea
                 :id="id"
-                v-model="baseText"
-                :rows="2"
+                :model-value="valueOf(code)"
+                :rows="code === props.baseLocale ? 2 : 1"
                 autoresize
                 class="w-full"
+                @update:model-value="(value: string) => setValue(code, value)"
                 @keydown.meta.enter.prevent="submit"
                 @keydown.ctrl.enter.prevent="submit"
+              />
+              <UButton
+                v-if="hasBlockingIssue(issuesOf(code))"
+                class="mt-1"
+                size="xs"
+                color="error"
+                variant="soft"
+                icon="i-ph-magic-wand"
+                :label="$t('dms_lang.message_issue.escape')"
+                @click="setValue(code, escapeMessage(valueOf(code)))"
               />
             </template>
           </FormFieldRow>
         </FormRows>
+        <UButton
+          v-if="orderedLocales.length > VISIBLE_LOCALES"
+          class="mt-2"
+          color="neutral"
+          variant="link"
+          size="sm"
+          :icon="showAll ? 'i-ph-caret-up' : 'i-ph-caret-down'"
+          :label="
+            showAll
+              ? $t('dms_lang.key_add.fewer_languages')
+              : $t('dms_lang.key_add.more_languages', hiddenCount)
+          "
+          @click="showAll = !showAll"
+        />
       </form>
     </template>
     <template #footer>
@@ -153,10 +318,14 @@ async function submit() {
           @click="close()"
         />
         <UButton
-          icon="i-ph-plus"
+          :icon="isOverride ? 'i-ph-git-fork' : 'i-ph-plus'"
           :loading="isSubmitting"
           :disabled="!isValid"
-          :label="$t('dms_lang.key_add.submit')"
+          :label="
+            isOverride
+              ? $t('dms_lang.key_add.submit_override')
+              : $t('dms_lang.key_add.submit')
+          "
           @click="submit"
         />
       </div>

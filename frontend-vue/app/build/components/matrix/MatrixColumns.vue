@@ -9,11 +9,12 @@ import {
 interface Props {
   languages: LanguageCoverage[]
   canManage: boolean
+  /** The workspace settings page, where languages are added and removed. */
+  settingsLink: string
 }
 
 interface Emits {
   add: []
-  remove: [code: string]
 }
 
 type MoveDirection = -1 | 1
@@ -38,15 +39,24 @@ const rows = computed(() => {
   ]
 })
 
+const codes = computed(() => props.languages.map((entry) => entry.code))
+
 function toggle(code: string) {
-  order.value = order.value.includes(code)
-    ? order.value.filter((entry) => entry !== code)
-    : [...order.value, code]
+  if (order.value.includes(code)) {
+    order.value = order.value.filter((entry) => entry !== code)
+    return
+  }
+  const isBase = props.languages.some(
+    (entry) => entry.code === code && entry.isBase,
+  )
+  order.value = isBase ? [code, ...order.value] : [...order.value, code]
 }
 
+/** Dropped on a row, a column takes that row's place: after it when moving down. */
 function moveTo(code: string, target: string) {
+  const isMovingDown = order.value.indexOf(code) < order.value.indexOf(target)
   const next = order.value.filter((entry) => entry !== code)
-  next.splice(next.indexOf(target), 0, code)
+  next.splice(next.indexOf(target) + (isMovingDown ? 1 : 0), 0, code)
   order.value = next
 }
 
@@ -90,7 +100,7 @@ function onDrop(target: string) {
         <DmsEyebrow
           :label="$t('dms_lang.matrix.columns_hint')"
           size="xs"
-          class="px-2 pb-2 pt-1.5"
+          class="px-2 pt-1.5 pb-2"
         />
         <ul class="space-y-0.5">
           <li
@@ -119,7 +129,12 @@ function onDrop(target: string) {
               :aria-label="row.name"
               @update:model-value="toggle(row.code)"
             />
-            <LocaleTile :code="row.code" size="sm" :is-base="row.isBase" />
+            <LocaleTile
+              :code="row.code"
+              size="sm"
+              :is-base="row.isBase"
+              :siblings="codes"
+            />
             <span class="min-w-0 flex-1 truncate text-sm">{{ row.name }}</span>
             <span
               class="font-mono text-[10.5px]"
@@ -131,30 +146,30 @@ function onDrop(target: string) {
             >
               {{ row.isBase ? $t('dms_lang.common.base') : `${row.coverage}%` }}
             </span>
-            <UButton
-              v-if="props.canManage && !row.isBase"
-              icon="i-ph-trash"
-              color="error"
-              variant="ghost"
-              size="xs"
-              :aria-label="
-                $t('dms_lang.languages.remove_named', { name: row.name })
-              "
-              @click="emit('remove', row.code)"
-            />
           </li>
         </ul>
         <template v-if="props.canManage">
           <USeparator class="my-1.5" />
-          <UButton
-            icon="i-ph-plus"
-            color="neutral"
-            variant="ghost"
-            size="sm"
-            block
-            :label="$t('dms_lang.languages.add')"
-            @click="emit('add')"
-          />
+          <div class="flex gap-1">
+            <UButton
+              icon="i-ph-plus"
+              color="neutral"
+              variant="ghost"
+              size="sm"
+              class="flex-1 justify-center"
+              :label="$t('dms_lang.languages.add')"
+              @click="emit('add')"
+            />
+            <UButton
+              icon="i-ph-gear-six"
+              color="neutral"
+              variant="ghost"
+              size="sm"
+              class="flex-1 justify-center"
+              :to="props.settingsLink"
+              :label="$t('dms_lang.matrix.manage_languages')"
+            />
+          </div>
         </template>
       </div>
     </template>

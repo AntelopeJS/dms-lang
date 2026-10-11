@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import {
+  isValidKeyPath,
+  keyPathConflict,
+  type KeyPathConflict,
+} from '../../utils/translations'
 import FormFieldRow from './form/FormFieldRow.vue'
 import FormRows from './form/FormRows.vue'
 
@@ -7,31 +12,74 @@ interface Props {
   path: string
   languageCount: number
   existingKeys: string[]
+  /** Project files only: the keys the installed modules provide. */
+  moduleKeys?: string[]
 }
 
-const KEY_PATH_RE = /^[\w-]+(\.[\w-]+)*$/
+const CONFLICT_LABELS: Record<KeyPathConflict['kind'], string> = {
+  exists: 'dms_lang.key_add.path_taken',
+  namespace: 'dms_lang.key_add.path_namespace_conflict',
+  leafParent: 'dms_lang.key_add.path_parent_conflict',
+}
+
+const MODULE_CONFLICT_LABELS: Record<KeyPathConflict['kind'], string> = {
+  exists: 'dms_lang.key_rename.module_key',
+  namespace: 'dms_lang.key_add.module_namespace',
+  leafParent: 'dms_lang.key_add.module_parent',
+}
 
 const props = defineProps<Props>()
 const emit = defineEmits<{ close: [newPath: string | null] }>()
 
 const { t } = useI18n()
+const { errorMessage } = useMutationToast()
 const { renameKey } = useI18nWorkspaces()
-const { tryMutate } = useMutationToast()
 
 const isOpen = ref(true)
 const newPath = ref(props.path)
 const isSubmitting = ref(false)
+const submitError = ref('')
 
 const trimmed = computed(() => newPath.value.trim())
+const otherKeys = computed(() =>
+  props.existingKeys.filter((key) => key !== props.path),
+)
+
+function conflictText(
+  found: KeyPathConflict | null,
+  labels: Record<KeyPathConflict['kind'], string>,
+): string {
+  if (!found) return ''
+  return t(
+    labels[found.kind],
+    {
+      path: trimmed.value,
+      parent: found.keys[0],
+      example: found.keys[0],
+      count: found.keys.length,
+    },
+    found.keys.length,
+  )
+}
+
 const error = computed(() => {
   if (trimmed.value === props.path) return ''
-  if (!KEY_PATH_RE.test(trimmed.value))
-    return t('dms_lang.key_add.path_invalid')
-  if (props.existingKeys.includes(trimmed.value))
-    return t('dms_lang.key_add.path_taken')
-  return ''
+  if (!isValidKeyPath(trimmed.value)) return t('dms_lang.key_add.path_invalid')
+  return (
+    conflictText(
+      keyPathConflict(trimmed.value, otherKeys.value),
+      CONFLICT_LABELS,
+    ) ||
+    conflictText(
+      keyPathConflict(trimmed.value, props.moduleKeys ?? []),
+      MODULE_CONFLICT_LABELS,
+    ) ||
+    submitError.value
+  )
 })
 const isValid = computed(() => trimmed.value !== props.path && !error.value)
+
+watch(trimmed, () => (submitError.value = ''))
 
 function close(value: string | null) {
   isOpen.value = false
@@ -42,11 +90,14 @@ async function submit() {
   if (!isValid.value || isSubmitting.value) return
   isSubmitting.value = true
   const target = trimmed.value
-  const ok = await tryMutate(() =>
-    renameKey(props.workspace, props.path, target),
-  )
-  isSubmitting.value = false
-  if (ok) close(target)
+  try {
+    await renameKey(props.workspace, props.path, target)
+    close(target)
+  } catch (failure) {
+    submitError.value = errorMessage(failure)
+  } finally {
+    isSubmitting.value = false
+  }
 }
 </script>
 

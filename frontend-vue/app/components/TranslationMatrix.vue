@@ -1,31 +1,52 @@
 <script setup lang="ts">
 import UButton from '@nuxt/ui/components/Button.vue'
+import UDropdownMenu from '@nuxt/ui/components/DropdownMenu.vue'
 import { useDmsRouter } from '#dms/frontend-module'
 import type { FlatTranslationRow, LanguageCoverage } from '../types/lang'
 import {
+  checkMessage,
   coverageTone,
-  isRowValueMissing,
+  escapeMessage,
   languageCoverage,
+  messageIssueText,
   stringValue,
 } from '../utils/translations'
-import KeyEditorDrawer from '../build/components/KeyEditorDrawer.vue'
 import LocaleTile from '../build/components/LocaleTile.vue'
+import PlaceholderText from '../build/components/PlaceholderText.vue'
 import MatrixCell, {
-  type CellState,
+  type CellMove,
 } from '../build/components/matrix/MatrixCell.vue'
 import MatrixColumns from '../build/components/matrix/MatrixColumns.vue'
+import MatrixGroupHeader from '../build/components/matrix/MatrixGroupHeader.vue'
+import MatrixKeyCell from '../build/components/matrix/MatrixKeyCell.vue'
+import MatrixToolbar from '../build/components/matrix/MatrixToolbar.vue'
 import {
-  groupRows,
-  parseFilter,
-  useMatrixFilters,
-  type MatrixFilterState,
-} from '../build/composables/useMatrixFilters'
+  exportFileName,
+  translationsCsv,
+} from '../build/components/matrix/matrixExport'
+import { useCellSaves } from '../build/components/matrix/useCellSaves'
+import { useKeyPanel } from '../build/components/matrix/useKeyPanel'
+import { useMatrixRows } from '../build/components/matrix/useMatrixRows'
+import { useMatrixView } from '../build/components/matrix/useMatrixView'
+import { useMatrixFilters } from '../build/composables/useMatrixFilters'
 
-const ROW_PAGE = 150
-const SAVED_FLASH_MS = 1800
-const CELL_SEPARATOR = '\u0000'
-const ANY_LANGUAGE = '*'
-const ALL_NAMESPACES = '*'
+interface CellRef {
+  key: string
+  code: string
+}
+
+type JumpStep = 1 | -1
+
+const COMPACT_WIDTH = 768
+/** A dialog, a drawer or the key panel is open: N belongs to it. */
+const OPEN_OVERLAY = '[role="dialog"][data-state="open"], [role="alertdialog"]'
+const SCROLL_MARGIN = '400px'
+const ARROW_STEPS: Record<string, [number, number]> = {
+  ArrowUp: [-1, 0],
+  ArrowDown: [1, 0],
+  ArrowLeft: [0, -1],
+  ArrowRight: [0, 1],
+}
 const BAR_CLASSES: Record<'success' | 'warning' | 'error', string> = {
   success: 'bg-success',
   warning: 'bg-warning',
@@ -33,303 +54,602 @@ const BAR_CLASSES: Record<'success' | 'warning' | 'error', string> = {
 }
 
 const { t } = useI18n()
-const toast = useToast()
-const overlay = useOverlay()
 const { formatCount } = useLangFormat()
+const { selectedWorkspace, editable: serverEditable } = useI18nWorkspaces()
+const { flat, isLoaded, isLoading, hasError, reload } = useWorkspaceFlat()
 const {
-  selectedWorkspace,
-  upsertKey,
-  editable: serverEditable,
-} = useI18nWorkspaces()
-const { flat, isLoaded, isLoading, hasError, reload, update, load } =
-  useWorkspaceFlat()
-const { current, isDefault, isModules, canEditValues, canManage } =
-  useWorkspaceContext()
-const { nativeName } = useLocaleNames()
+  current,
+  isUnknown,
+  isResolved,
+  isDefault,
+  isModules,
+  canEditValues,
+  canManage,
+  canManageKeys,
+} = useWorkspaceContext()
+const { nameAmong, fullName } = useLocaleNames()
 const { addKey } = useKeyActions()
-const { addLanguage, removeLanguage } = useLanguageActions()
+const { addLanguage } = useLanguageActions()
 const { downloadFile } = useWorkspaceActions()
-const { reportFailure } = useMutationToast()
-const { route, pageAction, clearPageAction, switchLink } = useWorkspaceRoute()
+const { route, pageAction, clearPageAction, selectWorkspace } =
+  useWorkspaceRoute()
 const router = useDmsRouter()
+const toast = useToast()
+const links = useLangLinks()
+const { confirm } = useConfirm()
+const { filters, order, saveOrder, sanitize, resetFilters } = useMatrixView()
 
-const filters = ref<MatrixFilterState>({
-  filter: parseFilter(route.query.filter),
-  missingIn: route.query.missingIn ?? '',
-  namespace: route.query.namespace ?? '',
-  search: route.query.q ?? '',
-})
-const order = ref<string[]>([])
-const collapsed = ref<Set<string>>(new Set())
-const rowLimit = ref(ROW_PAGE)
-const editingCell = ref<string | null>(null)
-const cellStates = ref<Record<string, CellState>>({})
-const failedDrafts = ref<Record<string, string>>({})
+const pinned = ref<Set<string>>(new Set())
+const editingCell = ref<CellRef | null>(null)
+const cursor = ref<CellRef | null>(null)
+const drafts = ref<Record<string, string>>({})
+// The cell being edited, as it was opened: its workspace may be left (the
+// page remounts) while it is open.
+let editingWorkspace = ''
+let isEditingBase = false
+const width = ref(Number.POSITIVE_INFINITY)
+const root = useTemplateRef<{ $el?: HTMLElement }>('root')
+const scroller = useTemplateRef<HTMLElement>('scroller')
+const sentinel = useTemplateRef<HTMLElement>('sentinel')
 
-const { rows, counts, namespaces, isRowMissing } = useMatrixFilters(
-  flat,
-  filters,
-)
+const saves = useCellSaves((key) => pin(key))
+const isCompact = computed(() => width.value < COMPACT_WIDTH)
 
-const canManageKeys = computed(() => canEditValues.value)
 const languages = computed<LanguageCoverage[]>(() =>
-  languageCoverage(flat.value, nativeName),
+  languageCoverage(flat.value, (code) => nameAmong(code, flat.value.locales)),
 )
 const languageByCode = computed(
   () => new Map(languages.value.map((entry) => [entry.code, entry])),
 )
+const targetLanguages = computed(() =>
+  languages.value
+    .filter((entry) => !entry.isBase)
+    .map((entry) => ({ code: entry.code, name: fullName(entry.code) })),
+)
+/** The language being translated: the chosen one, or the first shown on a phone. */
+const todoLanguage = computed(() => {
+  const chosen = filters.value.missingIn
+  if (chosen && flat.value.locales.includes(chosen)) return chosen
+  if (!isCompact.value) return ''
+  const base = flat.value.defaultLocale
+  return order.value.find((code) => code !== base) ?? ''
+})
+const columnCodes = computed(() => {
+  if (!todoLanguage.value) return order.value
+  const base = flat.value.defaultLocale
+  return [base, todoLanguage.value].filter((code) =>
+    flat.value.locales.includes(code),
+  )
+})
 const columns = computed(() =>
-  order.value
+  columnCodes.value
     .map((code) => languageByCode.value.get(code))
     .filter((entry): entry is LanguageCoverage => Boolean(entry)),
 )
-const visibleRows = computed(() => rows.value.slice(0, rowLimit.value))
-const groups = computed(() => groupRows(visibleRows.value, isRowMissing))
-const missingTotal = computed(() => counts.value.missing)
+const columnSiblings = computed(() => columns.value.map((entry) => entry.code))
+const compactColumn = computed(() => columns.value.at(-1))
+/**
+ * The table's width when the columns sit at their set widths (key column
+ * included). Firefox sizes a full-width `min-w-max` table to millions of pixels.
+ */
+const tableMinWidth = computed(
+  () => `${16 + columns.value.length * (todoLanguage.value ? 28 : 15)}rem`,
+)
 
-const filterItems = computed(() => [
-  {
-    label: t('dms_lang.matrix.filter_all', {
-      count: formatCount(counts.value.all),
-    }),
-    value: 'all',
+const { rows, groups, counts, targets, namespaces, isRowDone } =
+  useMatrixFilters(flat, filters, columnCodes, pinned)
+/** A row with a text not saved (a conflict, an error) is not done. */
+function isRowFinished(row: FlatTranslationRow): boolean {
+  return isRowDone(row) && !saves.hasRowFailure(row.key)
+}
+const doneCount = computed(() => rows.value.filter(isRowFinished).length)
+const rowCount = computed(() => rows.value.length)
+const view = useMatrixRows(groups, rowCount)
+const rowIndex = computed(
+  () => new Map(view.renderedRows.value.map((row, index) => [row.key, index])),
+)
+
+const rowsByKey = computed(
+  () => new Map(flat.value.rows.map((row) => [row.key, row])),
+)
+
+const panel = useKeyPanel({
+  keys: () => rows.value.map((row) => row.key),
+  editable: () => canEditValues.value,
+  manageKeys: () => canManageKeys.value,
+  isKnown: (key) => rowsByKey.value.has(key),
+  onUnknown: (key) => void dropUnknownKey(key),
+  onOverride: (key) => {
+    const row = rowsByKey.value.get(key)
+    if (row) void overrideKey(row)
   },
-  {
-    label: t('dms_lang.matrix.filter_missing', {
-      count: formatCount(counts.value.missing),
-    }),
-    value: 'missing',
-  },
-  {
-    label: t('dms_lang.matrix.filter_complete', {
-      count: formatCount(counts.value.complete),
-    }),
-    value: 'complete',
-  },
-  {
-    label: t('dms_lang.matrix.filter_issues', {
-      count: formatCount(counts.value.issues),
-    }),
-    value: 'issues',
-  },
-])
-const missingInItems = computed(() => [
-  { label: t('dms_lang.matrix.any_language'), value: ANY_LANGUAGE },
-  ...languages.value
-    .filter((entry) => !entry.isBase)
-    .map((entry) => ({ label: entry.name, value: entry.code })),
-])
-const namespaceItems = computed(() => [
-  {
-    label: t('dms_lang.matrix.all_namespaces', {
-      count: namespaces.value.length,
-    }),
-    value: ALL_NAMESPACES,
-  },
-  ...namespaces.value.map((namespace) => ({
-    label: namespace,
-    value: namespace,
-  })),
-])
-const missingInModel = computed({
-  get: () => filters.value.missingIn || ANY_LANGUAGE,
-  set: (value: string) =>
-    (filters.value.missingIn = value === ANY_LANGUAGE ? '' : value),
-})
-const namespaceModel = computed({
-  get: () => filters.value.namespace || ALL_NAMESPACES,
-  set: (value: string) =>
-    (filters.value.namespace = value === ALL_NAMESPACES ? '' : value),
 })
 
-function initialOrder(codes: string[]): string[] {
-  const base = flat.value.defaultLocale
-  const sorted = [...codes].sort((a, b) =>
-    a === base ? -1 : b === base ? 1 : 0,
-  )
-  const focus = route.query.locale
-  if (focus && codes.includes(focus) && focus !== base) {
-    return codes.includes(base) ? [base, focus] : [focus]
+const countedLabel = computed(() =>
+  targets.value.length === 1
+    ? (languageByCode.value.get(targets.value[0])?.name ?? targets.value[0])
+    : t(
+        'dms_lang.matrix.languages_counted',
+        { count: targets.value.length },
+        targets.value.length,
+      ),
+)
+
+const hasOpenDraft = computed(() => {
+  const cell = editingCell.value
+  if (!cell) return false
+  const draft = drafts.value[saves.idOf(cell.key, cell.code)]
+  return draft !== undefined && draft !== shownValue(cell.key, cell.code)
+})
+
+useUnsavedChanges({ dirty: () => saves.hasUnsaved.value || hasOpenDraft.value })
+
+function pin(key: string) {
+  if (pinned.value.has(key)) return
+  pinned.value = new Set([...pinned.value, key])
+}
+
+function rowValue(row: FlatTranslationRow | undefined, code: string): string {
+  return row
+    ? saves.shownValue(row.key, code, stringValue(row.values[code]))
+    : ''
+}
+
+function shownValue(key: string, code: string): string {
+  return rowValue(rowsByKey.value.get(key), code)
+}
+
+function isEditingCell(key: string, code: string): boolean {
+  return editingCell.value?.key === key && editingCell.value.code === code
+}
+
+function setDraft(key: string, code: string, value: string | undefined) {
+  const id = saves.idOf(key, code)
+  const { [id]: _previous, ...rest } = drafts.value
+  drafts.value = value === undefined ? rest : { ...rest, [id]: value }
+}
+
+function startEdit(key: string, code: string) {
+  if (!canEditValues.value || isEditingCell(key, code)) return
+  commitEditing()
+  const id = saves.idOf(key, code)
+  if (drafts.value[id] === undefined)
+    setDraft(
+      key,
+      code,
+      saves.failureOf(key, code)?.draft ?? shownValue(key, code),
+    )
+  saves.begin(key, code)
+  editingWorkspace = selectedWorkspace.value
+  isEditingBase = code === flat.value.defaultLocale
+  editingCell.value = { key, code }
+  cursor.value = { key, code }
+  pin(key)
+}
+
+function cancelEdit() {
+  const cell = editingCell.value
+  if (cell) {
+    setDraft(cell.key, cell.code, undefined)
+    saves.end(cell.key, cell.code)
   }
-  return sorted
+  editingCell.value = null
 }
 
-function bringForward(code: string) {
-  const base = flat.value.defaultLocale
-  if (!code || code === base || !flat.value.locales.includes(code)) return
-  const rest = order.value.filter((entry) => entry !== code && entry !== base)
-  const head = order.value.includes(base) ? [base] : []
-  order.value = [...head, code, ...rest]
+function commitEditing() {
+  const cell = editingCell.value
+  if (cell) void commitCell(cell.key, cell.code, 'stay')
 }
 
-watch(
-  () => filters.value.missingIn,
-  (code) => bringForward(code),
-)
-
-watch(
-  () => flat.value.locales.join(','),
-  () => {
-    const codes = flat.value.locales
-    const kept = order.value.filter((code) => codes.includes(code))
-    const added = codes.filter((code) => !order.value.includes(code))
-    order.value = kept.length ? [...kept, ...added] : initialOrder(codes)
-    if (!kept.length) bringForward(filters.value.missingIn)
-  },
-  { immediate: true },
-)
-
-watch(
-  () => [
-    filters.value.filter,
-    filters.value.missingIn,
-    filters.value.namespace,
-    filters.value.search,
-    selectedWorkspace.value,
-  ],
-  () => {
-    rowLimit.value = ROW_PAGE
-    editingCell.value = null
-  },
-)
-
-function cellId(key: string, code: string): string {
-  return `${key}${CELL_SEPARATOR}${code}`
+function isClearingBase(key: string, code: string, draft: string): boolean {
+  return (
+    code === flat.value.defaultLocale &&
+    draft.trim() === '' &&
+    shownValue(key, code) !== ''
+  )
 }
 
-function toggleGroup(namespace: string) {
-  const next = new Set(collapsed.value)
-  if (next.has(namespace)) next.delete(namespace)
-  else next.add(namespace)
-  collapsed.value = next
-}
-
-function setCellState(id: string, state: CellState) {
-  cellStates.value = { ...cellStates.value, [id]: state }
-}
-
-function flashSaved(id: string) {
-  setCellState(id, 'saved')
-  setTimeout(() => {
-    if (cellStates.value[id] === 'saved') setCellState(id, 'idle')
-  }, SAVED_FLASH_MS)
-}
-
-function applyValue(key: string, code: string, value: string) {
-  update(selectedWorkspace.value, (next) => {
-    const target = next.rows.find((entry) => entry.key === key)
-    if (target) target.values[code] = value === '' ? undefined : value
+function confirmClearBase(key: string): Promise<boolean> {
+  return confirm({
+    title: t('dms_lang.matrix.clear_base_title', { key }),
+    description: t('dms_lang.matrix.clear_base_description'),
+    color: 'warning',
+    confirmLabel: t('dms_lang.matrix.clear_base_confirm'),
   })
 }
 
-async function saveCell(row: FlatTranslationRow, code: string, value: string) {
-  const id = cellId(row.key, code)
-  const workspace = selectedWorkspace.value
-  editingCell.value = null
-  setCellState(id, 'saving')
-  try {
-    await upsertKey(
-      workspace,
-      row.key,
-      { [code]: value },
-      flat.value.defaultLocale,
-    )
-    const { [id]: _done, ...rest } = failedDrafts.value
-    failedDrafts.value = rest
-    applyValue(row.key, code, value)
-    flashSaved(id)
-  } catch (error) {
-    failedDrafts.value = { ...failedDrafts.value, [id]: value }
-    setCellState(id, 'error')
-    reportFailure(error, {
-      title: t('dms_lang.matrix.save_failed', { key: row.key, code }),
-      retry: () => saveCell(row, code, value),
-    })
-  }
-}
-
-function nextCell(row: FlatTranslationRow, code: string) {
-  const editable = columns.value.filter(
-    (column) => !column.isBase || isDefault.value,
-  )
-  const index = editable.findIndex((column) => column.code === code)
-  const next = editable[index + 1]
-  if (next) editingCell.value = cellId(row.key, next.code)
-}
-
-function editNextMissing() {
-  const targets = columns.value.filter((column) => !column.isBase)
-  for (const row of visibleRows.value) {
-    const column = targets.find((entry) => isRowValueMissing(row, entry.code))
-    if (column) {
-      editingCell.value = cellId(row.key, column.code)
+async function commitCell(key: string, code: string, move: CellMove) {
+  if (isEditingCell(key, code) && editingWorkspace !== selectedWorkspace.value)
+    return leaveEditing()
+  const draft = drafts.value[saves.idOf(key, code)]
+  setDraft(key, code, undefined)
+  if (isEditingCell(key, code)) editingCell.value = null
+  const hasChanged = draft !== undefined && draft !== shownValue(key, code)
+  if (hasChanged && isClearingBase(key, code, draft)) {
+    if (!(await confirmClearBase(key))) {
+      setDraft(key, code, draft)
+      editingCell.value = { key, code }
       return
     }
   }
+  if (hasChanged && keepInvalid(key, code, draft))
+    return moveFrom(key, code, move)
+  if (hasChanged) void saves.save(key, code, draft)
+  else saves.end(key, code)
+  moveFrom(key, code, move)
 }
 
-async function openKey(key: string, seed?: FlatTranslationRow) {
-  const keys = rows.value.map((row) => row.key)
-  const index = keys.indexOf(key)
-  const drawer = overlay.create(KeyEditorDrawer, {
-    props: {
-      keys: index < 0 ? [key] : keys,
-      startIndex: Math.max(index, 0),
-      editable: canEditValues.value,
-      manageKeys: canManageKeys.value,
-      seed,
-    },
-  })
-  await drawer.open()
+/** What makes a text impossible to compile (vue-i18n syntax), as sentences; '' when it compiles. */
+function blockingText(draft: string): string {
+  return checkMessage('', draft)
+    .filter((issue) => issue.severity === 'error')
+    .map((issue) => messageIssueText(issue, t))
+    .join(' ')
 }
 
-async function overrideKey(row: FlatTranslationRow) {
-  await router.replace(switchLink('default'))
-  await load()
+/**
+ * A text that would not compile is not sent, as in the panel: the cell keeps
+ * it "Not saved" with the reason, to fix, escape or discard.
+ */
+function keepInvalid(
+  key: string,
+  code: string,
+  draft: string,
+  workspace = selectedWorkspace.value,
+): boolean {
+  const reason = blockingText(draft)
+  if (reason) saves.keep(key, code, draft, reason, workspace)
+  return reason !== ''
+}
+
+/**
+ * The workspace is left with a cell open: its text is saved in the workspace
+ * it was typed in (a cleared base text waits there for a confirmation),
+ * never lost nor written to the new one.
+ */
+function leaveEditing() {
+  const cell = editingCell.value
+  const workspace = editingWorkspace
+  if (!cell) return
+  editingCell.value = null
+  const id = saves.idOf(cell.key, cell.code, workspace)
+  const { [id]: draft, ...rest } = drafts.value
+  drafts.value = rest
+  const origin = saves.originOf(cell.key, cell.code, workspace)
+  if (draft === undefined || storedText(draft) === (origin ?? null)) {
+    saves.end(cell.key, cell.code, workspace)
+    return
+  }
+  if (keepInvalid(cell.key, cell.code, draft, workspace)) return
+  if (isEditingBase && storedText(draft) === null && origin) {
+    saves.keep(
+      cell.key,
+      cell.code,
+      draft,
+      t('dms_lang.matrix.clear_base_kept'),
+      workspace,
+    )
+    return
+  }
+  void saves.save(cell.key, cell.code, draft, workspace)
+}
+
+function storedText(value: string): string | null {
+  return value.trim() === '' ? null : value
+}
+
+async function retryCell(key: string, code: string) {
+  const failure = saves.failureOf(key, code)
+  if (!failure) return
+  // A text that does not compile goes back to the editor to be fixed.
+  if (blockingText(failure.draft)) return startEdit(key, code)
+  if (
+    isClearingBase(key, code, failure.draft) &&
+    !(await confirmClearBase(key))
+  )
+    return
+  void saves.save(key, code, failure.draft)
+}
+
+/** Writes the bare `@` and lone braces of a text kept unsaved as literals, then saves it. */
+function escapeFailure(key: string, code: string) {
+  const failure = saves.failureOf(key, code)
+  if (!failure) return
+  const escaped = escapeMessage(failure.draft)
+  if (!keepInvalid(key, code, escaped)) void saves.save(key, code, escaped)
+}
+
+/** A link named a key the workspace does not hold (renamed, deleted). */
+async function dropUnknownKey(key: string) {
   toast.add({
-    title: t('dms_lang.override.switched'),
-    description: t('dms_lang.override.switched_description', { key: row.key }),
-    color: 'info',
-    icon: 'i-ph-git-fork',
+    title: t('dms_lang.matrix.key_not_found', { key }),
+    description: t('dms_lang.matrix.key_not_found_description'),
+    color: 'warning',
+    icon: 'i-ph-magnifying-glass',
   })
-  await openKey(row.key, { key: row.key, values: {}, inherited: row.values })
+  if (route.query.key !== key) return
+  await router.replace(
+    linkWithQuery(route.path, { ...route.query, key: undefined }),
+  )
 }
 
-function csvCell(value: unknown): string {
-  return `"${stringValue(value).replaceAll('"', '""')}"`
+/** The columns Tab and Enter walk through: the base only when one edits it. */
+function navigableCodes(code: string): string[] {
+  const base = flat.value.defaultLocale
+  const codes = columnCodes.value
+  if (code === base || codes.length === 1) return codes
+  return codes.filter((entry) => entry !== base)
 }
 
-function exportCsv() {
-  const locales = flat.value.locales
-  const lines = [
-    ['key', ...locales].map(csvCell).join(','),
-    ...flat.value.rows.map((row) =>
-      [row.key, ...locales.map((code) => row.values[code])]
-        .map(csvCell)
-        .join(','),
+function neighbourRow(key: string, step: JumpStep): string | undefined {
+  const shown = view.renderedRows.value
+  const index = shown.findIndex((row) => row.key === key)
+  if (step > 0 && index === shown.length - 1 && view.hasMore.value)
+    view.showMore()
+  return view.renderedRows.value[index + step]?.key
+}
+
+function sideCell(key: string, code: string, step: JumpStep): CellRef | null {
+  const codes = navigableCodes(code)
+  const next = codes[codes.indexOf(code) + step]
+  if (next) return { key, code: next }
+  const row = neighbourRow(key, step)
+  if (!row) return null
+  return { key: row, code: step > 0 ? codes[0] : codes[codes.length - 1] }
+}
+
+const MOVES: Record<CellMove, (key: string, code: string) => CellRef | null> = {
+  stay: () => null,
+  down: (key, code) => {
+    const row = neighbourRow(key, 1)
+    return row ? { key: row, code } : null
+  },
+  next: (key, code) => sideCell(key, code, 1),
+  previous: (key, code) => sideCell(key, code, -1),
+}
+
+function moveFrom(key: string, code: string, move: CellMove) {
+  const target = MOVES[move](key, code)
+  if (target) nextTick(() => startEdit(target.key, target.code))
+}
+
+/** Every empty cell of the counted languages, in the order they show. */
+function missingCells(): CellRef[] {
+  const codes = columnCodes.value.filter((code) => targets.value.includes(code))
+  return groups.value.flatMap((group) =>
+    group.rows.flatMap((row) =>
+      codes
+        .filter(
+          (code) =>
+            isRowValueMissing(row, code) && !saves.isPending(row.key, code),
+        )
+        .map((code) => ({ key: row.key, code })),
     ),
-  ]
-  downloadFile(`${selectedWorkspace.value}.csv`, lines.join('\n'), 'text/csv')
+  )
+}
+
+function cellIndex(cell: CellRef, keys: string[], codes: string[]): number {
+  return keys.indexOf(cell.key) * codes.length + codes.indexOf(cell.code)
+}
+
+function pickMissing(cells: CellRef[], step: JumpStep): CellRef | undefined {
+  const from = cursor.value
+  if (!from) return step > 0 ? cells[0] : cells.at(-1)
+  const keys = groups.value.flatMap((group) => group.rows.map((row) => row.key))
+  const codes = columnCodes.value
+  const origin = cellIndex(from, keys, codes)
+  const ordered = step > 0 ? cells : [...cells].reverse()
+  const found = ordered.find(
+    (cell) => step * (cellIndex(cell, keys, codes) - origin) > 0,
+  )
+  return found ?? ordered[0]
+}
+
+/** N / Shift+N: the next or previous empty cell, its namespace opened and scrolled to. */
+function jumpToMissing(step: JumpStep) {
+  const target = pickMissing(missingCells(), step)
+  if (!target) return
+  view.reveal(target.key)
+  startEdit(target.key, target.code)
+  nextTick(() =>
+    root.value?.$el
+      ?.querySelector('[data-editing]')
+      ?.scrollIntoView({ block: 'center', inline: 'nearest' }),
+  )
+}
+
+function isTyping(target: EventTarget | null): boolean {
+  return (
+    target instanceof HTMLElement &&
+    target.closest('input, textarea, select, [contenteditable]') !== null
+  )
 }
 
 function onKeydown(event: KeyboardEvent) {
-  const target = event.target as HTMLElement
-  if (target.closest('input, textarea, [contenteditable]')) return
-  if (event.key === 'n' && canEditValues.value) {
-    event.preventDefault()
-    editNextMissing()
+  if (!canEditValues.value || event.key.toLowerCase() !== 'n') return
+  if (event.ctrlKey || event.metaKey || event.altKey) return
+  if (isTyping(event.target) || document.querySelector(OPEN_OVERLAY)) return
+  event.preventDefault()
+  jumpToMissing(event.shiftKey ? -1 : 1)
+}
+
+/** Arrow keys move between cells, as in a spreadsheet. */
+function onGridKeydown(event: KeyboardEvent) {
+  const step = ARROW_STEPS[event.key]
+  const cell = (event.target as HTMLElement).closest<HTMLElement>(
+    'td[data-row]',
+  )
+  if (!step || !cell || isTyping(event.target)) return
+  const row = Number(cell.dataset.row) + step[0]
+  const column = Number(cell.dataset.col) + step[1]
+  const target = root.value?.$el?.querySelector<HTMLElement>(
+    `td[data-row="${row}"][data-col="${column}"] button`,
+  )
+  if (!target) return
+  event.preventDefault()
+  target.focus()
+}
+
+/**
+ * The panel, opened on a key with whatever the matrix had not saved for it.
+ * The texts leave their cells only once the panel took the key: an open panel
+ * with a field waiting for a choice stays on its own key and says why.
+ */
+async function openKey(key: string, focusLocale?: string) {
+  const initialDrafts: Record<string, string> = {}
+  for (const code of flat.value.locales) {
+    const failure = saves.failureOf(key, code)
+    if (failure) initialDrafts[code] = failure.draft
+  }
+  const handed = Object.keys(initialDrafts)
+  const isShown = await panel.open({
+    key,
+    focusLocale,
+    initialDrafts: handed.length ? initialDrafts : undefined,
+  })
+  if (!isShown) return
+  for (const code of handed)
+    if (saves.failureOf(key, code)?.draft === initialDrafts[code])
+      saves.discard(key, code)
+}
+
+/** From a cell being edited: the panel takes over the text typed so far, once it shows the key. */
+async function openFromCell(key: string, code: string) {
+  const draft = drafts.value[saves.idOf(key, code)]
+  const typed = draft !== undefined && draft !== shownValue(key, code)
+  const failure = saves.failureOf(key, code)
+  const text = typed ? draft : failure?.draft
+  const initialDrafts = text === undefined ? undefined : { [code]: text }
+  const isShown = await panel.open({ key, focusLocale: code, initialDrafts })
+  if (!isEditingCell(key, code)) return
+  if (!isShown) return reopenEditor(key, code)
+  setDraft(key, code, undefined)
+  saves.end(key, code)
+  // The panel now holds the text: an older failure of this cell would only resend a stale value.
+  if (failure) saves.discard(key, code)
+  editingCell.value = null
+}
+
+/** The panel kept its key: the editor opens again on the text, saved as usual when left. */
+async function reopenEditor(key: string, code: string) {
+  editingCell.value = null
+  await nextTick()
+  if (!editingCell.value) editingCell.value = { key, code }
+}
+
+async function overrideKey(row: FlatTranslationRow) {
+  panel.seedOverride(row)
+  await selectWorkspace(DEFAULT_WORKSPACE, { query: { key: row.key } })
+}
+
+function cellProps(row: FlatTranslationRow, column: LanguageCoverage) {
+  const { key } = row
+  const { code } = column
+  return {
+    value: rowValue(row, code),
+    baseValue: rowValue(row, flat.value.defaultLocale),
+    inherited:
+      isDefault.value && row.inherited
+        ? stringValue(row.inherited[code]) || undefined
+        : undefined,
+    override: isModules.value ? row.overrides?.[code] : undefined,
+    isBase: column.isBase,
+    editable: canEditValues.value,
+    isEditing: isEditingCell(key, code),
+    state: saves.stateOf(key, code),
+    failure: saves.failureOf(key, code),
+    rowKey: key,
+    languageName: column.name,
+    isOutdated: row.outdated?.includes(code) ?? false,
+    draft: drafts.value[saves.idOf(key, code)] ?? '',
+    changedElsewhere: isEditingCell(key, code)
+      ? saves.changedElsewhere(key, code)
+      : undefined,
   }
 }
 
+function cellEvents(row: FlatTranslationRow, column: LanguageCoverage) {
+  const { key } = row
+  const { code } = column
+  return {
+    edit: () => startEdit(key, code),
+    commit: (move: CellMove) => commitCell(key, code, move),
+    cancel: cancelEdit,
+    retry: () => retryCell(key, code),
+    discard: () => saves.discard(key, code),
+    escape: () => escapeFailure(key, code),
+    openPanel: () => openFromCell(key, code),
+    review: () => void saves.markReviewed(key, code),
+    'update:draft': (value: string) => setDraft(key, code, value),
+  }
+}
+
+function hideDone() {
+  pinned.value = new Set()
+}
+
+function exportCsv(isView: boolean) {
+  const base = flat.value.defaultLocale
+  // Everything follows the chosen column order too, hidden languages last.
+  const ordered = isView
+    ? columnCodes.value
+    : [...new Set([...order.value, ...flat.value.locales])].filter((code) =>
+        flat.value.locales.includes(code),
+      )
+  const locales = [base, ...ordered.filter((code) => code !== base)]
+  const content = translationsCsv(
+    isView ? rows.value : flat.value.rows,
+    locales,
+  )
+  downloadFile(
+    exportFileName(selectedWorkspace.value, isView ? locales : undefined),
+    content,
+    'text/csv;charset=utf-8',
+  )
+}
+
+function keysLabel(count: number): string {
+  return t('dms_lang.matrix.group_keys', { count: formatCount(count) }, count)
+}
+
+function languagesLabel(count: number): string {
+  return t('dms_lang.matrix.languages_counted', { count }, count)
+}
+
 usePageHeaderActions(() => [
-  h(UButton, {
-    label: t('dms_lang.matrix.export'),
-    icon: 'i-ph-download-simple',
-    color: 'neutral',
-    variant: 'outline',
-    disabled: !isLoaded.value,
-    onClick: exportCsv,
-  }),
+  h(
+    UDropdownMenu,
+    {
+      items: [
+        {
+          label: t('dms_lang.matrix.export_view', {
+            keys: keysLabel(rows.value.length),
+            languages: languagesLabel(columnCodes.value.length),
+          }),
+          icon: 'i-ph-funnel',
+          onSelect: () => exportCsv(true),
+        },
+        {
+          label: t('dms_lang.matrix.export_all', {
+            keys: keysLabel(flat.value.rows.length),
+            languages: languagesLabel(flat.value.locales.length),
+          }),
+          icon: 'i-ph-table',
+          onSelect: () => exportCsv(false),
+        },
+      ],
+      content: { align: 'end' },
+    },
+    () =>
+      h(UButton, {
+        label: t('dms_lang.matrix.export'),
+        icon: 'i-ph-download-simple',
+        trailingIcon: 'i-ph-caret-down',
+        color: 'neutral',
+        variant: 'outline',
+        disabled: !isLoaded.value,
+      }),
+  ),
   canManageKeys.value
     ? h(UButton, {
         label: t('dms_lang.key_add.title'),
@@ -340,59 +660,97 @@ usePageHeaderActions(() => [
 ])
 
 watch(
-  [pageAction, isLoaded],
-  async ([action, loaded]) => {
-    if (action !== PAGE_ACTIONS.addKey || !loaded) return
+  () => [filters.value, selectedWorkspace.value],
+  () => {
+    commitEditing()
+    pinned.value = new Set()
+    view.reset()
+  },
+  { deep: true },
+)
+
+watch([namespaces, () => flat.value.locales.join(',')], () =>
+  sanitize(namespaces.value),
+)
+
+// The rights come with the workspace list: the dialog waits for it, and for
+// the translations, before the action is taken off the URL.
+watch(
+  [pageAction, isResolved, isUnknown],
+  async ([action, resolved, unknown]) => {
+    if (action !== PAGE_ACTIONS.addKey || (!resolved && !unknown)) return
     await clearPageAction()
-    if (canManageKeys.value) await addKey()
+    if (resolved && canManageKeys.value) await addKey()
   },
   { immediate: true },
 )
 
-onMounted(() => window.addEventListener('keydown', onKeydown))
-onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
+let resizeObserver: ResizeObserver | undefined
+let scrollObserver: IntersectionObserver | undefined
+
+function observeEnd(element: HTMLElement | null) {
+  scrollObserver?.disconnect()
+  if (!element) return
+  scrollObserver = new IntersectionObserver(
+    (entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) view.showMore()
+    },
+    {
+      root: isCompact.value ? null : scroller.value,
+      rootMargin: SCROLL_MARGIN,
+    },
+  )
+  scrollObserver.observe(element)
+}
+
+// A new observer reports at once: rows keep coming while the end stays in view.
+watch([sentinel, isCompact, () => view.renderedRows.value.length], () =>
+  nextTick(() => observeEnd(sentinel.value)),
+)
+
+onMounted(() => {
+  window.addEventListener('keydown', onKeydown)
+  const element = root.value?.$el
+  if (!element) return
+  resizeObserver = new ResizeObserver(([entry]) => {
+    width.value = entry.contentRect.width
+  })
+  resizeObserver.observe(element)
+})
+
+const matrixPath = route.path
+
+onBeforeUnmount(() => {
+  // Another workspace remounts the page with a cell still open: its text is
+  // saved. Leaving the page asked first (useUnsavedChanges).
+  if (route.path === matrixPath) leaveEditing()
+  window.removeEventListener('keydown', onKeydown)
+  resizeObserver?.disconnect()
+  scrollObserver?.disconnect()
+})
 </script>
 
 <template>
-  <DmsCard :padded="false" class="overflow-hidden">
-    <div class="border-default flex flex-wrap items-center gap-2 border-b p-3">
-      <DmsSegmented
-        v-model="filters.filter"
-        :items="filterItems"
-        size="sm"
-        :aria-label="$t('dms_lang.matrix.filter_label')"
-      />
-      <USelect
-        v-model="missingInModel"
-        :items="missingInItems"
-        size="sm"
-        class="w-48"
-        icon="i-ph-warning"
-        :aria-label="$t('dms_lang.matrix.missing_in')"
-      />
-      <USelect
-        v-model="namespaceModel"
-        :items="namespaceItems"
-        size="sm"
-        class="w-44"
-        icon="i-ph-folder-simple"
-        :aria-label="$t('dms_lang.matrix.namespace')"
-      />
-      <UInput
-        v-model="filters.search"
-        icon="i-ph-magnifying-glass"
-        size="sm"
-        class="min-w-48 flex-1"
-        :placeholder="$t('dms_lang.matrix.search')"
-      />
+  <DmsCard v-if="!isUnknown" ref="root" :padded="false" class="overflow-hidden">
+    <MatrixToolbar
+      v-model:filters="filters"
+      :counts="counts"
+      :languages="targetLanguages"
+      :namespaces="namespaces"
+      :counted-languages="targets.length"
+      :shown-language="todoLanguage"
+      :is-compact="isCompact"
+    >
       <MatrixColumns
-        v-model:order="order"
+        v-if="!todoLanguage && !isCompact"
+        :order="order"
         :languages="languages"
         :can-manage="canManage"
+        :settings-link="links.workspaceSettings()"
+        @update:order="saveOrder"
         @add="addLanguage()"
-        @remove="removeLanguage"
       />
-    </div>
+    </MatrixToolbar>
 
     <div v-if="isModules" class="p-3">
       <DmsBanner
@@ -401,6 +759,31 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
         icon="i-ph-lock-simple"
         :title="$t('dms_lang.modules_notice.title')"
         :description="$t('dms_lang.modules_notice.override')"
+      />
+    </div>
+
+    <div
+      v-if="doneCount"
+      class="border-default bg-success/5 flex flex-wrap items-center gap-2 border-b px-4 py-2 text-sm"
+      role="status"
+    >
+      <UIcon name="i-ph-check-circle" class="text-success size-4" />
+      <span class="text-default">
+        {{
+          $t(
+            'dms_lang.matrix.done_banner',
+            { count: formatCount(doneCount) },
+            doneCount,
+          )
+        }}
+      </span>
+      <UButton
+        size="xs"
+        color="neutral"
+        variant="outline"
+        class="ml-auto"
+        :label="$t('dms_lang.matrix.hide_done')"
+        @click="hideDone"
       />
     </div>
 
@@ -448,17 +831,25 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
       "
       :description="
         flat.rows.length
-          ? $t('dms_lang.matrix.no_match_description', { count: counts.all })
+          ? $t(
+              'dms_lang.matrix.no_match_description',
+              { count: formatCount(flat.rows.length) },
+              flat.rows.length,
+            )
           : $t('dms_lang.matrix.no_keys_description')
       "
       :actions="[
-        ...(flat.rows.length && filters.filter !== 'all'
+        ...(flat.rows.length
           ? [
               {
-                label: $t('dms_lang.matrix.show_all', { count: counts.all }),
+                label: $t(
+                  'dms_lang.matrix.show_all',
+                  { count: formatCount(flat.rows.length) },
+                  flat.rows.length,
+                ),
                 color: 'neutral',
                 variant: 'outline',
-                onClick: () => (filters.filter = 'all'),
+                onClick: resetFilters,
               },
             ]
           : []),
@@ -478,50 +869,107 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
       ]"
     />
 
-    <div v-else class="max-h-[70vh] overflow-auto">
+    <div v-else-if="isCompact && compactColumn">
+      <template v-for="group in view.rendered.value" :key="group.namespace">
+        <div class="border-default border-b bg-(--dms-bg-muted) px-4 py-2">
+          <MatrixGroupHeader
+            :namespace="group.namespace"
+            :keys="group.keys"
+            :missing="group.missing"
+            :collapsed="group.collapsed"
+            @toggle="view.toggle(group.namespace)"
+          />
+        </div>
+        <div
+          v-for="row in group.shown"
+          :key="row.key"
+          class="border-default group/row space-y-2 border-b px-4 py-3"
+          :data-editing="
+            isEditingCell(row.key, compactColumn.code) || undefined
+          "
+        >
+          <MatrixKeyCell
+            :row-key="row.key"
+            :is-done="isRowFinished(row)"
+            :is-modules="isModules"
+            :is-overridden="row.overridden === true"
+            :can-override="serverEditable"
+            @open="openKey(row.key, compactColumn.code)"
+            @override="overrideKey(row)"
+          />
+          <p
+            v-if="
+              !compactColumn.isBase &&
+              !isEditingCell(row.key, compactColumn.code)
+            "
+            class="text-dimmed line-clamp-3 text-xs"
+          >
+            <PlaceholderText :text="rowValue(row, flat.defaultLocale)" />
+          </p>
+          <MatrixCell
+            v-bind="cellProps(row, compactColumn)"
+            v-on="cellEvents(row, compactColumn)"
+          />
+        </div>
+      </template>
+      <div v-if="view.hasMore.value" ref="sentinel" class="h-8" />
+    </div>
+
+    <div v-else ref="scroller" class="max-h-[70vh] overflow-auto">
       <table
-        class="w-full min-w-max table-fixed border-separate border-spacing-0 text-sm"
+        role="grid"
+        :aria-rowcount="rows.length"
+        class="w-full table-fixed border-separate border-spacing-0 text-sm"
+        :style="{ minWidth: tableMinWidth }"
+        @keydown="onGridKeydown"
       >
         <colgroup>
           <col class="w-44 sm:w-64" />
-          <col v-for="column in columns" :key="column.code" class="w-60" />
+          <col
+            v-for="column in columns"
+            :key="column.code"
+            :class="todoLanguage ? 'w-[28rem]' : 'w-60'"
+          />
         </colgroup>
-        <thead class="bg-(--dms-surface-card) sticky top-0 z-20">
+        <thead class="sticky top-0 z-20 bg-(--dms-surface-card)">
           <tr>
             <th
-              class="border-default bg-(--dms-surface-card) sticky left-0 z-10 border-b px-4 py-2.5 text-left"
+              class="border-default sticky left-0 z-10 border-r border-b bg-(--dms-surface-card) px-4 py-2.5 text-left shadow-[4px_0_6px_-4px_rgb(0_0_0/0.25)]"
             >
               <DmsEyebrow :label="$t('dms_lang.matrix.key')" size="xs" />
             </th>
             <th
               v-for="column in columns"
               :key="column.code"
-              class="border-default border-b border-l px-3 pb-0 pt-2.5 text-left font-normal"
+              class="border-default border-b border-l px-3 pt-2.5 pb-0 text-left font-normal"
             >
               <div class="flex items-center gap-2">
                 <LocaleTile
                   :code="column.code"
                   size="sm"
                   :is-base="column.isBase"
+                  :siblings="columnSiblings"
                 />
                 <span class="text-highlighted truncate font-medium">
                   {{ column.name }}
                 </span>
                 <DmsStatusPill
-                  dot="none"
                   v-if="column.isBase"
+                  dot="none"
                   tone="neutral"
                   size="sm"
                   :label="$t('dms_lang.common.base')"
                 />
                 <span
                   v-else
-                  class="text-dimmed ml-auto whitespace-nowrap font-mono text-[10.5px]"
+                  class="text-dimmed ml-auto font-mono text-[10.5px] whitespace-nowrap"
                 >
                   {{
-                    $t('dms_lang.matrix.column_missing', {
-                      count: formatCount(column.missing),
-                    })
+                    $t(
+                      'dms_lang.matrix.column_missing',
+                      { count: formatCount(column.missing) },
+                      column.missing,
+                    )
                   }}
                 </span>
               </div>
@@ -541,142 +989,58 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
             </th>
           </tr>
         </thead>
-        <tbody v-for="group in groups" :key="group.namespace">
+        <tbody v-for="group in view.rendered.value" :key="group.namespace">
           <tr>
             <td
               :colspan="columns.length + 1"
-              class="border-default bg-(--dms-bg-muted) border-b px-4 py-1.5"
+              class="border-default border-b bg-(--dms-bg-muted) py-1.5"
             >
-              <button
-                type="button"
-                class="flex items-center gap-2"
-                :aria-expanded="!collapsed.has(group.namespace)"
-                @click="toggleGroup(group.namespace)"
-              >
-                <UIcon
-                  name="i-ph-caret-down"
-                  class="text-dimmed size-3.5 transition-transform"
-                  :class="
-                    collapsed.has(group.namespace) ? '-rotate-90' : undefined
-                  "
+              <div class="sticky left-0 inline-block px-4">
+                <MatrixGroupHeader
+                  :namespace="group.namespace"
+                  :keys="group.keys"
+                  :missing="group.missing"
+                  :collapsed="group.collapsed"
+                  @toggle="view.toggle(group.namespace)"
                 />
-                <span
-                  class="text-highlighted font-mono text-xs font-semibold uppercase"
-                >
-                  {{ group.namespace }}
-                </span>
-                <span class="text-dimmed font-mono text-[10.5px]">
-                  {{
-                    $t('dms_lang.matrix.group_keys', {
-                      count: formatCount(group.keys),
-                    })
-                  }}
-                </span>
-                <DmsStatusPill
-                  dot="none"
-                  v-if="group.missing"
-                  tone="warning"
-                  size="sm"
-                  :label="
-                    $t('dms_lang.matrix.group_missing', {
-                      count: formatCount(group.missing),
-                    })
-                  "
-                />
-              </button>
+              </div>
             </td>
           </tr>
-          <template v-if="!collapsed.has(group.namespace)">
-            <tr
-              v-for="row in group.rows"
-              :key="row.key"
-              class="group/row align-top"
+          <tr
+            v-for="row in group.shown"
+            :key="row.key"
+            class="group/row align-top"
+          >
+            <td
+              class="border-default group-hover/row:bg-elevated/30 sticky left-0 z-10 border-r border-b bg-(--dms-surface-card) px-4 py-2.5 shadow-[4px_0_6px_-4px_rgb(0_0_0/0.25)]"
             >
-              <td
-                class="border-default group-hover/row:bg-elevated/30 bg-(--dms-surface-card) sticky left-0 z-10 border-b px-4 py-2.5"
-              >
-                <button
-                  type="button"
-                  class="hover:text-primary block w-full break-all text-left font-mono text-xs"
-                  :title="$t('dms_lang.matrix.open_key')"
-                  @click="openKey(row.key)"
-                >
-                  <span class="text-dimmed">
-                    {{ row.key.slice(0, row.key.lastIndexOf('.') + 1) }}
-                  </span>
-                  <span class="text-primary font-semibold">
-                    {{ row.key.slice(row.key.lastIndexOf('.') + 1) }}
-                  </span>
-                </button>
-                <div v-if="isModules" class="mt-1.5">
-                  <DmsStatusPill
-                    dot="none"
-                    v-if="row.overridden"
-                    tone="success"
-                    size="sm"
-                    icon="i-ph-check"
-                    :label="$t('dms_lang.override.overridden')"
-                  />
-                  <UButton
-                    v-else-if="serverEditable"
-                    size="xs"
-                    color="neutral"
-                    variant="outline"
-                    icon="i-ph-git-fork"
-                    :label="$t('dms_lang.override.action')"
-                    @click="overrideKey(row)"
-                  />
-                </div>
-              </td>
-              <td
-                v-for="column in columns"
-                :key="column.code"
-                class="border-default group-hover/row:bg-elevated/30 border-b border-l px-1.5 py-1"
-              >
-                <MatrixCell
-                  :value="stringValue(row.values[column.code])"
-                  :base-value="stringValue(row.values[flat.defaultLocale])"
-                  :inherited="
-                    isDefault && row.inherited
-                      ? stringValue(row.inherited[column.code])
-                      : undefined
-                  "
-                  :is-base="column.isBase"
-                  :editable="canEditValues"
-                  :is-editing="editingCell === cellId(row.key, column.code)"
-                  :state="cellStates[cellId(row.key, column.code)] ?? 'idle'"
-                  :failed-draft="failedDrafts[cellId(row.key, column.code)]"
-                  @edit="editingCell = cellId(row.key, column.code)"
-                  @cancel="editingCell = null"
-                  @save="(value: string) => saveCell(row, column.code, value)"
-                  @retry="
-                    saveCell(
-                      row,
-                      column.code,
-                      failedDrafts[cellId(row.key, column.code)] ?? '',
-                    )
-                  "
-                  @next="nextCell(row, column.code)"
-                />
-              </td>
-            </tr>
-          </template>
+              <MatrixKeyCell
+                :row-key="row.key"
+                :is-done="isRowFinished(row)"
+                :is-modules="isModules"
+                :is-overridden="row.overridden === true"
+                :can-override="serverEditable"
+                @open="openKey(row.key)"
+                @override="overrideKey(row)"
+              />
+            </td>
+            <td
+              v-for="(column, columnIndex) in columns"
+              :key="column.code"
+              :data-row="rowIndex.get(row.key)"
+              :data-col="columnIndex"
+              :data-editing="isEditingCell(row.key, column.code) || undefined"
+              class="border-default group-hover/row:bg-elevated/30 border-b border-l px-1.5 py-1"
+            >
+              <MatrixCell
+                v-bind="cellProps(row, column)"
+                v-on="cellEvents(row, column)"
+              />
+            </td>
+          </tr>
         </tbody>
       </table>
-      <div v-if="rows.length > rowLimit" class="flex justify-center p-3">
-        <UButton
-          color="neutral"
-          variant="outline"
-          size="sm"
-          :label="
-            $t('dms_lang.matrix.show_more', {
-              shown: formatCount(rowLimit),
-              total: formatCount(rows.length),
-            })
-          "
-          @click="rowLimit += ROW_PAGE"
-        />
-      </div>
+      <div v-if="view.hasMore.value" ref="sentinel" class="h-8" />
     </div>
 
     <div
@@ -685,20 +1049,28 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
     >
       <span>
         {{
-          $t('dms_lang.matrix.footer', {
-            missing: formatCount(missingTotal),
-            shown: columns.length,
-            total: languages.length,
-          })
+          $t(
+            'dms_lang.matrix.footer_keys',
+            { count: formatCount(counts.missing) },
+            counts.missing,
+          )
+        }}
+        ·
+        {{
+          $t(
+            'dms_lang.matrix.footer_cells',
+            { count: formatCount(counts.cells), languages: countedLabel },
+            counts.cells,
+          )
         }}
       </span>
       <span
-        v-if="canEditValues"
+        v-if="canEditValues && !isCompact"
         class="ml-auto inline-flex flex-wrap items-center gap-3"
       >
         <span class="inline-flex items-center gap-1">
-          <UKbd size="sm">↵</UKbd>
-          {{ $t('dms_lang.matrix.shortcut_edit') }}
+          <UKbd size="sm" value="enter" />
+          {{ $t('dms_lang.matrix.shortcut_save_down') }}
         </span>
         <span class="inline-flex items-center gap-1">
           <UKbd size="sm">Tab</UKbd>
@@ -706,7 +1078,16 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
         </span>
         <span class="inline-flex items-center gap-1">
           <UKbd size="sm">N</UKbd>
+          /
+          <UKbd size="sm" value="shift" />
+          <UKbd size="sm">N</UKbd>
           {{ $t('dms_lang.matrix.shortcut_next_missing') }}
+        </span>
+        <span class="inline-flex items-center gap-1">
+          <UKbd size="sm" value="meta" />
+          <UKbd size="sm" value="shift" />
+          <UKbd size="sm" value="enter" />
+          {{ $t('dms_lang.matrix.open_panel') }}
         </span>
       </span>
     </div>
