@@ -53,6 +53,50 @@ export function carriedExpected(
   return previous.expected
 }
 
+/** A text queued behind the earlier writes of the same text. */
+export interface QueuedText {
+  id: string
+  text: string
+  expected: ExpectedText
+}
+
+interface SentTexts<T> {
+  outcome: T
+  expected: ExpectedText[]
+}
+
+/**
+ * Runs a write once every earlier write of its texts settled, each text
+ * expecting what the write before it carried over (`carriedExpected`), and
+ * leaves the link the next write of each text starts from.
+ */
+export function queueTexts<T>(
+  links: Map<string, Promise<WriteLink>>,
+  texts: QueuedText[],
+  send: (expected: ExpectedText[]) => Promise<T>,
+  isLanded: (outcome: T) => boolean,
+): Promise<T> {
+  const run = Promise.all(texts.map((entry) => links.get(entry.id))).then(
+    async (earlier): Promise<SentTexts<T>> => {
+      const expected = texts.map((entry, index) =>
+        carriedExpected(entry.expected, earlier[index]),
+      )
+      return { expected, outcome: await send(expected) }
+    },
+  )
+  texts.forEach((entry, index) =>
+    links.set(
+      entry.id,
+      run.then((sent) => ({
+        sent: storedText(entry.text),
+        expected: sent.expected[index],
+        isLanded: isLanded(sent.outcome),
+      })),
+    ),
+  )
+  return run.then((sent) => sent.outcome)
+}
+
 /** A record with one entry set, or removed when `value` is `undefined`. */
 export function withEntry<T>(
   record: Record<string, T>,

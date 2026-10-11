@@ -7,6 +7,7 @@ Object.assign(globalThis, translations, mutations);
 
 const {
   carriedExpected,
+  queueTexts,
   saveIdOf,
   saveIdPrefix,
   savedText,
@@ -86,4 +87,92 @@ test("keySaveFailure needs the code: a bare 409 or a prototype name is other", (
   assert.equal(keySaveFailure({ data: { code: "constructor" } }).kind, "other");
   assert.equal(keySaveFailure({ data: "<html>" }).kind, "other");
   assert.equal(keySaveFailure(undefined).kind, "other");
+});
+
+function deferred() {
+  let resolve;
+  const promise = new Promise((done) => (resolve = done));
+  return { promise, resolve };
+}
+
+test("queueTexts runs the writes of a text in order", async () => {
+  const links = new Map();
+  const order = [];
+  const first = deferred();
+  const one = queueTexts(
+    links,
+    [{ id: "fr", text: "A", expected: "X" }],
+    async () => {
+      await first.promise;
+      order.push("A");
+      return true;
+    },
+    Boolean,
+  );
+  const two = queueTexts(
+    links,
+    [{ id: "fr", text: "B", expected: "A" }],
+    async () => {
+      order.push("B");
+      return true;
+    },
+    Boolean,
+  );
+  first.resolve();
+  await Promise.all([one, two]);
+  assert.deepEqual(order, ["A", "B"]);
+});
+
+test("queueTexts never expects a text whose write failed in flight", async () => {
+  const links = new Map();
+  const sent = [];
+  const send = (landed) => async (expected) => {
+    sent.push(expected);
+    return landed;
+  };
+  const failed = queueTexts(
+    links,
+    [{ id: "fr", text: "A", expected: "X" }],
+    send(false),
+    Boolean,
+  );
+  const next = queueTexts(
+    links,
+    [{ id: "fr", text: "B", expected: "A" }],
+    send(true),
+    Boolean,
+  );
+  await Promise.all([failed, next]);
+  assert.deepEqual(sent, [["X"], ["X"]]);
+});
+
+test("queueTexts waits on every text of a write", async () => {
+  const links = new Map();
+  const de = deferred();
+  const order = [];
+  const single = queueTexts(
+    links,
+    [{ id: "de", text: "D", expected: null }],
+    async () => {
+      await de.promise;
+      order.push("de");
+      return true;
+    },
+    Boolean,
+  );
+  const both = queueTexts(
+    links,
+    [
+      { id: "fr", text: "F", expected: null },
+      { id: "de", text: "E", expected: "D" },
+    ],
+    async (expected) => {
+      order.push(["both", ...expected]);
+      return true;
+    },
+    Boolean,
+  );
+  de.resolve();
+  await Promise.all([single, both]);
+  assert.deepEqual(order, ["de", ["both", null, "D"]]);
 });

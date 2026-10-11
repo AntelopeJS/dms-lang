@@ -7,7 +7,7 @@ import {
   type KeySaveFailureKind,
 } from '../../utils/keySaveErrors'
 import {
-  carriedExpected,
+  queueTexts,
   saveIdOf,
   savedText,
   storedText,
@@ -46,11 +46,6 @@ export interface KeyWriteFailed {
 }
 
 export type KeyWriteOutcome = KeyWriteSaved | KeyWriteFailed
-
-interface SentWrite {
-  outcome: KeyWriteOutcome
-  expected: Record<string, ExpectedText>
-}
 
 interface KeySaveContext {
   upsertKey: ReturnType<typeof useI18nWorkspaces>['upsertKey']
@@ -112,27 +107,6 @@ function checksOf(
   return checks.length ? Object.fromEntries(checks) : undefined
 }
 
-function carriedAll(
-  request: KeyWrite,
-  codes: string[],
-  earlier: (WriteLink | undefined)[],
-): Record<string, ExpectedText> {
-  return Object.fromEntries(
-    codes.map((code, index) => [
-      code,
-      carriedExpected(request.expected[code], earlier[index]),
-    ]),
-  )
-}
-
-function linkOf(sent: SentWrite, text: string, code: string): WriteLink {
-  return {
-    sent: storedText(text),
-    expected: sent.expected[code],
-    isLanded: sent.outcome.status === 'saved',
-  }
-}
-
 function applyResponse(
   context: KeySaveContext,
   target: KeyTarget,
@@ -184,24 +158,23 @@ function queueWrite(
   request: KeyWrite,
 ): Promise<KeyWriteOutcome> {
   const codes = Object.keys(request.values)
-  const ids = codes.map((code) =>
-    saveIdOf(request.workspace, request.key, code),
+  const texts = codes.map((code) => ({
+    id: saveIdOf(request.workspace, request.key, code),
+    text: request.values[code],
+    expected: request.expected[code],
+  }))
+  const sendCarried = (expected: ExpectedText[]) =>
+    send(
+      context,
+      request,
+      Object.fromEntries(codes.map((code, index) => [code, expected[index]])),
+    )
+  return queueTexts(
+    links,
+    texts,
+    sendCarried,
+    (outcome) => outcome.status === 'saved',
   )
-  const run = Promise.all(ids.map((id) => links.get(id))).then(
-    async (earlier): Promise<SentWrite> => {
-      const expected = carriedAll(request, codes, earlier)
-      return { expected, outcome: await send(context, request, expected) }
-    },
-  )
-  ids.forEach((id, index) =>
-    links.set(
-      id,
-      run.then((sent) =>
-        linkOf(sent, request.values[codes[index]], codes[index]),
-      ),
-    ),
-  )
-  return run.then((sent) => sent.outcome)
 }
 
 async function markReviewed(
