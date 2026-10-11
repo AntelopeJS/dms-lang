@@ -1,16 +1,23 @@
 import { projectBaseLocale, modulesBaseLocale } from "./catalog";
 import { check } from "./errors";
 import type { ImportInput } from "../validation/workspace.schema";
-import { isPlainObject, validateKeyPath } from "./json";
-import { findLocale, normalizeLocaleCode } from "./locale-codes";
+import {
+  isPlainObject,
+  leafPrefixOf,
+  nodeKindAt,
+  validateKeyPath,
+} from "./json";
+import { assertMessageSyntax } from "./message-syntax";
+import { findLocale } from "./locale-codes";
 import { getLocaleCodes, loadMessages } from "./registry";
-import type { LocaleMessages } from "./tree";
+import { leafPaths, type LocaleMessages } from "./tree";
 import {
   getWorkspaceManifest,
   loadWorkspaceMessages,
   type WorkspaceDetails,
   type WorkspaceKind,
   type WorkspaceLocale,
+  validateLocaleEntry,
   workspaceKind,
   writeNewWorkspace,
 } from "./workspaces";
@@ -85,13 +92,66 @@ export function backupWorkspace(workspace: string): WorkspaceBackup {
   };
 }
 
-function assertTexts(node: unknown, path: string, locale: string): void {
-  if (typeof node === "string") return;
-  check(isPlainObject(node), "invalid_value", { locale, path });
-  for (const [key, child] of Object.entries(node)) {
-    const childPath = path ? `${path}.${key}` : key;
-    validateKeyPath(childPath);
-    assertTexts(child, childPath, locale);
+interface TreeLocation {
+  locale: string;
+  segments: string[];
+}
+
+function childLocation(at: TreeLocation, key: string): TreeLocation {
+  const segments = [...at.segments, key];
+  check(validateKeyPath(key).length === 1, "invalid_key_path", {
+    path: segments.join("."),
+  });
+  return { locale: at.locale, segments };
+}
+
+/**
+ * The texts of a backup as `PUT /key` would write them: each one a message
+ * vue-i18n compiles, an empty text left out (and the namespace it empties).
+ */
+function cleanTree(node: unknown, at: TreeLocation): unknown {
+  if (typeof node === "string") {
+    if (node.trim() === "") return undefined;
+    assertMessageSyntax(at.locale, node);
+    return node;
+  }
+  check(isPlainObject(node), "invalid_value", {
+    locale: at.locale,
+    path: at.segments.join("."),
+  });
+  const entries = Object.entries(node)
+    .map(([key, child]) => [key, cleanTree(child, childLocation(at, key))])
+    .filter(([, child]) => child !== undefined);
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+}
+
+function cleanMessages(locale: string, tree: unknown): Record<string, unknown> {
+  const cleaned = cleanTree(tree, { locale, segments: [] });
+  return isPlainObject(cleaned) ? cleaned : {};
+}
+
+/** A key of one language that is a namespace, or under a key, in another: what `PUT /key` refuses. */
+function clashOf(messages: LocaleMessages, path: string): string | undefined {
+  const segments = path.split(".");
+  return Object.values(messages)
+    .map((data) =>
+      nodeKindAt(data, segments) === "branch"
+        ? path
+        : leafPrefixOf(data, segments),
+    )
+    .find((clash) => clash !== undefined);
+}
+
+function assertNoClash(messages: LocaleMessages): void {
+  for (const [locale, data] of Object.entries(messages)) {
+    for (const path of leafPaths(data)) {
+      const clash = clashOf(messages, path);
+      check(clash === undefined, "key_conflict", {
+        path,
+        locale,
+        conflicts: [clash],
+      });
+    }
   }
 }
 
@@ -100,17 +160,17 @@ function importedLocales(backup: ImportInput): WorkspaceLocale[] {
     backup.locales ?? Object.keys(backup.messages).map((code) => ({ code }));
   const locales: WorkspaceLocale[] = [];
   for (const locale of declared) {
-    const code = normalizeLocaleCode(locale.code);
+    const entry = validateLocaleEntry(locale);
     check(
       findLocale(
-        locales.map((entry) => entry.code),
-        code,
+        locales.map((known) => known.code),
+        entry.code,
       ) === undefined,
       "locale_exists",
-      { locale: code },
+      { locale: entry.code },
       "duplicate_locale",
     );
-    locales.push({ ...locale, code });
+    locales.push(entry);
   }
   check(locales.length > 0, "invalid_body", {}, "no_locale");
   return locales;
@@ -127,9 +187,9 @@ function importedMessages(
       code,
     );
     check(locale !== undefined, "undeclared_locale", { locale: code });
-    assertTexts(tree, "", locale);
-    result[locale] = tree as Record<string, unknown>;
+    result[locale] = cleanMessages(locale, tree);
   }
+  assertNoClash(result);
   return result;
 }
 

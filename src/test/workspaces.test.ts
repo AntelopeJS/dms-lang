@@ -293,4 +293,36 @@ function describePublicAccess(): void {
     });
     expect(backupWorkspace(legacy).defaultLocale).to.equal("fr");
   });
+
+  it("imports a backup through the checks of a key write", () => {
+    const imported = importWorkspace({
+      id: "core-checked",
+      locales: [{ code: "EN", name: " English ", flag: 42 } as never],
+      messages: { en: { a: { b: "B", empty: " " }, gone: { x: "" } } },
+    });
+    const backup = backupWorkspace(imported);
+    expect(backup.messages).to.deep.equal({ en: { a: { b: "B" } } });
+    expect(backup.locales).to.deep.equal([{ code: "en", name: "English" }]);
+    expectError(
+      () =>
+        importWorkspace({ id: "core-mail", messages: { en: { a: "x@y" } } }),
+      400,
+      "invalid_message",
+    );
+    expectError(
+      () =>
+        importWorkspace({
+          id: "core-clash",
+          messages: { en: { a: "A" }, fr: { a: { b: "B" } } },
+        }),
+      409,
+      "key_conflict",
+    );
+    expectError(
+      () =>
+        importWorkspace({ id: "core-dots", messages: { en: { "a.b": "A" } } }),
+      400,
+      "invalid_key_path",
+    );
+  });
 }
