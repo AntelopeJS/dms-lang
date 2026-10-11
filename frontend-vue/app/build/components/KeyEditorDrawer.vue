@@ -28,6 +28,8 @@ import {
 } from '../../utils/translations'
 import LocaleTile from './LocaleTile.vue'
 import PlaceholderText from './PlaceholderText.vue'
+import ShortcutKbds from './ShortcutKbds.vue'
+import { KEY_PANEL_KEYS } from '../../utils/shortcuts'
 
 interface Props {
   keys: string[]
@@ -893,8 +895,7 @@ onMounted(() => show(key.value))
             <template v-else>{{ $t('dms_lang.drawer.autosave') }}</template>
           </span>
           <span class="hidden items-center gap-1 sm:inline-flex">
-            <UKbd size="sm" value="meta" />
-            <UKbd size="sm" value="enter" />
+            <ShortcutKbds :keys="KEY_PANEL_KEYS.saveNext" />
             {{ $t('dms_lang.drawer.save_next') }}
           </span>
         </div>

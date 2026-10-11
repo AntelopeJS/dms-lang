@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
-import { useElementSize, useIntersectionObserver } from '@vueuse/core'
+import {
+  useActiveElement,
+  useElementSize,
+  useIntersectionObserver,
+} from '@vueuse/core'
 import UButton from '@nuxt/ui/components/Button.vue'
 import UDropdownMenu from '@nuxt/ui/components/DropdownMenu.vue'
 import { useDmsRouter } from '#dms/frontend-module'
@@ -19,6 +23,7 @@ import MatrixColumns from '../build/components/matrix/MatrixColumns.vue'
 import MatrixGroupHeader from '../build/components/matrix/MatrixGroupHeader.vue'
 import MatrixKeyCell from '../build/components/matrix/MatrixKeyCell.vue'
 import MatrixToolbar from '../build/components/matrix/MatrixToolbar.vue'
+import ShortcutKbds from '../build/components/ShortcutKbds.vue'
 import {
   useCellSaves,
   type CellAddress,
@@ -29,7 +34,6 @@ import {
 } from '../build/composables/useCellEditor'
 import {
   focusNeighbourCell,
-  isTypingTarget,
   useCellMoves,
   type JumpStep,
 } from '../build/composables/useCellMoves'
@@ -37,6 +41,7 @@ import { useKeyPanel } from '../build/composables/useKeyPanel'
 import { useMatrixRows } from '../build/composables/useMatrixRows'
 import { useMatrixView } from '../build/composables/useMatrixView'
 import { useMatrixFilters } from '../build/composables/useMatrixFilters'
+import { MATRIX_KEYS, shortcutName } from '../utils/shortcuts'
 
 const COMPACT_WIDTH = 768
 const OPEN_OVERLAY = '[role="dialog"][data-state="open"], [role="alertdialog"]'
@@ -45,7 +50,6 @@ const KEY_COLUMN_REM = 16
 const LANGUAGE_COLUMN_REM = 15
 const TODO_COLUMN_REM = 28
 const SKELETON_ROWS = 6
-const JUMP_KEY = 'n'
 
 const { t } = useI18n()
 const { formatCount } = useLangFormat()
@@ -240,20 +244,24 @@ function jumpToMissing(step: JumpStep) {
   )
 }
 
-function isOverlayActive(): boolean {
-  return (
-    isFocusInsideOverlay(document.activeElement) ||
-    document.querySelector(OPEN_OVERLAY) !== null
-  )
+const activeElement = useActiveElement()
+
+function jumpUnlessOverlay(step: JumpStep) {
+  return () => {
+    if (document.querySelector(OPEN_OVERLAY) === null) jumpToMissing(step)
+  }
 }
 
-function onKeydown(event: KeyboardEvent) {
-  if (!canEditValues.value || event.key.toLowerCase() !== JUMP_KEY) return
-  if (event.ctrlKey || event.metaKey || event.altKey) return
-  if (isTypingTarget(event.target) || isOverlayActive()) return
-  event.preventDefault()
-  jumpToMissing(event.shiftKey ? -1 : 1)
-}
+defineShortcuts(
+  computed(() =>
+    canEditValues.value && !isFocusInsideOverlay(activeElement.value)
+      ? {
+          [shortcutName(MATRIX_KEYS.nextMissing)]: jumpUnlessOverlay(1),
+          [shortcutName(MATRIX_KEYS.previousMissing)]: jumpUnlessOverlay(-1),
+        }
+      : {},
+  ),
+)
 
 function focusCell(cell: CellRef) {
   const selector = `[data-matrix-cell][data-key="${CSS.escape(cell.key)}"][data-code="${CSS.escape(cell.code)}"]`
@@ -426,13 +434,10 @@ watch(
   },
 )
 
-onMounted(() => window.addEventListener('keydown', onKeydown))
-
 const matrixPath = route.path
 
 onBeforeUnmount(() => {
   if (route.path === matrixPath) editor.leaveEditing()
-  window.removeEventListener('keydown', onKeydown)
 })
 </script>
 
@@ -785,24 +790,21 @@ onBeforeUnmount(() => {
         class="ml-auto inline-flex flex-wrap items-center gap-3"
       >
         <span class="inline-flex items-center gap-1">
-          <UKbd size="sm" value="enter" />
+          <ShortcutKbds :keys="MATRIX_KEYS.saveDown" />
           {{ $t('dms_lang.matrix.shortcut_save_down') }}
         </span>
         <span class="inline-flex items-center gap-1">
-          <UKbd size="sm">Tab</UKbd>
+          <ShortcutKbds :keys="MATRIX_KEYS.nextCell" />
           {{ $t('dms_lang.matrix.shortcut_next_cell') }}
         </span>
         <span class="inline-flex items-center gap-1">
-          <UKbd size="sm">N</UKbd>
+          <ShortcutKbds :keys="MATRIX_KEYS.nextMissing" />
           /
-          <UKbd size="sm" value="shift" />
-          <UKbd size="sm">N</UKbd>
+          <ShortcutKbds :keys="MATRIX_KEYS.previousMissing" />
           {{ $t('dms_lang.matrix.shortcut_next_missing') }}
         </span>
         <span class="inline-flex items-center gap-1">
-          <UKbd size="sm" value="meta" />
-          <UKbd size="sm" value="shift" />
-          <UKbd size="sm" value="enter" />
+          <ShortcutKbds :keys="MATRIX_KEYS.openPanel" />
           {{ $t('dms_lang.matrix.open_panel') }}
         </span>
       </span>

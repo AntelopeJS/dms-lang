@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import PlaceholderText from '../PlaceholderText.vue'
+import ShortcutKbds from '../ShortcutKbds.vue'
+import { MATRIX_KEYS } from '../../../utils/shortcuts'
 import {
   checkMessage,
   escapeMessage,
@@ -273,16 +275,15 @@ function escapeDraft() {
       class="text-dimmed flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-[10.5px]"
     >
       <span class="inline-flex items-center gap-1">
-        <UKbd size="sm" value="enter" />
+        <ShortcutKbds :keys="MATRIX_KEYS.saveDown" />
         {{ $t('dms_lang.matrix.shortcut_save_down') }}
       </span>
       <span class="inline-flex items-center gap-1">
-        <UKbd size="sm" value="shift" />
-        <UKbd size="sm" value="enter" />
+        <ShortcutKbds :keys="MATRIX_KEYS.newLine" />
         {{ $t('dms_lang.matrix.shortcut_newline') }}
       </span>
       <span class="inline-flex items-center gap-1">
-        <UKbd size="sm" value="escape" />
+        <ShortcutKbds :keys="MATRIX_KEYS.cancel" />
         {{ $t('dms_lang.matrix.shortcut_cancel') }}
       </span>
       <span v-if="!props.isBase && props.baseValue" class="font-mono">

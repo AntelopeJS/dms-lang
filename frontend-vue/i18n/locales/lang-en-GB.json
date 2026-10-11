@@ -482,7 +482,8 @@
 			"restart": "Start again ({count})",
 			"translate_missing": "Translate missing keys",
 			"next_language": "Continue with {name} · {n} missing | Continue with {name} · {n} missing",
-			"order": "Least complete namespace first, then by key."
+			"order": "Least complete namespace first, then by key.",
+			"shortcuts_hint": "{leave} leaves the text field, then {skip} skips the key and {previous} goes back."
 		},
 		"progress": {
 			"translated": "Translated",
@@ -758,6 +759,40 @@
 			"modules_description": "Read-only: they change when a module is installed or upgraded. To change a text in this dashboard, override its key in Project files.",
 			"browse_keys": "Browse keys"
 		},
-		"catalog_category": "Content"
+		"catalog_category": "Content",
+		"shortcuts": {
+			"groups": {
+				"translation_queue": "Translation queue",
+				"translation_matrix": "Translation matrix",
+				"key_panel": "Key side panel"
+			},
+			"queue": {
+				"save_next": "Save the text and go to the next key",
+				"save": "Save the text and stay on the key",
+				"leave_field": "Leave the text field",
+				"skip": "Skip the key",
+				"previous": "Go back to the previous key",
+				"in_field": "While typing a translation",
+				"outside_field": "Outside a text field: press Esc first when typing"
+			},
+			"matrix": {
+				"next_missing": "Edit the next missing translation",
+				"previous_missing": "Edit the previous missing translation",
+				"save_down": "Save the cell and edit the one below",
+				"new_line": "New line in the cell",
+				"next_cell": "Save the cell and edit the next one (Shift: the previous one)",
+				"cancel": "Cancel the edit of the cell",
+				"open_panel": "Open the key in the side panel, with the text typed",
+				"outside_field": "Outside a text field, no dialog open",
+				"in_cell": "While editing a cell"
+			},
+			"key_panel": {
+				"save_next": "Save the texts and open the next key",
+				"in_field": "While typing in a text of the panel"
+			},
+			"keys": {
+				"tab": "Tab"
+			}
+		}
 	}
 }

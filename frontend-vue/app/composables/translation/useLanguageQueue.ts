@@ -437,10 +437,10 @@ export const useQueueSession = (upNextSize: number) => {
     return advance()
   }
 
-  /** Marks a key saved; moves on when it is the one shown. */
-  function complete(key: string): QueueStep | undefined {
+  /** Marks a key saved; moves on when it is the one shown, unless `shouldAdvance` is false. */
+  function complete(key: string, shouldAdvance = true): QueueStep | undefined {
     mark(key, 'done')
-    return current.value?.key === key ? advance() : undefined
+    return shouldAdvance && current.value?.key === key ? advance() : undefined
   }
 
   function previous() {

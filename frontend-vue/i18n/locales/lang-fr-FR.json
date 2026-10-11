@@ -482,7 +482,8 @@
 			"restart": "Recommencer ({count})",
 			"translate_missing": "Traduire les clés manquantes",
 			"next_language": "Continuer avec {name} · {n} manquante | Continuer avec {name} · {n} manquantes",
-			"order": "Espace de noms le moins complet d'abord, puis par clé."
+			"order": "Espace de noms le moins complet d'abord, puis par clé.",
+			"shortcuts_hint": "{leave} quitte le champ de texte, puis {skip} passe la clé et {previous} revient en arrière."
 		},
 		"progress": {
 			"translated": "Traduites",
@@ -758,6 +759,40 @@
 			"modules_description": "Lecture seule : elles changent quand un module est installé ou mis à jour. Pour modifier un texte dans ce tableau de bord, surchargez sa clé dans les fichiers du projet.",
 			"browse_keys": "Parcourir les clés"
 		},
-		"catalog_category": "Contenu"
+		"catalog_category": "Contenu",
+		"shortcuts": {
+			"groups": {
+				"translation_queue": "File de traduction",
+				"translation_matrix": "Matrice de traduction",
+				"key_panel": "Panneau latéral de clé"
+			},
+			"queue": {
+				"save_next": "Enregistrer le texte et passer à la clé suivante",
+				"save": "Enregistrer le texte et rester sur la clé",
+				"leave_field": "Quitter le champ de texte",
+				"skip": "Passer la clé",
+				"previous": "Revenir à la clé précédente",
+				"in_field": "Pendant la saisie d'une traduction",
+				"outside_field": "Hors d'un champ de texte : appuyez d'abord sur Échap pendant la saisie"
+			},
+			"matrix": {
+				"next_missing": "Éditer la traduction manquante suivante",
+				"previous_missing": "Éditer la traduction manquante précédente",
+				"save_down": "Enregistrer la cellule et éditer celle du dessous",
+				"new_line": "Saut de ligne dans la cellule",
+				"next_cell": "Enregistrer la cellule et éditer la suivante (Maj : la précédente)",
+				"cancel": "Annuler l'édition de la cellule",
+				"open_panel": "Ouvrir la clé dans le panneau latéral, avec le texte saisi",
+				"outside_field": "Hors d'un champ de texte, sans boîte de dialogue ouverte",
+				"in_cell": "Pendant l'édition d'une cellule"
+			},
+			"key_panel": {
+				"save_next": "Enregistrer les textes et ouvrir la clé suivante",
+				"in_field": "Pendant la saisie d'un texte du panneau"
+			},
+			"keys": {
+				"tab": "Tab"
+			}
+		}
 	}
 }

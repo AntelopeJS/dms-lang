@@ -19,11 +19,14 @@ import {
 import type { KeySaveFailureKind } from '../utils/keySaveErrors'
 import { savedText as expectedTextOf } from '../utils/keySaves'
 import LocaleTile from '../build/components/LocaleTile.vue'
+import ShortcutKbds from '../build/components/ShortcutKbds.vue'
 import PlaceholderText from '../build/components/PlaceholderText.vue'
 import {
   useKeySaves,
   type KeyWriteFailed,
 } from '../build/composables/useKeySaves'
+import { useQueueShortcuts } from '../build/composables/useQueueShortcuts'
+import { QUEUE_KEYS } from '../utils/shortcuts'
 
 type SaveFailureHandler = (
   row: FlatTranslationRow,
@@ -53,9 +56,6 @@ const LONG_TEXT = 80
 const URL_SYNC_MS = 400
 const LANGUAGE_SUGGESTIONS = 6
 const ARM_SEPARATOR = '\n'
-const MAC_PLATFORM = /Mac|iPhone|iPad/
-const FIELD_SELECTOR = 'input, textarea, select, [contenteditable]'
-const DIALOG_SELECTOR = '[role="dialog"]'
 const STEP_TOASTS: Partial<Record<QueueStep, string>> = {
   wrapped: 'dms_lang.queue.wrapped',
   last: 'dms_lang.queue.last_key',
@@ -112,7 +112,6 @@ const isSaving = ref(false)
 const isReviewing = ref(false)
 const armedSave = ref('')
 const rejection = ref<Rejection | null>(null)
-const isMac = ref(false)
 let urlTimer: ReturnType<typeof setTimeout> | undefined
 
 useUnsavedChanges({ dirty: () => drafts.count.value > 0 })
@@ -181,11 +180,6 @@ const contextLocales = computed(() =>
     .filter((code) => stringValue(current.value?.values[code]))
     .slice(0, CONTEXT_LANGUAGES),
 )
-const keys = computed(() => ({
-  save: isMac.value ? '⌘↵' : 'Ctrl ↵',
-  skip: isMac.value ? '⌥S' : 'Alt S',
-  previous: isMac.value ? '⌥P' : 'Alt P',
-}))
 const modeItems = computed(() => [
   {
     label: t('dms_lang.queue.mode_missing', {
@@ -543,7 +537,7 @@ const SAVE_FAILURES: Record<KeySaveFailureKind, SaveFailureHandler> = {
     }),
 }
 
-async function write(row: FlatTranslationRow, value: string) {
+async function write(row: FlatTranslationRow, value: string, advance = true) {
   isSaving.value = true
   const start = drafts.startOf(row.key)
   const outcome = await saves.write({
@@ -559,7 +553,7 @@ async function write(row: FlatTranslationRow, value: string) {
   if (outcome.status === 'failed')
     return SAVE_FAILURES[outcome.failure.kind](row, value, outcome)
   drafts.drop(row.key)
-  showStep(session.complete(row.key))
+  showStep(session.complete(row.key, advance))
 }
 
 function confirmClear(row: FlatTranslationRow): Promise<boolean> {
@@ -586,7 +580,8 @@ function warnBlocked() {
   })
 }
 
-async function save() {
+/** Saves the draft, then moves on unless `advance` is false. */
+async function save(advance = true) {
   const row = current.value
   if (!row || isSaving.value || !canEditValues.value) return
   const value = normalizeDraft(draft.value)
@@ -601,7 +596,11 @@ async function save() {
     return
   }
   if (!value && !(await confirmClear(row))) return
-  await write(row, value)
+  await write(row, value, advance)
+}
+
+function saveInPlace() {
+  if (current.value && drafts.has(current.value.key)) void save(false)
 }
 
 /** Puts the text in the field, the caret at `caret` (the end by default). */
@@ -646,39 +645,16 @@ function remove() {
   return removeLanguage(locale.value, () => router.push(links.overview()))
 }
 
-function isOwnField(target: HTMLElement): boolean {
-  return !target.closest(FIELD_SELECTOR) || !!root.value?.contains(target)
-}
-
-const ALT_SHORTCUTS: Record<string, () => void> = {
-  KeyS: skip,
-  KeyP: () => session.previous(),
-}
-
-function onKeydown(event: KeyboardEvent) {
-  const target = event.target as HTMLElement
-  if (!current.value || target.closest(DIALOG_SELECTOR) || !isOwnField(target))
-    return
-  const isCommand = event.ctrlKey || event.metaKey
-  if (isCommand && event.code === 'KeyS') {
-    event.preventDefault()
-    if (drafts.has(current.value.key)) void save()
-    return
-  }
-  if (isCommand && event.key === 'Enter') {
-    event.preventDefault()
-    void save()
-    return
-  }
-  if (isCommand) return
-  const isPlainSkip =
-    !event.altKey && event.key === 's' && !target.closest(FIELD_SELECTOR)
-  const shortcut = event.altKey ? ALT_SHORTCUTS[event.code] : undefined
-  const action = shortcut ?? (isPlainSkip ? skip : undefined)
-  if (!action) return
-  event.preventDefault()
-  action()
-}
+const shortcuts = useQueueShortcuts(
+  {
+    isActive: () => !!current.value,
+    saveNext: () => void save(),
+    save: saveInPlace,
+    skip,
+    previous: () => session.previous(),
+  },
+  { root: () => root.value, field: () => editor.value?.textareaRef },
+)
 
 function focusEditor() {
   const active = document.activeElement
@@ -694,8 +670,9 @@ watch(
     if (exists.value && !isBase.value) {
       urlTimer = setTimeout(() => void session.syncUrl(key ?? ''), URL_SYNC_MS)
     }
+    const shouldFocus = !shortcuts.isBrowsing()
     await nextTick()
-    if (key) focusEditor()
+    if (key && shouldFocus) focusEditor()
   },
 )
 watch([selectedWorkspace, locale], () => {
@@ -771,14 +748,7 @@ usePageHeaderActions(() => [
     : null,
 ])
 
-onMounted(() => {
-  isMac.value = MAC_PLATFORM.test(navigator.platform)
-  window.addEventListener('keydown', onKeydown)
-})
-onBeforeUnmount(() => {
-  clearTimeout(urlTimer)
-  window.removeEventListener('keydown', onKeydown)
-})
+onBeforeUnmount(() => clearTimeout(urlTimer))
 </script>
 
 <template>
@@ -1201,12 +1171,12 @@ onBeforeUnmount(() => {
               @click="session.previous()"
             >
               {{ $t('dms_lang.queue.previous') }}
-              <UKbd size="sm">{{ keys.previous }}</UKbd>
+              <ShortcutKbds :keys="QUEUE_KEYS.previous" />
             </UButton>
             <div class="flex-1" />
             <UButton color="neutral" variant="outline" size="sm" @click="skip">
               {{ $t('dms_lang.queue.skip') }}
-              <UKbd size="sm">{{ keys.skip }}</UKbd>
+              <ShortcutKbds :keys="QUEUE_KEYS.skip" />
             </UButton>
             <UButton
               v-if="canEditValues"
@@ -1214,16 +1184,33 @@ onBeforeUnmount(() => {
               size="sm"
               :color="isArmed ? 'warning' : 'primary'"
               :loading="isSaving"
-              @click="save"
+              @click="save()"
             >
               {{
                 isArmed
                   ? $t('dms_lang.queue.save_anyway')
                   : $t('dms_lang.queue.save_next')
               }}
-              <UKbd size="sm">{{ keys.save }}</UKbd>
+              <ShortcutKbds :keys="QUEUE_KEYS.saveNext" />
             </UButton>
           </div>
+          <p class="text-dimmed px-4 pb-3 text-xs">
+            <i18n-t
+              keypath="dms_lang.queue.shortcuts_hint"
+              scope="global"
+              tag="span"
+            >
+              <template #leave>
+                <ShortcutKbds :keys="QUEUE_KEYS.leaveField" />
+              </template>
+              <template #skip>
+                <ShortcutKbds :keys="QUEUE_KEYS.skip" />
+              </template>
+              <template #previous>
+                <ShortcutKbds :keys="QUEUE_KEYS.previous" />
+              </template>
+            </i18n-t>
+          </p>
 
           <ul
             v-if="upNext.length"
