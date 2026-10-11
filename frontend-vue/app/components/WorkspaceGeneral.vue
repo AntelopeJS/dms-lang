@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useWorkspaceFlatSync } from '../composables/translation/useWorkspaceFlat'
 import UButton from '@nuxt/ui/components/Button.vue'
 import LocaleTile from '../build/components/LocaleTile.vue'
 
@@ -7,6 +8,7 @@ const DESCRIPTION_ROWS = 2
 const { t } = useI18n()
 const { current, canManage, isAdded, isUnknown, allows } = useWorkspaceContext()
 const { flat, isLoaded } = useWorkspaceFlat()
+useWorkspaceFlatSync()
 const { fullName } = useLocaleNames()
 const { addLanguage, makeBase } = useLanguageActions()
 const { updateDetails } = useWorkspaceActions()

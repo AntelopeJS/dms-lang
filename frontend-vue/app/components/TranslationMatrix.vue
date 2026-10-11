@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useWorkspaceFlatSync } from '../composables/translation/useWorkspaceFlat'
 import UButton from '@nuxt/ui/components/Button.vue'
 import UDropdownMenu from '@nuxt/ui/components/DropdownMenu.vue'
 import { useDmsRouter } from '#dms/frontend-module'
@@ -59,6 +60,7 @@ const { t } = useI18n()
 const { formatCount } = useLangFormat()
 const { selectedWorkspace, editable: serverEditable } = useI18nWorkspaces()
 const { flat, isLoaded, isLoading, hasError, reload } = useWorkspaceFlat()
+useWorkspaceFlatSync()
 const {
   current,
   isUnknown,

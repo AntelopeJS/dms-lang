@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { useWorkspaceFlatSync } from '../composables/translation/useWorkspaceFlat'
 import { translatedCount } from '../utils/translations'
 
 const { t } = useI18n()
 const { canManage, isUnknown, allows } = useWorkspaceContext()
 const { flat } = useWorkspaceFlat()
+useWorkspaceFlatSync()
 const { renameWorkspace, deleteWorkspace, downloadBackup } =
   useWorkspaceActions()
 const { route } = useWorkspaceRoute()

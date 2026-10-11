@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useWorkspaceFlatSync } from '../composables/translation/useWorkspaceFlat'
 import UButton from '@nuxt/ui/components/Button.vue'
 import UDropdownMenu from '@nuxt/ui/components/DropdownMenu.vue'
 import type { DropdownMenuItem } from '@nuxt/ui'
@@ -72,6 +73,7 @@ const { confirm } = useConfirm()
 const { formatCount } = useLangFormat()
 const { selectedWorkspace, exportWorkspace } = useI18nWorkspaces()
 const { flat, isLoaded } = useWorkspaceFlat()
+useWorkspaceFlatSync()
 const { canEditValues, canManage, isModules, isUnknown, allows } =
   useWorkspaceContext()
 const { switchLink } = useWorkspaceRoute()

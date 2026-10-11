@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useWorkspaceFlatSync } from '../composables/translation/useWorkspaceFlat'
 import { useDmsRouter, useDmsState } from '#dms/frontend-module'
 import type { DropdownMenuItem } from '@nuxt/ui'
 import type { WorkspaceSummary } from '../types/lang'
@@ -29,6 +30,7 @@ const {
   isResolved,
 } = useWorkspaceContext()
 const { flat } = useWorkspaceFlat()
+useWorkspaceFlatSync()
 const {
   route,
   switchLink,
