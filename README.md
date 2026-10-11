@@ -57,7 +57,7 @@ The backend registers `frontend-vue/dms.frontend.ts` through `AddFrontendModule`
 
 The module compiles against the published `@antelopejs/interface-dms` package, its only DMS runtime dependency. The `@antelopejs/dms` backend and the `@antelopejs/dms-frontend` adapter are development dependencies, needed to run the tests and the playground. Run `pnpm install`, `pnpm build` and `pnpm test` here.
 
-`pnpm test:unit` checks locale discovery and the coverage, placeholder and fallback helpers of the frontend. `pnpm test:frontend` compiles the module alongside the published core DMS frontend with the adapter's source verifier.
+`pnpm test:unit` checks locale discovery, the coverage, placeholder and message helpers of the frontend and the locale files. The backend tests (`src/test`: keys, workspaces, validation, coverage, summaries) run with `pnpm test` only: every backend file reaches an AntelopeJS interface (`@antelopejs/interface-api` for the errors, `@antelopejs/interface-dms` for the pages), and an interface refuses to load outside the AntelopeJS runtime. `pnpm test:frontend` compiles the module alongside the published core DMS frontend with the adapter's source verifier.
 
 Run `pnpm dev` for the backend and `pnpm frontend:dev` for the Inertia workspace. The playground connects to MongoDB at `mongodb://localhost:27017`; set `MONGO_URL` to use another instance. The frontend workspace uses the `ajs dms` commands for development, preparation and production builds. Use `pnpm typecheck` for the backend; run `pnpm typecheck` in the generated Vite workspace for frontend types. The adapter owns the generated aliases, auto-import declarations and Vue compiler configuration.
 
