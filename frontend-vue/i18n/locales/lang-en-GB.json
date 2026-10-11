@@ -351,8 +351,6 @@
 			"project_value": "Your project files show:",
 			"autosave": "Each field saves when you leave it",
 			"unsaved_count": "{n} field not saved | {n} fields not saved",
-			"unsaved_kept": "Your text for {key} is not saved yet",
-			"unsaved_kept_description": "Open the key again to finish it: the text is kept until then.",
 			"stays_title": "The panel stays on {key}",
 			"stays_description": "One of its fields is not saved (changed by someone else, or not valid). Settle it, then open the other key: what you typed is kept.",
 			"conflict": "Changed by someone else",

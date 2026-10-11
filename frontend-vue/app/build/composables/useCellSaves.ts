@@ -35,6 +35,9 @@ export interface CellAddress {
   code: string
 }
 
+/** A text of a cell that could not be saved, handed over to its cell. */
+export interface CellHold extends CellAddress, CellFailure {}
+
 interface KeptText extends CellAddress {
   draft: string
   message: string
@@ -270,6 +273,13 @@ function keepCell(
   context.states.setState(id, 'error')
 }
 
+function holdCell(context: CellContext, hold: CellHold) {
+  const { workspace, key, code, ...failure } = hold
+  const id = idOfCell({ workspace, key, code })
+  setFailure(context.store, id, failure)
+  context.states.setState(id, 'error')
+}
+
 function retryCell(context: CellContext, address: CellAddress) {
   const failure = context.store.failures.value[idOfCell(address)]
   if (failure) void queueSave(context, address, failure.draft, failure.expected)
@@ -319,6 +329,8 @@ export function useCellSaves(
       queueSave(context, address, draft, take(address)),
     keep: (address: CellAddress, draft: string, message: string) =>
       keepCell(context, starts, { ...address, draft, message }),
+    hold: (holds: CellHold[]) =>
+      holds.forEach((hold) => holdCell(context, hold)),
     retry: (address: CellAddress) => retryCell(context, address),
     discard: (address: CellAddress) => discardCell(context, address),
     markReviewed: (address: CellAddress) => markCellReviewed(context, address),

@@ -144,6 +144,7 @@ const panel = useKeyPanel({
   canOverride: () => isModules.value && serverEditable.value,
   isKnown: (key) => rowsByKey.value.has(key),
   onUnknown: (key) => void dropUnknownKey(key),
+  onKeep: (holds) => saves.hold(holds),
   onOverride: (key) => {
     const row = rowsByKey.value.get(key)
     if (row) void overrideKey(row)

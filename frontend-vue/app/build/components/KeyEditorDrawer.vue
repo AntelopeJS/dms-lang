@@ -1,18 +1,12 @@
-<script lang="ts">
-import type { ExpectedText } from '../../utils/keySaves'
-
-interface KeptDrafts {
-  drafts: Record<string, string>
-  starts: Record<string, ExpectedText>
-}
-
-const keptDrafts = new Map<string, KeptDrafts>()
-</script>
-
 <script setup lang="ts">
 import { useMediaQuery } from '@vueuse/core'
 import type { FlatTranslationRow } from '../../types/lang'
-import { storedText, type SaveState } from '../../utils/keySaves'
+import {
+  storedText,
+  type ExpectedText,
+  type SaveState,
+} from '../../utils/keySaves'
+import type { CellHold } from '../composables/useCellSaves'
 import {
   clearsBaseText,
   useEditStarts,
@@ -37,6 +31,8 @@ import PlaceholderText from './PlaceholderText.vue'
 
 interface Props {
   keys: string[]
+  /** The workspace the panel reads and saves, frozen while a key shows. */
+  workspace: string
   startIndex: number
   editable: boolean
   manageKeys: boolean
@@ -56,6 +52,8 @@ interface Emits {
   'update:open': [open: boolean]
   navigate: [key: string]
   override: [key: string]
+  /** Texts that could not be saved as the panel closed, handed to their cells. */
+  keep: [holds: CellHold[]]
 }
 
 interface KnownInherited {
@@ -65,7 +63,6 @@ interface KnownInherited {
 
 type FieldStatus = 'missing' | 'inherited' | 'overridden' | 'outdated' | 'done'
 
-const DRAFT_ID_SEPARATOR = '\u0000'
 const WIDE_SCREEN_QUERY = '(min-width: 1024px)'
 const BASE_MISSING_LABEL = 'dms_lang.matrix.source_missing'
 const FIELD_STATUS_LABELS: Record<FieldStatus, string> = {
@@ -87,14 +84,15 @@ const emit = defineEmits<Emits>()
 
 const { t } = useI18n()
 const toast = useToast()
-const { selectedWorkspace } = useI18nWorkspaces()
-const { flat } = useWorkspaceFlat()
+const { flatOf } = useWorkspaceFlat()
 const { nativeName } = useLocaleNames()
 const { renameKey, deleteKey, revertToModule } = useKeyActions()
 const { reportFailure } = useMutationToast()
 const saves = useKeySaves()
 
 const isOpen = ref(props.open)
+const workspace = ref(props.workspace)
+const flat = computed(() => flatOf(workspace.value))
 const currentKey = ref(props.keys[props.startIndex] ?? '')
 const drafts = ref<Record<string, string>>({})
 const editStarts = useEditStarts()
@@ -148,6 +146,8 @@ const pendingCount = computed(() => locales.value.filter(isWaiting).length)
 const isBusy = computed(() =>
   Object.values(fieldStates.value).includes('saving'),
 )
+
+useUnsavedChanges({ dirty: () => changedCodes.value.length > 0 })
 
 function ownOf(code: string): string {
   return isStored.value ? stringValue(row.value.values[code]) : ''
@@ -251,10 +251,6 @@ function overwrite(code: string) {
   save([code])
 }
 
-function draftId(workspace: string, path: string): string {
-  return `${workspace}${DRAFT_ID_SEPARATOR}${path}`
-}
-
 function fieldInput(code: string): HTMLTextAreaElement | null {
   return (
     body.value?.querySelector<HTMLTextAreaElement>(
@@ -338,7 +334,7 @@ async function confirmBaseClear(codes: string[]) {
 
 async function persist(codes: string[]): Promise<boolean> {
   const path = key.value
-  const workspace = selectedWorkspace.value
+  const target = workspace.value
   await confirmBaseClear(codes)
   if (key.value !== path) return false
   const { values, expected } = collect(codes)
@@ -346,7 +342,12 @@ async function persist(codes: string[]): Promise<boolean> {
   const isHeld = codes.some((code) => blocked.value[code] || hasConflict(code))
   if (!sent.length) return !isHeld
   sent.forEach((code) => setFieldState(code, 'saving'))
-  const outcome = await saves.write({ workspace, key: path, values, expected })
+  const outcome = await saves.write({
+    workspace: target,
+    key: path,
+    values,
+    expected,
+  })
   if (outcome.status === 'failed') {
     sent.forEach((code) => setFieldState(code, 'error', outcome.message))
     return false
@@ -376,17 +377,13 @@ function takeDrafts(typed: Record<string, string> | undefined) {
 }
 
 function show(path: string) {
-  const workspace = selectedWorkspace.value
-  const kept = keptDrafts.get(draftId(workspace, path))
-  keptDrafts.delete(draftId(workspace, path))
+  workspace.value = props.workspace
   currentKey.value = path
   fieldStates.value = {}
   fieldErrors.value = {}
   blocked.value = {}
-  drafts.value = { ...kept?.drafts }
+  drafts.value = {}
   editStarts.clear()
-  for (const [code, start] of Object.entries(kept?.starts ?? {}))
-    editStarts.set(code, start)
   if (path === props.keys[props.startIndex]) takeDrafts(props.initialDrafts)
   focusField(props.focusLocale)
 }
@@ -419,27 +416,28 @@ async function requestClose() {
   if (isSaved) finish()
 }
 
-async function closeFromOutside() {
-  const path = key.value
-  const workspace = selectedWorkspace.value
-  const isSaved = await flush()
-  isOpen.value = false
-  if (!isSaved) keepDrafts(workspace, path)
-  emit('close')
+function blockingText(code: string): string {
+  return issuesOf(code)
+    .filter((issue) => issue.severity === 'error')
+    .map((issue) => messageIssueText(issue, t))
+    .join(' ')
 }
 
-function keepDrafts(workspace: string, path: string) {
-  const codes = changedCodes.value
-  keptDrafts.set(draftId(workspace, path), {
-    drafts: Object.fromEntries(codes.map((code) => [code, draftOf(code)])),
-    starts: Object.fromEntries(codes.map((code) => [code, expectedOf(code)])),
-  })
-  toast.add({
-    title: t('dms_lang.drawer.unsaved_kept', { key: path }),
-    description: t('dms_lang.drawer.unsaved_kept_description'),
-    color: 'warning',
-    icon: 'i-ph-warning',
-  })
+function holdOf(code: string): CellHold {
+  const isConflict = hasConflict(code)
+  const target = { workspace: workspace.value, key: key.value, code }
+  const message = isConflict
+    ? t('dms_lang.drawer.conflict')
+    : fieldErrors.value[code] || blockingText(code)
+  const expected = isConflict ? storedOf(code) : expectedOf(code)
+  return { ...target, draft: draftOf(code), message, isConflict, expected }
+}
+
+async function closeFromOutside() {
+  const isSaved = await flush()
+  isOpen.value = false
+  if (!isSaved) emit('keep', changedCodes.value.map(holdOf))
+  emit('close')
 }
 
 function onToggle(open: boolean) {
@@ -471,7 +469,7 @@ async function rename() {
 async function markReviewed(code: string) {
   const path = key.value
   const outcome = await saves.markReviewed(
-    { workspace: selectedWorkspace.value, key: path },
+    { workspace: workspace.value, key: path },
     code,
   )
   if (outcome.status === 'failed') return reportFailure(outcome.error)
@@ -502,10 +500,11 @@ function stayOnKey() {
 }
 
 watch(
-  () => [props.keys[props.startIndex], props.initialDrafts] as const,
-  async ([target], _previous, onCleanup) => {
+  () =>
+    [props.keys[props.startIndex], props.initialDrafts, props.workspace] as const,
+  async ([target, , next], _previous, onCleanup) => {
     if (target === undefined) return
-    if (target === key.value) {
+    if (target === key.value && next === workspace.value) {
       takeDrafts(props.initialDrafts)
       return focusField(props.focusLocale)
     }

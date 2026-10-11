@@ -2,6 +2,7 @@ import type { Ref } from 'vue'
 import { useDmsRouter, useDmsState } from '#dms/frontend-module'
 import type { FlatTranslationRow } from '../../types/lang'
 import KeyEditorDrawer from '../components/KeyEditorDrawer.vue'
+import type { CellHold } from './useCellSaves'
 
 export interface PanelRequest {
   key: string
@@ -20,6 +21,8 @@ export interface PanelOptions {
   canOverride: () => boolean
   /** A read-only module key the panel offers to override. */
   onOverride: (key: string) => void
+  /** Texts the panel could not save as it closed: they wait in their cells. */
+  onKeep: (holds: CellHold[]) => void
   /** Whether the workspace holds the key, in any of its languages. */
   isKnown?: (key: string) => boolean
   /** A link names a key the workspace does not hold: the panel stays closed. */
@@ -82,6 +85,7 @@ function propsFor(context: PanelContext, request: PanelRequest) {
   return {
     keys: index < 0 ? [request.key] : keys,
     startIndex: Math.max(index, 0),
+    workspace: context.workspace.value,
     editable: options.editable(),
     manageKeys: options.manageKeys(),
     canOverride: options.canOverride(),
@@ -90,6 +94,7 @@ function propsFor(context: PanelContext, request: PanelRequest) {
     initialDrafts: request.initialDrafts,
     onNavigate: (key: string) => onNavigate(context, key),
     onOverride: options.onOverride,
+    onKeep: options.onKeep,
   }
 }
 

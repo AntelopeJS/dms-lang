@@ -351,8 +351,6 @@
 			"project_value": "Les fichiers du projet affichent :",
 			"autosave": "Chaque champ est enregistré quand vous le quittez",
 			"unsaved_count": "{n} champ non enregistré | {n} champs non enregistrés",
-			"unsaved_kept": "Votre texte pour {key} n'est pas encore enregistré",
-			"unsaved_kept_description": "Rouvrez la clé pour le terminer : le texte est conservé d'ici là.",
 			"stays_title": "Le panneau reste sur {key}",
 			"stays_description": "Un de ses champs n'est pas enregistré (modifié par quelqu'un d'autre, ou invalide). Réglez-le, puis ouvrez l'autre clé : le texte saisi est conservé.",
 			"conflict": "Modifié par quelqu'un d'autre",
