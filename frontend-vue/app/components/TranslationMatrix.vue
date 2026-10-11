@@ -23,10 +23,7 @@ import {
   useCellSaves,
   type CellAddress,
 } from '../build/composables/useCellSaves'
-import {
-  useCellEditor,
-  type CellMove,
-} from '../build/composables/useCellEditor'
+import { useCellEditor } from '../build/composables/useCellEditor'
 import {
   focusNeighbourCell,
   isTypingTarget,
@@ -273,32 +270,25 @@ function cellProps(row: FlatTranslationRow, column: LanguageCoverage) {
     isBase: column.isBase,
     editable: canEditValues.value,
     isEditing,
+    code,
+    initialDraft: editor.initialDraftOf(key, code),
     state: saves.stateOf(at(key, code)),
     failure: saves.failureOf(at(key, code)),
     rowKey: key,
     languageName: column.name,
     isOutdated: row.outdated?.includes(code) ?? false,
-    draft: editor.draftOf(key, code),
     changedElsewhere: isEditing
       ? saves.changedElsewhere(at(key, code))
       : undefined,
   }
 }
 
-function cellEvents(row: FlatTranslationRow, column: LanguageCoverage) {
-  const { key } = row
-  const { code } = column
-  return {
-    edit: () => editor.startEdit(key, code),
-    commit: (move: CellMove) => editor.commitCell(key, code, move),
-    cancel: editor.cancelEdit,
-    retry: () => editor.retryCell(key, code),
-    discard: () => saves.discard(at(key, code)),
-    escape: () => editor.escapeFailure(key, code),
-    openPanel: () => editor.openFromCell(key, code),
-    review: () => void saves.markReviewed(at(key, code)),
-    'update:draft': (value: string) => editor.setDraft(key, code, value),
-  }
+function discardCell(key: string, code: string) {
+  saves.discard(at(key, code))
+}
+
+function reviewCell(key: string, code: string) {
+  void saves.markReviewed(at(key, code))
 }
 
 function hideDone() {
@@ -606,7 +596,15 @@ onBeforeUnmount(() => {
           </p>
           <MatrixCell
             v-bind="cellProps(row, compactColumn)"
-            v-on="cellEvents(row, compactColumn)"
+            @edit="editor.startEdit"
+            @commit="editor.commitCell"
+            @cancel="editor.cancelEdit"
+            @retry="editor.retryCell"
+            @discard="discardCell"
+            @escape="editor.escapeFailure"
+            @open-panel="editor.openFromCell"
+            @review="reviewCell"
+            @draft="editor.trackDraft"
           />
         </div>
       </template>
@@ -726,7 +724,15 @@ onBeforeUnmount(() => {
             >
               <MatrixCell
                 v-bind="cellProps(row, column)"
-                v-on="cellEvents(row, column)"
+                @edit="editor.startEdit"
+                @commit="editor.commitCell"
+                @cancel="editor.cancelEdit"
+                @retry="editor.retryCell"
+                @discard="discardCell"
+                @escape="editor.escapeFailure"
+                @open-panel="editor.openFromCell"
+                @review="reviewCell"
+                @draft="editor.trackDraft"
               />
             </td>
           </tr>

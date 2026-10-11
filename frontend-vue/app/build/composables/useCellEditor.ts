@@ -1,5 +1,5 @@
 import type { Ref } from 'vue'
-import { saveIdOf, storedText, withEntry } from '../../utils/keySaves'
+import { storedText } from '../../utils/keySaves'
 import {
   checkMessage,
   escapeMessage,
@@ -31,6 +31,15 @@ export interface CellEditorOptions {
   onStart: (key: string) => void
 }
 
+interface EditingCell extends CellRef {
+  /** The text the cell opens with. */
+  draft: string
+}
+
+interface LiveDraft {
+  text: string | undefined
+}
+
 interface OpenedCell {
   workspace: string
   isBase: boolean
@@ -38,9 +47,10 @@ interface OpenedCell {
 
 interface EditorContext {
   options: CellEditorOptions
-  editing: Ref<CellRef | null>
+  editing: Ref<EditingCell | null>
   cursor: Ref<CellRef | null>
-  drafts: Ref<Record<string, string>>
+  live: LiveDraft
+  isDirty: Ref<boolean>
   opened: OpenedCell
   blockingText: (draft: string) => string
   clearBaseKept: () => string
@@ -55,26 +65,31 @@ function addressOf(
   return { workspace, key, code }
 }
 
-function idOf(context: EditorContext, key: string, code: string): string {
-  return saveIdOf(context.options.workspace.value, key, code)
-}
-
 function isEditing(context: EditorContext, key: string, code: string) {
   const cell = context.editing.value
   return cell?.key === key && cell.code === code
 }
 
-function setDraft(
+function trackDraft(
   context: EditorContext,
   key: string,
   code: string,
-  value: string | undefined,
+  text: string,
 ) {
-  context.drafts.value = withEntry(
-    context.drafts.value,
-    idOf(context, key, code),
-    value,
-  )
+  if (!isEditing(context, key, code)) return
+  context.live.text = text
+  context.isDirty.value = text !== context.options.shownValue(key, code)
+}
+
+function open(context: EditorContext, key: string, code: string, draft: string) {
+  context.editing.value = { key, code, draft }
+  trackDraft(context, key, code, draft)
+}
+
+function close(context: EditorContext) {
+  context.editing.value = null
+  context.live.text = undefined
+  context.isDirty.value = false
 }
 
 function isClearingBase(
@@ -107,100 +122,75 @@ function moveFrom(
   if (target) nextTick(() => startEdit(context, target.key, target.code))
 }
 
-function startEdit(context: EditorContext, key: string, code: string) {
+function startEdit(
+  context: EditorContext,
+  key: string,
+  code: string,
+  draft?: string,
+) {
   const { options } = context
   if (!options.canEdit() || isEditing(context, key, code)) return
   commitEditing(context)
   const address = addressOf(context, key, code)
-  if (context.drafts.value[idOf(context, key, code)] === undefined) {
-    const failure = options.saves.failureOf(address)
-    setDraft(
-      context,
-      key,
-      code,
-      failure?.draft ?? options.shownValue(key, code),
-    )
-  }
+  const failure = options.saves.failureOf(address)
   options.saves.begin(address)
   context.opened.workspace = options.workspace.value
   context.opened.isBase = code === options.baseLocale()
-  context.editing.value = { key, code }
+  open(context, key, code, draft ?? failure?.draft ?? options.shownValue(key, code))
   context.cursor.value = { key, code }
   options.onStart(key)
 }
 
 function cancelEdit(context: EditorContext) {
   const cell = context.editing.value
-  if (cell) {
-    setDraft(context, cell.key, cell.code, undefined)
-    context.options.saves.end(addressOf(context, cell.key, cell.code))
-  }
-  context.editing.value = null
+  if (cell) context.options.saves.end(addressOf(context, cell.key, cell.code))
+  close(context)
 }
 
 function commitEditing(context: EditorContext) {
   const cell = context.editing.value
-  if (cell) void commitCell(context, cell.key, cell.code, 'stay')
+  if (cell)
+    void commitCell(context, cell, 'stay', context.live.text ?? cell.draft)
 }
 
 async function commitCell(
   context: EditorContext,
-  key: string,
-  code: string,
+  cell: CellRef,
   move: CellMove,
+  draft: string,
 ) {
   const { saves, workspace, shownValue } = context.options
-  if (
-    isEditing(context, key, code) &&
-    context.opened.workspace !== workspace.value
-  )
+  const { key, code } = cell
+  const isOpen = isEditing(context, key, code)
+  if (isOpen && context.opened.workspace !== workspace.value)
     return leaveEditing(context)
+  if (isOpen) close(context)
   const address = addressOf(context, key, code)
-  const draft = context.drafts.value[idOf(context, key, code)]
-  setDraft(context, key, code, undefined)
-  if (isEditing(context, key, code)) context.editing.value = null
-  if (draft === undefined || draft === shownValue(key, code)) {
+  if (draft === shownValue(key, code)) {
     saves.end(address)
     return moveFrom(context, key, code, move)
   }
   if (
     isClearingBase(context, key, code, draft) &&
     !(await saves.confirmClearBase(key))
-  ) {
-    setDraft(context, key, code, draft)
-    context.editing.value = { key, code }
-    return
-  }
+  )
+    return open(context, key, code, draft)
   if (!keepInvalid(context, address, draft)) void saves.save(address, draft)
   moveFrom(context, key, code, move)
-}
-
-function takeOpenDraft(context: EditorContext): string | undefined {
-  const cell = context.editing.value
-  if (!cell) return undefined
-  const id = saveIdOf(context.opened.workspace, cell.key, cell.code)
-  const draft = context.drafts.value[id]
-  context.drafts.value = withEntry(context.drafts.value, id, undefined)
-  return draft
 }
 
 function leaveEditing(context: EditorContext) {
   const cell = context.editing.value
   if (!cell) return
   const { saves } = context.options
-  const address = addressOf(
-    context,
-    cell.key,
-    cell.code,
-    context.opened.workspace,
-  )
-  const draft = takeOpenDraft(context)
-  context.editing.value = null
+  const { workspace, isBase } = context.opened
+  const address = addressOf(context, cell.key, cell.code, workspace)
+  const draft = context.live.text ?? cell.draft
+  close(context)
   const origin = saves.originOf(address)
-  if (draft === undefined || storedText(draft) === (origin ?? null))
-    return saves.end(address)
+  if (storedText(draft) === (origin ?? null)) return saves.end(address)
   if (keepInvalid(context, address, draft)) return
-  if (context.opened.isBase && storedText(draft) === null && origin)
+  if (isBase && storedText(draft) === null && origin)
     return saves.keep(address, draft, context.clearBaseKept())
   void saves.save(address, draft)
 }
@@ -249,46 +239,44 @@ async function openKey(
   }
 }
 
-async function reopenEditor(context: EditorContext, key: string, code: string) {
-  context.editing.value = null
+async function reopenEditor(
+  context: EditorContext,
+  key: string,
+  code: string,
+  draft: string,
+) {
+  close(context)
   await nextTick()
-  if (!context.editing.value) context.editing.value = { key, code }
+  if (!context.editing.value) open(context, key, code, draft)
 }
 
-async function openFromCell(context: EditorContext, key: string, code: string) {
+async function openFromCell(
+  context: EditorContext,
+  key: string,
+  code: string,
+  draft: string,
+) {
   const { saves, panel, shownValue } = context.options
   const address = addressOf(context, key, code)
-  const draft = context.drafts.value[idOf(context, key, code)]
   const failure = saves.failureOf(address)
-  const typed = draft !== undefined && draft !== shownValue(key, code)
-  const text = typed ? draft : failure?.draft
+  const text = draft !== shownValue(key, code) ? draft : failure?.draft
   const initialDrafts = text === undefined ? undefined : { [code]: text }
   const isShown = await panel.open({ key, focusLocale: code, initialDrafts })
   if (!isEditing(context, key, code)) return
-  if (!isShown) return reopenEditor(context, key, code)
-  setDraft(context, key, code, undefined)
+  if (!isShown) return reopenEditor(context, key, code, draft)
   saves.end(address)
   if (failure) saves.discard(address)
-  context.editing.value = null
-}
-
-function hasOpenDraft(context: EditorContext): boolean {
-  const cell = context.editing.value
-  if (!cell) return false
-  const draft = context.drafts.value[idOf(context, cell.key, cell.code)]
-  return (
-    draft !== undefined &&
-    draft !== context.options.shownValue(cell.key, cell.code)
-  )
+  close(context)
 }
 
 function useEditorContext(options: CellEditorOptions): EditorContext {
   const { t } = useI18n()
   return {
     options,
-    editing: ref<CellRef | null>(null),
+    editing: ref<EditingCell | null>(null),
     cursor: ref<CellRef | null>(null),
-    drafts: ref<Record<string, string>>({}),
+    live: { text: undefined },
+    isDirty: ref(false),
     opened: { workspace: '', isBase: false },
     blockingText: (draft) =>
       checkMessage('', draft)
@@ -307,29 +295,27 @@ function useEditorContext(options: CellEditorOptions): EditorContext {
  */
 export function useCellEditor(options: CellEditorOptions) {
   const context = useEditorContext(options)
-  const { editing, cursor, drafts } = context
 
   return {
-    editingCell: readonly(editing),
-    cursor: readonly(cursor),
-    hasOpenDraft: computed(() => hasOpenDraft(context)),
+    cursor: readonly(context.cursor),
+    hasOpenDraft: readonly(context.isDirty),
     isEditing: (key: string, code: string) => isEditing(context, key, code),
-    draftOf: (key: string, code: string) =>
-      drafts.value[idOf(context, key, code)] ?? '',
-    setDraft: (key: string, code: string, value: string) =>
-      setDraft(context, key, code, value),
+    initialDraftOf: (key: string, code: string) =>
+      isEditing(context, key, code) ? (context.editing.value?.draft ?? '') : '',
+    trackDraft: (key: string, code: string, text: string) =>
+      trackDraft(context, key, code, text),
     startEdit: (key: string, code: string) => startEdit(context, key, code),
     cancelEdit: () => cancelEdit(context),
     commitEditing: () => commitEditing(context),
-    commitCell: (key: string, code: string, move: CellMove) =>
-      commitCell(context, key, code, move),
+    commitCell: (key: string, code: string, move: CellMove, draft: string) =>
+      commitCell(context, { key, code }, move, draft),
     leaveEditing: () => leaveEditing(context),
     retryCell: (key: string, code: string) => retryCell(context, key, code),
     escapeFailure: (key: string, code: string) =>
       escapeFailure(context, key, code),
     openKey: (key: string, focusLocale?: string) =>
       openKey(context, key, focusLocale),
-    openFromCell: (key: string, code: string) =>
-      openFromCell(context, key, code),
+    openFromCell: (key: string, code: string, draft: string) =>
+      openFromCell(context, key, code, draft),
   }
 }
