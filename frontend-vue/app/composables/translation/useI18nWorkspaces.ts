@@ -35,7 +35,7 @@ const ENDPOINTS = {
   workspace: `${API_BASE}/workspace`,
   workspaceRename: `${API_BASE}/workspace/rename`,
   locale: `${API_BASE}/locale`,
-  localeDefault: `${API_BASE}/locale/default`,
+  languages: `${API_BASE}/languages`,
   key: `${API_BASE}/key`,
   keyRename: `${API_BASE}/key/rename`,
   keyOverride: `${API_BASE}/key/override`,
@@ -48,11 +48,7 @@ const LAST_WORKSPACE_COOKIE = 'dms-lang-workspace'
 const LAST_WORKSPACE_MAX_AGE = 60 * 60 * 24 * 365
 
 const WORKSPACE_ID_RE = /^[a-z0-9][\w-]{0,63}$/
-const RESERVED_WORKSPACE_IDS = new Set([
-  DEFAULT_WORKSPACE,
-  MODULES_WORKSPACE,
-  'all',
-])
+const RESERVED_WORKSPACE_IDS = new Set([DEFAULT_WORKSPACE, MODULES_WORKSPACE])
 
 export function normalizeWorkspaceId(raw: string): string {
   return raw.trim().toLowerCase()
@@ -60,6 +56,11 @@ export function normalizeWorkspaceId(raw: string): string {
 
 export function isValidWorkspaceId(id: string): boolean {
   return WORKSPACE_ID_RE.test(id) && !RESERVED_WORKSPACE_IDS.has(id)
+}
+
+/** The route of one language of a workspace: removing it, making it the base. */
+function languageUrl(workspace: string, code: string): string {
+  return `${ENDPOINTS.languages}/${encodeURIComponent(workspace)}/${encodeURIComponent(code)}`
 }
 
 function useLastWorkspace() {
@@ -108,20 +109,13 @@ function useKeyWrites() {
       values: KeyValues,
       before?: string,
     ) => send(ENDPOINTS.key, 'POST', { workspace, path, values, before }),
-    upsertKey: (
+    /** `expected`: the texts the change was made on, a 409 when they changed since. */
+    updateKey: (
       workspace: string,
       path: string,
       values: KeyValues = {},
-      defaultLocale?: string,
       expected?: KeyValues,
-    ) =>
-      send(ENDPOINTS.key, 'PUT', {
-        workspace,
-        path,
-        values,
-        defaultLocale,
-        expected,
-      }),
+    ) => send(ENDPOINTS.key, 'PUT', { workspace, path, values, expected }),
     revertOverride: (workspace: string, path: string, locales?: string[]) =>
       send(ENDPOINTS.keyOverride, 'DELETE', { workspace, path, locales }),
   }
@@ -145,9 +139,9 @@ function useWorkspaceWrites() {
     addLocale: (workspace: string, locale: WorkspaceLocale) =>
       send(ENDPOINTS.locale, 'POST', { workspace, ...locale }),
     removeLocale: (workspace: string, code: string) =>
-      send(ENDPOINTS.locale, 'DELETE', { workspace, code }),
+      $authFetch(languageUrl(workspace, code), { method: 'DELETE' }),
     setDefaultLocale: (workspace: string, code: string) =>
-      send(ENDPOINTS.localeDefault, 'POST', { workspace, code }),
+      $authFetch(`${languageUrl(workspace, code)}/base`, { method: 'POST' }),
     renameKey: (workspace: string, path: string, newPath: string) =>
       send(ENDPOINTS.keyRename, 'POST', { workspace, path, newPath }),
     deleteKey: (workspace: string, path: string) =>
@@ -158,10 +152,7 @@ function useWorkspaceWrites() {
 function useWorkspaceReads() {
   const { $authFetch } = useAuthFetch()
   return {
-    fetchSummary: (defaultLocale: string) =>
-      $authFetch<SummaryResponse>(ENDPOINTS.summary, {
-        query: { defaultLocale },
-      }),
+    fetchSummary: () => $authFetch<SummaryResponse>(ENDPOINTS.summary),
     exportWorkspace: (workspace: string) =>
       $authFetch<Record<string, Record<string, unknown>>>(ENDPOINTS.export, {
         query: { workspace },

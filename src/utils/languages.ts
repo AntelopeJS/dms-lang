@@ -4,7 +4,7 @@ import type {
   ComposedTextCountParam,
   ComposedTextNumberParam,
 } from "@antelopejs/interface-dms/base/types";
-import { FALLBACK_LOCALE, listAllWorkspaces } from "./catalog";
+import { listAllWorkspaces } from "./catalog";
 import { type FlatResult, isRowMissing, resolveFlat } from "./resolve";
 
 const TEXTS = "dms_lang";
@@ -198,7 +198,7 @@ export function listLanguages(
   workspace: string,
   sort: LanguageSort = {},
 ): LanguageRows {
-  const flat = resolveFlat(workspace, FALLBACK_LOCALE);
+  const flat = resolveFlat(workspace);
   const rights = rightsOf(workspace);
   const results = flat.locales
     .map((code) => {

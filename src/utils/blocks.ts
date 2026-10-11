@@ -5,11 +5,7 @@ import type {
   ComposedText,
   Tone,
 } from "@antelopejs/interface-dms/base/types";
-import {
-  FALLBACK_LOCALE,
-  listAllWorkspaces,
-  resolveWorkspaceId,
-} from "./catalog";
+import { listAllWorkspaces, resolveWorkspaceId } from "./catalog";
 import { coveragePercent, percentParam } from "./languages";
 import { dropsPlaceholder } from "./placeholders";
 import { type FlatResult, isRowMissing, resolveFlat } from "./resolve";
@@ -92,7 +88,7 @@ function keysDetail(
 
 /** The four headline figures of a workspace (Overview). */
 export function workspaceKpis(workspace: string): BlockItems<StatGroupItem> {
-  const flat = resolveFlat(resolveWorkspaceId(workspace), FALLBACK_LOCALE);
+  const flat = resolveFlat(resolveWorkspaceId(workspace));
   const targets = targetLocales(flat).length;
   const missing = sumMissing(flat);
   const coverage = meanCoverage(flat);
@@ -166,7 +162,7 @@ export function workspaceAbout(
   const id = resolveWorkspaceId(workspace);
   const summary = listAllWorkspaces().find((entry) => entry.id === id);
   if (!summary) return { items: [] };
-  const flat = resolveFlat(id, FALLBACK_LOCALE);
+  const flat = resolveFlat(id);
   return {
     items: [
       ...detailItems(summary),
@@ -219,7 +215,7 @@ export function localeStats(
   workspace: string,
   locale: string,
 ): BlockItems<StatGroupItem> {
-  const flat = resolveFlat(resolveWorkspaceId(workspace), FALLBACK_LOCALE);
+  const flat = resolveFlat(resolveWorkspaceId(workspace));
   if (!flat.locales.includes(locale)) return { items: [] };
   const missing = flat.rows.filter((row) => isRowMissing(row, locale)).length;
   const translated = flat.rows.length - missing;

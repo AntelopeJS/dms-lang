@@ -1,11 +1,7 @@
 <script setup lang="ts">
 import UButton from '@nuxt/ui/components/Button.vue'
 import type { WorkspaceStats } from '../types/lang'
-import {
-  COVERAGE_TEXT_CLASSES,
-  coverageTone,
-  resolveDefaultLocale,
-} from '../utils/translations'
+import { COVERAGE_TEXT_CLASSES, coverageTone } from '../utils/translations'
 import { matchesWorkspace, sortWorkspaces } from '../utils/workspaces'
 import type { WorkspaceSort } from '../utils/workspaces'
 import LocaleTile from '../build/components/LocaleTile.vue'
@@ -41,7 +37,6 @@ const SORT_LABELS: Record<WorkspaceSort, string> = {
 
 const { t } = useI18n()
 const { formatCount } = useLangFormat()
-const { fallbackLocale } = useI18n()
 const { fetchSummary, selectedWorkspace, editable, fetchWorkspaces } =
   useI18nWorkspaces()
 const { createWorkspace, importWorkspace } = useWorkspaceActions()
@@ -101,9 +96,7 @@ function writeSort(value: WorkspaceSort) {
 async function load() {
   isLoading.value = true
   try {
-    const response = await fetchSummary(
-      resolveDefaultLocale(fallbackLocale.value),
-    )
+    const response = await fetchSummary()
     summary.value = response?.workspaces ?? []
     editable.value = response?.editable ?? false
     hasError.value = false

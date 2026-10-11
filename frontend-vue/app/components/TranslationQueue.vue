@@ -71,7 +71,7 @@ const { t } = useI18n()
 const toast = useToast()
 const { confirm } = useConfirm()
 const { formatCount } = useLangFormat()
-const { selectedWorkspace, upsertKey, exportWorkspace } = useI18nWorkspaces()
+const { selectedWorkspace, updateKey, exportWorkspace } = useI18nWorkspaces()
 const { flat, isLoaded, update } = useWorkspaceFlat()
 const { canEditValues, canManage, isModules, isUnknown, allows } =
   useWorkspaceContext()
@@ -586,11 +586,10 @@ async function write(row: FlatTranslationRow, value: string) {
   const expected =
     start === undefined ? (row.values[locale.value] ?? null) : start
   try {
-    const response = (await upsertKey(
+    const response = (await updateKey(
       selectedWorkspace.value,
       row.key,
       { [locale.value]: value || null },
-      baseLocale.value,
       { [locale.value]: expected },
     )) as SaveResponse | undefined
     changeRow(row.key, (target) => {

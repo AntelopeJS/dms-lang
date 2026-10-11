@@ -37,7 +37,7 @@ export const useKeyActions = () => {
   const {
     selectedWorkspace,
     deleteKey: removeKey,
-    upsertKey,
+    updateKey,
     createKey,
     revertOverride,
   } = useI18nWorkspaces()
@@ -58,7 +58,7 @@ export const useKeyActions = () => {
       await createKey(workspace, path, values, before)
     } catch (error) {
       if (!isMissingRoute(error)) throw error
-      await upsertKey(workspace, path, values, flat.value.defaultLocale)
+      await updateKey(workspace, path, values)
     }
   }
 
@@ -176,12 +176,7 @@ export const useKeyActions = () => {
 
   async function restoreOverride(workspace: string, row: FlatTranslationRow) {
     const ok = await tryMutate(() =>
-      upsertKey(
-        workspace,
-        row.key,
-        filledValues(row),
-        flat.value.defaultLocale,
-      ),
+      updateKey(workspace, row.key, filledValues(row)),
     )
     if (ok) await reload()
   }

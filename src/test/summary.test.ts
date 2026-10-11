@@ -193,7 +193,7 @@ describe("[integration] workspace summary, export and overrides", () => {
   });
 
   it("flags the module keys the project files redefine", () => {
-    const rows = resolveFlat("modules", "en").rows;
+    const rows = resolveFlat("modules").rows;
     const title = rows.find((row) => row.key === "summaryFixture.title");
     const body = rows.find((row) => row.key === "summaryFixture.body");
     expect(title?.overridden).to.equal(true);

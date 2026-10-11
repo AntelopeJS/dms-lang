@@ -20,7 +20,6 @@ import {
   placeholdersOf,
   refreshCounts,
   replacePlaceholder,
-  resolveDefaultLocale,
   rowHasIssue,
   scanMessage,
 } from "../frontend-vue/app/utils/translations.ts";
@@ -47,18 +46,6 @@ const flat = {
   localeMissing: {},
   totalKeys: 3,
 };
-
-test("translation default comes from the fallback chain", () => {
-  assert.equal(resolveDefaultLocale("fr"), "fr");
-  assert.equal(resolveDefaultLocale(["nl", "en"]), "nl");
-  assert.equal(
-    resolveDefaultLocale({ fr: ["de"], default: ["it", "en"] }),
-    "it",
-  );
-  assert.equal(resolveDefaultLocale([]), "en");
-  assert.equal(resolveDefaultLocale(false), "en");
-  assert.equal(resolveDefaultLocale({ fr: ["de"] }), "en");
-});
 
 test("placeholders are read from the text and compared with the base", () => {
   assert.deepEqual(placeholdersOf("Pay {amount} now, {amount} {user_name}"), [

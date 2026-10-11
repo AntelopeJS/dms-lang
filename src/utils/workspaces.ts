@@ -39,7 +39,6 @@ export interface WorkspaceManifest extends WorkspaceDetails {
 
 export const DEFAULT_WORKSPACE = "default";
 export const MODULES_WORKSPACE = "modules";
-export const ALL_WORKSPACE = "all";
 
 export type WorkspaceKind = "default" | "modules" | "added";
 
@@ -63,11 +62,7 @@ export interface WorkspaceSummary extends WorkspaceDetails {
 const MANIFEST_FILE = ".workspace.json";
 const JSON_EXTENSION = ".json";
 const WORKSPACE_ID_RE = /^[a-z0-9][\w-]{0,63}$/;
-const RESERVED_IDS = new Set([
-  DEFAULT_WORKSPACE,
-  MODULES_WORKSPACE,
-  ALL_WORKSPACE,
-]);
+const RESERVED_IDS = new Set([DEFAULT_WORKSPACE, MODULES_WORKSPACE]);
 const LOCALE_FILE_RE = /^[A-Z]{2,3}(?:[-_][A-Z0-9]{2,8})*$/i;
 
 export function assertEditable(): void {

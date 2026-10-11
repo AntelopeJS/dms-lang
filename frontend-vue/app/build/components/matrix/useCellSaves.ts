@@ -91,7 +91,7 @@ function isNotFound(error: unknown): boolean {
 export function useCellSaves(onTouched: (key: string) => void) {
   const { t } = useI18n()
   const toast = useToast()
-  const { selectedWorkspace, upsertKey } = useI18nWorkspaces()
+  const { selectedWorkspace, updateKey } = useI18nWorkspaces()
   const { flat, update, reload } = useWorkspaceFlat()
   const { reportFailure, errorMessage, isConflict, serverErrorCode } =
     useMutationToast()
@@ -283,11 +283,10 @@ export function useCellSaves(onTouched: (key: string) => void) {
     if (pending.value[id] !== value) return
     waiting.delete(id)
     try {
-      const response = await upsertKey(
+      const response = await updateKey(
         workspace,
         key,
         { [code]: storedValue(value) },
-        flat.value.defaultLocale,
         expected === undefined ? undefined : { [code]: expected },
       )
       applySaved(workspace, key, code, value, response?.row)

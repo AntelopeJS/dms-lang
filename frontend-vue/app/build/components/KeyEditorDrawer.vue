@@ -86,7 +86,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const toast = useToast()
-const { selectedWorkspace, upsertKey } = useI18nWorkspaces()
+const { selectedWorkspace, updateKey } = useI18nWorkspaces()
 const { flat, update, reload } = useWorkspaceFlat()
 const { nativeName } = useLocaleNames()
 const { renameKey, deleteKey, revertToModule } = useKeyActions()
@@ -379,13 +379,7 @@ async function persist(codes: string[]): Promise<boolean> {
   if (!sent.length) return !isBlocked
   sent.forEach((code) => setFieldState(code, 'saving'))
   try {
-    const response = await upsertKey(
-      workspace,
-      path,
-      values,
-      base.value,
-      expected,
-    )
+    const response = await updateKey(workspace, path, values, expected)
     applyRow(path, values, response?.row)
     if (key.value === path) settle(sent, values)
     hasSaved = true

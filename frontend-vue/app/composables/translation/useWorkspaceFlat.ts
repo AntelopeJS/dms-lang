@@ -1,12 +1,7 @@
 import type { Ref } from 'vue'
 import { useDmsState } from '#dms/frontend-module'
 import type { FlatTranslations } from '../../types/lang'
-import {
-  EMPTY_FLAT,
-  cloneFlat,
-  refreshCounts,
-  resolveDefaultLocale,
-} from '../../utils/translations'
+import { EMPTY_FLAT, cloneFlat, refreshCounts } from '../../utils/translations'
 
 const FLAT_ENDPOINT = '/api/lang/translations/flat'
 
@@ -141,11 +136,9 @@ function useRealtimeRejoin() {
  */
 export const useWorkspaceFlat = () => {
   const { $authFetch } = useAuthFetch()
-  const { fallbackLocale } = useI18n()
   const { selectedWorkspace, fetchWorkspaces } = useI18nWorkspaces()
   const store = useFlatStore()
 
-  const baseLocale = computed(() => resolveDefaultLocale(fallbackLocale.value))
   const flat = computed(
     () => store.entries.value[selectedWorkspace.value] ?? EMPTY_FLAT,
   )
@@ -171,7 +164,7 @@ export const useWorkspaceFlat = () => {
     try {
       const response = await $authFetch<Partial<FlatTranslations>>(
         FLAT_ENDPOINT,
-        { query: { workspace, defaultLocale: baseLocale.value } },
+        { query: { workspace } },
       )
       store.entries.value = {
         ...store.entries.value,
@@ -274,7 +267,6 @@ export const useWorkspaceFlat = () => {
 
   return {
     flat,
-    baseLocale,
     isLoading,
     isLoaded,
     hasError,

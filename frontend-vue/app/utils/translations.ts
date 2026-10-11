@@ -6,8 +6,6 @@ import type {
   NamespaceCoverage,
 } from '../types/lang'
 
-type LocaleFallback = string | string[] | Record<string, string[]> | false
-
 export type MessagePartKind =
   'text' | 'placeholder' | 'literal' | 'linked' | 'pipe'
 
@@ -82,7 +80,6 @@ export type MessageTranslate = (
 ) => string
 
 const FULL_COVERAGE = 100
-const DEFAULT_LOCALE = 'en'
 const NAMESPACE_SEPARATOR = '.'
 const OPEN_BRACE = '{'
 const CLOSE_BRACE = '}'
@@ -761,11 +758,4 @@ export const COVERAGE_TEXT_CLASSES: Record<
 /** Placeholder names written as they appear in a text: `{name} {count}`. */
 export function formatTokens(names: string[]): string {
   return names.map((name) => `{${name}}`).join(' ')
-}
-
-/** The first language of a vue-i18n fallback chain: the base of the project files. */
-export function resolveDefaultLocale(fallback: LocaleFallback): string {
-  if (typeof fallback === 'string') return fallback
-  if (Array.isArray(fallback)) return fallback[0] ?? DEFAULT_LOCALE
-  return (fallback && fallback.default?.[0]) || DEFAULT_LOCALE
 }

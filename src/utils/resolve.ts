@@ -2,48 +2,22 @@ import { modulesBaseLocale, projectBaseLocale } from "./catalog";
 import { getLocaleCodes, loadMessages } from "./registry";
 import { outdatedLocales } from "./review";
 import {
-  buildTree,
   deepMerge,
-  extractTranslationsByPath,
   getValueAtPath,
   isMissing,
   leafPaths,
   type LocaleMessages,
   progressOf,
   type TranslationValue,
-  type TreeItem,
   unionKeys,
 } from "./tree";
 import {
-  ALL_WORKSPACE,
-  DEFAULT_WORKSPACE,
   getWorkspaceManifest,
-  listWorkspaces,
   loadWorkspaceMessages,
-  MODULES_WORKSPACE,
   type TranslationSources,
   type WorkspaceKind,
   workspaceKind,
 } from "./workspaces";
-
-export {
-  ALL_WORKSPACE,
-  DEFAULT_WORKSPACE,
-  MODULES_WORKSPACE,
-  type WorkspaceKind,
-  workspaceKind,
-};
-
-export interface TranslationData {
-  tree: TreeItem[];
-  localeProgress: Record<string, number>;
-  totalKeys: number;
-}
-
-export interface ByPathResult {
-  translations: Record<string, TranslationValue>;
-  inherited?: Record<string, TranslationValue>;
-}
 
 export interface FlatRow {
   key: string;
@@ -201,14 +175,8 @@ function summarizeRows(context: FlatContext, rows: FlatRow[]): FlatResult {
   };
 }
 
-/**
- * The rows of a workspace and their coverage. Default and modules take the base language of the
- * project, decided by the server; `_fallbackDefaultLocale` is kept for older callers and ignored.
- */
-export function resolveFlat(
-  workspace: string,
-  _fallbackDefaultLocale?: string,
-): FlatResult {
+/** The rows of a workspace and their coverage; default and modules take the base language the server decides. */
+export function resolveFlat(workspace: string): FlatResult {
   const context = contextOf(workspace);
   const rows = leafPaths(keysOf(context)).map((key) =>
     buildFlatRow(context, key),
@@ -230,88 +198,4 @@ export function resolveRow(
     ),
   );
   return exists ? row : undefined;
-}
-
-export function resolveTranslationData(
-  workspace: string,
-  _fallbackDefaultLocale?: string,
-): TranslationData {
-  const context = contextOf(workspace);
-  const presence: LocaleMessages = {};
-  for (const locale of context.locales) {
-    presence[locale] = deepMerge(
-      context.inherited?.[locale] ?? {},
-      context.presence[locale] ?? {},
-    );
-  }
-  const flat = resolveFlat(workspace);
-  return {
-    tree: buildTree(keysOf(context), presence),
-    localeProgress: flat.localeProgress,
-    totalKeys: flat.totalKeys,
-  };
-}
-
-function ownByPath(path: string): ByPathResult {
-  const context = ownFlatContext();
-  return {
-    translations: valuesAtPath(context.presence, context.locales, path),
-    inherited: valuesAtPath(context.inherited ?? {}, context.locales, path),
-  };
-}
-
-export function resolveTranslationsByPath(
-  workspace: string,
-  path: string,
-): ByPathResult {
-  if (workspaceKind(workspace) === "default") return ownByPath(path);
-  return {
-    translations: extractTranslationsByPath(
-      contextOf(workspace).presence,
-      path,
-    ),
-  };
-}
-
-function aggregateRows(parts: FlatResult[]): FlatRow[] {
-  return parts.flatMap((part) => part.rows);
-}
-
-export function resolveAggregatedFlat(
-  _fallbackDefaultLocale?: string,
-): FlatResult {
-  const ids = [
-    DEFAULT_WORKSPACE,
-    MODULES_WORKSPACE,
-    ...listWorkspaces().map((workspace) => workspace.id),
-  ];
-  const parts = ids.map((id) => resolveFlat(id));
-  const expected: Record<string, number> = {};
-  const localeMissing: Record<string, number> = {};
-  for (const part of parts) {
-    for (const locale of part.locales) {
-      expected[locale] = (expected[locale] ?? 0) + part.totalKeys;
-      localeMissing[locale] =
-        (localeMissing[locale] ?? 0) + (part.localeMissing[locale] ?? 0);
-    }
-  }
-  const localeProgress: Record<string, number> = {};
-  for (const [locale, total] of Object.entries(expected)) {
-    localeProgress[locale] = progressOf(
-      total - (localeMissing[locale] ?? 0),
-      total,
-    );
-  }
-  const sum = (field: "totalKeys" | "baseMissing" | "incompleteKeys") =>
-    parts.reduce((total, part) => total + part[field], 0);
-  return {
-    defaultLocale: parts[0]?.defaultLocale ?? projectBaseLocale(),
-    locales: Object.keys(expected).sort(),
-    rows: aggregateRows(parts),
-    localeProgress,
-    localeMissing,
-    totalKeys: sum("totalKeys"),
-    baseMissing: sum("baseMissing"),
-    incompleteKeys: sum("incompleteKeys"),
-  };
 }

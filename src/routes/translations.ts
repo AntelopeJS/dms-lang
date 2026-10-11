@@ -49,15 +49,7 @@ import {
   renameKeyFor,
   updateKeyFor,
 } from "../utils/mutations";
-import {
-  ALL_WORKSPACE,
-  type FlatRow,
-  resolveAggregatedFlat,
-  resolveFlat,
-  resolveRow,
-  resolveTranslationData,
-  resolveTranslationsByPath,
-} from "../utils/resolve";
+import { type FlatRow, resolveFlat, resolveRow } from "../utils/resolve";
 import { markReviewedFor } from "../utils/review";
 import { summarizeWorkspaces } from "../utils/summary";
 import {
@@ -272,37 +264,9 @@ export class TranslationsController extends Controller(
     return backupWorkspace(resolveWorkspaceId(workspace));
   }
 
-  @Get("/tree")
-  tree(@Parameter("workspace", "query") workspace?: string) {
-    const data = resolveTranslationData(resolveWorkspaceId(workspace));
-    return { tree: data.tree, totalKeys: data.totalKeys };
-  }
-
-  @Get("/progress")
-  progress(@Parameter("workspace", "query") workspace?: string) {
-    const data = resolveTranslationData(resolveWorkspaceId(workspace));
-    return { localeProgress: data.localeProgress, totalKeys: data.totalKeys };
-  }
-
   @Get("/flat")
   flat(@Parameter("workspace", "query") workspace?: string) {
-    if (normalizeWorkspaceId(workspace) === ALL_WORKSPACE) {
-      return resolveAggregatedFlat();
-    }
     return resolveFlat(resolveWorkspaceId(workspace));
-  }
-
-  @Get("/by-path")
-  byPath(
-    @Parameter("path", "query") path?: string,
-    @Parameter("workspace", "query") workspace?: string,
-  ) {
-    const key = path ?? "";
-    const { translations, inherited } = resolveTranslationsByPath(
-      resolveWorkspaceId(workspace),
-      key,
-    );
-    return { path: key, translations, inherited };
   }
 
   @Post("/workspace")
@@ -375,29 +339,6 @@ export class TranslationsController extends Controller(
     const added = addLocale(id, locale);
     announce(id);
     return added;
-  }
-
-  @Delete("/locale")
-  removeLocale(
-    @AuthUserWithPermission(manageLanguagesAction) _user: User,
-    @JsonBody() body: unknown,
-  ) {
-    const { workspace, code } = validate(workspaceSchema.language, body);
-    const id = editableWorkspace(workspace);
-    removeLocale(id, code);
-    announce(id);
-  }
-
-  @Post("/locale/default")
-  setDefaultLocale(
-    @AuthUserWithPermission(manageLanguagesAction) _user: User,
-    @JsonBody() body: unknown,
-  ): DefaultLocaleResult {
-    const { workspace, code } = validate(workspaceSchema.language, body);
-    const id = editableWorkspace(workspace);
-    const defaultLocale = setWorkspaceDefaultLocale(id, code);
-    announce(id);
-    return { defaultLocale };
   }
 
   @Post("/key")

@@ -1,18 +1,9 @@
 export type TranslationValue = string | number | boolean | null | undefined;
 
-export interface TreeItem {
-  label: string;
-  value: string;
-  children?: TreeItem[];
-  defaultExpanded?: boolean;
-  trailingIcon?: string;
-}
-
 export interface LocaleMessages {
   [locale: string]: Record<string, unknown>;
 }
 
-const MISSING_ICON = "i-lucide-circle-alert";
 export const PROGRESS_PRECISION_FACTOR = 10000;
 export const FULL_PROGRESS = 100;
 
@@ -94,59 +85,4 @@ export function progressOf(existing: number, total: number): number {
   return (
     Math.floor((existing / total) * PROGRESS_PRECISION_FACTOR) / FULL_PROGRESS
   );
-}
-
-function hasMissingLocale(
-  localeMessages: LocaleMessages,
-  path: string,
-): boolean {
-  return Object.values(localeMessages).some((messages) =>
-    isMissing(getValueAtPath(messages, path)),
-  );
-}
-
-/** The key tree of the matrix sidebar, flagging the branches holding a missing text. */
-export function buildTree(
-  keys: Record<string, unknown>,
-  localeMessages: LocaleMessages,
-  prefix = "",
-): TreeItem[] {
-  return Object.entries(keys).map(([key, value]) => {
-    const fullPath = prefix ? `${prefix}.${key}` : key;
-    if (isObject(value)) {
-      const hasMissing = leafPaths(value, fullPath).some((path) =>
-        hasMissingLocale(localeMessages, path),
-      );
-      return {
-        label: key,
-        value: fullPath,
-        children: buildTree(value, localeMessages, fullPath),
-        defaultExpanded: false,
-        trailingIcon: hasMissing ? MISSING_ICON : undefined,
-      };
-    }
-    return {
-      label: key,
-      value: fullPath,
-      trailingIcon: hasMissingLocale(localeMessages, fullPath)
-        ? MISSING_ICON
-        : undefined,
-    };
-  });
-}
-
-export function extractTranslationsByPath(
-  messages: LocaleMessages,
-  path: string,
-): Record<string, TranslationValue> {
-  const translations: Record<string, TranslationValue> = {};
-
-  Object.entries(messages).forEach(([localeCode, localeMessages]) => {
-    const value = getValueAtPath(localeMessages, path);
-    translations[localeCode] = isMissing(value)
-      ? undefined
-      : (value as TranslationValue);
-  });
-
-  return translations;
 }

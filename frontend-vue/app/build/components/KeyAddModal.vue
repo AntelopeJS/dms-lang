@@ -51,7 +51,7 @@ const emit = defineEmits<{ close: [added: string[]] }>()
 const { t } = useI18n()
 const { errorMessage } = useMutationToast()
 const toast = useToast()
-const { upsertKey, createKey } = useI18nWorkspaces()
+const { updateKey, createKey } = useI18nWorkspaces()
 const { nativeName } = useLocaleNames()
 const { reload } = useWorkspaceFlat()
 
@@ -182,7 +182,7 @@ function resetForNext() {
 
 function write(key: string): Promise<unknown> {
   if (isOverride.value)
-    return upsertKey(props.workspace, key, written.value, props.baseLocale)
+    return updateKey(props.workspace, key, written.value)
   if (props.writeNewKey)
     return props.writeNewKey(props.workspace, key, written.value)
   return createKey(props.workspace, key, written.value)

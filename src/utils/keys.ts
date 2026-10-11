@@ -21,7 +21,6 @@ export type LocaleTexts = Record<string, string | null>;
 export interface KeyChange {
   path: string;
   newPath?: string;
-  isRemoved?: boolean;
   texts?: LocaleTexts;
   messages: LocaleMessages;
 }
@@ -355,7 +354,7 @@ export function deleteKey(store: KeyStore, path: string): void {
     deleteAtPath(data, segments);
     store.save(locale, data);
   }
-  store.track?.({ path: key, isRemoved: true, messages: store.messages });
+  store.track?.({ path: key, messages: store.messages });
 }
 
 /** The locales a request names (`locales`, a list of codes), every locale of the store when absent. */

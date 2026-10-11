@@ -222,7 +222,7 @@ export function workspaceSnippet(
     const local = LOCAL_SNIPPETS[summary.kind as keyof typeof LOCAL_SNIPPETS];
     return { language: "javascript", code: local.join("\n") };
   }
-  const flat = resolveFlat(summary.id, FALLBACK_LOCALE);
+  const flat = resolveFlat(summary.id);
   const build = SNIPPETS[kind] ?? SNIPPETS.vue;
   return build({
     url,
@@ -299,7 +299,7 @@ export function workspaceEndpoint(
       items: LOCAL_ENDPOINTS[summary.kind as keyof typeof LOCAL_ENDPOINTS],
     };
   }
-  const base = resolveFlat(summary.id, FALLBACK_LOCALE).defaultLocale;
+  const base = resolveFlat(summary.id).defaultLocale;
   return { items: publicEndpoint(url, base || FALLBACK_LOCALE) };
 }
 
@@ -330,7 +330,7 @@ export function removalConfirm(
   origin: string,
 ): ConfirmDialogSerialized {
   const id = resolveWorkspaceId(workspace);
-  const flat = resolveFlat(id, FALLBACK_LOCALE);
+  const flat = resolveFlat(id);
   const code = knownLocale(flat, requested);
   const strings = countStrings(flat, code);
   const impact: ConfirmDialogImpact[] = [
@@ -384,7 +384,7 @@ function keyImpact(keys: string[], missing: number): ConfirmDialogImpact[] {
  */
 export function baseConfirm(workspace: string, requested: string): BaseConfirm {
   const id = resolveWorkspaceId(workspace);
-  const flat = resolveFlat(id, FALLBACK_LOCALE);
+  const flat = resolveFlat(id);
   const code = knownLocale(flat, requested);
   const missingRows = flat.rows.filter((row) => isRowMissing(row, code));
   const keys = missingRows.slice(0, LISTED_KEYS).map((row) => row.key);
@@ -481,6 +481,6 @@ export function workspaceNotice(
   page: NoticePage,
 ): BannerContent {
   const summary = summaryOf(workspace);
-  const flat = resolveFlat(summary.id, FALLBACK_LOCALE);
+  const flat = resolveFlat(summary.id);
   return KIND_NOTICES[summary.kind]({ summary, flat, page });
 }
