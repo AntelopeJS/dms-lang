@@ -23,11 +23,6 @@ interface Props {
   existingKeys: string[]
   /** Project files only: the keys the installed modules provide. */
   moduleRows?: FlatTranslationRow[]
-  writeNewKey?: (
-    workspace: string,
-    path: string,
-    values: Record<string, string>,
-  ) => Promise<void>
 }
 
 /** Languages shown before the "more languages" toggle. */
@@ -183,8 +178,6 @@ function resetForNext() {
 function write(key: string): Promise<unknown> {
   if (isOverride.value)
     return upsertKey(props.workspace, key, written.value, props.baseLocale)
-  if (props.writeNewKey)
-    return props.writeNewKey(props.workspace, key, written.value)
   return createKey(props.workspace, key, written.value)
 }
 

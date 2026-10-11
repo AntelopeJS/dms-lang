@@ -3,14 +3,6 @@ import KeyRenameModal from '../../build/components/KeyRenameModal.vue'
 import type { FlatTranslationRow, FlatTranslations } from '../../types/lang'
 
 const FLAT_ENDPOINT = '/api/lang/translations/flat'
-/** Statuses a server without `POST /key` answers: the key is then written with `PUT`. */
-const MISSING_ROUTE_STATUSES = new Set([404, 405])
-
-interface WriteFailure {
-  status?: number
-  statusCode?: number
-  data?: { code?: string }
-}
 
 /** The written values of a row, without the languages it lacks. */
 export function filledValues(row: FlatTranslationRow): Record<string, string> {
@@ -19,12 +11,6 @@ export function filledValues(row: FlatTranslationRow): Record<string, string> {
     if (!isLocaleValueMissing(value)) values[locale] = stringValue(value)
   }
   return values
-}
-
-function isMissingRoute(error: unknown): boolean {
-  const failure = error as WriteFailure
-  const status = failure?.status ?? failure?.statusCode ?? 0
-  return MISSING_ROUTE_STATUSES.has(status) && !failure?.data?.code
 }
 
 /** Add, rename and delete translation keys of the selected workspace. */
@@ -46,21 +32,6 @@ export const useKeyActions = () => {
   const { tryMutate } = useMutationToast()
 
   const existingKeys = computed(() => flat.value.rows.map((row) => row.key))
-
-  /** Creates a key, with `PUT` on a server that has no `POST /key` yet. */
-  async function writeNewKey(
-    workspace: string,
-    path: string,
-    values: Record<string, string>,
-    before?: string,
-  ): Promise<void> {
-    try {
-      await createKey(workspace, path, values, before)
-    } catch (error) {
-      if (!isMissingRoute(error)) throw error
-      await upsertKey(workspace, path, values, flat.value.defaultLocale)
-    }
-  }
 
   /** The keys the installed modules provide, which the project files can override. */
   async function moduleRows(): Promise<FlatTranslationRow[]> {
@@ -84,7 +55,6 @@ export const useKeyActions = () => {
         locales: flat.value.locales,
         existingKeys: existingKeys.value,
         moduleRows: await moduleRows(),
-        writeNewKey,
       },
       destroyOnClose: true,
     })
@@ -120,7 +90,7 @@ export const useKeyActions = () => {
     before?: string,
   ) {
     const ok = await tryMutate(() =>
-      writeNewKey(workspace, row.key, filledValues(row), before),
+      createKey(workspace, row.key, filledValues(row), before),
     )
     if (!ok) return
     await reload()
@@ -218,7 +188,5 @@ export const useKeyActions = () => {
     renameKey,
     deleteKey,
     revertToModule,
-    writeNewKey,
-    existingKeys,
   }
 }

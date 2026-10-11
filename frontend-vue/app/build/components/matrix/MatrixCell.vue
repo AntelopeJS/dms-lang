@@ -29,7 +29,6 @@ interface Props {
   languageName: string
   /** Translated from an older base text. */
   isOutdated?: boolean
-  maxLength?: number
   /** The other's text when the cell changed elsewhere while being edited ('': removed). */
   changedElsewhere?: string
 }
@@ -58,7 +57,6 @@ const props = withDefaults(defineProps<Props>(), {
   override: undefined,
   failure: undefined,
   isOutdated: false,
-  maxLength: undefined,
   changedElsewhere: undefined,
 })
 const emit = defineEmits<Emits>()
@@ -94,9 +92,6 @@ const suggestsPanel = computed(
     props.baseValue.length > LONG_TEXT ||
     props.baseValue.includes(MULTILINE) ||
     props.baseValue.includes(PLURAL_SEPARATOR),
-)
-const isOverLimit = computed(
-  () => props.maxLength !== undefined && draft.value.length > props.maxLength,
 )
 const ariaLabel = computed(() =>
   t(
@@ -267,14 +262,7 @@ function escapeDraft() {
         <UKbd size="sm" value="escape" />
         {{ $t('dms_lang.matrix.shortcut_cancel') }}
       </span>
-      <span
-        v-if="props.maxLength !== undefined"
-        class="font-mono"
-        :class="isOverLimit ? 'text-warning' : undefined"
-      >
-        {{ draft.length }} / {{ props.maxLength }}
-      </span>
-      <span v-else-if="!props.isBase && props.baseValue" class="font-mono">
+      <span v-if="!props.isBase && props.baseValue" class="font-mono">
         {{
           $t('dms_lang.matrix.length', {
             count: draft.length,

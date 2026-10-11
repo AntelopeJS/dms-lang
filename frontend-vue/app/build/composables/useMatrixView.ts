@@ -7,15 +7,13 @@ import {
 
 type FilterQuery = Record<keyof MatrixFilterState, string>
 
-/** The query names of the filters, kept as before so links into the matrix still work. */
+/** The query names of the filters. */
 const QUERY_NAMES: FilterQuery = {
   filter: 'filter',
   missingIn: 'missingIn',
   namespace: 'namespace',
   search: 'q',
 }
-/** Older links name the language to show next to the base `locale`. */
-const LANGUAGE_ALIAS = 'locale'
 const DEFAULT_FILTER = 'all'
 const COLUMNS_STORAGE = 'dms-lang:matrix-columns:'
 
@@ -24,7 +22,7 @@ function filtersOf(
 ): MatrixFilterState {
   return {
     filter: parseFilter(query[QUERY_NAMES.filter]),
-    missingIn: query[QUERY_NAMES.missingIn] || query[LANGUAGE_ALIAS] || '',
+    missingIn: query[QUERY_NAMES.missingIn] ?? '',
     namespace: query[QUERY_NAMES.namespace] ?? '',
     search: query[QUERY_NAMES.search] ?? '',
   }
@@ -39,7 +37,6 @@ function queryOf(
     [QUERY_NAMES.missingIn]: filters.missingIn || undefined,
     [QUERY_NAMES.namespace]: filters.namespace || undefined,
     [QUERY_NAMES.search]: filters.search.trim() || undefined,
-    [LANGUAGE_ALIAS]: undefined,
   }
 }
 

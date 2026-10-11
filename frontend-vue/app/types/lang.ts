@@ -49,9 +49,9 @@ export interface WorkspaceStats extends WorkspaceSummary {
   localeProgress: Record<string, number>
   localeMissing: Record<string, number>
   overrides: number
-  baseMissing?: number
-  incompleteKeys?: number
-  targets?: number
+  baseMissing: number
+  incompleteKeys: number
+  targets: number
 }
 
 export interface FlatTranslationRow {
@@ -74,8 +74,8 @@ export interface FlatTranslations {
   localeProgress: Record<string, number>
   localeMissing: Record<string, number>
   totalKeys: number
-  baseMissing?: number
-  incompleteKeys?: number
+  baseMissing: number
+  incompleteKeys: number
 }
 
 export interface LanguageCoverage {

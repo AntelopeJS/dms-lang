@@ -46,6 +46,8 @@ interface Props {
   /** Text typed elsewhere (a matrix cell) for the key that opens. */
   initialDrafts?: Record<string, string>
   open?: boolean
+  /** A read-only module key can be overridden in the project files. */
+  canOverride?: boolean
 }
 
 /** The module texts of a key, kept when its last override goes and the row leaves the project files. */
@@ -54,7 +56,6 @@ interface KnownInherited {
   inherited: FlatTranslationRow['inherited']
 }
 
-type DrawerResult = 'saved' | 'renamed' | 'deleted' | 'closed'
 type FieldStatus = 'missing' | 'inherited' | 'overridden' | 'outdated' | 'done'
 
 const KEY_SEPARATOR = '.'
@@ -74,9 +75,10 @@ const props = withDefaults(defineProps<Props>(), {
   focusLocale: undefined,
   initialDrafts: undefined,
   open: true,
+  canOverride: false,
 })
 const emit = defineEmits<{
-  close: [result: DrawerResult]
+  close: []
   'update:open': [open: boolean]
   navigate: [key: string]
   override: [key: string]
@@ -91,7 +93,6 @@ const { renameKey, deleteKey, revertToModule } = useKeyActions()
 const { reportFailure } = useMutationToast()
 const saves = useKeySaves()
 
-const canOverride = Boolean(getCurrentInstance()?.vnode.props?.onOverride)
 const isOpen = ref(props.open)
 const currentKey = ref(props.keys[props.startIndex] ?? '')
 const drafts = ref<Record<string, string>>({})
@@ -103,7 +104,6 @@ const blocked = ref<Record<string, boolean>>({})
 const states = useSaveStates(fieldStates)
 const isWide = ref(false)
 const body = useTemplateRef<HTMLElement>('body')
-let hasSaved = false
 let isClosing = false
 let queue: Promise<unknown> = Promise.resolve()
 
@@ -360,7 +360,6 @@ async function persist(codes: string[]): Promise<boolean> {
     return false
   }
   if (key.value === path) settle(sent, values)
-  hasSaved = true
   return !isHeld
 }
 
@@ -415,18 +414,18 @@ async function saveAndNext() {
   if (position.value < props.keys.length - 1) go(1)
 }
 
-function finish(result: DrawerResult) {
+function finish() {
   isOpen.value = false
   emit('update:open', false)
-  emit('close', result === 'closed' && hasSaved ? 'saved' : result)
+  emit('close')
 }
 
-async function requestClose(result: DrawerResult = 'closed') {
+async function requestClose() {
   if (isClosing || !isOpen.value) return
   isClosing = true
   const isSaved = await flush()
   isClosing = false
-  if (isSaved) finish(result)
+  if (isSaved) finish()
 }
 
 /** Closed from outside (the matrix, the Back button): nothing typed is dropped. */
@@ -436,7 +435,7 @@ async function closeFromOutside() {
   const isSaved = await flush()
   isOpen.value = false
   if (!isSaved) keepDrafts(workspace, path)
-  emit('close', hasSaved ? 'saved' : 'closed')
+  emit('close')
 }
 
 function keepDrafts(workspace: string, path: string) {
@@ -477,7 +476,7 @@ function onOpenAutoFocus(event: Event) {
 async function rename() {
   if (!(await flush())) return
   const renamed = await renameKey(key.value)
-  if (renamed) finish('renamed')
+  if (renamed) finish()
 }
 
 /** Acknowledges "To review" without changing the text. */
@@ -500,7 +499,7 @@ async function remove() {
   const isDone = hasInherited.value
     ? await revertToModule(key.value)
     : await deleteKey(key.value)
-  if (isDone) finish('deleted')
+  if (isDone) finish()
 }
 
 /** Another key was asked while a field waits (a conflict, an invalid text): the panel stays and says why. */
@@ -553,7 +552,6 @@ watch(
   () => props.open,
   (open) => {
     if (open && !isOpen.value) {
-      hasSaved = false
       isOpen.value = true
       show(props.keys[props.startIndex] ?? key.value)
     } else if (!open && isOpen.value) closeFromOutside()
@@ -950,7 +948,7 @@ onMounted(() => {
             />
           </template>
           <UButton
-            v-if="!props.editable && canOverride"
+            v-if="!props.editable && props.canOverride"
             icon="i-ph-git-fork"
             color="neutral"
             variant="outline"

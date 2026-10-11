@@ -15,6 +15,8 @@ interface PanelOptions {
   keys: () => string[]
   editable: () => boolean
   manageKeys: () => boolean
+  /** Whether the panel offers to override a read-only module key. */
+  canOverride: () => boolean
   /** A read-only module key the panel offers to override. */
   onOverride: (key: string) => void
   /** Whether the workspace holds the key, in any of its languages. */
@@ -77,6 +79,7 @@ export function useKeyPanel(options: PanelOptions) {
       startIndex: Math.max(index, 0),
       editable: options.editable(),
       manageKeys: options.manageKeys(),
+      canOverride: options.canOverride(),
       seed: seeds.value[request.key],
       focusLocale: request.focusLocale,
       initialDrafts: request.initialDrafts,
@@ -200,10 +203,11 @@ export function useKeyPanel(options: PanelOptions) {
   )
 
   // The rights arrive with the workspace list, after a link opened the panel.
-  watch([options.editable, options.manageKeys], () =>
+  watch([options.editable, options.manageKeys, options.canOverride], () =>
     drawer?.patch({
       editable: options.editable(),
       manageKeys: options.manageKeys(),
+      canOverride: options.canOverride(),
     }),
   )
 
@@ -212,5 +216,5 @@ export function useKeyPanel(options: PanelOptions) {
     drawer?.close()
   })
 
-  return { open, seedOverride, shownKey }
+  return { open, seedOverride }
 }

@@ -178,8 +178,6 @@ export function useMatrixFilters(
     return pinned.value.has(row.key) && !matches(row)
   }
 
-  const doneCount = computed(() => rows.value.filter(isRowDone).length)
-
   const groups = computed(() => groupRows(rows.value, isRowMissing))
 
   return {
@@ -188,9 +186,6 @@ export function useMatrixFilters(
     counts,
     targets,
     namespaces,
-    namespace,
-    doneCount,
-    isRowMissing,
     isRowDone,
   }
 }

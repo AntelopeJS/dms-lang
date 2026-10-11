@@ -165,6 +165,7 @@ const panel = useKeyPanel({
   keys: () => rows.value.map((row) => row.key),
   editable: () => canEditValues.value,
   manageKeys: () => canManageKeys.value,
+  canOverride: () => isModules.value && serverEditable.value,
   isKnown: (key) => rowsByKey.value.has(key),
   onUnknown: (key) => void dropUnknownKey(key),
   onOverride: (key) => {

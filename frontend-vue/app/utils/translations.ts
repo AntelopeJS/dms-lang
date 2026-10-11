@@ -131,6 +131,8 @@ export const EMPTY_FLAT: FlatTranslations = {
   localeProgress: {},
   localeMissing: {},
   totalKeys: 0,
+  baseMissing: 0,
+  incompleteKeys: 0,
 }
 
 /** No value, or a text made of spaces only: the server stores neither. */
