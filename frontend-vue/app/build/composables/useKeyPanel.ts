@@ -153,8 +153,30 @@ function onNavigate(context: PanelContext, key: string) {
     void context.router.replace(linkWithKey(context, key))
 }
 
+function nextRoute(context: PanelContext): Promise<void> {
+  return new Promise((resolve) => {
+    const stop = watch(
+      () => context.route.fullPath,
+      () => {
+        stop()
+        resolve()
+      },
+    )
+  })
+}
+
+async function leaveKeyEntry(context: PanelContext, from: string | null) {
+  const without = linkWithKey(context, undefined)
+  if (from === null) return context.router.replace(without)
+  const isBack = nextRoute(context)
+  context.router.back()
+  await isBack
+  if (linkWithKey(context, undefined) !== without)
+    await context.router.replace(without)
+}
+
 function onClosed(context: PanelContext) {
-  const { state, route, router } = context
+  const { state, route } = context
   state.drawer = null
   settleSwitch(context, null)
   if (!state.isDisposed) dropSeed(context, context.shownKey.value)
@@ -162,9 +184,7 @@ function onClosed(context: PanelContext) {
   const from = state.pushedFrom
   state.pushedFrom = null
   if (state.isDisposed || !route.query[KEY_QUERY]) return
-  const without = linkWithKey(context, undefined)
-  if (from === without) router.back()
-  else void router.replace(without)
+  void leaveKeyEntry(context, from)
 }
 
 function isOpenable(context: PanelContext, key: string): boolean {
