@@ -1,6 +1,18 @@
 import type { RequestContext } from "@antelopejs/interface-api";
 import { PAGE_ACTION_QUERY, PAGE_ACTIONS } from "../pages/quick-actions";
-import type { BlockItems, KeyValueItem } from "./blocks";
+import type {
+  BannerContent,
+  BannerTone,
+} from "@antelopejs/interface-dms/base/banner";
+import { serializeConfirmDialog } from "@antelopejs/interface-dms/base/confirm-dialog";
+import type { BlockLinkAction } from "@antelopejs/interface-dms/base/display";
+import type { KeyValueListItem } from "@antelopejs/interface-dms/base/key-value-list";
+import type {
+  ConfirmDialog,
+  ConfirmDialogImpact,
+  ConfirmDialogSerialized,
+} from "@antelopejs/interface-dms/base/types";
+import type { BlockItems } from "./blocks";
 import {
   FALLBACK_LOCALE,
   listAllWorkspaces,
@@ -221,7 +233,7 @@ export function workspaceSnippet(
 
 const LOCAL_ENDPOINTS: Record<
   Exclude<WorkspaceKind, "added">,
-  KeyValueItem[]
+  KeyValueListItem[]
 > = {
   default: [
     {
@@ -251,7 +263,7 @@ const LOCAL_ENDPOINTS: Record<
   ],
 };
 
-function publicEndpoint(url: string, base: string): KeyValueItem[] {
+function publicEndpoint(url: string, base: string): KeyValueListItem[] {
   const example = templateUrl(url, base);
   return [
     { id: "url", label: "GET", value: url, type: "mono", copy: true },
@@ -279,7 +291,7 @@ function publicEndpoint(url: string, base: string): KeyValueItem[] {
 export function workspaceEndpoint(
   workspace: string,
   origin: string,
-): BlockItems<KeyValueItem> {
+): BlockItems<KeyValueListItem> {
   const summary = summaryOf(workspace);
   const url = publicLocaleUrl(origin, summary.id);
   if (summary.kind !== "added" || !url) {
@@ -291,20 +303,10 @@ export function workspaceEndpoint(
   return { items: publicEndpoint(url, base || FALLBACK_LOCALE) };
 }
 
-export interface DialogImpact {
-  icon: string;
-  label: string;
-  count?: number;
-}
-
-export interface RemovalDialog {
-  title: string;
-  description: string;
-  params: Record<string, string>;
-  color: "error";
-  confirmLabel: string;
-  confirmText?: string;
-  impact: DialogImpact[];
+/** The dialog confirming a new base language, with what a caller wording its own dialog needs. */
+export interface BaseConfirm extends ConfirmDialogSerialized {
+  missing: number;
+  keys: string[];
 }
 
 /** The workspace's own code for `code`, matched on its canonical form; 404 when it has no such language. */
@@ -326,12 +328,15 @@ export function removalConfirm(
   workspace: string,
   requested: string,
   origin: string,
-): RemovalDialog {
+): ConfirmDialogSerialized {
   const id = resolveWorkspaceId(workspace);
   const flat = resolveFlat(id, FALLBACK_LOCALE);
   const code = knownLocale(flat, requested);
   const strings = countStrings(flat, code);
-  const dialog: RemovalDialog = {
+  const impact: ConfirmDialogImpact[] = [
+    { icon: "i-ph-file", label: `$${TEXTS}.language_remove.file` },
+  ];
+  const dialog: ConfirmDialog = {
     title: `$${TEXTS}.language_remove.title`,
     description: `$${TEXTS}.language_remove.description`,
     params: {
@@ -342,20 +347,20 @@ export function removalConfirm(
     },
     color: "error",
     confirmLabel: `$${TEXTS}.language_remove.submit`,
-    impact: [{ icon: "i-ph-file", label: `$${TEXTS}.language_remove.file` }],
+    impact,
   };
-  if (!strings) return dialog;
+  if (!strings) return serializeConfirmDialog(dialog);
   dialog.description = `$${TEXTS}.language_remove.description_backup`;
   dialog.confirmText = code;
-  dialog.impact.push({
+  impact.push({
     icon: "i-ph-text-aa",
     label: `$${TEXTS}.language_remove.strings`,
     count: strings,
   });
-  return dialog;
+  return serializeConfirmDialog(dialog);
 }
 
-function keyImpact(keys: string[], missing: number) {
+function keyImpact(keys: string[], missing: number): ConfirmDialogImpact[] {
   const shown = keys
     .slice(0, SHOWN_KEYS)
     .map((key) => ({ icon: "i-ph-key", label: key }));
@@ -377,14 +382,14 @@ function keyImpact(keys: string[], missing: number) {
  * it (then missing in the base), with their count and the first of them
  * (`missing`, `keys`) for a caller that words its own dialog.
  */
-export function baseConfirm(workspace: string, requested: string) {
+export function baseConfirm(workspace: string, requested: string): BaseConfirm {
   const id = resolveWorkspaceId(workspace);
   const flat = resolveFlat(id, FALLBACK_LOCALE);
   const code = knownLocale(flat, requested);
   const missingRows = flat.rows.filter((row) => isRowMissing(row, code));
   const keys = missingRows.slice(0, LISTED_KEYS).map((row) => row.key);
   const missing = missingRows.length;
-  return {
+  const dialog = serializeConfirmDialog({
     title: `$${TEXTS}.language_base.confirm_title`,
     description: missing
       ? `$${TEXTS}.language_base.confirm_missing`
@@ -394,9 +399,8 @@ export function baseConfirm(workspace: string, requested: string) {
     color: "primary",
     confirmLabel: `$${TEXTS}.language_base.confirm_submit`,
     impact: keyImpact(keys, missing),
-    missing,
-    keys,
-  };
+  });
+  return { ...dialog, missing, keys };
 }
 
 const PAGES_URL = "/modules/lang";
@@ -404,25 +408,6 @@ const PAGES_URL = "/modules/lang";
 export const NOTICE_PAGES = ["overview", "workspace"] as const;
 
 export type NoticePage = (typeof NOTICE_PAGES)[number];
-
-type NoticeTone = "info" | "warning" | "primary";
-
-interface NoticeLink {
-  label: string;
-  to: string;
-  icon: string;
-  color?: "primary" | "neutral";
-  variant?: "solid" | "outline";
-}
-
-/** What the notice banner of a page says: a `Banner` block's content. */
-export interface Notice {
-  tone?: NoticeTone;
-  icon?: string;
-  title?: string;
-  description?: string;
-  actions?: NoticeLink[];
-}
 
 interface NoticeState {
   summary: WorkspaceSummary;
@@ -438,10 +423,10 @@ function pageUrl(page: string, workspace: string, action?: string): string {
 
 function notice(
   name: string,
-  tone: NoticeTone,
+  tone: BannerTone,
   icon: string,
-  actions: NoticeLink[] = [],
-): Notice {
+  actions: BlockLinkAction[] = [],
+): BannerContent {
   return {
     tone,
     icon,
@@ -451,7 +436,7 @@ function notice(
   };
 }
 
-function addLanguageLink(workspace: string): NoticeLink {
+function addLanguageLink(workspace: string): BlockLinkAction {
   return {
     label: `$${TEXTS}.languages.add`,
     to: pageUrl("overview", workspace, PAGE_ACTIONS.addLanguage),
@@ -461,14 +446,17 @@ function addLanguageLink(workspace: string): NoticeLink {
   };
 }
 
-function addedNotice({ summary, flat, page }: NoticeState): Notice {
+function addedNotice({ summary, flat, page }: NoticeState): BannerContent {
   if (page === "workspace") return notice("keys", "info", "i-ph-info");
   if (flat.totalKeys === 0 || flat.locales.length > 1) return {};
   const actions = summary.editable ? [addLanguageLink(summary.id)] : [];
   return notice("no_target", "info", "i-ph-translate", actions);
 }
 
-const KIND_NOTICES: Record<WorkspaceKind, (state: NoticeState) => Notice> = {
+const KIND_NOTICES: Record<
+  WorkspaceKind,
+  (state: NoticeState) => BannerContent
+> = {
   added: addedNotice,
   default: () => ({}),
   modules: () =>
@@ -488,10 +476,11 @@ const KIND_NOTICES: Record<WorkspaceKind, (state: NoticeState) => Notice> = {
  * modules keys are, the first steps of an empty workspace, how keys are
  * shared between languages.
  */
-export function workspaceNotice(workspace: string, page: string): Notice {
+export function workspaceNotice(
+  workspace: string,
+  page: NoticePage,
+): BannerContent {
   const summary = summaryOf(workspace);
   const flat = resolveFlat(summary.id, FALLBACK_LOCALE);
-  const noticePage: NoticePage =
-    page === "workspace" ? "workspace" : "overview";
-  return KIND_NOTICES[summary.kind]({ summary, flat, page: noticePage });
+  return KIND_NOTICES[summary.kind]({ summary, flat, page });
 }

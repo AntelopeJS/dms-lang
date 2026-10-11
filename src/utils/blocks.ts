@@ -1,3 +1,10 @@
+import type { KeyValueListItem } from "@antelopejs/interface-dms/base/key-value-list";
+import type { StatGroupItem } from "@antelopejs/interface-dms/base/stat-group";
+import type {
+  BlockText,
+  ComposedText,
+  Tone,
+} from "@antelopejs/interface-dms/base/types";
 import {
   FALLBACK_LOCALE,
   listAllWorkspaces,
@@ -15,46 +22,6 @@ const WORKSPACES_FOLDER = "i18n-workspaces";
 const HIGH_COVERAGE = 90;
 const MID_COVERAGE = 60;
 const NO_VALUE = "—";
-
-type Tone = "neutral" | "primary" | "success" | "warning" | "error";
-
-interface CountParam {
-  type: "count";
-  value: number;
-}
-
-interface NumberParam {
-  type: "number";
-  value: number;
-  format?: "decimal" | "percent" | "compact";
-}
-
-interface ComposedText {
-  key: string;
-  params?: Record<string, CountParam | NumberParam | ComposedText | string>;
-}
-
-type BlockText = string | ComposedText;
-
-export interface StatItem {
-  id: string;
-  icon: string;
-  tone: Tone;
-  eyebrow: BlockText;
-  value: BlockText | number;
-  detail?: BlockText;
-  detailTone?: Tone;
-}
-
-export interface KeyValueItem {
-  id: string;
-  label: BlockText;
-  value: BlockText | number;
-  type?: "text" | "mono";
-  tone?: Tone;
-  copy?: boolean;
-  copyValue?: string;
-}
 
 export interface BlockItems<T> {
   items: T[];
@@ -106,7 +73,9 @@ function meanCoverage(flat: FlatResult): number | undefined {
 }
 
 /** How many namespaces the keys sit in, and next to it how many have no base text: the translators have nothing to start from. */
-function keysDetail(flat: FlatResult): Pick<StatItem, "detail" | "detailTone"> {
+function keysDetail(
+  flat: FlatResult,
+): Pick<StatGroupItem, "detail" | "detailTone"> {
   const namespaces = counted("kpis.keys_detail", namespaceCount(flat));
   if (!flat.baseMissing) return { detail: namespaces };
   return {
@@ -122,7 +91,7 @@ function keysDetail(flat: FlatResult): Pick<StatItem, "detail" | "detailTone"> {
 }
 
 /** The four headline figures of a workspace (Overview). */
-export function workspaceKpis(workspace: string): BlockItems<StatItem> {
+export function workspaceKpis(workspace: string): BlockItems<StatGroupItem> {
   const flat = resolveFlat(resolveWorkspaceId(workspace), FALLBACK_LOCALE);
   const targets = targetLocales(flat).length;
   const missing = sumMissing(flat);
@@ -171,8 +140,8 @@ function folderOf(summary: WorkspaceSummary): BlockText {
     : { key: `${TEXTS}.workspace_kinds.${summary.kind}.folder` };
 }
 
-function detailItems(summary: WorkspaceSummary): KeyValueItem[] {
-  const items: KeyValueItem[] = [];
+function detailItems(summary: WorkspaceSummary): KeyValueListItem[] {
+  const items: KeyValueListItem[] = [];
   if (summary.description) {
     items.push({
       id: "description",
@@ -191,7 +160,9 @@ function detailItems(summary: WorkspaceSummary): KeyValueItem[] {
 }
 
 /** Description, kind, size and folder of a workspace (workspace settings). */
-export function workspaceAbout(workspace: string): BlockItems<KeyValueItem> {
+export function workspaceAbout(
+  workspace: string,
+): BlockItems<KeyValueListItem> {
   const id = resolveWorkspaceId(workspace);
   const summary = listAllWorkspaces().find((entry) => entry.id === id);
   if (!summary) return { items: [] };
@@ -247,7 +218,7 @@ function countIssues(flat: FlatResult, locale: string): number {
 export function localeStats(
   workspace: string,
   locale: string,
-): BlockItems<StatItem> {
+): BlockItems<StatGroupItem> {
   const flat = resolveFlat(resolveWorkspaceId(workspace), FALLBACK_LOCALE);
   if (!flat.locales.includes(locale)) return { items: [] };
   const missing = flat.rows.filter((row) => isRowMissing(row, locale)).length;

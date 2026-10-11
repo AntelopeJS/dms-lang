@@ -1,4 +1,9 @@
 import type { LanguageSort, SortedColumn } from "../validation/query.schema";
+import type {
+  ComposedText,
+  ComposedTextCountParam,
+  ComposedTextNumberParam,
+} from "@antelopejs/interface-dms/base/types";
 import { FALLBACK_LOCALE, listAllWorkspaces } from "./catalog";
 import { type FlatResult, isRowMissing, resolveFlat } from "./resolve";
 
@@ -15,22 +20,6 @@ const REGIONAL_NAME: Intl.DisplayNamesOptions = {
 };
 const LANGUAGE_SEPARATOR = /[-_]/;
 const BASE_RANK = -1;
-
-interface CountParam {
-  type: "count";
-  value: number;
-}
-
-interface PercentParam {
-  type: "number";
-  value: number;
-  format: "percent";
-}
-
-interface ComposedText {
-  key: string;
-  params?: Record<string, string | CountParam | PercentParam>;
-}
 
 interface Subline {
   text: ComposedText;
@@ -76,7 +65,7 @@ export function coveragePercent(translated: number, total: number): number {
   return total ? Math.floor((translated / total) * PERCENT) : PERCENT;
 }
 
-export function percentParam(coverage: number): PercentParam {
+export function percentParam(coverage: number): ComposedTextNumberParam {
   return { type: "number", value: coverage / PERCENT, format: "percent" };
 }
 
@@ -122,7 +111,7 @@ function rightsOf(workspace: string): WorkspaceRights {
   return { canEdit, canManage: canEdit && summary?.kind === "added" };
 }
 
-function count(value: number): CountParam {
+function count(value: number): ComposedTextCountParam {
   return { type: "count", value };
 }
 

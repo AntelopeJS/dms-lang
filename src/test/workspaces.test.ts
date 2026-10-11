@@ -190,7 +190,7 @@ function describeLanguages(): void {
       404,
       "unknown_locale",
     );
-    expect(removalConfirm(WORKSPACE, "NL", API_BASE).params.file).to.equal(
+    expect(removalConfirm(WORKSPACE, "NL", API_BASE).params?.file).to.equal(
       "nl.json",
     );
   });

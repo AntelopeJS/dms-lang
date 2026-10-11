@@ -108,8 +108,8 @@ function describeBlockRoutes(): void {
   it("words the removal of a language and serves the app snippets", async () => {
     const dialog = removalConfirm(WORKSPACE, "it-IT", ORIGIN);
     expect(dialog).to.include({ confirmText: "it-IT", color: "error" });
-    expect(dialog.impact[1]).to.include({ count: 1 });
-    expect(dialog.params.url).to.match(/\/i18n\/storefront\/it-IT\.json$/);
+    expect(dialog.impact?.[1]).to.include({ count: 1 });
+    expect(dialog.params?.url).to.match(/\/i18n\/storefront\/it-IT\.json$/);
     const endpoint = workspaceEndpoint(WORKSPACE, ORIGIN);
     expect(endpoint.items[0]).to.include({
       value: `${ORIGIN}/i18n/${WORKSPACE}/{locale}.json`,
