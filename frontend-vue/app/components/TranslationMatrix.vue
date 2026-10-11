@@ -23,11 +23,11 @@ import MatrixToolbar from '../build/components/matrix/MatrixToolbar.vue'
 import {
   exportFileName,
   translationsCsv,
-} from '../build/components/matrix/matrixExport'
-import { useCellSaves } from '../build/components/matrix/useCellSaves'
-import { useKeyPanel } from '../build/components/matrix/useKeyPanel'
-import { useMatrixRows } from '../build/components/matrix/useMatrixRows'
-import { useMatrixView } from '../build/components/matrix/useMatrixView'
+} from '../utils/matrixExport'
+import { useCellSaves } from '../build/composables/useCellSaves'
+import { useKeyPanel } from '../build/composables/useKeyPanel'
+import { useMatrixRows } from '../build/composables/useMatrixRows'
+import { useMatrixView } from '../build/composables/useMatrixView'
 import { useMatrixFilters } from '../build/composables/useMatrixFilters'
 
 interface CellRef {

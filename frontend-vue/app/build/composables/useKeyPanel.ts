@@ -1,6 +1,6 @@
 import { useDmsRouter, useDmsState } from '#dms/frontend-module'
-import type { FlatTranslationRow } from '../../../types/lang'
-import KeyEditorDrawer from '../KeyEditorDrawer.vue'
+import type { FlatTranslationRow } from '../../types/lang'
+import KeyEditorDrawer from '../components/KeyEditorDrawer.vue'
 
 interface PanelRequest {
   key: string

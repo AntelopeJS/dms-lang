@@ -1,6 +1,6 @@
 import type { Ref } from 'vue'
-import type { FlatTranslationRow } from '../../../types/lang'
-import type { MatrixGroup } from '../../composables/useMatrixFilters'
+import type { FlatTranslationRow } from '../../types/lang'
+import type { MatrixGroup } from './useMatrixFilters'
 
 interface RenderedGroup extends MatrixGroup {
   collapsed: boolean

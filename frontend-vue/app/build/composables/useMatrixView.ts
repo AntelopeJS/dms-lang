@@ -3,7 +3,7 @@ import {
   EMPTY_FILTERS,
   parseFilter,
   type MatrixFilterState,
-} from '../../composables/useMatrixFilters'
+} from './useMatrixFilters'
 
 type FilterQuery = Record<keyof MatrixFilterState, string>
 

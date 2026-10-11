@@ -8,7 +8,7 @@ import {
   messageIssueText,
   type MessageIssue,
 } from '../../../utils/translations'
-import type { CellFailure, CellState } from './useCellSaves'
+import type { CellFailure, CellState } from '../../composables/useCellSaves'
 
 /** Where the editor goes once a cell is saved. */
 export type CellMove = 'stay' | 'down' | 'next' | 'previous'

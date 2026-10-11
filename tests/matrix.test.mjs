@@ -6,7 +6,7 @@ import * as translations from "../frontend-vue/app/utils/translations.ts";
 Object.assign(globalThis, translations);
 
 const { exportFileName, translationsCsv } =
-  await import("../frontend-vue/app/build/components/matrix/matrixExport.ts");
+  await import("../frontend-vue/app/utils/matrixExport.ts");
 const { groupRows, parseFilter, targetLocales } =
   await import("../frontend-vue/app/build/composables/useMatrixFilters.ts");
 

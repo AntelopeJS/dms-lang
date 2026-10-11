@@ -1,5 +1,5 @@
 import { useDmsState } from '#dms/frontend-module'
-import type { FlatTranslationRow, TranslationValue } from '../../../types/lang'
+import type { FlatTranslationRow, TranslationValue } from '../../types/lang'
 
 export type CellState = 'idle' | 'saving' | 'saved' | 'error'
 
