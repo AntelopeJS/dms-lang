@@ -8,6 +8,7 @@ import type {
 import { listAllWorkspaces, resolveWorkspaceId } from "./catalog";
 import { coveragePercent } from "./coverage";
 import { percentParam } from "./languages";
+import { findLocale } from "./locale-codes";
 import { dropsPlaceholder } from "./placeholders";
 import { type FlatResult, isRowMissing, resolveFlat } from "./resolve";
 import {
@@ -201,48 +202,53 @@ function countIssues(flat: FlatResult, locale: string): number {
   ).length;
 }
 
-/** Translated, missing and placeholder issues of one language (Language page). */
-export function localeStats(
-  workspace: string,
-  locale: string,
-): BlockItems<StatGroupItem> {
-  const flat = resolveFlat(resolveWorkspaceId(workspace));
-  if (!flat.locales.includes(locale)) return { items: [] };
+function localeStatItems(flat: FlatResult, locale: string): StatGroupItem[] {
   const missing = flat.rows.filter((row) => isRowMissing(row, locale)).length;
   const translated = flat.rows.length - missing;
   const coverage = coveragePercent(translated, flat.rows.length);
   const issues = countIssues(flat, locale);
-  return {
-    items: [
-      {
-        id: "coverage",
-        icon: "i-ph-chart-donut",
-        tone: coverageTone(coverage),
-        eyebrow: `$${TEXTS}.progress.coverage`,
-        value: percent(coverage),
-        detail: counted("progress.coverage_detail", flat.rows.length),
-      },
-      {
-        id: "translated",
-        icon: "i-ph-check-circle",
-        tone: "success",
-        eyebrow: `$${TEXTS}.progress.translated`,
-        value: translated,
-      },
-      {
-        id: "missing",
-        icon: "i-ph-warning",
-        tone: missingTone(missing, flat.rows.length > 0),
-        eyebrow: `$${TEXTS}.progress.missing`,
-        value: missing,
-      },
-      {
-        id: "issues",
-        icon: "i-ph-brackets-curly",
-        tone: issues ? "error" : "success",
-        eyebrow: `$${TEXTS}.progress.issues`,
-        value: issues,
-      },
-    ],
-  };
+  return [
+    {
+      id: "coverage",
+      icon: "i-ph-chart-donut",
+      tone: coverageTone(coverage),
+      eyebrow: `$${TEXTS}.progress.coverage`,
+      value: percent(coverage),
+      detail: counted("progress.coverage_detail", flat.rows.length),
+    },
+    {
+      id: "translated",
+      icon: "i-ph-check-circle",
+      tone: "success",
+      eyebrow: `$${TEXTS}.progress.translated`,
+      value: translated,
+    },
+    {
+      id: "missing",
+      icon: "i-ph-warning",
+      tone: missingTone(missing, flat.rows.length > 0),
+      eyebrow: `$${TEXTS}.progress.missing`,
+      value: missing,
+    },
+    {
+      id: "issues",
+      icon: "i-ph-brackets-curly",
+      tone: issues ? "error" : "success",
+      eyebrow: `$${TEXTS}.progress.issues`,
+      value: issues,
+    },
+  ];
+}
+
+/**
+ * Translated, missing and placeholder issues of one language (Language
+ * page), the code matched on its canonical form (`fr-fr` is `fr-FR`).
+ */
+export function localeStats(
+  workspace: string,
+  requested: string,
+): BlockItems<StatGroupItem> {
+  const flat = resolveFlat(resolveWorkspaceId(workspace));
+  const locale = findLocale(flat.locales, requested);
+  return { items: locale === undefined ? [] : localeStatItems(flat, locale) };
 }

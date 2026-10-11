@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { basename } from "node:path";
-import { check, fail } from "./errors";
+import { check, type ErrorReason, fail } from "./errors";
 
 const NEW_SEGMENT_RE = /^[\w-]{1,128}$/;
 const FORBIDDEN_SEGMENTS = new Set(["__proto__", "prototype", "constructor"]);
@@ -59,12 +59,18 @@ function parseOrUndefined(text: string): unknown {
   }
 }
 
-/** A file about to be rewritten: refuses to go on when it exists but is not a JSON object, instead of wiping it. */
-export function readJsonForWrite(path: string): Record<string, unknown> {
+/**
+ * A file about to be rewritten: refuses to go on when it exists but is not a
+ * JSON object, instead of wiping it. `reason` words the refusal.
+ */
+export function readJsonForWrite(
+  path: string,
+  reason: ErrorReason = "corrupt_file",
+): Record<string, unknown> {
   if (!existsSync(path)) return {};
   const parsed = parseOrUndefined(readFileSync(path, "utf-8"));
   if (isPlainObject(parsed)) return parsed;
-  return fail("server_error", { file: basename(path) }, "corrupt_file");
+  return fail("server_error", { file: basename(path) }, reason);
 }
 
 interface JsonLayout {

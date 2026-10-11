@@ -1,6 +1,12 @@
 import { check } from "./errors";
 
 const SUBTAG_SEPARATOR = /_/g;
+
+/**
+ * A code a language file can be named after: a language, then script, region
+ * or variant subtags; no extension (`-u-…`) nor private use (`-x-…`).
+ */
+export const LOCALE_CODE_RE = /^[A-Z]{2,3}(?:[-_][A-Z0-9]{2,8})*$/i;
 const NAME_LOCALE = "en";
 const LANGUAGE_NAMES = new Intl.DisplayNames([NAME_LOCALE], {
   type: "language",
@@ -22,17 +28,27 @@ export function canonicalLocale(code: string): string | undefined {
   }
 }
 
+/** Whether the platform names the language and region of a code; `und` and the like are not languages. */
 function isKnownLanguage(canonical: string): boolean {
-  const { language, region } = new Intl.Locale(canonical);
-  if (LANGUAGE_NAMES.of(language) === undefined) return false;
-  return region === undefined || REGION_NAMES.of(region) !== undefined;
+  try {
+    const { language, region } = new Intl.Locale(canonical);
+    if (LANGUAGE_NAMES.of(language) === undefined) return false;
+    return region === undefined || REGION_NAMES.of(region) !== undefined;
+  } catch {
+    return false;
+  }
 }
 
-/** A code given by a client, canonical, of a language and region the platform knows; 400 otherwise. */
+/**
+ * A code given by a client, canonical, of a language and region the platform
+ * knows and that a language file can be named after; 400 otherwise.
+ */
 export function normalizeLocaleCode(code: string): string {
   const canonical = canonicalLocale(code);
   check(
-    canonical !== undefined && isKnownLanguage(canonical),
+    canonical !== undefined &&
+      LOCALE_CODE_RE.test(canonical) &&
+      isKnownLanguage(canonical),
     "invalid_locale",
     { locale: code },
   );

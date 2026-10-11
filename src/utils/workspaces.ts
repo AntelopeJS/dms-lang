@@ -11,7 +11,12 @@ import { getTranslationConfig } from "./config";
 import { check, fail } from "./errors";
 import { readJson, readJsonForWrite, writeJson } from "./json";
 import type { KeyStore } from "./keys";
-import { findLocale, languageOf, normalizeLocaleCode } from "./locale-codes";
+import {
+  findLocale,
+  LOCALE_CODE_RE,
+  languageOf,
+  normalizeLocaleCode,
+} from "./locale-codes";
 import type { LocaleMessages } from "./tree";
 
 export interface WorkspaceLocale {
@@ -63,7 +68,6 @@ const MANIFEST_FILE = ".workspace.json";
 const JSON_EXTENSION = ".json";
 const WORKSPACE_ID_RE = /^[a-z0-9][\w-]{0,63}$/;
 const RESERVED_IDS = new Set([DEFAULT_WORKSPACE, MODULES_WORKSPACE]);
-const LOCALE_FILE_RE = /^[A-Z]{2,3}(?:[-_][A-Z0-9]{2,8})*$/i;
 
 export function assertEditable(): void {
   check(getTranslationConfig().editable, "read_only");
@@ -150,7 +154,7 @@ function localeCodesOf(dir: string): string[] {
   return readdirSync(dir)
     .filter((file) => file.endsWith(JSON_EXTENSION) && !file.startsWith("."))
     .map((file) => file.slice(0, -JSON_EXTENSION.length))
-    .filter((code) => LOCALE_FILE_RE.test(code));
+    .filter((code) => LOCALE_CODE_RE.test(code));
 }
 
 function storedDetails(stored: Partial<WorkspaceManifest>): WorkspaceDetails {
@@ -162,8 +166,13 @@ function storedDetails(stored: Partial<WorkspaceManifest>): WorkspaceDetails {
   return details;
 }
 
-function readManifestAt(dir: string): WorkspaceManifest {
-  const stored = readJson(manifestPath(dir)) as Partial<WorkspaceManifest>;
+type JsonReader = (path: string) => Record<string, unknown>;
+
+function readManifestAt(
+  dir: string,
+  read: JsonReader = readJson,
+): WorkspaceManifest {
+  const stored = read(manifestPath(dir)) as Partial<WorkspaceManifest>;
   const storedLocales = Array.isArray(stored.locales) ? stored.locales : [];
   const byCode = new Map(storedLocales.map((locale) => [locale.code, locale]));
   const locales = localeCodesOf(dir).map(
@@ -183,6 +192,16 @@ function readManifestAt(dir: string): WorkspaceManifest {
   return manifest;
 }
 
+/**
+ * The manifest of a workspace about to be rewritten: a manifest that is not
+ * valid JSON stops the write instead of losing its details, base and sources.
+ */
+function manifestForWrite(dir: string): WorkspaceManifest {
+  return readManifestAt(dir, (path) =>
+    readJsonForWrite(path, "corrupt_manifest"),
+  );
+}
+
 function writeManifestAt(dir: string, manifest: WorkspaceManifest): void {
   writeJson(manifestPath(dir), manifest);
 }
@@ -193,7 +212,7 @@ export function updateManifest(
   change: (manifest: WorkspaceManifest) => void,
 ): WorkspaceManifest {
   const dir = workspaceDir(id);
-  const manifest = readManifestAt(dir);
+  const manifest = manifestForWrite(dir);
   change(manifest);
   writeManifestAt(dir, manifest);
   return manifest;
@@ -358,7 +377,7 @@ export interface AddedLocale {
 export function addLocale(id: string, locale: WorkspaceLocale): AddedLocale {
   const entry = validateLocaleEntry(locale);
   const dir = workspaceDir(id);
-  const manifest = readManifestAt(dir);
+  const manifest = manifestForWrite(dir);
   const codes = manifest.locales.map((l) => l.code);
   const existing = findLocale(codes, entry.code);
   check(existing === undefined, "locale_exists", {
@@ -388,7 +407,7 @@ export function workspaceLocaleCode(
 
 export function removeLocale(id: string, code: string): void {
   const dir = workspaceDir(id);
-  const manifest = readManifestAt(dir);
+  const manifest = manifestForWrite(dir);
   const stored = workspaceLocaleCode(manifest, code);
   check(stored !== manifest.defaultLocale, "base_locale", { locale: stored });
   const filePath = localeFile(dir, stored);
@@ -400,7 +419,7 @@ export function removeLocale(id: string, code: string): void {
 
 export function setWorkspaceDefaultLocale(id: string, code: string): string {
   const dir = workspaceDir(id);
-  const manifest = readManifestAt(dir);
+  const manifest = manifestForWrite(dir);
   const stored = workspaceLocaleCode(manifest, code);
   if (stored !== manifest.defaultLocale) {
     manifest.defaultLocale = stored;

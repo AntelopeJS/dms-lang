@@ -32,6 +32,7 @@ import {
   readWorkspaceLocale,
   removeLocale,
   setWorkspaceDefaultLocale,
+  updateWorkspaceDetails,
 } from "../utils/workspaces";
 import type { SortDirection, SortedColumn } from "../validation/query.schema";
 import { expectError } from "./errors";
@@ -176,6 +177,23 @@ describe("[integration] workspace data model", () => {
     expect(JSON.parse(files)).to.deep.equal({
       home: { title: "Page d'accueil" },
     });
+  });
+
+  it("stops a write on a manifest that is not valid JSON instead of wiping it", () => {
+    createWorkspace("core-corrupt", { code: "en" }, { description: "Kept" });
+    const manifest = join(directory, "ws", "core-corrupt", ".workspace.json");
+    writeFileSync(manifest, "{ broken");
+    expectError(
+      () => updateWorkspaceDetails("core-corrupt", { type: "website" }),
+      500,
+      "server_error",
+    );
+    expectError(
+      () => addLocale("core-corrupt", { code: "fr" }),
+      500,
+      "server_error",
+    );
+    expect(readFileSync(manifest, "utf-8")).to.equal("{ broken");
   });
 
   describeLanguages();

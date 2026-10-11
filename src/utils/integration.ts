@@ -78,19 +78,21 @@ function summaryOf(workspace: string): WorkspaceSummary {
   ) as WorkspaceSummary;
 }
 
+/** What decides whether a workspace is served publicly, and under which id. */
+export type PublicWorkspace = Pick<WorkspaceSummary, "id" | "kind">;
+
 /**
  * The public URL of a language of an added workspace (`{locale}` by default:
  * the template). Undefined for the project files and the modules, which the
- * public endpoint does not serve, and for an unknown workspace.
+ * public endpoint does not serve.
  */
 export function publicLocaleUrl(
   origin: string,
-  workspace: string,
+  workspace: PublicWorkspace,
   locale = LOCALE_TOKEN,
 ): string | undefined {
-  const summary = listAllWorkspaces().find((entry) => entry.id === workspace);
-  if (summary?.kind !== "added") return undefined;
-  return `${origin}${PUBLIC_PREFIX}/${workspace}/${locale}.json`;
+  if (workspace.kind !== "added") return undefined;
+  return `${origin}${PUBLIC_PREFIX}/${workspace.id}/${locale}.json`;
 }
 
 function templateUrl(url: string, token: string): string {
@@ -217,13 +219,13 @@ export function workspaceSnippet(
   origin: string,
 ): Snippet {
   const summary = summaryOf(workspace);
-  const url = publicLocaleUrl(origin, summary.id);
+  const url = publicLocaleUrl(origin, summary);
   if (summary.kind !== "added" || !url) {
     const local = LOCAL_SNIPPETS[summary.kind as keyof typeof LOCAL_SNIPPETS];
     return { language: "javascript", code: local.join("\n") };
   }
   const flat = resolveFlat(summary.id);
-  const build = SNIPPETS[kind] ?? SNIPPETS.vue;
+  const build = SNIPPETS[kind];
   return build({
     url,
     base: flat.defaultLocale || FALLBACK_LOCALE,
@@ -293,7 +295,7 @@ export function workspaceEndpoint(
   origin: string,
 ): BlockItems<KeyValueListItem> {
   const summary = summaryOf(workspace);
-  const url = publicLocaleUrl(origin, summary.id);
+  const url = publicLocaleUrl(origin, summary);
   if (summary.kind !== "added" || !url) {
     return {
       items: LOCAL_ENDPOINTS[summary.kind as keyof typeof LOCAL_ENDPOINTS],
@@ -329,8 +331,8 @@ export function removalConfirm(
   requested: string,
   origin: string,
 ): ConfirmDialogSerialized {
-  const id = resolveWorkspaceId(workspace);
-  const flat = resolveFlat(id);
+  const summary = summaryOf(workspace);
+  const flat = resolveFlat(summary.id);
   const code = knownLocale(flat, requested);
   const strings = countStrings(flat, code);
   const impact: ConfirmDialogImpact[] = [
@@ -341,8 +343,8 @@ export function removalConfirm(
     description: `$${TEXTS}.language_remove.description`,
     params: {
       name: nativeName(code, flat.locales),
-      workspace: id,
-      url: publicLocaleUrl(origin, id, code) ?? "",
+      workspace: summary.id,
+      url: publicLocaleUrl(origin, summary, code) ?? "",
       file: `${code}.json`,
     },
     color: "error",

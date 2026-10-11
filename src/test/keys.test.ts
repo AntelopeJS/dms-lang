@@ -386,7 +386,14 @@ describe("[unit] language codes", () => {
     expect(normalizeLocaleCode("zh-hant-tw")).to.equal("zh-Hant-TW");
     expect(normalizeLocaleCode("EN-gb")).to.equal("en-GB");
     expect(canonicalLocale("not a code")).to.equal(undefined);
-    for (const code of ["xyz", "fr-XY", ""]) {
+    for (const code of [
+      "xyz",
+      "fr-XY",
+      "",
+      "und",
+      "en-u-nu-latn",
+      "de-x-foo",
+    ]) {
       expectError(() => normalizeLocaleCode(code), 400, "invalid_locale");
     }
   });

@@ -23,7 +23,7 @@ export interface WorkspaceStats extends WorkspaceSummary {
 }
 
 /** The public URL template of a workspace, `undefined` when it is not served publicly. */
-export type PublicUrlOf = (workspace: string) => string | undefined;
+export type PublicUrlOf = (workspace: WorkspaceSummary) => string | undefined;
 
 export function countTranslated(flat: FlatResult): number {
   return flat.rows.reduce(
@@ -80,7 +80,7 @@ function describeWorkspace(
     localeMissing: flat.localeMissing,
     overrides: countOverrides(flat),
   };
-  const publicUrl = publicUrlOf?.(workspace.id);
+  const publicUrl = publicUrlOf?.(workspace);
   if (publicUrl !== undefined) stats.publicUrl = publicUrl;
   return stats;
 }

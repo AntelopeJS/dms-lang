@@ -113,7 +113,7 @@ function permissionIds() {
 
 function withPublicUrl(origin: string) {
   return (workspace: WorkspaceSummary) => {
-    const publicUrl = publicLocaleUrl(origin, workspace.id);
+    const publicUrl = publicLocaleUrl(origin, workspace);
     return publicUrl === undefined ? workspace : { ...workspace, publicUrl };
   };
 }

@@ -83,6 +83,7 @@ function describeBlockRoutes(): void {
       ["issues", 1],
     ]);
     expect(localeStats(WORKSPACE, "xx-XX").items).to.deep.equal([]);
+    expect(localeStats(WORKSPACE, "it-it").items).to.deep.equal(stats);
   });
   it("lists the languages of a workspace as source table rows", () => {
     const { results, total } = listLanguages(WORKSPACE);
