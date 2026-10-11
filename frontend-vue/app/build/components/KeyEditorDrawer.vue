@@ -361,8 +361,8 @@ function save(codes: string[]): Promise<boolean> {
   return run
 }
 
-function saveField(code: string) {
-  if (isChanged(code)) save([code])
+function onFieldBlur(code: string) {
+  if (document.hasFocus() && isChanged(code)) save([code])
 }
 
 async function flush(): Promise<boolean> {
@@ -724,7 +724,7 @@ onMounted(() => show(key.value))
             :color="issuesOf(code).length ? 'error' : undefined"
             :highlight="issuesOf(code).length > 0"
             @update:model-value="(value: string) => setDraft(code, value)"
-            @blur="saveField(code)"
+            @blur="onFieldBlur(code)"
             @keydown.meta.enter.prevent="saveAndNext"
             @keydown.ctrl.enter.prevent="saveAndNext"
           />

@@ -136,6 +136,10 @@ function commit(move: CellMove) {
   emit('commit', move)
 }
 
+function onBlur() {
+  if (document.hasFocus()) commit('stay')
+}
+
 function cancel() {
   isCommitted.value = true
   emit('cancel')
@@ -201,7 +205,7 @@ function escapeDraft() {
       class="w-full"
       :ui="{ base: 'text-sm' }"
       @keydown="onKeydown"
-      @blur="commit('stay')"
+      @blur="onBlur"
     />
     <p
       v-if="props.changedElsewhere !== undefined"
