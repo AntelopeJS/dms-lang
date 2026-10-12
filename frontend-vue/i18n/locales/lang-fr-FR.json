@@ -536,9 +536,7 @@
 			"done": "{name} est maintenant la langue de base",
 			"done_generic": "Langue de base changée",
 			"confirm_title": "Faire de {name} la langue de base ?",
-			"confirm_description": "Les autres langues seront alors traduites à partir de {name}. Aucune clé n'est supprimée.",
 			"confirm_missing": "{count} clé n'a pas de texte en {name} : elle reste dans l'espace et compte comme manquante dans la base tant qu'elle n'est pas écrite. | {count} clés n'ont pas de texte en {name} : elles restent dans l'espace et comptent comme manquantes dans la base tant qu'elles ne sont pas écrites.",
-			"confirm_more": "et {n} autre | et {n} autres",
 			"confirm_submit": "Définir comme langue de base",
 			"confirm_complete": "Toutes les clés ont un texte en {name}. La couverture des autres langues sera mesurée par rapport à elle.",
 			"more_keys": "Autres clés sans texte"

@@ -536,9 +536,7 @@
 			"done": "{name} is now the base language",
 			"done_generic": "Base language changed",
 			"confirm_title": "Make {name} the base language?",
-			"confirm_description": "Other languages are then translated from {name}. No key is removed.",
 			"confirm_missing": "{count} key has no text in {name}: it stays in the workspace and counts as missing in the base until it is written. | {count} keys have no text in {name}: they stay in the workspace and count as missing in the base until they are written.",
-			"confirm_more": "and {n} more | and {n} more",
 			"confirm_submit": "Make base language",
 			"confirm_complete": "Every key has a text in {name}. The coverage of the other languages is then measured against it.",
 			"more_keys": "Other keys without text"
