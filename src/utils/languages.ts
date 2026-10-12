@@ -1,4 +1,3 @@
-import type { LanguageSort, SortedColumn } from "../validation/query.schema";
 import type {
   ComposedText,
   ComposedTextCountParam,
@@ -19,7 +18,6 @@ const REGIONAL_NAME: Intl.DisplayNamesOptions = {
   languageDisplay: "standard",
   fallback: "none",
 };
-const BASE_RANK = -1;
 
 interface Subline {
   text: ComposedText;
@@ -40,7 +38,7 @@ export interface LanguageRow {
   translated: number;
   total: number;
   missing: number;
-  /** The base first (-1), then the least complete: the order the table opens on. */
+  /** Percent of the keys with a text in the language. */
   coverage: number;
 }
 
@@ -164,55 +162,28 @@ function countsOf(flat: FlatResult, code: string): LanguageCounts {
   };
 }
 
-const DESCENDING = "desc";
-const DEFAULT_COLUMN = "coverage";
-
-type RowOrder = (a: LanguageRow, b: LanguageRow) => number;
-
-const SORTED_COLUMNS: Record<SortedColumn, RowOrder> = {
-  name: (a, b) => a.name.localeCompare(b.name),
-  coverage: (a, b) => a.coverage - b.coverage,
-};
-
-function compareRows(sort: LanguageSort): RowOrder {
-  const column = SORTED_COLUMNS[sort.sortKey ?? DEFAULT_COLUMN];
-  const direction = sort.sortDirection === DESCENDING ? -1 : 1;
-  return (a: LanguageRow, b: LanguageRow) =>
-    Number(b.isBase) - Number(a.isBase) ||
-    direction * column(a, b) ||
-    a.name.localeCompare(b.name);
-}
-
 /**
- * The languages of a workspace, as rows of a source table: the base pinned
- * first whatever the sort, then the least complete (or the sort asked for),
- * then by name. Without a sort the rows come in the order the table opens on.
+ * The languages of a workspace, as rows of a source table, in the order of
+ * the workspace: the table sorts them and pins the base.
  */
-export function listLanguages(
-  workspace: string,
-  sort: LanguageSort = {},
-): LanguageRows {
+export function listLanguages(workspace: string): LanguageRows {
   const flat = resolveFlat(workspace);
   const rights = rightsOf(workspace);
-  const results = flat.locales
-    .map((code) => {
-      const counts = countsOf(flat, code);
-      return {
-        _id: code,
-        code,
-        workspace,
-        name: nativeName(code, flat.locales),
-        detail: counts.isBase ? baseDetail(counts) : targetDetail(counts),
-        isBase: counts.isBase,
-        ...rights,
-        translated: counts.translated,
-        total: counts.total,
-        missing: counts.missing,
-        coverage: counts.isBase
-          ? BASE_RANK
-          : coveragePercent(counts.translated, counts.total),
-      };
-    })
-    .sort(compareRows(sort));
+  const results = flat.locales.map((code) => {
+    const counts = countsOf(flat, code);
+    return {
+      _id: code,
+      code,
+      workspace,
+      name: nativeName(code, flat.locales),
+      detail: counts.isBase ? baseDetail(counts) : targetDetail(counts),
+      isBase: counts.isBase,
+      ...rights,
+      translated: counts.translated,
+      total: counts.total,
+      missing: counts.missing,
+      coverage: coveragePercent(counts.translated, counts.total),
+    };
+  });
   return { results, total: results.length };
 }

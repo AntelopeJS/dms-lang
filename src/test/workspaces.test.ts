@@ -9,8 +9,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runInNewContext } from "node:vm";
 import { expect } from "chai";
+import { manageLanguagesAction } from "../pages/actions";
+import { languagesTable } from "../pages/languages-table";
 import { workspaceKpis } from "../utils/blocks";
 import { resolveWorkspaceId } from "../utils/catalog";
+import { coveragePercent } from "../utils/coverage";
 import {
   getTranslationConfig,
   setTranslationConfig,
@@ -32,7 +35,6 @@ import {
   setWorkspaceDefaultLocale,
   updateWorkspaceDetails,
 } from "../utils/workspaces";
-import type { SortDirection, SortedColumn } from "../validation/query.schema";
 import { expectError } from "./errors";
 
 const WORKSPACE = "core-shop";
@@ -198,15 +200,25 @@ function describeLanguages(): void {
     );
   });
 
-  it("keeps the base on top whatever the sort of the languages", () => {
-    const codes = (sortKey?: SortedColumn, sortDirection?: SortDirection) =>
-      listLanguages(WORKSPACE, { sortKey, sortDirection }).results.map(
-        (row) => row.code,
-      );
-    expect(codes("name")).to.deep.equal(["en-GB", "fr", "nl"]);
-    expect(codes("name", "desc")).to.deep.equal(["en-GB", "nl", "fr"]);
-    expect(codes("coverage", "desc")).to.deep.equal(["en-GB", "fr", "nl"]);
-    expect(codes()).to.deep.equal(["en-GB", "nl", "fr"]);
+  it("lists the languages in the workspace order, the base with its real coverage", () => {
+    const rows = listLanguages(WORKSPACE).results;
+    expect(rows.map((row) => row.code)).to.deep.equal(
+      resolveFlat(WORKSPACE).locales,
+    );
+    const base = rows.find((row) => row.isBase);
+    expect(base?.coverage).to.equal(
+      coveragePercent(base?.translated ?? 0, base?.total ?? 0),
+    );
+  });
+
+  it("leaves the sort to the languages table, the base pinned", () => {
+    const { options } = languagesTable(manageLanguagesAction).serializeSync();
+    expect(options?.pinnedRows).to.deep.equal({
+      field: "isBase",
+      equals: true,
+    });
+    expect(options?.defaultSort).to.deep.equal({ field: "coverage" });
+    expect(options?.source?.capabilities.sort).to.not.equal(true);
   });
 
   it("fills a partial file from its language and the base in the fetch snippet", async () => {

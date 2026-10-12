@@ -235,6 +235,7 @@
 			"open": "Open",
 			"more": "More actions for {name}",
 			"make_base": "Make base language",
+			"make_base_named": "Make {name} the base language",
 			"remove": "Remove language",
 			"remove_named": "Remove {name}",
 			"add": "Add language",

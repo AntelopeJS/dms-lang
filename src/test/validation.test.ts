@@ -37,7 +37,7 @@ describe("[unit] route inputs are validated at the entry", () => {
     expect((body.issues as Issue[])[0]?.path).to.deep.equal(["before"]);
   });
 
-  it("refuses an unknown snippet, sort or page instead of looking it up", () => {
+  it("refuses an unknown snippet or page instead of looking it up", () => {
     for (const kind of ["__proto__", "constructor", "php"])
       expectError(
         () => validate(querySchema.snippet, { kind }),
@@ -45,11 +45,6 @@ describe("[unit] route inputs are validated at the entry", () => {
         "invalid_body",
       );
     expect(validate(querySchema.snippet, {}).kind).to.equal("vue");
-    expectError(
-      () => validate(querySchema.languages, { sortKey: "__proto__" }),
-      400,
-      "invalid_body",
-    );
     expect(validate(querySchema.notice, {}).page).to.equal("overview");
   });
 

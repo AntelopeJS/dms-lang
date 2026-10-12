@@ -11,12 +11,8 @@ import { LANG_API, PAGES_URL } from "../utils/constants";
 const TEXTS = "$dms_lang.languages";
 const NAME_SIZE = 280;
 const COVERAGE_SIZE = 220;
-const EDITABLE_BASE = {
-  and: [
-    { field: "isBase", equals: true },
-    { field: "canEdit", equals: true },
-  ],
-};
+const BASE = { field: "isBase", equals: true };
+const EDITABLE_BASE = { and: [BASE, { field: "canEdit", equals: true }] };
 const TARGET = { field: "isBase", equals: false };
 const MANAGEABLE = { and: [TARGET, { field: "canManage", equals: true }] };
 const LANGUAGE_URL = `${LANG_API}/languages/{workspace}/{code}`;
@@ -30,8 +26,7 @@ const columns = {
       subtitleField: "detail",
       badges: [
         {
-          field: "isBase",
-          equals: true,
+          ...BASE,
           label: "$dms_lang.common.base",
           tone: "neutral",
         },
@@ -88,7 +83,7 @@ const PAGE_LINKS: CustomRowAction[] = [
 function managedActions(manageLanguages: Action): CustomRowAction[] {
   return [
     {
-      label: `${TEXTS}.make_base`,
+      label: `${TEXTS}.make_base_named`,
       icon: "i-ph-star",
       target: {
         type: "api",
@@ -101,7 +96,7 @@ function managedActions(manageLanguages: Action): CustomRowAction[] {
       permission: manageLanguages,
     },
     {
-      label: `${TEXTS}.remove`,
+      label: `${TEXTS}.remove_named`,
       icon: "i-ph-trash",
       color: "error",
       target: {
@@ -119,16 +114,16 @@ function managedActions(manageLanguages: Action): CustomRowAction[] {
 
 /**
  * The languages of the workspace in the URL (`?workspace=`), least complete
- * first with the base pinned on top under any sort (the route sorts, the table
- * only asks): translate, make base, remove.
+ * first with the base pinned on top under any sort: translate, make base,
+ * remove.
  */
 export function languagesTable(manageLanguages: Action) {
   return TableView.fromSource({
     caption: `${TEXTS}.title`,
     fetchUrl: `${LANG_API}/languages?workspace={{query.workspace}}`,
     columns,
-    capabilities: { sort: true },
     defaultSort: { field: "coverage" },
+    pinnedRows: BASE,
     layout: "full",
     labelKey: "name",
     rowActions: { custom: [...PAGE_LINKS, ...managedActions(manageLanguages)] },

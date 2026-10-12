@@ -235,6 +235,7 @@
 			"open": "Ouvrir",
 			"more": "Plus d'actions pour {name}",
 			"make_base": "Définir comme langue de base",
+			"make_base_named": "Faire de {name} la langue de base",
 			"remove": "Retirer la langue",
 			"remove_named": "Retirer {name}",
 			"add": "Ajouter une langue",

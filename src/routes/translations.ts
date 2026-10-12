@@ -194,13 +194,8 @@ export class TranslationsController extends Controller(LANG_API) {
   }
 
   @Get("/languages")
-  languages(
-    @Parameter("workspace", "query") workspace?: string,
-    @Parameter("sortKey", "query") sortKey?: string,
-    @Parameter("sortDirection", "query") sortDirection?: string,
-  ) {
-    const sort = validate(querySchema.languages, { sortKey, sortDirection });
-    return listLanguages(resolveWorkspaceId(workspace), sort);
+  languages(@Parameter("workspace", "query") workspace?: string) {
+    return listLanguages(resolveWorkspaceId(workspace));
   }
 
   @Get("/languages/:workspace/:code/removal-confirm")

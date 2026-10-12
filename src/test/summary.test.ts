@@ -98,7 +98,8 @@ function describeBlockRoutes(): void {
       total: 2,
       canManage: true,
     });
-    expect(base?.coverage).to.be.below(italian?.coverage ?? 0);
+    expect(base?.coverage).to.equal(100);
+    expect(italian?.coverage).to.equal(50);
     expect(italian).to.include({
       isBase: false,
       translated: 1,
