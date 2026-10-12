@@ -7,6 +7,7 @@ import {
 } from "@antelopejs/interface-dms/base/table-view";
 import type { Action } from "@antelopejs/interface-dms/component";
 import { LANG_API, PAGES_URL } from "../utils/constants";
+import { LANG_REALTIME_TOPIC } from "./module";
 
 const TEXTS = "$dms_lang.languages";
 const NAME_SIZE = 280;
@@ -124,6 +125,7 @@ export function languagesTable(manageLanguages: Action) {
     columns,
     defaultSort: { field: "coverage" },
     pinnedRows: BASE,
+    realtimeTopic: LANG_REALTIME_TOPIC,
     layout: "full",
     labelKey: "name",
     rowActions: { custom: [...PAGE_LINKS, ...managedActions(manageLanguages)] },

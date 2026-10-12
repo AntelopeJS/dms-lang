@@ -13,6 +13,7 @@ import { workspaceGuard } from "./workspace-guard";
 import {
   followTranslations,
   LANG_MODULE_ID,
+  LANG_REALTIME_TOPIC,
   translateCategory,
 } from "./module";
 import { LANG_API, PERMISSION_TEXTS } from "../utils/constants";
@@ -41,6 +42,7 @@ const namespaces = CustomComponent("DmsLangNamespaceCoverage").meta({
 const endpoint = KeyValueList({
   title: "$dms_lang.endpoint.title",
   fetchUrl: `${LANG_API}/endpoint?workspace={{query.workspace}}`,
+  realtimeTopic: LANG_REALTIME_TOPIC,
   skeletonCount: ENDPOINT_ROWS,
 }).meta({
   name: `${TEXTS}.endpoint`,
@@ -55,6 +57,7 @@ const side = VStack({ alignment: "stretch", spacing: SIDE_GAP })
 
 const notice = Banner({
   fetchUrl: `${API}/notice?workspace={{query.workspace}}&page=${PAGE_ID}`,
+  realtimeTopic: LANG_REALTIME_TOPIC,
 }).meta({
   name: `${TEXTS}.notice`,
   description: `${TEXTS}.notice_description`,
@@ -65,6 +68,7 @@ const kpis = StatGroup({
   layout: "cards",
   label: "$dms_lang.kpis.label",
   fetchUrl: `${API}/kpis?workspace={{query.workspace}}`,
+  realtimeTopic: LANG_REALTIME_TOPIC,
   skeletonCount: KPI_COUNT,
 }).meta({
   name: `${TEXTS}.kpis`,

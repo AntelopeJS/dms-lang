@@ -9,6 +9,7 @@ import { workspaceGuard } from "./workspace-guard";
 import {
   followTranslations,
   LANG_MODULE_ID,
+  LANG_REALTIME_TOPIC,
   translateCategory,
 } from "./module";
 import { LANG_API, PERMISSION_TEXTS } from "../utils/constants";
@@ -32,6 +33,7 @@ const progress = StatGroup({
   columns: STAT_COLUMNS,
   label: "$dms_lang.progress.label",
   fetchUrl: `${LANG_API}/locale-stats?workspace={{query.workspace}}&locale={{query.locale}}`,
+  realtimeTopic: LANG_REALTIME_TOPIC,
   skeletonCount: STAT_COUNT,
   empty: {
     title: "$dms_lang.progress.empty_title",

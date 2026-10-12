@@ -12,7 +12,12 @@ import { requireAction } from "./component-action";
 import { OPEN_OVERVIEW_BUTTON } from "./header-actions";
 import { languagesTable } from "./languages-table";
 import { workspaceGuard } from "./workspace-guard";
-import { followTranslations, LANG_MODULE_ID, manageCategory } from "./module";
+import {
+  followTranslations,
+  LANG_MODULE_ID,
+  LANG_REALTIME_TOPIC,
+  manageCategory,
+} from "./module";
 import { LANG_API, PERMISSION_TEXTS } from "../utils/constants";
 import { SNIPPET_KINDS } from "../utils/snippets";
 
@@ -81,6 +86,7 @@ const integration = Card({ title: "$dms_lang.endpoint.title" })
     KeyValueList({
       card: false,
       fetchUrl: `${LANG_API}/endpoint?workspace={{query.workspace}}`,
+      realtimeTopic: LANG_REALTIME_TOPIC,
       skeletonCount: ENDPOINT_ROWS,
     }).meta({ name: `${TEXTS}.endpoint`, icon: "i-ph-link" }),
   )
@@ -107,6 +113,7 @@ const about = KeyValueList({
   title: "$dms_lang.about.title",
   dense: true,
   fetchUrl: `${LANG_API}/about?workspace={{query.workspace}}`,
+  realtimeTopic: LANG_REALTIME_TOPIC,
   skeletonCount: ABOUT_ROWS,
 }).meta({
   name: `${TEXTS}.about`,
@@ -116,6 +123,7 @@ const about = KeyValueList({
 
 const notice = Banner({
   fetchUrl: `${LANG_API}/notice?workspace={{query.workspace}}&page=${PAGE_ID}`,
+  realtimeTopic: LANG_REALTIME_TOPIC,
 }).meta({
   name: `${TEXTS}.keys_note`,
   description: `${TEXTS}.keys_note_description`,
