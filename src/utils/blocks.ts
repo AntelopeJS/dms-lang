@@ -5,13 +5,12 @@ import type {
   ComposedText,
   Tone,
 } from "@antelopejs/interface-dms/base/types";
-import { findWorkspace, resolveWorkspaceId } from "./catalog";
+import { findWorkspace } from "./catalog";
 import { LANG_TEXTS } from "./constants";
 import { coveragePercent } from "./coverage";
 import { percentParam } from "./languages";
 import { findLocale } from "./locale-codes";
-import { dropsPlaceholder } from "./placeholders";
-import { type FlatResult, isRowMissing, resolveFlat } from "./resolve";
+import { type FlatResult, needsReview, resolveFlat } from "./resolve";
 import {
   countTranslated,
   sumMissing,
@@ -121,9 +120,9 @@ function kpiItems(flat: FlatResult): StatGroupItem[] {
   ];
 }
 
-/** The four headline figures of a workspace (Overview). */
+/** The four headline figures of an existing workspace (Overview). */
 export function workspaceKpis(workspace: string): BlockItems<StatGroupItem> {
-  return { items: kpiItems(resolveFlat(resolveWorkspaceId(workspace))) };
+  return { items: kpiItems(resolveFlat(workspace)) };
 }
 
 function folderOf(summary: WorkspaceSummary): BlockText {
@@ -198,14 +197,11 @@ function coverageTone(coverage: number): Tone {
 }
 
 function countIssues(flat: FlatResult, locale: string): number {
-  if (locale === flat.defaultLocale) return 0;
-  return flat.rows.filter((row) =>
-    dropsPlaceholder(row.values[flat.defaultLocale], row.values[locale]),
-  ).length;
+  return flat.rows.filter((row) => needsReview(row, locale)).length;
 }
 
 function localeStatItems(flat: FlatResult, locale: string): StatGroupItem[] {
-  const missing = flat.rows.filter((row) => isRowMissing(row, locale)).length;
+  const missing = flat.localeMissing[locale] ?? 0;
   const translated = flat.rows.length - missing;
   const coverage = coveragePercent(translated, flat.rows.length);
   const issues = countIssues(flat, locale);
@@ -243,14 +239,16 @@ function localeStatItems(flat: FlatResult, locale: string): StatGroupItem[] {
 }
 
 /**
- * Translated, missing and placeholder issues of one language (Language
- * page), the code matched on its canonical form (`fr-fr` is `fr-FR`).
+ * Translated, missing and texts to review (an issue, or translated from an
+ * older base text: see {@link needsReview}) of one language of an existing
+ * workspace (Language page), the code matched on its canonical form (`fr-fr`
+ * is `fr-FR`).
  */
 export function localeStats(
   workspace: string,
   requested: string,
 ): BlockItems<StatGroupItem> {
-  const flat = resolveFlat(resolveWorkspaceId(workspace));
+  const flat = resolveFlat(workspace);
   const locale = findLocale(flat.locales, requested);
   return { items: locale === undefined ? [] : localeStatItems(flat, locale) };
 }

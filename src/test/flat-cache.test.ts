@@ -2,6 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect } from "chai";
+import { localeStats } from "../utils/blocks";
 import {
   getTranslationConfig,
   setTranslationConfig,
@@ -9,12 +10,17 @@ import {
 } from "../utils/config";
 import { keyStoreOf } from "../utils/key-stores";
 import { createKey, updateKey } from "../utils/keys";
-import { resolveFlat } from "../utils/resolve";
+import { hasMessageIssue } from "../utils/message-check";
+import { resolveFlat, resolveRow } from "../utils/resolve";
 import { addLocale, createWorkspace } from "../utils/workspaces";
 
 const WORKSPACE = "cache-shop";
 
-describe("[integration] resolved workspaces are cached", () => {
+function issuesOf(key: string): string[] | undefined {
+  return resolveRow(WORKSPACE, key)?.issues;
+}
+
+describe("[integration] resolved workspaces are cached and checked once", () => {
   let directory: string;
   let previous: TranslationConfig;
 
@@ -45,5 +51,22 @@ describe("[integration] resolved workspaces are cached", () => {
     expect(written.localeMissing.de).to.equal(2);
     writeFileSync(join(directory, WORKSPACE, "de.json"), "{}");
     expect(resolveFlat(WORKSPACE).localeMissing.de).to.equal(3);
+  });
+
+  it("flags the texts with an issue, the base checked alone", () => {
+    expect(issuesOf("cart.total")).to.deep.equal(["fr"]);
+    expect(issuesOf("cart.items")).to.equal(undefined);
+    expect(issuesOf("home.title")).to.deep.equal(["en"]);
+    expect(hasMessageIssue("Hi", "Salut @")).to.equal(true);
+    expect(hasMessageIssue("{n} item | {n} items", "{n} | {n} | {n}")).to.equal(
+      true,
+    );
+    expect(hasMessageIssue("Hi {name}", "Salut {name}")).to.equal(false);
+    expect(hasMessageIssue("Hi", "")).to.equal(false);
+  });
+
+  it("counts the issues of a language with the rule of the queue", () => {
+    const stats = localeStats(WORKSPACE, "fr").items;
+    expect(stats.find((item) => item.id === "issues")?.value).to.equal(1);
   });
 });

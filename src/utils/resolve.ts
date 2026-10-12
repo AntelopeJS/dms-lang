@@ -1,6 +1,7 @@
 import { filesStamp, memoize } from "./cache";
 import { modulesBaseLocale, projectBaseLocale } from "./catalog";
 import { coveragePercent } from "./coverage";
+import { hasMessageIssue } from "./message-check";
 import { getLocaleCodes, loadMessages, registryFiles } from "./registry";
 import { outdatedLocales } from "./review";
 import {
@@ -28,6 +29,8 @@ export interface FlatRow {
   overridden?: boolean;
   overrides?: Record<string, TranslationValue>;
   outdated?: string[];
+  /** Languages whose text has an issue (see {@link hasMessageIssue}); the base text is checked alone. */
+  issues?: string[];
 }
 
 /** The figures of a workspace a write changes, sent back with the row it wrote. */
@@ -129,6 +132,16 @@ function addOverrides(row: FlatRow, context: FlatContext): void {
   if (row.overridden) row.overrides = overrides;
 }
 
+function issueLocales(context: FlatContext, row: FlatRow): string[] {
+  const base = row.values[context.defaultLocale];
+  return context.locales.filter((locale) =>
+    hasMessageIssue(
+      locale === context.defaultLocale ? "" : base,
+      row.values[locale],
+    ),
+  );
+}
+
 function buildFlatRow(context: FlatContext, key: string): FlatRow {
   const row: FlatRow = {
     key,
@@ -145,7 +158,21 @@ function buildFlatRow(context: FlatContext, key: string): FlatRow {
     key,
   );
   if (outdated.length > 0) row.outdated = outdated;
+  const issues = issueLocales(context, row);
+  if (issues.length > 0) row.issues = issues;
   return row;
+}
+
+/**
+ * Whether the text of a language needs another look: it has an issue, or it
+ * was translated from an older base text. The rule of every "issues" count:
+ * the Language page's figures, its queue and the matrix filter.
+ */
+export function needsReview(row: FlatRow, locale: string): boolean {
+  return (
+    (row.issues?.includes(locale) ?? false) ||
+    (row.outdated?.includes(locale) ?? false)
+  );
 }
 
 export function isRowMissing(row: FlatRow, locale: string): boolean {
