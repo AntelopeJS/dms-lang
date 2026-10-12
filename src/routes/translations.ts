@@ -139,9 +139,9 @@ function withPublicUrl(
 @AuthOwnerOnly()
 export class TranslationsController extends Controller(LANG_API) {
   @Get("/workspaces")
-  workspaces(@Context() context: RequestContext) {
+  async workspaces(@Context() context: RequestContext) {
     const { editable } = getTranslationConfig();
-    const origin = publicOrigin(context);
+    const origin = await publicOrigin(context);
     return {
       editable,
       publicBaseUrl: `${origin}${PUBLIC_PATH}`,
@@ -151,9 +151,9 @@ export class TranslationsController extends Controller(LANG_API) {
   }
 
   @Get("/summary")
-  summary(@Context() context: RequestContext) {
+  async summary(@Context() context: RequestContext) {
     const { editable } = getTranslationConfig();
-    const origin = publicOrigin(context);
+    const origin = await publicOrigin(context);
     return {
       editable,
       workspaces: summarizeWorkspaces((workspace) =>
@@ -200,7 +200,7 @@ export class TranslationsController extends Controller(LANG_API) {
   }
 
   @Get("/languages/:workspace/:code/removal-confirm")
-  languageRemovalConfirm(
+  async languageRemovalConfirm(
     @Context() context: RequestContext,
     @Parameter("workspace", "param") workspace: string,
     @Parameter("code", "param") code: string,
@@ -208,7 +208,7 @@ export class TranslationsController extends Controller(LANG_API) {
     return removalConfirm(
       resolveWorkspaceId(workspace),
       code,
-      publicOrigin(context),
+      await publicOrigin(context),
     );
   }
 
@@ -246,18 +246,18 @@ export class TranslationsController extends Controller(LANG_API) {
   }
 
   @Get("/endpoint")
-  endpoint(
+  async endpoint(
     @Context() context: RequestContext,
     @Parameter("workspace", "query") workspace?: string,
   ) {
     return workspaceEndpoint(
       resolveWorkspaceId(workspace),
-      publicOrigin(context),
+      await publicOrigin(context),
     );
   }
 
   @Get("/snippet")
-  snippet(
+  async snippet(
     @Context() context: RequestContext,
     @Parameter("workspace", "query") workspace?: string,
     @Parameter("kind", "query") kind?: string,
@@ -266,7 +266,7 @@ export class TranslationsController extends Controller(LANG_API) {
     return workspaceSnippet(
       resolveWorkspaceId(workspace),
       query.kind,
-      publicOrigin(context),
+      await publicOrigin(context),
     );
   }
 

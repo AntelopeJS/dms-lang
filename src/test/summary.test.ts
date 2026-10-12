@@ -2,6 +2,8 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect } from "chai";
+import type { RequestContext } from "@antelopejs/interface-api";
+import { GetApiBaseUrl } from "@antelopejs/interface-dms/api-base-url";
 import { AddFrontendModule } from "@antelopejs/interface-dms/page";
 import {
   createWorkspaceAction,
@@ -21,7 +23,7 @@ import { localeStats, workspaceAbout, workspaceKpis } from "../utils/blocks";
 import { exportWorkspace } from "../utils/export";
 import { baseConfirm, removalConfirm } from "../utils/dialogs";
 import { workspaceNotice } from "../utils/notices";
-import { workspaceEndpoint } from "../utils/public-url";
+import { publicOrigin, workspaceEndpoint } from "../utils/public-url";
 import { workspaceSnippet } from "../utils/snippets";
 import { listLanguages } from "../utils/languages";
 import { initializeLocaleRegistry } from "../utils/registry";
@@ -138,6 +140,15 @@ function describeBlockRoutes(): void {
     );
     expect(workspaceNotice("modules", "overview").tone).to.equal("warning");
     expect(workspaceNotice("default", "overview")).to.deep.equal({});
+  });
+
+  it("builds the public URLs on the DMS API base URL, not on the request host", async () => {
+    const context = { url: new URL("http://proxy.internal:8080/api") };
+    const configured = await GetApiBaseUrl();
+    expect(configured).to.be.a("string");
+    expect(await publicOrigin(context as RequestContext)).to.equal(
+      configured?.replace(/\/+$/, ""),
+    );
   });
 }
 

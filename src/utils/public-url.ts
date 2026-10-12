@@ -1,4 +1,5 @@
 import type { RequestContext } from "@antelopejs/interface-api";
+import { GetApiBaseUrl } from "@antelopejs/interface-dms/api-base-url";
 import type { KeyValueListItem } from "@antelopejs/interface-dms/base/key-value-list";
 import type { BlockItems } from "./blocks";
 import { FALLBACK_LOCALE, findWorkspace } from "./catalog";
@@ -7,32 +8,18 @@ import { resolveFlat } from "./resolve";
 import type { WorkspaceKind, WorkspaceSummary } from "./workspaces";
 
 const LOCALE_TOKEN = "{locale}";
-const FORWARDED_SEPARATOR = ",";
-
-function firstHeader(
-  context: RequestContext,
-  name: string,
-): string | undefined {
-  const value = context.rawRequest.headers[name];
-  const header = Array.isArray(value) ? value[0] : value;
-  return header?.split(FORWARDED_SEPARATOR)[0]?.trim() || undefined;
-}
+const TRAILING_SLASHES_RE = /\/+$/;
 
 /**
- * The public origin of the backend, as the request reached it: a reverse
- * proxy's `X-Forwarded-Proto` / `X-Forwarded-Host` first, then the `Host` the
- * dashboard's own server calls it on. The one base every public URL is built on.
+ * The public origin of the backend, the one base every public URL is built
+ * on: the DMS `apiBaseUrl` (the dev server's origin in development). A DMS
+ * configured without one gives none; the origin the request reached the
+ * backend on stands in, right whenever no reverse proxy sits in front of it.
  */
-export function publicOrigin(context: RequestContext): string {
-  const socket = context.rawRequest.socket as { encrypted?: boolean };
-  const protocol =
-    firstHeader(context, "x-forwarded-proto") ??
-    (socket.encrypted ? "https" : "http");
-  const host =
-    firstHeader(context, "x-forwarded-host") ??
-    firstHeader(context, "host") ??
-    context.url.host;
-  return `${protocol}://${host}`;
+export async function publicOrigin(context: RequestContext): Promise<string> {
+  const configured = await GetApiBaseUrl();
+  if (configured) return configured.replace(TRAILING_SLASHES_RE, "");
+  return context.url.origin;
 }
 
 /** What decides whether a workspace is served publicly, and under which id. */
