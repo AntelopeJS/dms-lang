@@ -191,13 +191,20 @@ function create() {
 
 usePageHeaderActions(() =>
   canCreate.value
-    ? h(UButton, {
-        label: t('dms_lang.workspace_import.open'),
-        icon: 'i-ph-upload-simple',
-        color: 'neutral',
-        variant: 'outline',
-        onClick: importWorkspace,
-      })
+    ? [
+        h(UButton, {
+          label: t('dms_lang.workspace_import.open'),
+          icon: 'i-ph-upload-simple',
+          color: 'neutral',
+          variant: 'outline',
+          onClick: importWorkspace,
+        }),
+        h(UButton, {
+          label: t('dms_lang.workspaces.new'),
+          icon: 'i-ph-plus',
+          onClick: create,
+        }),
+      ]
     : null,
 )
 

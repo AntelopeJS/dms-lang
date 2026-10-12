@@ -162,7 +162,23 @@ const canManageLanguage = computed(
     !isBase.value,
 )
 
+/** The matrix on what this language lacks; the base opens it unfiltered. */
+function openMatrixButton() {
+  return h(UButton, {
+    label: t('dms_lang.queue.open_matrix'),
+    icon: 'i-ph-table',
+    color: 'neutral',
+    variant: 'outline',
+    to: links.translations({
+      missingIn: isBase.value ? undefined : locale.value,
+      filter: isBase.value ? undefined : 'missing',
+      namespace: session.namespace.value || undefined,
+    }),
+  })
+}
+
 usePageHeaderActions(() => [
+  openMatrixButton(),
   exists.value ? downloadButton() : null,
   canManageLanguage.value ? languageMenu() : null,
 ])

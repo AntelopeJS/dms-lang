@@ -382,6 +382,13 @@ usePageHeaderActions(() => [
         disabled: !isLoaded.value,
       }),
   ),
+  canManageKeys.value
+    ? h(UButton, {
+        label: t('dms_lang.key_add.title'),
+        icon: 'i-ph-plus',
+        onClick: () => addKey(),
+      })
+    : null,
 ])
 
 watch(
