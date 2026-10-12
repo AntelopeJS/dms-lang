@@ -7,10 +7,19 @@ const knipConfig = antelopeKnipConfig({
 });
 
 knipConfig.ignoreUnresolved = ["#dms/frontend-module", "#dms/frontend-build"];
+knipConfig.ignore = [...(knipConfig.ignore ?? []), ".amp/**"];
+// The DMS loads the frontend without imports knip can follow: the components
+// through the `import.meta.glob` of dms.frontend.ts, and the composables,
+// utils and types through the auto-imports dms.frontend.build.ts registers.
+// They are entries, so their exports only count as used inside the module
+// when a file imports them by path.
 knipConfig.workspaces = {
   "frontend-vue": {
-    entry: ["dms.frontend.ts", "dms.frontend.build.ts"],
-    project: ["app/**/*.{ts,vue}", "dms.frontend.ts"],
+    entry: [
+      "app/{components,build/components}/**/*.vue",
+      "app/{composables,utils,types,config}/**/*.ts",
+    ],
+    project: ["app/**/*.{ts,vue}"],
   },
 };
 
