@@ -1,10 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { coveragePercent } from "../frontend-vue/app/utils/translations.ts";
-import {
-  isConflict,
-  serverErrorCode,
-} from "../frontend-vue/app/composables/translation/useMutationToast.ts";
+import { serverErrorCode } from "../frontend-vue/app/composables/translation/useMutationToast.ts";
 import {
   matchesWorkspace,
   sortWorkspaces,
@@ -20,9 +17,7 @@ test("coverage never rounds a gap up to 100", () => {
   assert.equal(coveragePercent(29, 100), 29);
 });
 
-test("conflicts and error codes are recognised", () => {
-  assert.equal(isConflict({ status: 409, data: { code: "conflict" } }), true);
-  assert.equal(isConflict({ status: 404 }), false);
+test("error codes are recognised", () => {
   assert.equal(serverErrorCode({ data: { code: "key_exists" } }), "key_exists");
   assert.equal(serverErrorCode({ data: "text" }), "");
 });

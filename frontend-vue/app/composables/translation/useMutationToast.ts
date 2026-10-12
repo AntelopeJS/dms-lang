@@ -1,7 +1,5 @@
 interface MutationError {
   data?: unknown
-  status?: number
-  statusCode?: number
 }
 
 interface ErrorBody {
@@ -11,18 +9,6 @@ interface ErrorBody {
 interface MutationToastOptions {
   title?: string
   retry?: () => void
-}
-
-const CONFLICT_STATUS = 409
-
-function statusOf(error: unknown): number | undefined {
-  const failure = error as MutationError | undefined
-  return failure?.status ?? failure?.statusCode
-}
-
-/** Whether a write was refused because the value changed since it was read. */
-export function isConflict(error: unknown): boolean {
-  return statusOf(error) === CONFLICT_STATUS
 }
 
 /** The error code the server gave a failed request (`key_exists`, …). */
@@ -74,5 +60,5 @@ export const useMutationToast = () => {
     }
   }
 
-  return { tryMutate, reportFailure, errorMessage, isConflict, serverErrorCode }
+  return { tryMutate, reportFailure, errorMessage, serverErrorCode }
 }
