@@ -59,6 +59,8 @@
 			"corrupt_file": "A translation file is not valid JSON: fix it before editing.",
 			"corrupt_manifest": "The workspace settings file is not valid JSON: fix it before editing.",
 			"not_configured": "The workspaces folder is not configured.",
+			"invalid_backup": "This file is not a workspace backup.",
+			"newer_backup": "This backup was saved by a newer version of the Translations module: update the module to import it.",
 			"message_syntax": {
 				"expected_token": "A character is missing where the message expects one.",
 				"invalid_token_in_placeholder": "A variable name is not valid: use unaccented letters, digits, _ and -, starting with a letter or _.",

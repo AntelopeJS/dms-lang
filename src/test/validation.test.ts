@@ -48,6 +48,30 @@ describe("[unit] route inputs are validated at the entry", () => {
     expect(validate(querySchema.notice, {}).page).to.equal("overview");
   });
 
+  it("refuses a backup of another format or of a newer version", () => {
+    const backup = { id: "copy", messages: { en: {} } };
+    const refusal = (stamp: Record<string, unknown>) =>
+      expectError(
+        () => validate(workspaceSchema.import, { ...backup, ...stamp }),
+        400,
+        "invalid_body",
+      ).message;
+    expect(refusal({ version: 2 })).to.equal("$dms_lang.errors.newer_backup");
+    expect(refusal({ format: "other" })).to.equal(
+      "$dms_lang.errors.invalid_backup",
+    );
+    expect(refusal({ version: "1" })).to.equal(
+      "$dms_lang.errors.invalid_backup",
+    );
+    expect(
+      validate(workspaceSchema.import, {
+        ...backup,
+        format: "dms-lang.workspace",
+        version: 1,
+      }),
+    ).to.deep.include({ id: "copy" });
+  });
+
   it("bounds the description and the type of a workspace", () => {
     expectError(
       () =>

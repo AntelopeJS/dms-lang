@@ -1,5 +1,6 @@
 import * as z from "zod";
 import { errorMessage } from "../utils/errors";
+import { BACKUP_FORMAT, BACKUP_VERSION } from "../utils/export";
 import { WORKSPACE_TYPES } from "../utils/workspaces";
 
 /** Longest workspace description. */
@@ -14,6 +15,19 @@ const localeEntry = z.object({
   name: z.string().optional(),
   flag: z.string().optional(),
 });
+
+/** A backup of another format, or one a newer version of the module wrote, is refused. */
+const backupStamp = {
+  format: z
+    .enum([BACKUP_FORMAT], { message: errorMessage("invalid_backup") })
+    .optional(),
+  version: z
+    .number({ message: errorMessage("invalid_backup") })
+    .int({ message: errorMessage("invalid_backup") })
+    .positive({ message: errorMessage("invalid_backup") })
+    .max(BACKUP_VERSION, { message: errorMessage("newer_backup") })
+    .optional(),
+};
 
 /** `null` or an empty type clears it, like an empty description. */
 const details = {
@@ -34,6 +48,7 @@ export const workspaceSchema = {
     }),
     locales: z.array(localeEntry).optional(),
     defaultLocale: z.string().optional(),
+    ...backupStamp,
     ...details,
   }),
   addLocale: localeEntry.extend({ workspace: id }),

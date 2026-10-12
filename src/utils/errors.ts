@@ -55,6 +55,8 @@ export type ErrorReason =
   | "no_locale"
   | "corrupt_file"
   | "corrupt_manifest"
+  | "invalid_backup"
+  | "newer_backup"
   | "not_configured";
 
 export type ErrorDetails = Record<string, unknown>;

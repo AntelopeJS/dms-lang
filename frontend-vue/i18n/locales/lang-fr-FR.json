@@ -59,6 +59,8 @@
 			"corrupt_file": "Un fichier de traduction n'est pas un JSON valide : corrigez-le avant de modifier.",
 			"corrupt_manifest": "Le fichier de réglages de l'espace de travail n'est pas un JSON valide : corrigez-le avant de modifier.",
 			"not_configured": "Le dossier des espaces de travail n'est pas configuré.",
+			"invalid_backup": "Ce fichier n'est pas une sauvegarde de workspace.",
+			"newer_backup": "Cette sauvegarde a été enregistrée par une version plus récente du module Traductions : mettez le module à jour pour l'importer.",
 			"message_syntax": {
 				"expected_token": "Il manque un caractère là où le message en attend un.",
 				"invalid_token_in_placeholder": "Un nom de variable n'est pas valide : lettres sans accent, chiffres, _ et -, en commençant par une lettre ou _.",
