@@ -109,6 +109,12 @@ function describeBlockRoutes(): void {
     expect(dialog).to.include({ confirmText: "it-IT", color: "error" });
     expect(dialog.impact?.[1]).to.include({ count: 1 });
     expect(dialog.params?.url).to.match(/\/i18n\/storefront\/it-IT\.json$/);
+    expect(dialog.params?.code).to.equal("it-IT");
+    expect(dialog.secondaryAction?.target).to.deep.equal({
+      type: "download",
+      url: "/i18n/{workspace}/{code}.json",
+      filename: "{code}.json",
+    });
     const endpoint = workspaceEndpoint(WORKSPACE, ORIGIN);
     expect(endpoint.items[0]).to.include({
       value: `${ORIGIN}/i18n/${WORKSPACE}/{locale}.json`,

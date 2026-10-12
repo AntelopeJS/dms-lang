@@ -2,10 +2,11 @@ import { serializeConfirmDialog } from "@antelopejs/interface-dms/base/confirm-d
 import type {
   ConfirmDialog,
   ConfirmDialogImpact,
+  ConfirmDialogSecondaryAction,
   ConfirmDialogSerialized,
 } from "@antelopejs/interface-dms/base/types";
 import { findWorkspace } from "./catalog";
-import { LANG_TEXTS } from "./constants";
+import { LANG_TEXTS, PUBLIC_PATH } from "./constants";
 import { fail } from "./errors";
 import { nativeName } from "./languages";
 import { findLocale } from "./locale-codes";
@@ -14,6 +15,18 @@ import { type FlatResult, isRowMissing, resolveFlat } from "./resolve";
 
 const LISTED_KEYS = 20;
 const SHOWN_KEYS = 5;
+const LANGUAGE_FILE = "{code}.json";
+
+/** Saves the file of the language before it goes, from the public route. */
+const DOWNLOAD_LANGUAGE: ConfirmDialogSecondaryAction = {
+  label: `$${LANG_TEXTS}.language_remove.download`,
+  icon: "i-ph-download-simple",
+  target: {
+    type: "download",
+    url: `${PUBLIC_PATH}/{workspace}/${LANGUAGE_FILE}`,
+    filename: LANGUAGE_FILE,
+  },
+};
 
 /** The dialog confirming a new base language, with what a caller wording its own dialog needs. */
 export interface BaseConfirm extends ConfirmDialogSerialized {
@@ -34,7 +47,8 @@ function countStrings(flat: FlatResult, code: string): number {
 
 /**
  * The dialog confirming the removal of a language, worded by the server: the
- * code to type only when texts would be lost, and where to save them first.
+ * code to type and a button saving its file first, only when texts would be
+ * lost.
  */
 export function removalConfirm(
   workspace: string,
@@ -54,6 +68,7 @@ export function removalConfirm(
     params: {
       name: nativeName(code, flat.locales),
       workspace: summary.id,
+      code,
       url: publicLocaleUrl(origin, summary, code) ?? "",
       file: `${code}.json`,
     },
@@ -64,6 +79,7 @@ export function removalConfirm(
   if (!strings) return serializeConfirmDialog(dialog);
   dialog.description = `$${LANG_TEXTS}.language_remove.description_backup`;
   dialog.confirmText = code;
+  dialog.secondaryAction = DOWNLOAD_LANGUAGE;
   impact.push({
     icon: "i-ph-text-aa",
     label: `$${LANG_TEXTS}.language_remove.strings`,

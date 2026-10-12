@@ -528,7 +528,8 @@
 			"strings": "Translated strings lost",
 			"submit": "Remove language",
 			"done": "Language removed",
-			"description_backup": "Apps requesting {url} get a 404. To keep a copy, download {url} before removing it."
+			"description_backup": "Apps requesting {url} get a 404. To keep a copy of its texts, download {file} first.",
+			"download": "Download {file}"
 		},
 		"language_base": {
 			"done": "{name} is now the base language",

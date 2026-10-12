@@ -528,7 +528,8 @@
 			"strings": "Textes traduits perdus",
 			"submit": "Retirer la langue",
 			"done": "Langue retirée",
-			"description_backup": "Les applications qui demandent {url} reçoivent une erreur 404. Pour en garder une copie, téléchargez {url} avant de la retirer."
+			"description_backup": "Les applications qui demandent {url} reçoivent une erreur 404. Pour garder une copie de ses textes, téléchargez d'abord {file}.",
+			"download": "Télécharger {file}"
 		},
 		"language_base": {
 			"done": "{name} est maintenant la langue de base",
