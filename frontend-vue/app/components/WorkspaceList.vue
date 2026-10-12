@@ -26,8 +26,9 @@ interface WorkspacePill {
 const EDITABLE_CONFIG = `"dms-lang": {\n  config: { editable: true },\n}`
 /** Below this many workspaces, searching and sorting them is noise. */
 const TOOLBAR_THRESHOLD = 4
-/** The sort picked last, remembered in this browser. */
-const SORT_STORAGE = 'dms-lang-workspaces-sort'
+/** The sort picked last, a user preference the server render reads too. */
+const SORT_PREFERENCE = 'dms-lang.workspaceSort'
+const DEFAULT_SORT: WorkspaceSort = 'kind'
 const OPEN_LABELS: Record<WorkspaceKind, string> = {
   default: 'dms_lang.workspaces.switch',
   added: 'dms_lang.workspaces.switch',
@@ -48,6 +49,7 @@ const { typeIcon, typeLabel, kindIcon } = useWorkspaceTypes()
 const { pageAction, clearPageAction, selectWorkspace } = useWorkspaceRoute()
 const { allows } = useWorkspaceContext()
 const links = useLangLinks()
+const { getPreference, setPreference } = usePreferences()
 
 const canCreate = computed(() => editable.value && allows('createWorkspace'))
 
@@ -56,7 +58,13 @@ const isLoaded = ref(false)
 const hasError = ref(false)
 const isLoading = ref(false)
 const search = ref('')
-const sort = ref<WorkspaceSort>('kind')
+const sort = computed<WorkspaceSort>({
+  get: () => {
+    const stored = getPreference<unknown>(SORT_PREFERENCE)
+    return isWorkspaceSort(stored) ? stored : DEFAULT_SORT
+  },
+  set: (value) => setPreference(SORT_PREFERENCE, value),
+})
 
 const sortItems = computed(() =>
   (Object.keys(SORT_LABELS) as WorkspaceSort[]).map((value) => ({
@@ -78,23 +86,6 @@ const shown = computed(() =>
 
 function isWorkspaceSort(value: unknown): value is WorkspaceSort {
   return typeof value === 'string' && Object.hasOwn(SORT_LABELS, value)
-}
-
-function readSort(): WorkspaceSort | null {
-  try {
-    const stored = localStorage.getItem(SORT_STORAGE)
-    return isWorkspaceSort(stored) ? stored : null
-  } catch {
-    return null
-  }
-}
-
-function writeSort(value: WorkspaceSort) {
-  try {
-    localStorage.setItem(SORT_STORAGE, value)
-  } catch {
-    return
-  }
 }
 
 async function load() {
@@ -227,10 +218,7 @@ watch(
   { immediate: true },
 )
 
-watch(sort, writeSort)
-
 onMounted(() => {
-  sort.value = readSort() ?? sort.value
   load()
   fetchWorkspaces()
 })
