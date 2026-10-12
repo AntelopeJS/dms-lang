@@ -92,8 +92,8 @@ async function load() {
   isLoading.value = true
   try {
     const response = await fetchSummary()
-    summary.value = response?.workspaces ?? []
-    editable.value = response?.editable ?? false
+    summary.value = response.workspaces
+    editable.value = response.editable
     hasError.value = false
     isLoaded.value = true
   } catch {

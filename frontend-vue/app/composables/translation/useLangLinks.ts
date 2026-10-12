@@ -1,5 +1,3 @@
-import { useDmsRuntimeConfig } from '#dms/frontend-module'
-
 const MODULE_BASE = '/modules/lang'
 
 export const LANG_PAGES = {
@@ -25,8 +23,6 @@ export const PAGE_ACTIONS = {
 
 export const LOCALE_PLACEHOLDER = '{locale}'
 
-const PUBLIC_PATH = '/i18n'
-
 export function linkWithQuery(path: string, query: PageQuery): string {
   const params = new URLSearchParams()
   for (const [name, value] of Object.entries(query)) {
@@ -48,11 +44,6 @@ export function langPageOf(path: string): LangPage | undefined {
  */
 export const useLangLinks = () => {
   const { selectedWorkspace, workspaces, publicBaseUrl } = useI18nWorkspaces()
-  const runtimeBase = useDmsRuntimeConfig().public.dms.baseURL
-
-  function publicBase(): string {
-    return publicBaseUrl.value || `${runtimeBase}${PUBLIC_PATH}`
-  }
 
   /**
    * The URL another app loads a language from: the one the server computed
@@ -64,7 +55,7 @@ export const useLangLinks = () => {
     if (known && known.kind !== 'added') return ''
     const template =
       known?.publicUrl ??
-      `${publicBase()}/${workspace}/${LOCALE_PLACEHOLDER}.json`
+      `${publicBaseUrl.value}/${workspace}/${LOCALE_PLACEHOLDER}.json`
     return template.replace(LOCALE_PLACEHOLDER, locale)
   }
 
