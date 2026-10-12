@@ -688,7 +688,6 @@
 				"kpis": "Workspace figures",
 				"kpis_description": "Languages, keys, missing translations and coverage.",
 				"content": "Overview content",
-				"blocks": "Overview blocks",
 				"languages": "Languages",
 				"languages_description": "Coverage of each language, with links to translate it.",
 				"side": "Side panels",

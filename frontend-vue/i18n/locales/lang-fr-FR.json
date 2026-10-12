@@ -688,7 +688,6 @@
 				"kpis": "Chiffres de l'espace",
 				"kpis_description": "Langues, clés, traductions manquantes et couverture.",
 				"content": "Contenu de la vue d'ensemble",
-				"blocks": "Blocs de la vue d'ensemble",
 				"languages": "Langues",
 				"languages_description": "Couverture de chaque langue, avec un lien pour la traduire.",
 				"side": "Panneaux latéraux",

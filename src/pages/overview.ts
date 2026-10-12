@@ -20,8 +20,6 @@ import { LANG_API, PERMISSION_TEXTS } from "../utils/constants";
 const PAGE_ID = "overview";
 const TEXTS = `${PERMISSION_TEXTS}.overview`;
 const SIDE_GAP = "1rem";
-/** The gap the DMS puts between the blocks of a page. */
-const PAGE_GAP = "1.5rem";
 const MIN_COLUMN_WIDTH = "320px";
 const LANGUAGES_SPAN = 2;
 const KPI_COUNT = 4;
@@ -84,12 +82,6 @@ const content = Grid({ gap: SIDE_GAP, minColumnWidth: MIN_COLUMN_WIDTH })
       .child("side", side),
   );
 
-const blocks = VStack({ alignment: "stretch", spacing: PAGE_GAP })
-  .meta({ name: `${TEXTS}.blocks`, icon: "i-ph-rows" })
-  .child("notice", notice)
-  .child("kpis", kpis)
-  .child("content", content);
-
 @RegisterPage()
 export class LangOverviewController extends PageController(
   PAGE_ID,
@@ -109,7 +101,10 @@ export class LangOverviewController extends PageController(
     icon: "i-ph-stack",
   });
 
-  static scoped = workspaceGuard().child("blocks", blocks);
+  static scoped = workspaceGuard()
+    .child("notice", notice)
+    .child("kpis", kpis)
+    .child("content", content);
 }
 
 followTranslations(translateCategory, PAGE_ID);
