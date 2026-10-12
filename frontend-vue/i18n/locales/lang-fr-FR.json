@@ -507,6 +507,7 @@
 			"title": "Ajouter une langue à {workspace}",
 			"description": "Crée un fichier vide. Chaque clé démarre comme manquante et affiche le texte en {base} comme référence.",
 			"search": "Rechercher une langue ou saisir un code (pt-BR)",
+			"added": "Ajoutée",
 			"already_added": "Déjà dans cet espace",
 			"added_elsewhere": "{name} · {code} vient d'être ajoutée à cet espace depuis un autre endroit. Choisissez une autre langue.",
 			"exists_title": "{name} · {code} est déjà dans cet espace",
@@ -515,14 +516,13 @@
 			"any_code": "Introuvable ? Saisissez n'importe quel code BCP 47, comme pt-BR ou fr-CA.",
 			"submit": "Ajouter la langue",
 			"submit_named": "Ajouter {name} · {code}",
+			"suggested": "Suggestions · {n} résultat | Suggestions · {n} résultats",
 			"unknown": "Inconnue de ce navigateur : vérifiez le code",
 			"invalid_code": "{code} n'est pas un code BCP 47 valide. Utilisez des lettres et des tirets, comme pt-BR ou zh-Hant-TW.",
 			"same_language": "Cet espace contient déjà {codes}. {name} · {code} devient une langue à part, traduite séparément.",
 			"done": "{name} ({code}) ajoutée · aucune clé à traduire | {name} ({code}) ajoutée · {count} clé à traduire | {name} ({code}) ajoutée · {count} clés à traduire",
 			"locked_title": "Les langues de cet espace ne se changent pas ici",
-			"locked": "Les langues des fichiers du projet et des modules suivent les fichiers sur le disque. Créez un espace pour gérer ses langues ici.",
-			"label": "Langue",
-			"pick": "Choisissez une langue"
+			"locked": "Les langues des fichiers du projet et des modules suivent les fichiers sur le disque. Créez un espace pour gérer ses langues ici."
 		},
 		"language_remove": {
 			"title": "Retirer {name} de {workspace} ?",

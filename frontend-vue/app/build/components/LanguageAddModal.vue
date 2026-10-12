@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import LanguagePicker from './LanguagePicker.vue'
-import FormFieldRow from './form/FormFieldRow.vue'
-import FormRows from './form/FormRows.vue'
 import { canonicalLocale, hasSubtags, languageOf } from '../../utils/languages'
 
 interface Emits {
@@ -121,31 +119,25 @@ function close(added: boolean) {
   >
     <template #body>
       <div class="space-y-3">
-        <FormRows has-required>
-          <FormFieldRow :label="$t('dms_lang.language_add.label')" required>
-            <template #default="{ id }">
-              <LanguagePicker
-                :id="id"
-                v-model="selected"
-                v-model:search="search"
-                :options="options"
-                :taken="[...existingCodes]"
-                :placeholder="$t('dms_lang.language_add.pick')"
-                autofocus
-              >
-                <template #empty>
-                  {{
-                    isInvalidCode
-                      ? $t('dms_lang.language_add.invalid_code', {
-                          code: search.trim(),
-                        })
-                      : $t('dms_lang.language_add.no_match')
-                  }}
-                </template>
-              </LanguagePicker>
-            </template>
-          </FormFieldRow>
-        </FormRows>
+        <LanguagePicker
+          v-model="selected"
+          v-model:search="search"
+          :options="options"
+          :taken="[...existingCodes]"
+          is-open
+          autofocus
+          @submit="submit"
+        >
+          <template #empty>
+            {{
+              isInvalidCode
+                ? $t('dms_lang.language_add.invalid_code', {
+                    code: search.trim(),
+                  })
+                : $t('dms_lang.language_add.no_match')
+            }}
+          </template>
+        </LanguagePicker>
         <p
           v-if="addedElsewhere"
           role="status"

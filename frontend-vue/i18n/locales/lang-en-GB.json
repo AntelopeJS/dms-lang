@@ -507,6 +507,7 @@
 			"title": "Add a language to {workspace}",
 			"description": "Creates an empty file. Every key starts as missing and shows the {base} text as reference.",
 			"search": "Search languages or type a code (pt-BR)",
+			"added": "Added",
 			"already_added": "Already in this workspace",
 			"added_elsewhere": "{name} · {code} was just added to this workspace from elsewhere. Pick another language.",
 			"exists_title": "{name} · {code} is already in this workspace",
@@ -515,14 +516,13 @@
 			"any_code": "Can't find it? Type any BCP 47 code, such as pt-BR or fr-CA.",
 			"submit": "Add language",
 			"submit_named": "Add {name} · {code}",
+			"suggested": "Suggested · {n} match | Suggested · {n} matches",
 			"unknown": "Not known to this browser: check the code",
 			"invalid_code": "{code} isn't a valid BCP 47 code. Use letters and dashes, such as pt-BR or zh-Hant-TW.",
 			"same_language": "This workspace already has {codes}. {name} · {code} becomes a separate language, translated on its own.",
 			"done": "{name} ({code}) added · no key to translate | {name} ({code}) added · {count} key to translate | {name} ({code}) added · {count} keys to translate",
 			"locked_title": "Languages of this workspace can't be changed here",
-			"locked": "Project files and module languages follow the files on disk. Create a workspace to manage its languages here.",
-			"label": "Language",
-			"pick": "Pick a language"
+			"locked": "Project files and module languages follow the files on disk. Create a workspace to manage its languages here."
 		},
 		"language_remove": {
 			"title": "Remove {name} from {workspace}?",
