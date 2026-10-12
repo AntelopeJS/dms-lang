@@ -25,7 +25,11 @@ import {
 import { LANG_REALTIME_TOPIC } from "../pages/module";
 import { localeStats, workspaceAbout, workspaceKpis } from "../utils/blocks";
 import { JsonBody } from "../utils/body";
-import { listAllWorkspaces, resolveWorkspaceId } from "../utils/catalog";
+import {
+  findWorkspace,
+  listAllWorkspaces,
+  resolveWorkspaceId,
+} from "../utils/catalog";
 import { getTranslationConfig } from "../utils/config";
 import { LANG_API, PUBLIC_PATH } from "../utils/constants";
 import {
@@ -283,6 +287,13 @@ export class TranslationsController extends Controller(LANG_API) {
   @Get("/flat")
   flat(@Parameter("workspace", "query") workspace?: string) {
     return resolveFlat(resolveWorkspaceId(workspace));
+  }
+
+  @Get("/workspace")
+  workspace(
+    @Parameter("workspace", "query") workspace?: string,
+  ): WorkspaceSummary {
+    return findWorkspace(workspace);
   }
 
   @Post("/workspace")

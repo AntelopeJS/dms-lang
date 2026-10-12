@@ -21,9 +21,6 @@ export const useWorkspaceContext = () => {
   const isUnknown = computed(
     () => isLoaded.value && !!selectedWorkspace.value && !current.value,
   )
-  const unknownId = computed(() =>
-    isUnknown.value ? selectedWorkspace.value : '',
-  )
   /** The workspace and its translations are both in: figures can show. */
   const isResolved = computed(
     () => current.value !== null && hasFlat(current.value.id),
@@ -51,7 +48,6 @@ export const useWorkspaceContext = () => {
   return {
     current,
     isUnknown,
-    unknownId,
     isResolved,
     isDefault,
     isModules,

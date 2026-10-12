@@ -1,8 +1,5 @@
 import type { Action, Component } from "@antelopejs/interface-dms/component";
-import {
-  LangTranslationsController,
-  TRANSLATION_ACTIONS,
-} from "./translations";
+import { TRANSLATION_ACTIONS, translationMatrix } from "./translations";
 import {
   WORKSPACE_ACTIONS,
   workspaceDangerZone,
@@ -17,12 +14,12 @@ function requireAction(component: Component, id: string): Action {
 }
 
 export const editTranslationsAction = requireAction(
-  LangTranslationsController.matrix,
+  translationMatrix,
   TRANSLATION_ACTIONS.edit,
 );
 
 export const manageKeysAction = requireAction(
-  LangTranslationsController.matrix,
+  translationMatrix,
   TRANSLATION_ACTIONS.keys,
 );
 

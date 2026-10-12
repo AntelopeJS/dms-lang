@@ -1,6 +1,7 @@
 import { CustomComponent } from "@antelopejs/interface-dms/base/custom";
 import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
 import { countDefaultMissing } from "../utils/summary";
+import { workspaceGuard } from "./workspace-guard";
 import {
   followTranslations,
   LANG_MODULE_ID,
@@ -15,6 +16,25 @@ export const TRANSLATION_ACTIONS = {
   edit: "edit",
   keys: "keys",
 } as const;
+
+/** The matrix of the page, owning its edit and key actions. */
+export const translationMatrix = CustomComponent("DmsLangTranslationMatrix")
+  .meta({
+    name: `${TEXTS}.matrix`,
+    description: `${TEXTS}.matrix_description`,
+    icon: "i-ph-table",
+  })
+  .action(TRANSLATION_ACTIONS.edit, {
+    title: `${TEXTS}.edit`,
+    description: `${TEXTS}.edit_description`,
+    icon: "i-ph-pencil-simple",
+  })
+  .action(TRANSLATION_ACTIONS.keys, {
+    title: `${TEXTS}.keys`,
+    description: `${TEXTS}.keys_description`,
+    icon: "i-ph-key",
+  })
+  .navBadge({ count: () => Promise.resolve(countDefaultMissing()) });
 
 @RegisterPage()
 export class LangTranslationsController extends PageController(PAGE_ID, {
@@ -31,23 +51,7 @@ export class LangTranslationsController extends PageController(PAGE_ID, {
     icon: "i-ph-stack",
   });
 
-  static matrix = CustomComponent("DmsLangTranslationMatrix")
-    .meta({
-      name: `${TEXTS}.matrix`,
-      description: `${TEXTS}.matrix_description`,
-      icon: "i-ph-table",
-    })
-    .action(TRANSLATION_ACTIONS.edit, {
-      title: `${TEXTS}.edit`,
-      description: `${TEXTS}.edit_description`,
-      icon: "i-ph-pencil-simple",
-    })
-    .action(TRANSLATION_ACTIONS.keys, {
-      title: `${TEXTS}.keys`,
-      description: `${TEXTS}.keys_description`,
-      icon: "i-ph-key",
-    })
-    .navBadge({ count: () => Promise.resolve(countDefaultMissing()) });
+  static scoped = workspaceGuard().child("matrix", translationMatrix);
 }
 
 followTranslations(translateCategory, PAGE_ID);

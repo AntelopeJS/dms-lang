@@ -3,6 +3,7 @@ import { Grid, GridRow } from "@antelopejs/interface-dms/base/grid";
 import { StatGroup } from "@antelopejs/interface-dms/base/stat-group";
 import { VStack } from "@antelopejs/interface-dms/base/stack";
 import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
+import { workspaceGuard } from "./workspace-guard";
 import {
   followTranslations,
   LANG_MODULE_ID,
@@ -51,6 +52,16 @@ const side = VStack({ alignment: "stretch", spacing: GAP })
   .child("progress", progress)
   .child("namespaces", namespaces);
 
+const content = Grid({ gap: GAP, minColumnWidth: MIN_COLUMN_WIDTH })
+  .meta({ name: `${TEXTS}.content`, icon: "i-ph-layout" })
+  .child(
+    "main",
+    GridRow()
+      .meta({ name: `${TEXTS}.content`, icon: "i-ph-rows" })
+      .child("queue", queue, { colSpan: QUEUE_SPAN })
+      .child("side", side),
+  );
+
 @RegisterPage()
 export class LangLanguageController extends PageController(PAGE_ID, {
   displayName: "$dms_lang.language.page_title",
@@ -66,15 +77,7 @@ export class LangLanguageController extends PageController(PAGE_ID, {
     icon: "i-ph-stack",
   });
 
-  static content = Grid({ gap: GAP, minColumnWidth: MIN_COLUMN_WIDTH })
-    .meta({ name: `${TEXTS}.content`, icon: "i-ph-layout" })
-    .child(
-      "main",
-      GridRow()
-        .meta({ name: `${TEXTS}.content`, icon: "i-ph-rows" })
-        .child("queue", queue, { colSpan: QUEUE_SPAN })
-        .child("side", side),
-    );
+  static scoped = workspaceGuard().child("content", content);
 }
 
 followTranslations(translateCategory, PAGE_ID);

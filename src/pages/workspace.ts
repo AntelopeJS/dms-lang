@@ -9,6 +9,7 @@ import { VStack } from "@antelopejs/interface-dms/base/stack";
 import type { Action } from "@antelopejs/interface-dms/component";
 import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
 import { languagesTable } from "./languages-table";
+import { workspaceGuard } from "./workspace-guard";
 import { followTranslations, LANG_MODULE_ID, manageCategory } from "./module";
 import { LANG_API, PERMISSION_TEXTS } from "../utils/constants";
 import { SNIPPET_KINDS } from "../utils/snippets";
@@ -145,6 +146,16 @@ const side = VStack({ alignment: "stretch", spacing: GAP })
   .child("about", about)
   .child("keysNote", notice);
 
+const content = Grid({ gap: GAP, minColumnWidth: MIN_COLUMN_WIDTH })
+  .meta({ name: `${TEXTS}.content`, icon: "i-ph-layout" })
+  .child(
+    "main",
+    GridRow()
+      .meta({ name: `${TEXTS}.content`, icon: "i-ph-rows" })
+      .child("main", main, { colSpan: MAIN_SPAN })
+      .child("side", side),
+  );
+
 @RegisterPage()
 export class LangWorkspaceController extends PageController(PAGE_ID, {
   displayName: "$dms_lang.workspace.title",
@@ -160,15 +171,7 @@ export class LangWorkspaceController extends PageController(PAGE_ID, {
     icon: "i-ph-stack",
   });
 
-  static content = Grid({ gap: GAP, minColumnWidth: MIN_COLUMN_WIDTH })
-    .meta({ name: `${TEXTS}.content`, icon: "i-ph-layout" })
-    .child(
-      "main",
-      GridRow()
-        .meta({ name: `${TEXTS}.content`, icon: "i-ph-rows" })
-        .child("main", main, { colSpan: MAIN_SPAN })
-        .child("side", side),
-    );
+  static scoped = workspaceGuard().child("content", content);
 }
 
 followTranslations(manageCategory, PAGE_ID);

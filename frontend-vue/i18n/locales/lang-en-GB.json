@@ -204,7 +204,7 @@
 			"server_read_only_title": "Editing is disabled on this server",
 			"server_read_only_description": "Values show as text. Set editable: true in the dms-lang module config to edit them here.",
 			"settings": "{name} settings",
-			"unknown_title": "Workspace “{id}” not found",
+			"unknown_title": "Workspace not found",
 			"unknown_description": "It may have been renamed or deleted. Nothing from another workspace is shown in its place.",
 			"unknown_action": "Open workspaces"
 		},
@@ -681,10 +681,13 @@
 		"permissions": {
 			"scope": "Workspace bar",
 			"scope_description": "Shows and switches the workspace the page works on.",
+			"guard": "Workspace content",
+			"guard_description": "The blocks of the workspace, or a not-found state when the workspace in the URL does not exist.",
 			"overview": {
 				"kpis": "Workspace figures",
 				"kpis_description": "Languages, keys, missing translations and coverage.",
 				"content": "Overview content",
+				"blocks": "Overview blocks",
 				"languages": "Languages",
 				"languages_description": "Coverage of each language, with links to translate it.",
 				"side": "Side panels",

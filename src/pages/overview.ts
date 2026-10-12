@@ -7,6 +7,7 @@ import { VStack } from "@antelopejs/interface-dms/base/stack";
 import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
 import { manageLanguagesAction } from "./actions";
 import { languagesTable } from "./languages-table";
+import { workspaceGuard } from "./workspace-guard";
 import {
   followTranslations,
   LANG_MODULE_ID,
@@ -17,6 +18,8 @@ import { LANG_API, PERMISSION_TEXTS } from "../utils/constants";
 const PAGE_ID = "overview";
 const TEXTS = `${PERMISSION_TEXTS}.overview`;
 const SIDE_GAP = "1rem";
+/** The gap the DMS puts between the blocks of a page. */
+const PAGE_GAP = "1.5rem";
 const MIN_COLUMN_WIDTH = "320px";
 const LANGUAGES_SPAN = 2;
 const KPI_COUNT = 4;
@@ -50,6 +53,41 @@ const side = VStack({ alignment: "stretch", spacing: SIDE_GAP })
   .child("namespaces", namespaces)
   .child("endpoint", endpoint);
 
+const notice = Banner({
+  fetchUrl: `${API}/notice?workspace={{query.workspace}}&page=${PAGE_ID}`,
+}).meta({
+  name: `${TEXTS}.notice`,
+  description: `${TEXTS}.notice_description`,
+  icon: "i-ph-info",
+});
+
+const kpis = StatGroup({
+  layout: "cards",
+  label: "$dms_lang.kpis.label",
+  fetchUrl: `${API}/kpis?workspace={{query.workspace}}`,
+  skeletonCount: KPI_COUNT,
+}).meta({
+  name: `${TEXTS}.kpis`,
+  description: `${TEXTS}.kpis_description`,
+  icon: "i-ph-chart-bar",
+});
+
+const content = Grid({ gap: SIDE_GAP, minColumnWidth: MIN_COLUMN_WIDTH })
+  .meta({ name: `${TEXTS}.content`, icon: "i-ph-layout" })
+  .child(
+    "main",
+    GridRow()
+      .meta({ name: `${TEXTS}.content`, icon: "i-ph-rows" })
+      .child("languages", languages, { colSpan: LANGUAGES_SPAN })
+      .child("side", side),
+  );
+
+const blocks = VStack({ alignment: "stretch", spacing: PAGE_GAP })
+  .meta({ name: `${TEXTS}.blocks`, icon: "i-ph-rows" })
+  .child("notice", notice)
+  .child("kpis", kpis)
+  .child("content", content);
+
 @RegisterPage()
 export class LangOverviewController extends PageController(PAGE_ID, {
   displayName: "$dms_lang.overview.title",
@@ -65,34 +103,7 @@ export class LangOverviewController extends PageController(PAGE_ID, {
     icon: "i-ph-stack",
   });
 
-  static notice = Banner({
-    fetchUrl: `${API}/notice?workspace={{query.workspace}}&page=${PAGE_ID}`,
-  }).meta({
-    name: `${TEXTS}.notice`,
-    description: `${TEXTS}.notice_description`,
-    icon: "i-ph-info",
-  });
-
-  static kpis = StatGroup({
-    layout: "cards",
-    label: "$dms_lang.kpis.label",
-    fetchUrl: `${API}/kpis?workspace={{query.workspace}}`,
-    skeletonCount: KPI_COUNT,
-  }).meta({
-    name: `${TEXTS}.kpis`,
-    description: `${TEXTS}.kpis_description`,
-    icon: "i-ph-chart-bar",
-  });
-
-  static content = Grid({ gap: SIDE_GAP, minColumnWidth: MIN_COLUMN_WIDTH })
-    .meta({ name: `${TEXTS}.content`, icon: "i-ph-layout" })
-    .child(
-      "main",
-      GridRow()
-        .meta({ name: `${TEXTS}.content`, icon: "i-ph-rows" })
-        .child("languages", languages, { colSpan: LANGUAGES_SPAN })
-        .child("side", side),
-    );
+  static scoped = workspaceGuard().child("blocks", blocks);
 }
 
 followTranslations(translateCategory, PAGE_ID);

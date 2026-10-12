@@ -10,8 +10,6 @@ const CURRENT_ICON = 'i-ph-check'
 /** From this many workspaces on, the menu gets a filter field. */
 const MENU_FILTER_THRESHOLD = 7
 const MENU_FILTER_FIELDS = ['label', 'description', 'workspaceId', 'summary']
-/** Marks the "workspace not found" state; the style below hides the page's other blocks under it. */
-const UNKNOWN_CLASS = 'dms-lang-unknown-workspace'
 
 const { t } = useI18n()
 const { formatCount } = useLangFormat()
@@ -23,7 +21,6 @@ const {
   isModules,
   isAdded,
   isUnknown,
-  unknownId,
   isResolved,
 } = useWorkspaceContext()
 const { flat } = useWorkspaceFlat()
@@ -132,9 +129,6 @@ const showReadOnlyServer = computed(
 
 const baseMissingLink = computed(() => links.translations({ filter: 'issues' }))
 
-const workspacesLink = linkWithQuery(LANG_PAGES.workspaces, {
-  workspace: DEFAULT_WORKSPACE,
-})
 const addKeyLink = computed(() =>
   links.translations({ [PAGE_ACTION_QUERY]: PAGE_ACTIONS.addKey }),
 )
@@ -228,25 +222,7 @@ watch(
 </script>
 
 <template>
-  <DmsEmptyState
-    v-if="isUnknown"
-    :class="UNKNOWN_CLASS"
-    variant="no-result"
-    size="lg"
-    hatched
-    icon="i-ph-stack"
-    :title="$t('dms_lang.scope.unknown_title', { id: unknownId })"
-    :description="$t('dms_lang.scope.unknown_description')"
-    :actions="[
-      {
-        label: $t('dms_lang.scope.unknown_action'),
-        icon: 'i-ph-arrow-right',
-        to: workspacesLink,
-      },
-    ]"
-  />
-
-  <div v-else class="space-y-3">
+  <div v-if="!isUnknown" class="space-y-3">
     <div
       class="dms-card flex flex-wrap items-center gap-x-3.5 gap-y-2.5 py-2 pr-3.5 pl-2"
     >
@@ -399,16 +375,3 @@ watch(
   </div>
 </template>
 
-<style>
-/*
- * Under "workspace not found", the other blocks of the page (KPI, tables,
- * "Use in your app"…) would show the DMS load error, or the figures of the
- * workspace as it was before another tab deleted it: the state replaces the
- * whole page. The DMS has no way for a block to hide its siblings, so this
- * targets the page stack it renders the top-level blocks in.
- */
-.dms-page-stack:has(.dms-lang-unknown-workspace)
-  > :not(:has(.dms-lang-unknown-workspace)) {
-  display: none;
-}
-</style>

@@ -18,7 +18,7 @@ It provides, under two sidebar groups:
 
 Every page names the workspace it works on in a scope bar, which also switches it; the selection is kept in the page URL (`?workspace=`). The command palette offers Translate missing keys, Add a translation key, Add a language and New translation workspace.
 
-Write routes check the permission of the page action they belong to (`modules.lang.translate.translations.matrix.edit`, `….keys`, `modules.lang.manage.workspaces.list.create`, …); module pages stay owner-only, as every DMS module.
+Write routes check the permission of the page action they belong to (`modules.lang.translate.translations.scoped.matrix.edit`, `….keys`, `modules.lang.manage.workspaces.list.create`, …); module pages stay owner-only, as every DMS module.
 
 ## Installation
 

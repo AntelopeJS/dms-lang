@@ -13,7 +13,8 @@ import {
   manageLanguagesAction,
   renameWorkspaceAction,
 } from "../pages/actions";
-import { listAllWorkspaces } from "../utils/catalog";
+import { workspaceGuard } from "../pages/workspace-guard";
+import { findWorkspace, listAllWorkspaces } from "../utils/catalog";
 import {
   getTranslationConfig,
   setTranslationConfig,
@@ -32,6 +33,7 @@ import { countDefaultMissing, summarizeWorkspaces } from "../utils/summary";
 import { keyStoreOf } from "../utils/key-stores";
 import { createKey } from "../utils/keys";
 import { addLocale, createWorkspace } from "../utils/workspaces";
+import { expectError } from "./errors";
 
 const WORKSPACE = "storefront";
 const ORIGIN = "http://127.0.0.1:5021";
@@ -150,6 +152,17 @@ function describeBlockRoutes(): void {
       configured?.replace(/\/+$/, ""),
     );
   });
+
+  it("guards the workspace blocks on the route answering 404 for an unknown workspace", () => {
+    const { options } = workspaceGuard().serializeSync();
+    expect(options).to.include({
+      fetchUrl:
+        "/api/lang/translations/workspace?workspace={{query.workspace}}",
+      when: "notFound",
+    });
+    expect(findWorkspace(WORKSPACE).id).to.equal(WORKSPACE);
+    expectError(() => findWorkspace("nope"), 404, "unknown_workspace");
+  });
 }
 
 describe("[integration] workspace summary, export and overrides", () => {
@@ -254,12 +267,12 @@ describe("[integration] workspace summary, export and overrides", () => {
       deleteWorkspaceAction,
     ].map((action) => action.permissionId);
     expect(ids).to.deep.equal([
-      "modules.lang.translate.translations.matrix.edit",
-      "modules.lang.translate.translations.matrix.keys",
+      "modules.lang.translate.translations.scoped.matrix.edit",
+      "modules.lang.translate.translations.scoped.matrix.keys",
       "modules.lang.manage.workspaces.list.create",
-      "modules.lang.manage.workspace.content.main.main.general.languages",
-      "modules.lang.manage.workspace.content.main.main.danger.rename",
-      "modules.lang.manage.workspace.content.main.main.danger.delete",
+      "modules.lang.manage.workspace.scoped.content.main.main.general.languages",
+      "modules.lang.manage.workspace.scoped.content.main.main.danger.rename",
+      "modules.lang.manage.workspace.scoped.content.main.main.danger.delete",
     ]);
   });
   describeBlockRoutes();

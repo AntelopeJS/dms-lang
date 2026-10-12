@@ -204,7 +204,7 @@
 			"server_read_only_title": "La modification est désactivée sur ce serveur",
 			"server_read_only_description": "Les valeurs s'affichent en lecture seule. Mettez editable: true dans la configuration du module dms-lang pour les modifier ici.",
 			"settings": "Paramètres de {name}",
-			"unknown_title": "Espace « {id} » introuvable",
+			"unknown_title": "Espace introuvable",
 			"unknown_description": "Il a peut-être été renommé ou supprimé. Aucun autre espace n'est affiché à sa place.",
 			"unknown_action": "Voir les espaces"
 		},
@@ -681,10 +681,13 @@
 		"permissions": {
 			"scope": "Sélecteur d'espace",
 			"scope_description": "Affiche et change l'espace sur lequel la page travaille.",
+			"guard": "Contenu de l'espace",
+			"guard_description": "Les blocs de l'espace, ou un état introuvable quand l'espace de l'URL n'existe pas.",
 			"overview": {
 				"kpis": "Chiffres de l'espace",
 				"kpis_description": "Langues, clés, traductions manquantes et couverture.",
 				"content": "Contenu de la vue d'ensemble",
+				"blocks": "Blocs de la vue d'ensemble",
 				"languages": "Langues",
 				"languages_description": "Couverture de chaque langue, avec un lien pour la traduire.",
 				"side": "Panneaux latéraux",
