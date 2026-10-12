@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { basename } from "node:path";
-import { markChanged } from "./cache";
+import { markWritten } from "./cache";
 import { check, type ErrorReason, fail } from "./errors";
 
 const NEW_SEGMENT_RE = /^[\w-]{1,128}$/;
@@ -110,7 +110,7 @@ export function writeJson(path: string, data: unknown): void {
   );
   const end = layout.hasFinalLineEnd ? layout.lineEnd : "";
   writeFileSync(path, `${body}${end}`, "utf-8");
-  markChanged();
+  markWritten(path);
 }
 
 export function isPlainObject(

@@ -7,7 +7,6 @@ import {
   unlinkSync,
 } from "node:fs";
 import { resolve, sep } from "node:path";
-import { markChanged } from "./cache";
 import { getTranslationConfig } from "./config";
 import { check, fail } from "./errors";
 import { readJson, readJsonForWrite, writeJson } from "./json";
@@ -378,13 +377,11 @@ export function renameWorkspace(id: string, newId: string): string {
   const from = workspaceDir(id);
   const target = newWorkspaceDir(newId);
   renameSync(from, target.dir);
-  markChanged();
   return target.id;
 }
 
 export function deleteWorkspace(id: string): void {
   rmSync(workspaceDir(id), { recursive: true, force: true });
-  markChanged();
 }
 
 export interface AddedLocale {
@@ -430,7 +427,6 @@ export function removeLocale(id: string, code: string): void {
   check(stored !== manifest.defaultLocale, "base_locale", { locale: stored });
   const filePath = localeFile(dir, stored);
   if (existsSync(filePath)) unlinkSync(filePath);
-  markChanged();
   manifest.locales = manifest.locales.filter((l) => l.code !== stored);
   if (manifest.sources) delete manifest.sources[stored];
   writeManifestAt(dir, manifest);
