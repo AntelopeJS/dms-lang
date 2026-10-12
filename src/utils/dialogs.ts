@@ -42,7 +42,7 @@ function knownLocale(flat: FlatResult, code: string): string {
 }
 
 function countStrings(flat: FlatResult, code: string): number {
-  return flat.rows.filter((row) => !isRowMissing(row, code)).length;
+  return flat.totalKeys - (flat.localeMissing[code] ?? 0);
 }
 
 /**

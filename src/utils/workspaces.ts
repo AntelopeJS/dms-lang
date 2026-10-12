@@ -7,6 +7,7 @@ import {
   unlinkSync,
 } from "node:fs";
 import { resolve, sep } from "node:path";
+import { markChanged } from "./cache";
 import { getTranslationConfig } from "./config";
 import { check, fail } from "./errors";
 import { readJson, readJsonForWrite, writeJson } from "./json";
@@ -248,13 +249,28 @@ function localeFile(dir: string, code: string): string {
   return resolve(dir, `${code}${JSON_EXTENSION}`);
 }
 
+function readMessagesAt(dir: string, codes: string[]): LocaleMessages {
+  return Object.fromEntries(
+    codes.map((code) => [code, readJson(localeFile(dir, code))]),
+  );
+}
+
+function codesOf(manifest: WorkspaceManifest): string[] {
+  return manifest.locales.map((locale) => locale.code);
+}
+
 export function loadWorkspaceMessages(id: string): LocaleMessages {
   const dir = workspaceDir(id);
-  const messages: LocaleMessages = {};
-  for (const locale of readManifestAt(dir).locales) {
-    messages[locale.code] = readJson(localeFile(dir, locale.code));
-  }
-  return messages;
+  return readMessagesAt(dir, codesOf(readManifestAt(dir)));
+}
+
+/** The files an added workspace is read from: its manifest and its language files. */
+export function workspaceFiles(id: string): string[] {
+  const dir = workspaceDir(id);
+  return [
+    manifestPath(dir),
+    ...localeCodesOf(dir).map((code) => localeFile(dir, code)),
+  ];
 }
 
 export interface ServedLocale {
@@ -362,11 +378,13 @@ export function renameWorkspace(id: string, newId: string): string {
   const from = workspaceDir(id);
   const target = newWorkspaceDir(newId);
   renameSync(from, target.dir);
+  markChanged();
   return target.id;
 }
 
 export function deleteWorkspace(id: string): void {
   rmSync(workspaceDir(id), { recursive: true, force: true });
+  markChanged();
 }
 
 export interface AddedLocale {
@@ -412,6 +430,7 @@ export function removeLocale(id: string, code: string): void {
   check(stored !== manifest.defaultLocale, "base_locale", { locale: stored });
   const filePath = localeFile(dir, stored);
   if (existsSync(filePath)) unlinkSync(filePath);
+  markChanged();
   manifest.locales = manifest.locales.filter((l) => l.code !== stored);
   if (manifest.sources) delete manifest.sources[stored];
   writeManifestAt(dir, manifest);
@@ -433,13 +452,11 @@ export function setWorkspaceDefaultLocale(id: string, code: string): string {
 export function workspaceKeyStore(id: string): KeyStore {
   const dir = workspaceDir(id);
   const manifest = readManifestAt(dir);
-  const locales = manifest.locales.map((locale) => locale.code);
-  const messages: LocaleMessages = {};
-  for (const code of locales) messages[code] = readJson(localeFile(dir, code));
+  const locales = codesOf(manifest);
   return {
     locales,
     baseLocale: manifest.defaultLocale,
-    messages,
+    messages: readMessagesAt(dir, locales),
     reference: {},
     load: (code) => readJsonForWrite(localeFile(dir, code)),
     save: (code, data) => writeJson(localeFile(dir, code), data),

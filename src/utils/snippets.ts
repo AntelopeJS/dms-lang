@@ -2,7 +2,6 @@ import { FALLBACK_LOCALE, findWorkspace } from "./catalog";
 import { PROJECT_FILES } from "./constants";
 import { languageOf } from "./locale-codes";
 import { publicLocaleUrl, templateUrl } from "./public-url";
-import { resolveFlat } from "./resolve";
 import type { WorkspaceKind } from "./workspaces";
 
 export const SNIPPET_KINDS = ["vue", "i18next", "fetch", "curl"] as const;
@@ -145,11 +144,10 @@ export function workspaceSnippet(
     const local = LOCAL_SNIPPETS[summary.kind as keyof typeof LOCAL_SNIPPETS];
     return { language: "javascript", code: local.join("\n") };
   }
-  const flat = resolveFlat(summary.id);
   const build = SNIPPETS[kind];
   return build({
     url,
-    base: flat.defaultLocale || FALLBACK_LOCALE,
-    locales: flat.locales,
+    base: summary.defaultLocale || FALLBACK_LOCALE,
+    locales: summary.locales.map((locale) => locale.code),
   });
 }

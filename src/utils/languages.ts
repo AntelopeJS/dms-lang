@@ -7,7 +7,7 @@ import { findWorkspace } from "./catalog";
 import { LANG_TEXTS } from "./constants";
 import { coveragePercent, FULL_COVERAGE } from "./coverage";
 import { languageOf } from "./locale-codes";
-import { type FlatResult, isRowMissing, resolveFlat } from "./resolve";
+import { type FlatResult, resolveFlat } from "./resolve";
 
 const LANGUAGE_NAME: Intl.DisplayNamesOptions = {
   type: "language",
@@ -152,7 +152,7 @@ function targetDetail({
 
 function countsOf(flat: FlatResult, code: string): LanguageCounts {
   const total = flat.rows.length;
-  const missing = flat.rows.filter((row) => isRowMissing(row, code)).length;
+  const missing = flat.localeMissing[code] ?? 0;
   return {
     code,
     isBase: code === flat.defaultLocale,

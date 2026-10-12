@@ -1,5 +1,5 @@
 import { listAllWorkspaces } from "./catalog";
-import { type FlatResult, isRowMissing, resolveFlat } from "./resolve";
+import { type FlatResult, resolveFlat } from "./resolve";
 import { coveragePercent, FULL_COVERAGE } from "./coverage";
 import {
   DEFAULT_WORKSPACE,
@@ -26,10 +26,9 @@ export interface WorkspaceStats extends WorkspaceSummary {
 export type PublicUrlOf = (workspace: WorkspaceSummary) => string | undefined;
 
 export function countTranslated(flat: FlatResult): number {
-  return flat.rows.reduce(
-    (total, row) =>
-      total +
-      flat.locales.filter((locale) => !isRowMissing(row, locale)).length,
+  return flat.locales.reduce(
+    (total, locale) =>
+      total + flat.totalKeys - (flat.localeMissing[locale] ?? 0),
     0,
   );
 }

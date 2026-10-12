@@ -1,6 +1,7 @@
+import { filesStamp, memoize } from "./cache";
 import { modulesBaseLocale, projectBaseLocale } from "./catalog";
 import { coveragePercent } from "./coverage";
-import { getLocaleCodes, loadMessages } from "./registry";
+import { getLocaleCodes, loadMessages, registryFiles } from "./registry";
 import { outdatedLocales } from "./review";
 import {
   deepMerge,
@@ -16,6 +17,7 @@ import {
   loadWorkspaceMessages,
   type TranslationSources,
   type WorkspaceKind,
+  workspaceFiles,
   workspaceKind,
 } from "./workspaces";
 
@@ -28,15 +30,19 @@ export interface FlatRow {
   outdated?: string[];
 }
 
-export interface FlatResult {
-  defaultLocale: string;
-  locales: string[];
-  rows: FlatRow[];
+/** The figures of a workspace a write changes, sent back with the row it wrote. */
+export interface FlatCounts {
   localeProgress: Record<string, number>;
   localeMissing: Record<string, number>;
   totalKeys: number;
   baseMissing: number;
   incompleteKeys: number;
+}
+
+export interface FlatResult extends FlatCounts {
+  defaultLocale: string;
+  locales: string[];
+  rows: FlatRow[];
 }
 
 interface FlatContext {
@@ -178,8 +184,13 @@ function summarizeRows(context: FlatContext, rows: FlatRow[]): FlatResult {
   };
 }
 
-/** The rows of a workspace and their coverage; default and modules take the base language the server decides. */
-export function resolveFlat(workspace: string): FlatResult {
+const STAMPED_FILES: Record<WorkspaceKind, (workspace: string) => string[]> = {
+  default: registryFiles,
+  modules: registryFiles,
+  added: workspaceFiles,
+};
+
+function computeFlat(workspace: string): FlatResult {
   const context = contextOf(workspace);
   const rows = leafPaths(keysOf(context)).map((key) =>
     buildFlatRow(context, key),
@@ -187,18 +198,35 @@ export function resolveFlat(workspace: string): FlatResult {
   return summarizeRows(context, rows);
 }
 
-/** The current row of one key, as /flat would list it (`undefined` once the key is gone). */
+/**
+ * The rows of a workspace and their coverage; default and modules take the
+ * base language the server decides. Computed once, then kept until a write
+ * of the module or a change of its files on disk: every block of a page
+ * reads the same result. Shared: callers must not change it.
+ */
+export function resolveFlat(workspace: string): FlatResult {
+  const files = STAMPED_FILES[workspaceKind(workspace)](workspace);
+  return memoize(`flat:${workspace}`, filesStamp(files), () =>
+    computeFlat(workspace),
+  );
+}
+
+/** The figures of a workspace a write changes. */
+export function flatCounts(workspace: string): FlatCounts {
+  const flat = resolveFlat(workspace);
+  return {
+    localeProgress: flat.localeProgress,
+    localeMissing: flat.localeMissing,
+    totalKeys: flat.totalKeys,
+    baseMissing: flat.baseMissing,
+    incompleteKeys: flat.incompleteKeys,
+  };
+}
+
+/** The current row of one key, as /flat lists it (`undefined` once the key is gone). */
 export function resolveRow(
   workspace: string,
   key: string,
 ): FlatRow | undefined {
-  const context = contextOf(workspace);
-  const row = buildFlatRow(context, key);
-  const sources = [context.presence, context.inherited ?? {}];
-  const exists = sources.some((messages) =>
-    Object.values(messages).some(
-      (data) => getValueAtPath(data, key) !== undefined,
-    ),
-  );
-  return exists ? row : undefined;
+  return resolveFlat(workspace).rows.find((row) => row.key === key);
 }

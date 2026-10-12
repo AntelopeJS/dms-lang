@@ -2,6 +2,7 @@ import {
   GetFrontendModules,
   type FrontendModuleMetadata,
 } from "@antelopejs/interface-dms/page";
+import { filesStamp, memoize } from "./cache";
 import { discoverLocaleRegistry } from "./locale-discovery";
 import { readJson } from "./json";
 import { deepMerge, type LocaleMessages } from "./tree";
@@ -15,19 +16,32 @@ export interface RegistryEntry {
 
 export type I18nRegistry = Record<string, RegistryEntry[]>;
 
-let frontendModules: FrontendModuleMetadata[] = [];
+let registry: I18nRegistry = {};
 
+/**
+ * Reads the language files of the frontend modules once: the modules are
+ * known for good once the DMS started, so their files are listed only here.
+ */
 export async function initializeLocaleRegistry(): Promise<void> {
-  frontendModules = await GetFrontendModules();
+  const modules: FrontendModuleMetadata[] = await GetFrontendModules();
+  registry = discoverLocaleRegistry(modules);
 }
 
-function loadRegistry(): I18nRegistry {
-  return discoverLocaleRegistry(frontendModules);
+/** Every language file of the frontend modules, for a cache that follows them. */
+export function registryFiles(): string[] {
+  return Object.values(registry).flatMap((entries) =>
+    entries.map((entry) => entry.path),
+  );
 }
 
+/** The messages of the files of one origin, merged per language; read again once a file changed. */
 export function loadMessages(origin: OriginFilter): LocaleMessages {
-  const registry = loadRegistry();
+  return memoize(`messages:${origin}`, filesStamp(registryFiles()), () =>
+    readMessages(origin),
+  );
+}
 
+function readMessages(origin: OriginFilter): LocaleMessages {
   const localeMessages: LocaleMessages = {};
   for (const [localeCode, entries] of Object.entries(registry)) {
     const files = entries.filter((e) => e.origin === origin);
@@ -45,14 +59,12 @@ export function loadMessages(origin: OriginFilter): LocaleMessages {
 }
 
 export function getLocaleCodes(origin: OriginFilter): string[] {
-  const registry = loadRegistry();
   return Object.entries(registry)
     .filter(([, entries]) => entries.some((e) => e.origin === origin))
     .map(([code]) => code);
 }
 
 export function getOwnWriteTarget(localeCode: string): string | null {
-  const registry = loadRegistry();
   const entries = registry[localeCode] ?? [];
   return entries.findLast((e) => e.origin === "own")?.path ?? null;
 }

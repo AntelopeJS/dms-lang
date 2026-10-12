@@ -4,7 +4,6 @@ import type { KeyValueListItem } from "@antelopejs/interface-dms/base/key-value-
 import type { BlockItems } from "./blocks";
 import { FALLBACK_LOCALE, findWorkspace } from "./catalog";
 import { LANG_TEXTS, PROJECT_FILES, PUBLIC_PATH } from "./constants";
-import { resolveFlat } from "./resolve";
 import type { WorkspaceKind, WorkspaceSummary } from "./workspaces";
 
 const LOCALE_TOKEN = "{locale}";
@@ -112,6 +111,7 @@ export function workspaceEndpoint(
       items: LOCAL_ENDPOINTS[summary.kind as keyof typeof LOCAL_ENDPOINTS],
     };
   }
-  const base = resolveFlat(summary.id).defaultLocale;
-  return { items: publicEndpoint(url, base || FALLBACK_LOCALE) };
+  return {
+    items: publicEndpoint(url, summary.defaultLocale || FALLBACK_LOCALE),
+  };
 }
