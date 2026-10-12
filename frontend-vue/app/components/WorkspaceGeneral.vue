@@ -12,7 +12,6 @@ type DetailField = 'description' | 'type' | 'base'
 
 const DESCRIPTION_ROWS = 2
 
-const { t } = useI18n()
 const { current, canManage, isAdded, isUnknown, allows } = useWorkspaceContext()
 const { flat, isLoaded } = useWorkspaceFlat()
 useWorkspaceFlatSync()
@@ -21,7 +20,6 @@ const { addLanguage, makeBase } = useLanguageActions()
 const { updateDetails } = useWorkspaceActions()
 const { typeItems, typeOf, descriptionMax } = useWorkspaceTypes()
 const { route } = useWorkspaceRoute()
-const links = useLangLinks()
 
 const workspaceId = computed(() => route.query.workspace ?? '')
 const canEditDetails = computed(
@@ -95,20 +93,13 @@ const hasInstantSaves = computed(
   () => canEditDetails.value || canManageLanguages.value,
 )
 
-usePageHeaderActions(() => [
+usePageHeaderActions(() =>
   hasInstantSaves.value
     ? h(DmsInstantSaveBadge, {
         state: combineSaveStates(Object.values(saveStates.value)),
       })
     : null,
-  h(UButton, {
-    label: t('dms_lang.workspace.open_overview'),
-    icon: 'i-ph-gauge',
-    color: 'neutral',
-    variant: 'outline',
-    to: links.overview(),
-  }),
-])
+)
 </script>
 
 <template>

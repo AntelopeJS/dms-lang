@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { expect } from "chai";
 import type { RequestContext } from "@antelopejs/interface-api";
 import { GetApiBaseUrl } from "@antelopejs/interface-dms/api-base-url";
+import type { CustomButton } from "@antelopejs/interface-dms/base/types/custom-button";
 import { AddFrontendModule } from "@antelopejs/interface-dms/page";
 import {
   createWorkspaceAction,
@@ -13,6 +14,11 @@ import {
   manageLanguagesAction,
   renameWorkspaceAction,
 } from "../pages/actions";
+import {
+  addKeyButton,
+  addLanguageButton,
+  newWorkspaceButton,
+} from "../pages/header-actions";
 import { workspaceGuard } from "../pages/workspace-guard";
 import { findWorkspace, listAllWorkspaces } from "../utils/catalog";
 import {
@@ -37,6 +43,11 @@ import { expectError } from "./errors";
 
 const WORKSPACE = "storefront";
 const ORIGIN = "http://127.0.0.1:5021";
+
+interface PageTarget {
+  type: "page";
+  url: string;
+}
 
 interface LocaleTree {
   [key: string]: string | LocaleTree;
@@ -166,6 +177,57 @@ function describeBlockRoutes(): void {
   });
 }
 
+function availabilityOf(button: CustomButton, workspace?: string) {
+  return button.availability?.({
+    tenantId: "",
+    user: undefined,
+    query: workspace === undefined ? {} : { workspace },
+  });
+}
+
+function describeHeaderActions(): void {
+  it("disables the header writes the workspace of the URL refuses", async () => {
+    const addKey = addKeyButton(manageKeysAction);
+    expect(await availabilityOf(addKey, WORKSPACE)).to.equal(undefined);
+    expect(await availabilityOf(addKey, "modules")).to.deep.equal({
+      reason: "$dms_lang.errors.modules_read_only",
+    });
+    expect(await availabilityOf(addKey, "nope")).to.deep.equal({
+      reason: "$dms_lang.scope.unknown_title",
+    });
+    const addLanguage = addLanguageButton(manageLanguagesAction);
+    expect(await availabilityOf(addLanguage, WORKSPACE)).to.equal(undefined);
+    expect(await availabilityOf(addLanguage)).to.deep.equal({
+      reason: "$dms_lang.language_add.locked_title",
+    });
+  });
+
+  it("disables every header write on a read-only server", async () => {
+    const config = getTranslationConfig();
+    setTranslationConfig({ ...config, editable: false });
+    try {
+      const reason = { reason: "$dms_lang.scope.server_read_only_title" };
+      const newWorkspace = newWorkspaceButton(createWorkspaceAction);
+      expect(await availabilityOf(newWorkspace)).to.deep.equal(reason);
+      expect(
+        await availabilityOf(addKeyButton(manageKeysAction), WORKSPACE),
+      ).to.deep.equal(reason);
+    } finally {
+      setTranslationConfig(config);
+    }
+  });
+
+  it("points the header links at the workspace of the URL", () => {
+    expect(addKeyButton(manageKeysAction).target).to.deep.include({
+      type: "page",
+    });
+    const url = (addKeyButton(manageKeysAction).target as PageTarget).url;
+    expect(url).to.include("workspace={{query.workspace}}");
+    expect(url).to.include("q={{query.q}}");
+    expect(url).to.match(/action=add-key$/);
+  });
+}
+
 describe("[integration] workspace summary, export and overrides", () => {
   let directory: string;
   let previous: TranslationConfig;
@@ -277,4 +339,5 @@ describe("[integration] workspace summary, export and overrides", () => {
     ]);
   });
   describeBlockRoutes();
+  describeHeaderActions();
 });

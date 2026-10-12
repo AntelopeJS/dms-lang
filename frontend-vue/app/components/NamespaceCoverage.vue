@@ -25,9 +25,8 @@ const { flat, isLoaded } = useWorkspaceFlat()
 useWorkspaceFlatSync()
 const { formatCount } = useLangFormat()
 const links = useLangLinks()
-const { canManage, isResolved, isUnknown } = useWorkspaceContext()
+const { isResolved, isUnknown } = useWorkspaceContext()
 const { nameAmong } = useLocaleNames()
-const { addLanguage } = useLanguageActions()
 const isFirstRun = useFirstRun()
 
 function missingCount(code: string): number {
@@ -103,15 +102,6 @@ const gridTemplate = computed(
 )
 
 usePageHeaderActions(() => [
-  canManage.value
-    ? h(UButton, {
-        label: t('dms_lang.languages.add'),
-        icon: 'i-ph-plus',
-        color: 'neutral',
-        variant: 'outline',
-        onClick: () => addLanguage(),
-      })
-    : null,
   isResolved.value && neediestMissing.value
     ? h(UButton, {
         label: t(

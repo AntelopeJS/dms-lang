@@ -3,7 +3,7 @@ import type {
   BannerTone,
 } from "@antelopejs/interface-dms/base/banner";
 import type { BlockLinkAction } from "@antelopejs/interface-dms/base/display";
-import { PAGE_ACTION_QUERY, PAGE_ACTIONS } from "../pages/quick-actions";
+import { PAGE_ACTION_QUERY, PAGE_ACTIONS } from "../pages/page-actions";
 import { findWorkspace } from "./catalog";
 import { LANG_TEXTS, PAGES_URL } from "./constants";
 import { type FlatResult, resolveFlat } from "./resolve";

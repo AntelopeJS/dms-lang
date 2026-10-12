@@ -34,7 +34,7 @@ const links = useLangLinks()
 const router = useDmsRouter()
 const toasts = useQueueToasts()
 const session = useQueueSession(UP_NEXT)
-const { locale, isBase, exists, namespace, current, isFinished } = session
+const { locale, isBase, exists, current, isFinished } = session
 
 const view = computed(() =>
   queueViewOf({
@@ -118,20 +118,6 @@ watch(
   },
 )
 
-function matrixButton() {
-  return h(UButton, {
-    label: t('dms_lang.queue.open_matrix'),
-    icon: 'i-ph-table',
-    color: 'neutral',
-    variant: 'outline',
-    to: links.translations({
-      missingIn: isBase.value ? undefined : locale.value,
-      filter: isBase.value ? undefined : 'missing',
-      namespace: namespace.value || undefined,
-    }),
-  })
-}
-
 function downloadButton() {
   return h(UButton, {
     label: t('dms_lang.queue.download', { file: `${locale.value}.json` }),
@@ -177,7 +163,6 @@ const canManageLanguage = computed(
 )
 
 usePageHeaderActions(() => [
-  matrixButton(),
   exists.value ? downloadButton() : null,
   canManageLanguage.value ? languageMenu() : null,
 ])

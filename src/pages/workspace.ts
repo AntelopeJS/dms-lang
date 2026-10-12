@@ -6,8 +6,10 @@ import { CodeBlock } from "@antelopejs/interface-dms/base/code-block";
 import { KeyValueList } from "@antelopejs/interface-dms/base/key-value-list";
 import { Tab } from "@antelopejs/interface-dms/base/tab";
 import { VStack } from "@antelopejs/interface-dms/base/stack";
-import type { Action } from "@antelopejs/interface-dms/component";
 import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
+import { DefaultLayout } from "@antelopejs/interface-dms/base/layouts";
+import { requireAction } from "./component-action";
+import { OPEN_OVERVIEW_BUTTON } from "./header-actions";
 import { languagesTable } from "./languages-table";
 import { workspaceGuard } from "./workspace-guard";
 import { followTranslations, LANG_MODULE_ID, manageCategory } from "./module";
@@ -120,14 +122,8 @@ const notice = Banner({
   icon: "i-ph-info",
 });
 
-function generalAction(id: string): Action {
-  const action = workspaceGeneral.getAction(id);
-  if (!action) throw new Error(`dms-lang: missing component action "${id}"`);
-  return action;
-}
-
 const languages = languagesTable(
-  generalAction(WORKSPACE_ACTIONS.languages),
+  requireAction(workspaceGeneral, WORKSPACE_ACTIONS.languages),
 ).meta({
   name: `${TEXTS}.languages_table`,
   description: `${TEXTS}.languages_table_description`,
@@ -157,14 +153,18 @@ const content = Grid({ gap: GAP, minColumnWidth: MIN_COLUMN_WIDTH })
   );
 
 @RegisterPage()
-export class LangWorkspaceController extends PageController(PAGE_ID, {
-  displayName: "$dms_lang.workspace.title",
-  description: "$dms_lang.workspace.description",
-  module: LANG_MODULE_ID,
-  category: manageCategory,
-  icon: "i-ph-gear-six",
-  order: 1,
-}) {
+export class LangWorkspaceController extends PageController(
+  PAGE_ID,
+  {
+    displayName: "$dms_lang.workspace.title",
+    description: "$dms_lang.workspace.description",
+    module: LANG_MODULE_ID,
+    category: manageCategory,
+    icon: "i-ph-gear-six",
+    order: 1,
+  },
+  DefaultLayout({ headerActions: [OPEN_OVERVIEW_BUTTON] }),
+) {
   static scope = CustomComponent("DmsLangWorkspaceScope").meta({
     name: `${PERMISSION_TEXTS}.scope`,
     description: `${PERMISSION_TEXTS}.scope_description`,

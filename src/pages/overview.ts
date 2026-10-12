@@ -4,7 +4,9 @@ import { Grid, GridRow } from "@antelopejs/interface-dms/base/grid";
 import { KeyValueList } from "@antelopejs/interface-dms/base/key-value-list";
 import { StatGroup } from "@antelopejs/interface-dms/base/stat-group";
 import { VStack } from "@antelopejs/interface-dms/base/stack";
+import { DefaultLayout } from "@antelopejs/interface-dms/base/layouts";
 import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
+import { addLanguageButton } from "./header-actions";
 import { manageLanguagesAction } from "./actions";
 import { languagesTable } from "./languages-table";
 import { workspaceGuard } from "./workspace-guard";
@@ -89,14 +91,18 @@ const blocks = VStack({ alignment: "stretch", spacing: PAGE_GAP })
   .child("content", content);
 
 @RegisterPage()
-export class LangOverviewController extends PageController(PAGE_ID, {
-  displayName: "$dms_lang.overview.title",
-  description: "$dms_lang.overview.description",
-  module: LANG_MODULE_ID,
-  category: translateCategory,
-  icon: "i-ph-gauge",
-  order: 0,
-}) {
+export class LangOverviewController extends PageController(
+  PAGE_ID,
+  {
+    displayName: "$dms_lang.overview.title",
+    description: "$dms_lang.overview.description",
+    module: LANG_MODULE_ID,
+    category: translateCategory,
+    icon: "i-ph-gauge",
+    order: 0,
+  },
+  DefaultLayout({ headerActions: [addLanguageButton(manageLanguagesAction)] }),
+) {
   static scope = CustomComponent("DmsLangWorkspaceScope").meta({
     name: `${PERMISSION_TEXTS}.scope`,
     description: `${PERMISSION_TEXTS}.scope_description`,

@@ -3,16 +3,9 @@ import {
   QuickActionCategory,
 } from "@antelopejs/interface-dms/quick-actions";
 import { LangOverviewController } from "./overview";
+import { PAGE_ACTION_QUERY, PAGE_ACTIONS } from "./page-actions";
 import { LangTranslationsController } from "./translations";
 import { LangWorkspacesController } from "./workspaces";
-
-export const PAGE_ACTION_QUERY = "action";
-
-export const PAGE_ACTIONS = {
-  addLanguage: "add-language",
-  addKey: "add-key",
-  newWorkspace: "new-workspace",
-} as const;
 
 const category = QuickActionCategory("dms-lang", {
   displayName: "$dms_lang.title",

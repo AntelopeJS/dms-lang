@@ -1,17 +1,11 @@
-import type { Action, Component } from "@antelopejs/interface-dms/component";
+import { requireAction } from "./component-action";
 import { TRANSLATION_ACTIONS, translationMatrix } from "./translations";
 import {
   WORKSPACE_ACTIONS,
   workspaceDangerZone,
   workspaceGeneral,
 } from "./workspace";
-import { LangWorkspacesController, WORKSPACE_LIST_ACTIONS } from "./workspaces";
-
-function requireAction(component: Component, id: string): Action {
-  const action = component.getAction(id);
-  if (!action) throw new Error(`dms-lang: missing component action "${id}"`);
-  return action;
-}
+import { WORKSPACE_LIST_ACTIONS, workspaceList } from "./workspaces";
 
 export const editTranslationsAction = requireAction(
   translationMatrix,
@@ -24,7 +18,7 @@ export const manageKeysAction = requireAction(
 );
 
 export const createWorkspaceAction = requireAction(
-  LangWorkspacesController.list,
+  workspaceList,
   WORKSPACE_LIST_ACTIONS.create,
 );
 

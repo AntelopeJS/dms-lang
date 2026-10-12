@@ -1,6 +1,9 @@
 import { CustomComponent } from "@antelopejs/interface-dms/base/custom";
 import { StatGroup } from "@antelopejs/interface-dms/base/stat-group";
+import { DefaultLayout } from "@antelopejs/interface-dms/base/layouts";
 import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
+import { requireAction } from "./component-action";
+import { newWorkspaceButton } from "./header-actions";
 import { followTranslations, LANG_MODULE_ID, manageCategory } from "./module";
 import { PERMISSION_TEXTS } from "../utils/constants";
 
@@ -12,15 +15,38 @@ export const WORKSPACE_LIST_ACTIONS = {
   create: "create",
 } as const;
 
+/** The workspace cards, owning the "create workspaces" action. */
+export const workspaceList = CustomComponent("DmsLangWorkspaceList")
+  .meta({
+    name: `${TEXTS}.list`,
+    description: `${TEXTS}.list_description`,
+    icon: "i-ph-stack",
+  })
+  .action(WORKSPACE_LIST_ACTIONS.create, {
+    title: `${TEXTS}.create`,
+    description: `${TEXTS}.create_description`,
+    icon: "i-ph-plus",
+  });
+
 @RegisterPage()
-export class LangWorkspacesController extends PageController(PAGE_ID, {
-  displayName: "$dms_lang.workspaces.title",
-  description: "$dms_lang.workspaces.description",
-  module: LANG_MODULE_ID,
-  category: manageCategory,
-  icon: "i-ph-stack",
-  order: 0,
-}) {
+export class LangWorkspacesController extends PageController(
+  PAGE_ID,
+  {
+    displayName: "$dms_lang.workspaces.title",
+    description: "$dms_lang.workspaces.description",
+    module: LANG_MODULE_ID,
+    category: manageCategory,
+    icon: "i-ph-stack",
+    order: 0,
+  },
+  DefaultLayout({
+    headerActions: [
+      newWorkspaceButton(
+        requireAction(workspaceList, WORKSPACE_LIST_ACTIONS.create),
+      ),
+    ],
+  }),
+) {
   static kinds = StatGroup({
     layout: "joined",
     label: `${KINDS}.label`,
@@ -56,17 +82,7 @@ export class LangWorkspacesController extends PageController(PAGE_ID, {
     icon: "i-ph-info",
   });
 
-  static list = CustomComponent("DmsLangWorkspaceList")
-    .meta({
-      name: `${TEXTS}.list`,
-      description: `${TEXTS}.list_description`,
-      icon: "i-ph-stack",
-    })
-    .action(WORKSPACE_LIST_ACTIONS.create, {
-      title: `${TEXTS}.create`,
-      description: `${TEXTS}.create_description`,
-      icon: "i-ph-plus",
-    });
+  static list = workspaceList;
 }
 
 followTranslations(manageCategory, PAGE_ID);
