@@ -12,7 +12,6 @@ import {
 import { AuthOwnerOnly } from "@antelopejs/interface-dms/auth";
 import type { User } from "@antelopejs/interface-dms/auth/db";
 import { AuthUserWithPermission } from "@antelopejs/interface-dms/guards";
-import { PublishMessage } from "@antelopejs/interface-dms/realtime";
 import {
   createWorkspaceAction,
   deleteWorkspaceAction,
@@ -22,7 +21,7 @@ import {
   manageLanguagesAction,
   renameWorkspaceAction,
 } from "../pages/actions";
-import { LANG_REALTIME_TOPIC } from "../pages/module";
+import { announce, RealtimeSession } from "../utils/announce";
 import { localeStats, workspaceAbout, workspaceKpis } from "../utils/blocks";
 import { JsonBody } from "../utils/body";
 import {
@@ -55,7 +54,14 @@ import {
   renameKey,
   updateKey,
 } from "../utils/keys";
-import { type FlatRow, resolveFlat, resolveRow } from "../utils/resolve";
+import { namespaceCoverage } from "../utils/namespaces";
+import {
+  type FlatCounts,
+  flatCounts,
+  type FlatRow,
+  resolveFlat,
+  resolveRow,
+} from "../utils/resolve";
 import { summarizeWorkspaces } from "../utils/summary";
 import {
   type AddedLocale,
@@ -76,21 +82,20 @@ import { querySchema } from "../validation/query.schema";
 import { validate } from "../validation/validate";
 import { workspaceSchema } from "../validation/workspace.schema";
 
+/** A key as the workspace now holds it (none once it is gone), with the figures it changed. */
 interface KeyResult {
   row?: FlatRow;
+  counts: FlatCounts;
 }
 
 interface DefaultLocaleResult {
   defaultLocale: string;
 }
 
-const REALTIME_CHANGE = "changed";
-
-/** Tells the open pages that a workspace changed, so they reload their blocks and data. */
-function announce(workspace: string): void {
-  PublishMessage(LANG_REALTIME_TOPIC, REALTIME_CHANGE, {
-    payload: { workspace },
-  }).catch(() => undefined);
+/** Who writes, from which tab: what a change is announced with. */
+interface Writer {
+  actor: User;
+  session?: string;
 }
 
 function editableWorkspace(workspace: string): string {
@@ -98,9 +103,19 @@ function editableWorkspace(workspace: string): string {
   return resolveWorkspaceId(workspace);
 }
 
-function keyResult(workspace: string, path: string): KeyResult {
-  announce(workspace);
-  return { row: resolveRow(workspace, path) };
+function rowResult(workspace: string, path: string): KeyResult {
+  return { row: resolveRow(workspace, path), counts: flatCounts(workspace) };
+}
+
+/** Announces the keys a write changed, then answers the row of `path` as it is now. */
+function keyResult(
+  writer: Writer,
+  workspace: string,
+  keys: string[],
+  path = keys[0] ?? "",
+): KeyResult {
+  announce({ ...writer, workspace, keys });
+  return rowResult(workspace, path);
 }
 
 /** The permission of each write, for the frontend to show only what the user may do. */
@@ -114,9 +129,11 @@ interface PermissionIds {
   editWorkspace: string | undefined;
 }
 
-/** A workspace as /workspaces lists it: with its public URL template when it is served. */
+/** A workspace as /workspaces lists it: its size, and its public URL template when it is served. */
 interface ListedWorkspace extends WorkspaceSummary {
   publicUrl?: string;
+  totalKeys: number;
+  baseMissing: number;
 }
 
 function permissionIds(): PermissionIds {
@@ -131,12 +148,15 @@ function permissionIds(): PermissionIds {
   };
 }
 
-function withPublicUrl(
+function listed(
   origin: string,
 ): (workspace: WorkspaceSummary) => ListedWorkspace {
   return (workspace) => {
+    const { totalKeys, baseMissing } = resolveFlat(workspace.id);
+    const entry: ListedWorkspace = { ...workspace, totalKeys, baseMissing };
     const publicUrl = publicLocaleUrl(origin, workspace);
-    return publicUrl === undefined ? workspace : { ...workspace, publicUrl };
+    if (publicUrl !== undefined) entry.publicUrl = publicUrl;
+    return entry;
   };
 }
 
@@ -150,7 +170,7 @@ export class TranslationsController extends Controller(LANG_API) {
       editable,
       publicBaseUrl: `${origin}${PUBLIC_PATH}`,
       permissions: permissionIds(),
-      workspaces: listAllWorkspaces().map(withPublicUrl(origin)),
+      workspaces: listAllWorkspaces().map(listed(origin)),
     };
   }
 
@@ -221,27 +241,29 @@ export class TranslationsController extends Controller(LANG_API) {
 
   @Post("/languages/:workspace/:code/base")
   makeBaseLanguage(
-    @AuthUserWithPermission(manageLanguagesAction) _user: User,
+    @AuthUserWithPermission(manageLanguagesAction) actor: User,
+    @RealtimeSession() session: string | undefined,
     @Parameter("workspace", "param") workspace: string,
     @Parameter("code", "param") code: string,
   ): DefaultLocaleResult {
     validate(workspaceSchema.language, { workspace, code });
     const id = editableWorkspace(workspace);
     const defaultLocale = setWorkspaceDefaultLocale(id, code);
-    announce(id);
+    announce({ actor, session, workspace: id });
     return { defaultLocale };
   }
 
   @Delete("/languages/:workspace/:code")
   removeLanguage(
-    @AuthUserWithPermission(manageLanguagesAction) _user: User,
+    @AuthUserWithPermission(manageLanguagesAction) actor: User,
+    @RealtimeSession() session: string | undefined,
     @Parameter("workspace", "param") workspace: string,
     @Parameter("code", "param") code: string,
   ) {
     validate(workspaceSchema.language, { workspace, code });
     const id = editableWorkspace(workspace);
     removeLocale(id, code);
-    announce(id);
+    announce({ actor, session, workspace: id });
   }
 
   @Get("/endpoint")
@@ -284,6 +306,19 @@ export class TranslationsController extends Controller(LANG_API) {
     return resolveFlat(resolveWorkspaceId(workspace));
   }
 
+  @Get("/row")
+  row(
+    @Parameter("workspace", "query") workspace?: string,
+    @Parameter("key", "query") key?: string,
+  ): KeyResult {
+    return rowResult(resolveWorkspaceId(workspace), key ?? "");
+  }
+
+  @Get("/namespaces")
+  namespaces(@Parameter("workspace", "query") workspace?: string) {
+    return namespaceCoverage(resolveWorkspaceId(workspace));
+  }
+
   @Get("/workspace")
   workspace(
     @Parameter("workspace", "query") workspace?: string,
@@ -293,139 +328,151 @@ export class TranslationsController extends Controller(LANG_API) {
 
   @Post("/workspace")
   createWorkspace(
-    @AuthUserWithPermission(createWorkspaceAction) _user: User,
+    @AuthUserWithPermission(createWorkspaceAction) actor: User,
+    @RealtimeSession() session: string | undefined,
     @JsonBody() body: unknown,
   ): WorkspaceSummary {
     const { id, locale, ...details } = validate(workspaceSchema.create, body);
     assertEditable();
     const created = createWorkspace(id, locale, details);
-    announce(created);
+    announce({ actor, session, workspace: created });
     return getWorkspaceSummary(created);
   }
 
   @Route("handler", "patch", "/workspace")
   updateWorkspace(
-    @AuthUserWithPermission(editWorkspaceAction) _user: User,
+    @AuthUserWithPermission(editWorkspaceAction) actor: User,
+    @RealtimeSession() session: string | undefined,
     @JsonBody() body: unknown,
   ): WorkspaceSummary {
     const { id, ...details } = validate(workspaceSchema.update, body);
     assertEditable();
     const summary = updateWorkspaceDetails(id, details);
-    announce(summary.id);
+    announce({ actor, session, workspace: summary.id });
     return summary;
   }
 
   @Post("/workspace/rename")
   renameWorkspace(
-    @AuthUserWithPermission(renameWorkspaceAction) _user: User,
+    @AuthUserWithPermission(renameWorkspaceAction) actor: User,
+    @RealtimeSession() session: string | undefined,
     @JsonBody() body: unknown,
   ): WorkspaceSummary {
     const { id: previous, newId } = validate(workspaceSchema.rename, body);
     assertEditable();
     const id = renameWorkspace(previous, newId);
-    announce(normalizeWorkspaceId(previous));
-    announce(id);
+    announce({ actor, session, workspace: normalizeWorkspaceId(previous) });
+    announce({ actor, session, workspace: id });
     return getWorkspaceSummary(id);
   }
 
   @Delete("/workspace")
   deleteWorkspace(
-    @AuthUserWithPermission(deleteWorkspaceAction) _user: User,
+    @AuthUserWithPermission(deleteWorkspaceAction) actor: User,
+    @RealtimeSession() session: string | undefined,
     @JsonBody() body: unknown,
   ) {
     const { id } = validate(workspaceSchema.remove, body);
     assertEditable();
     deleteWorkspace(id);
-    announce(normalizeWorkspaceId(id));
+    announce({ actor, session, workspace: normalizeWorkspaceId(id) });
   }
 
   @Post("/import")
   importWorkspace(
-    @AuthUserWithPermission(createWorkspaceAction) _user: User,
+    @AuthUserWithPermission(createWorkspaceAction) actor: User,
+    @RealtimeSession() session: string | undefined,
     @JsonBody() body: unknown,
   ): WorkspaceSummary {
     const backup = validate(workspaceSchema.import, body);
     assertEditable();
     const id = importWorkspace(backup);
-    announce(id);
+    announce({ actor, session, workspace: id });
     return getWorkspaceSummary(id);
   }
 
   @Post("/locale")
   addLocale(
-    @AuthUserWithPermission(manageLanguagesAction) _user: User,
+    @AuthUserWithPermission(manageLanguagesAction) actor: User,
+    @RealtimeSession() session: string | undefined,
     @JsonBody() body: unknown,
   ): AddedLocale {
     const { workspace, ...locale } = validate(workspaceSchema.addLocale, body);
     const id = editableWorkspace(workspace);
     const added = addLocale(id, locale);
-    announce(id);
+    announce({ actor, session, workspace: id });
     return added;
   }
 
   @Post("/key")
   createKey(
-    @AuthUserWithPermission(manageKeysAction) _user: User,
+    @AuthUserWithPermission(manageKeysAction) actor: User,
+    @RealtimeSession() session: string | undefined,
     @JsonBody() body: unknown,
   ): KeyResult {
     const input = validate(keySchema.create, body);
     const id = editableWorkspace(input.workspace);
     createKey(keyStoreOf(id), input.path, input.values, input.before);
-    return keyResult(id, input.path);
+    return keyResult({ actor, session }, id, [input.path]);
   }
 
   @Put("/key")
   updateKey(
-    @AuthUserWithPermission(editTranslationsAction) _user: User,
+    @AuthUserWithPermission(editTranslationsAction) actor: User,
+    @RealtimeSession() session: string | undefined,
     @JsonBody() body: unknown,
   ): KeyResult {
     const input = validate(keySchema.update, body);
     const id = editableWorkspace(input.workspace);
     updateKey(keyStoreOf(id), input.path, input.values, input.expected);
-    return keyResult(id, input.path);
+    return keyResult({ actor, session }, id, [input.path]);
   }
 
   @Delete("/key/override")
   removeOverride(
-    @AuthUserWithPermission(editTranslationsAction) _user: User,
+    @AuthUserWithPermission(editTranslationsAction) actor: User,
+    @RealtimeSession() session: string | undefined,
     @JsonBody() body: unknown,
   ): KeyResult {
     const input = validate(keySchema.locales, body);
     const id = editableWorkspace(input.workspace);
     removeOverride(keyStoreOf(id), input.path, input.locales);
-    return keyResult(id, input.path);
+    return keyResult({ actor, session }, id, [input.path]);
   }
 
   @Post("/key/reviewed")
   markReviewed(
-    @AuthUserWithPermission(editTranslationsAction) _user: User,
+    @AuthUserWithPermission(editTranslationsAction) actor: User,
+    @RealtimeSession() session: string | undefined,
     @JsonBody() body: unknown,
   ): KeyResult {
     const input = validate(keySchema.locales, body);
     const id = editableWorkspace(input.workspace);
     markReviewed(reviewStoreOf(id), input.path, input.locales);
-    return keyResult(id, input.path);
+    return keyResult({ actor, session }, id, [input.path]);
   }
 
   @Post("/key/rename")
   renameKey(
-    @AuthUserWithPermission(manageKeysAction) _user: User,
+    @AuthUserWithPermission(manageKeysAction) actor: User,
+    @RealtimeSession() session: string | undefined,
     @JsonBody() body: unknown,
   ): KeyResult {
     const input = validate(keySchema.rename, body);
     const id = editableWorkspace(input.workspace);
     const path = renameKey(keyStoreOf(id), input.path, input.newPath);
-    return keyResult(id, path);
+    return keyResult({ actor, session }, id, [input.path, path], path);
   }
 
   @Delete("/key")
   deleteKey(
-    @AuthUserWithPermission(manageKeysAction) _user: User,
+    @AuthUserWithPermission(manageKeysAction) actor: User,
+    @RealtimeSession() session: string | undefined,
     @JsonBody() body: unknown,
-  ) {
+  ): KeyResult {
     const input = validate(keySchema.remove, body);
     const id = editableWorkspace(input.workspace);
     deleteKey(keyStoreOf(id), input.path);
-    announce(id);
+    return keyResult({ actor, session }, id, [input.path]);
   }
 }

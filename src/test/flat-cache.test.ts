@@ -11,7 +11,8 @@ import {
 import { keyStoreOf } from "../utils/key-stores";
 import { createKey, updateKey } from "../utils/keys";
 import { hasMessageIssue } from "../utils/message-check";
-import { resolveFlat, resolveRow } from "../utils/resolve";
+import { namespaceCoverage } from "../utils/namespaces";
+import { flatCounts, resolveFlat, resolveRow } from "../utils/resolve";
 import { addLocale, createWorkspace } from "../utils/workspaces";
 
 const WORKSPACE = "cache-shop";
@@ -68,5 +69,22 @@ describe("[integration] resolved workspaces are cached and checked once", () => 
   it("counts the issues of a language with the rule of the queue", () => {
     const stats = localeStats(WORKSPACE, "fr").items;
     expect(stats.find((item) => item.id === "issues")?.value).to.equal(1);
+  });
+
+  it("answers the figures a write changed with its row", () => {
+    expect(flatCounts(WORKSPACE)).to.deep.include({
+      totalKeys: 3,
+      baseMissing: 0,
+    });
+    expect(resolveRow(WORKSPACE, "nope")).to.equal(undefined);
+  });
+
+  it("aggregates the coverage by namespace, the neediest first", () => {
+    const coverage = namespaceCoverage(WORKSPACE);
+    expect(coverage.locales).to.deep.equal(["de", "fr"]);
+    expect(coverage.namespaces).to.deep.equal([
+      { namespace: "cart", keys: 2, missing: { de: 2, fr: 0 } },
+      { namespace: "home", keys: 1, missing: { de: 1, fr: 0 } },
+    ]);
   });
 });
