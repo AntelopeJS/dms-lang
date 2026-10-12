@@ -8,7 +8,8 @@ const FORBIDDEN_SEGMENTS = new Set(["__proto__", "prototype", "constructor"]);
 
 export type NodeKind = "missing" | "leaf" | "branch";
 
-function splitKeyPath(path: string): string[] {
+/** The segments of the path of a key that may already exist (module keys keep their own naming). */
+export function validateKeyPath(path: string): string[] {
   const segments = path.split(".");
   check(
     path.length > 0 &&
@@ -24,17 +25,12 @@ function splitKeyPath(path: string): string[] {
   return segments;
 }
 
-/** The segments of the path of a key that may already exist (module keys keep their own naming). */
-export function validateKeyPath(path: string): string[] {
-  return splitKeyPath(path);
-}
-
 /**
  * The segments of a path a key is created or renamed to: letters, digits, `_` and `-`,
  * at most 128 characters per segment, never `__proto__`, `prototype` or `constructor`.
  */
 export function validateNewKeyPath(path: string): string[] {
-  const segments = splitKeyPath(path);
+  const segments = validateKeyPath(path);
   check(
     segments.every((segment) => NEW_SEGMENT_RE.test(segment)),
     "invalid_key_path",

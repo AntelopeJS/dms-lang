@@ -24,7 +24,7 @@ interface Subline {
   tone: "dimmed" | "warning";
 }
 
-export interface LanguageRow {
+interface LanguageRow {
   _id: string;
   code: string;
   workspace: string;

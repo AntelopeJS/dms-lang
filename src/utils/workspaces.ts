@@ -26,7 +26,7 @@ export interface WorkspaceLocale {
 }
 
 export const WORKSPACE_TYPES = ["dms", "website", "mobile", "other"] as const;
-export type WorkspaceType = (typeof WORKSPACE_TYPES)[number];
+type WorkspaceType = (typeof WORKSPACE_TYPES)[number];
 
 export interface WorkspaceDetails {
   description?: string;
@@ -78,7 +78,7 @@ export function normalizeWorkspaceId(id = ""): string {
   return id.trim().toLowerCase();
 }
 
-export function validateWorkspaceId(id: string): string {
+function validateWorkspaceId(id: string): string {
   const normalized = normalizeWorkspaceId(id);
   check(WORKSPACE_ID_RE.test(normalized), "invalid_workspace_id", { id });
   return normalized;
@@ -410,7 +410,7 @@ export function addLocale(id: string, locale: WorkspaceLocale): AddedLocale {
 }
 
 /** The stored code of a locale of a workspace, matched on its canonical form; 404 when absent. */
-export function workspaceLocaleCode(
+function workspaceLocaleCode(
   manifest: WorkspaceManifest,
   code: string,
 ): string {

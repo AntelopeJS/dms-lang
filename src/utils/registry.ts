@@ -9,7 +9,7 @@ import { deepMerge, type LocaleMessages } from "./tree";
 
 export type OriginFilter = "own" | "external";
 
-export interface RegistryEntry {
+interface RegistryEntry {
   path: string;
   origin: OriginFilter;
 }

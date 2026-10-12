@@ -56,7 +56,7 @@ export function normalizeLocaleCode(code: string): string {
 }
 
 /** The comparison key of a code: canonical and lower-cased, so `fr_fr`, `fr-FR` and `FR-fr` are one language. */
-export function localeKey(code: string): string {
+function localeKey(code: string): string {
   return (canonicalLocale(code) ?? code).toLowerCase();
 }
 

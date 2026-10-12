@@ -31,7 +31,7 @@ export interface KeyWrite extends KeyTarget {
   expected: Record<string, ExpectedText>
 }
 
-export interface KeyWriteSaved {
+interface KeyWriteSaved {
   status: 'saved'
 }
 

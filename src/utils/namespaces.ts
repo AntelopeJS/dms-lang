@@ -4,7 +4,7 @@ import { targetLocales } from "./summary";
 const NAMESPACE_SEPARATOR = ".";
 
 /** One namespace of a workspace: its keys and how many each target language lacks. */
-export interface NamespaceRow {
+interface NamespaceRow {
   namespace: string;
   keys: number;
   missing: Record<string, number>;

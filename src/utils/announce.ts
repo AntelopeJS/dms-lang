@@ -23,7 +23,7 @@ export interface WorkspaceChange {
 }
 
 /** The payload of a change on {@link LANG_REALTIME_TOPIC}. */
-export interface WorkspaceChangePayload extends Record<string, unknown> {
+interface WorkspaceChangePayload extends Record<string, unknown> {
   workspace: string;
   session?: string;
   keys?: string[];

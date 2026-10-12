@@ -10,7 +10,7 @@ import {
 const HASH_LENGTH = 12;
 
 /** A short fingerprint of a base text. */
-export function fingerprint(text: string): string {
+function fingerprint(text: string): string {
   return createHash("sha1").update(text).digest("hex").slice(0, HASH_LENGTH);
 }
 
