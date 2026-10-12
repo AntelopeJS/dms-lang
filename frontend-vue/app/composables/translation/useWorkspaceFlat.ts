@@ -15,24 +15,9 @@ const STALE_AFTER_MS = 5000
 const ECHO_WINDOW_MS = 1500
 /** Realtime messages arriving together trigger a single reload. */
 const REALTIME_DEBOUNCE_MS = 300
-/** A page that left its realtime topics this recently and shows again was remounted. */
-const REJOIN_WINDOW_MS = 2000
-/** Lets the page left behind finish leaving its topics before joining them again. */
-const REJOIN_DELAY_MS = 300
-const PAGE_REALTIME_KEY = 'dms.realtime.page'
 
 interface ChangedPayload {
   workspace?: string
-}
-
-/** What the DMS page provides about its realtime (`providePageRealtime`). */
-interface PageRealtime {
-  pageId: Ref<string | undefined>
-}
-
-interface DroppedPage {
-  page: string
-  at: number
 }
 
 interface FlatStore {
@@ -81,7 +66,6 @@ const reloads = new Map<string, Promise<void>>()
 let realtimeTimer: ReturnType<typeof setTimeout> | undefined
 let syncScope: EffectScope | undefined
 let syncUsers = 0
-let isRejoinClaimed = false
 
 function isFresh(touchedAt: number | undefined, windowMs: number): boolean {
   return touchedAt !== undefined && Date.now() - touchedAt < windowMs
@@ -215,14 +199,6 @@ function startSync(loader: FlatLoader): EffectScope {
   return scope
 }
 
-/** The blocks of one page mount together: one of them joins its topics again. */
-function claimRejoin(): boolean {
-  if (isRejoinClaimed) return false
-  isRejoinClaimed = true
-  setTimeout(() => (isRejoinClaimed = false), REJOIN_DELAY_MS)
-  return true
-}
-
 /**
  * The flat translations of the selected workspace, shared by every component
  * of the page: one request per workspace however many sections read it, and
@@ -279,7 +255,6 @@ export function useWorkspaceFlatSync(): void {
   const loader = useFlatLoader()
   if (syncUsers === 0) syncScope = startSync(loader)
   syncUsers += 1
-  if (claimRejoin()) useRealtimeRejoin()
   onMounted(() => void revalidate(loader, false))
   onBeforeUnmount(() => {
     syncUsers -= 1
@@ -287,62 +262,4 @@ export function useWorkspaceFlatSync(): void {
     syncScope?.stop()
     syncScope = undefined
   })
-}
-
-let droppedPage: DroppedPage | undefined
-let isWatchingDrops = false
-let isRejoining = false
-
-/**
- * Works around the DMS (`usePageRealtime`): when a page is remounted on the
- * same page id (another language or workspace), the instance it replaces
- * leaves the page's realtime topics on its way out and nothing joins them
- * again. Each time the page id goes away is noted; a page that shows again
- * on that id right after leaves and joins its topics once more.
- */
-function useRealtimeRejoin() {
-  const realtime = useUserRealtime()
-  const pageRealtime = inject<PageRealtime | undefined>(
-    PAGE_REALTIME_KEY,
-    undefined,
-  )
-  let timer: ReturnType<typeof setTimeout> | undefined
-
-  function watchDrops(): void {
-    if (isWatchingDrops) return
-    isWatchingDrops = true
-    effectScope(true).run(() =>
-      watch(
-        realtime.pageId,
-        (next, previous) => {
-          if (next || !previous || isRejoining) return
-          droppedPage = { page: previous, at: Date.now() }
-        },
-        { flush: 'sync' },
-      ),
-    )
-  }
-
-  async function rejoin(page: string): Promise<void> {
-    const dropped = droppedPage
-    if (!dropped || dropped.page !== page) return
-    if (!isFresh(dropped.at, REJOIN_WINDOW_MS)) return
-    // One rejoin per remount, however many sections read the translations;
-    // the page id it drops itself is not another remount.
-    droppedPage = undefined
-    isRejoining = true
-    try {
-      await realtime.setPage(null)
-      await realtime.setPage(page)
-    } finally {
-      isRejoining = false
-    }
-  }
-
-  onMounted(() => {
-    watchDrops()
-    const page = pageRealtime?.pageId.value ?? realtime.pageId.value
-    if (page) timer = setTimeout(() => void rejoin(page), REJOIN_DELAY_MS)
-  })
-  onBeforeUnmount(() => clearTimeout(timer))
 }
