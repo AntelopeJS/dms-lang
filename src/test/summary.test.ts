@@ -2,7 +2,6 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect } from "chai";
-import type { RequestContext } from "@antelopejs/interface-api";
 import { GetApiBaseUrl } from "@antelopejs/interface-dms/api-base-url";
 import type { CustomButton } from "@antelopejs/interface-dms/base/types/custom-button";
 import { AddFrontendModule } from "@antelopejs/interface-dms/page";
@@ -156,13 +155,10 @@ function describeBlockRoutes(): void {
     expect(workspaceNotice("default", "overview")).to.deep.equal({});
   });
 
-  it("builds the public URLs on the DMS API base URL, not on the request host", async () => {
-    const context = { url: new URL("http://proxy.internal:8080/api") };
+  it("builds the public URLs on the DMS API base URL", async () => {
     const configured = await GetApiBaseUrl();
     expect(configured).to.be.a("string");
-    expect(await publicOrigin(context as RequestContext)).to.equal(
-      configured?.replace(/\/+$/, ""),
-    );
+    expect(await publicOrigin()).to.equal(configured?.replace(/\/+$/, ""));
   });
 
   it("guards the workspace blocks on the route answering 404 for an unknown workspace", () => {
