@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   checkMessage,
-  cloneFlat,
   escapeMessage,
   formatTokens,
   hasBlockingIssue,
@@ -13,16 +12,16 @@ import {
   languageCoverage,
   MESSAGE_ISSUE_LABELS,
   messageIssueText,
-  missingPlaceholders,
   namespaceCoverage,
   namespaceOf,
   nextSiblingPath,
   placeholdersOf,
-  refreshCounts,
   replacePlaceholder,
-  rowHasIssue,
+  needsReview,
   scanMessage,
+  withRow,
 } from "../frontend-vue/app/utils/translations.ts";
+import { hasMessageIssue } from "../dist/utils/message-check.js";
 import {
   canonicalLocale,
   isRightToLeft,
@@ -43,7 +42,7 @@ const flat = {
     { key: "emails.intro", values: { en: "Hi {name}", fr: "Bonjour", it: "" } },
   ],
   localeProgress: {},
-  localeMissing: {},
+  localeMissing: { en: 0, fr: 0, it: 2 },
   totalKeys: 3,
 };
 
@@ -52,23 +51,20 @@ test("placeholders are read from the text and compared with the base", () => {
     "amount",
     "user_name",
   ]);
-  assert.deepEqual(missingPlaceholders("Pay {amount} now", "Pagar ahora"), [
-    "amount",
-  ]);
-  assert.deepEqual(
-    missingPlaceholders("Pay {amount} now", "Payer { amount }"),
-    [],
-  );
-  assert.deepEqual(missingPlaceholders("Pay {amount} now", ""), []);
   assert.equal(formatTokens(["amount", "name"]), "{amount} {name}");
 });
 
-test("a placeholder issue is only reported on a translation", () => {
-  const [cta, , intro] = flat.rows;
-  assert.equal(rowHasIssue(cta, "en", "fr"), false);
-  assert.equal(rowHasIssue(intro, "en", "fr"), true);
-  assert.equal(rowHasIssue(intro, "en", "en"), false);
-  assert.equal(rowHasIssue(intro, "en", "it"), false);
+test("a text needs review when the server flags an issue or an older base", () => {
+  const row = {
+    key: "emails.intro",
+    values: { en: "Hi {name}", fr: "Bonjour", it: "Ciao {name}" },
+    issues: ["fr"],
+    outdated: ["it"],
+  };
+  assert.equal(needsReview(row, "fr"), true);
+  assert.equal(needsReview(row, "it"), true);
+  assert.equal(needsReview(row, "en"), false);
+  assert.equal(needsReview({ key: "a", values: {} }, "fr"), false);
 });
 
 test("coverage is counted per language and per namespace", () => {
@@ -103,13 +99,19 @@ test("coverage is counted per language and per namespace", () => {
   });
 });
 
-test("a local edit recomputes the counts without touching the source", () => {
-  const next = cloneFlat(flat);
-  next.rows[0].values.it = "Paga {amount}";
-  const counted = refreshCounts(next);
+test("a written row is put in place without touching the other rows", () => {
+  const written = { key: "checkout.cta", values: { it: "Paga {amount}" } };
+  const next = withRow(flat, "checkout.cta", written);
+  assert.equal(next.rows[0], written);
+  assert.equal(next.rows[1], flat.rows[1]);
   assert.equal(flat.rows[0].values.it, undefined);
-  assert.deepEqual(counted.localeMissing, { en: 0, fr: 0, it: 1 });
-  assert.deepEqual(counted.localeProgress, { en: 100, fr: 100, it: 66 });
+  const restored = { key: "checkout.a", values: {} };
+  const back = withRow(flat, "checkout.a", restored, "checkout.title");
+  assert.deepEqual(
+    back.rows.map((row) => row.key),
+    ["checkout.cta", "checkout.a", "checkout.title", "emails.intro"],
+  );
+  assert.equal(withRow(flat, "emails.intro", undefined).rows.length, 2);
 });
 
 test("language codes are canonicalised and right-to-left scripts detected", () => {
@@ -278,10 +280,33 @@ test("each issue has a sentence with its tokens and count", () => {
   assert.ok(plural);
 });
 
-test("a syntax error in the base text is an issue of the base", () => {
-  const row = { key: "contact", values: { en: "mail@site", fr: "mail" } };
-  assert.equal(rowHasIssue(row, "en", "en"), true);
-  assert.equal(rowHasIssue(row, "en", "fr"), false);
+test("the server flags exactly the texts the editor finds an issue in", () => {
+  const pairs = [
+    ["", "mail@site"],
+    ["mail@site", "mail"],
+    ["Pay {amount} now", "Payer {amount}"],
+    ["Pay {amount} now", "Payer { amount }"],
+    ["Pay {amount} now", "Pagar ahora"],
+    ["Hi", "Salut {name}"],
+    ["One | Many", "Un | {count} plusieurs"],
+    ["{n} item | {n} items", "{n} élément"],
+    ["{0} files", "{0} fichiers"],
+    ["Home", "Accueil "],
+    ["Home ", "Accueil "],
+    ["", " Home"],
+    ["Hi", "Salut {"],
+    ["Hi", "Salut }"],
+    ["Hi", "{'@'} ok"],
+    ["Go to @:nav.home", "Aller à @:nav.home"],
+    ["Hi {name}", ""],
+    ["", "Hello"],
+  ];
+  for (const [base, value] of pairs)
+    assert.equal(
+      hasMessageIssue(base, value),
+      checkMessage(base, value).length > 0,
+      `${JSON.stringify(base)} → ${JSON.stringify(value)}`,
+    );
 });
 
 test("a new key path may not overlap an existing key", () => {

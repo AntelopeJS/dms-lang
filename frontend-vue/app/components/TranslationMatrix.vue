@@ -302,6 +302,7 @@ function cellProps(row: FlatTranslationRow, column: LanguageCoverage) {
     rowKey: key,
     languageName: column.name,
     isOutdated: row.outdated?.includes(code) ?? false,
+    hasIssue: row.issues?.includes(code) ?? false,
     changedElsewhere: isEditing
       ? saves.changedElsewhere(at(key, code))
       : undefined,
@@ -398,7 +399,7 @@ watch([namespaces, () => flat.value.locales.join(',')], () =>
 )
 
 watch(
-  [pageAction, isResolved, isUnknown],
+  [pageAction, () => isResolved.value && isLoaded.value, isUnknown],
   async ([action, resolved, unknown]) => {
     if (action !== PAGE_ACTIONS.addKey || (!resolved && !unknown)) return
     await clearPageAction()

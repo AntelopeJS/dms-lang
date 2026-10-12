@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { FlatTranslationRow } from '../../types/lang'
+import type { FlatTranslationRow, KeyRowResponse } from '../../types/lang'
 import {
   checkMessage,
   escapeMessage,
@@ -53,7 +53,7 @@ const { errorMessage } = useMutationToast()
 const toast = useToast()
 const { updateKey, createKey } = useI18nWorkspaces()
 const { nativeName } = useLocaleNames()
-const { reload } = useWorkspaceFlat()
+const { applyRow } = useWorkspaceFlat()
 
 const isOpen = ref(true)
 const path = ref('')
@@ -194,7 +194,7 @@ function resetForNext() {
   nextTick(() => form.value?.querySelector('input')?.focus())
 }
 
-function write(key: string): Promise<unknown> {
+function write(key: string): Promise<KeyRowResponse> {
   if (isOverride.value)
     return updateKey(props.workspace, key, written.value)
   return createKey(props.workspace, key, written.value)
@@ -205,7 +205,7 @@ async function submit() {
   isSubmitting.value = true
   const key = trimmedPath.value
   try {
-    await write(key)
+    applyRow(props.workspace, key, await write(key))
   } catch (error) {
     submitError.value = errorMessage(error)
     return
@@ -213,7 +213,6 @@ async function submit() {
     isSubmitting.value = false
   }
   added.value = [...added.value, key]
-  void reload()
   toast.add({
     title: t('dms_lang.key_add.added', { key }),
     color: 'success',

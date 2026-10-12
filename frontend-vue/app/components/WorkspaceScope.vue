@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useWorkspaceFlatSync } from '../composables/translation/useWorkspaceFlat'
+import { useLangChanges } from '../composables/translation/useWorkspaceFlat'
 import { useDmsRouter, useDmsState } from '#dms/frontend-module'
 import type { DropdownMenuItem } from '@nuxt/ui'
 import type { WorkspaceSummary } from '../types/lang'
@@ -23,8 +23,7 @@ const {
   isUnknown,
   isResolved,
 } = useWorkspaceContext()
-const { flat } = useWorkspaceFlat()
-useWorkspaceFlatSync()
+useLangChanges()
 const {
   route,
   switchLink,
@@ -34,6 +33,14 @@ const {
   currentPage,
 } = useWorkspaceRoute()
 const router = useDmsRouter()
+
+/** What the bar says about the workspace shown, from the workspace list. */
+const scope = computed(() => ({
+  locales: current.value?.locales ?? [],
+  totalKeys: current.value?.totalKeys ?? 0,
+  baseMissing: current.value?.baseMissing ?? 0,
+  defaultLocale: current.value?.defaultLocale ?? '',
+}))
 const links = useLangLinks()
 const { nativeName } = useLocaleNames()
 const { addLanguage } = useLanguageActions()
@@ -141,7 +148,7 @@ const firstRunSteps = computed(() => [
   {
     id: 'created',
     label: t('dms_lang.first_run.created', {
-      base: nativeName(flat.value.defaultLocale),
+      base: nativeName(scope.value.defaultLocale),
     }),
     state: 'ok' as const,
   },
@@ -154,7 +161,7 @@ const firstRunSteps = computed(() => [
     id: 'languages',
     label: t('dms_lang.first_run.languages'),
     state:
-      flat.value.locales.length > 1 ? ('ok' as const) : ('pending' as const),
+      scope.value.locales.length > 1 ? ('ok' as const) : ('pending' as const),
   },
 ])
 const firstRunActions = computed(() => [
@@ -305,18 +312,18 @@ watch(
         />
         <span class="text-muted">
           <b class="text-highlighted font-mono font-semibold">
-            {{ formatCount(flat.locales.length) }}
+            {{ formatCount(scope.locales.length) }}
           </b>
-          {{ $t('dms_lang.scope.languages', flat.locales.length) }}
+          {{ $t('dms_lang.scope.languages', scope.locales.length) }}
         </span>
         <span class="text-muted">
           <b class="text-highlighted font-mono font-semibold">
-            {{ formatCount(flat.totalKeys) }}
+            {{ formatCount(scope.totalKeys) }}
           </b>
-          {{ $t('dms_lang.scope.keys', flat.totalKeys) }}
+          {{ $t('dms_lang.scope.keys', scope.totalKeys) }}
         </span>
         <ULink
-          v-if="flat.baseMissing"
+          v-if="scope.baseMissing"
           :to="baseMissingLink"
           class="text-warning inline-flex items-center gap-1 hover:underline"
         >
@@ -324,18 +331,18 @@ watch(
           {{
             $t(
               'dms_lang.scope.base_missing',
-              { n: formatCount(flat.baseMissing) },
-              flat.baseMissing,
+              { n: formatCount(scope.baseMissing) },
+              scope.baseMissing,
             )
           }}
         </ULink>
         <span
-          v-if="flat.defaultLocale"
+          v-if="scope.defaultLocale"
           class="text-muted inline-flex items-center gap-1.5"
         >
           {{ $t('dms_lang.scope.base') }}
-          <LocaleTile :code="flat.defaultLocale" size="sm" />
-          <span class="font-mono text-xs">{{ flat.defaultLocale }}</span>
+          <LocaleTile :code="scope.defaultLocale" size="sm" />
+          <span class="font-mono text-xs">{{ scope.defaultLocale }}</span>
         </span>
       </div>
 

@@ -1,24 +1,14 @@
 <script setup lang="ts">
-import { useWorkspaceFlatSync } from '../composables/translation/useWorkspaceFlat'
-import { translatedCount } from '../utils/translations'
-
 const { t } = useI18n()
-const { canManage, isUnknown, allows } = useWorkspaceContext()
-const { flat } = useWorkspaceFlat()
-useWorkspaceFlatSync()
+const { current, canManage, isUnknown, allows } = useWorkspaceContext()
 const { renameWorkspace, deleteWorkspace, downloadBackup } =
   useWorkspaceActions()
 const { route } = useWorkspaceRoute()
 const links = useLangLinks()
 
 const workspaceId = computed(() => route.query.workspace ?? '')
-const files = computed(() => flat.value.locales.length)
-const strings = computed(() =>
-  flat.value.locales.reduce(
-    (total, code) => total + translatedCount(flat.value.rows, code),
-    0,
-  ),
-)
+const files = computed(() => current.value?.locales.length ?? 0)
+const strings = computed(() => current.value?.translatedStrings ?? 0)
 const deleteHelp = computed(() =>
   t('dms_lang.workspace.delete_help', {
     files: t('dms_lang.workspace.delete_files', files.value),

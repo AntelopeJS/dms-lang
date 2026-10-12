@@ -24,7 +24,7 @@ defineOptions({ inheritAttrs: false })
 
 const { t } = useI18n()
 const { selectedWorkspace, exportWorkspace } = useI18nWorkspaces()
-const { flat } = useWorkspaceFlat()
+const { flat, isLoaded } = useWorkspaceFlat()
 useWorkspaceFlatSync()
 const { canManage, isUnknown, isResolved, allows } = useWorkspaceContext()
 const { nameAmong } = useLocaleNames()
@@ -38,7 +38,7 @@ const { locale, isBase, exists, current, isFinished } = session
 
 const view = computed(() =>
   queueViewOf({
-    isResolved: isResolved.value,
+    isResolved: isResolved.value && isLoaded.value,
     exists: exists.value,
     isBase: isBase.value,
   }),

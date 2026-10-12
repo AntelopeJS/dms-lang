@@ -30,6 +30,8 @@ interface Props {
   languageName: string
   /** Translated from an older base text. */
   isOutdated?: boolean
+  /** The server found an issue in the stored text. */
+  hasIssue?: boolean
   code: string
   /** The text the editor opens with. */
   initialDraft?: string
@@ -73,6 +75,7 @@ const props = withDefaults(defineProps<Props>(), {
   override: undefined,
   failure: undefined,
   isOutdated: false,
+  hasIssue: false,
   changedElsewhere: undefined,
   initialDraft: '',
 })
@@ -85,8 +88,14 @@ const textarea = useTemplateRef<TextareaHandle>('textarea')
 
 const isMissing = computed(() => props.value === '')
 const shown = computed(() => (props.isEditing ? draft.value : props.value))
+/** Checked here only while it is typed or not stored yet; a stored text, only when the server flagged it. */
+const isChecked = computed(
+  () => props.isEditing || props.hasIssue || props.state !== 'idle',
+)
 const issues = computed<MessageIssue[]>(() =>
-  checkMessage(props.isBase ? '' : props.baseValue, shown.value),
+  isChecked.value
+    ? checkMessage(props.isBase ? '' : props.baseValue, shown.value)
+    : [],
 )
 const missingTokens = computed(() =>
   issues.value

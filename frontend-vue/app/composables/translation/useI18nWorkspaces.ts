@@ -1,18 +1,27 @@
 import { useDmsCookie, useDmsState } from '#dms/frontend-module'
 import type {
-  FlatTranslationRow,
+  FlatCounts,
+  FlatTranslations,
+  KeyRowResponse,
+  ScopedWorkspace,
   WorkspaceDetails,
   WorkspaceLocale,
   WorkspacePermissionIds,
   WorkspaceStats,
   WorkspaceSummary,
 } from '../../types/lang'
+import {
+  BACKUP_FORMAT,
+  type DetailsChange,
+  type WorkspaceBackup,
+  type WorkspaceImport,
+} from '../../utils/workspaceBackup'
 
 interface WorkspacesResponse {
   editable: boolean
-  workspaces: WorkspaceSummary[]
-  permissions?: WorkspacePermissionIds
-  publicBaseUrl?: string
+  workspaces: ScopedWorkspace[]
+  permissions: WorkspacePermissionIds
+  publicBaseUrl: string
 }
 
 interface SummaryResponse {
@@ -20,20 +29,21 @@ interface SummaryResponse {
   workspaces: WorkspaceStats[]
 }
 
-/** What a write to one key answers: the row as the server now stores it, none once the key is gone. */
-export interface KeyRowResponse {
-  row?: FlatTranslationRow
-}
-
 type KeyValues = Record<string, unknown>
 
-const API_BASE = '/api/lang/translations'
+/** The routes of the module's API. */
+export const LANG_API = '/api/lang/translations'
+const API_BASE = LANG_API
 const ENDPOINTS = {
   workspaces: `${API_BASE}/workspaces`,
+  flat: `${API_BASE}/flat`,
+  row: `${API_BASE}/row`,
   summary: `${API_BASE}/summary`,
   export: `${API_BASE}/export`,
   workspace: `${API_BASE}/workspace`,
   workspaceRename: `${API_BASE}/workspace/rename`,
+  backup: `${API_BASE}/backup`,
+  import: `${API_BASE}/import`,
   locale: `${API_BASE}/locale`,
   languages: `${API_BASE}/languages`,
   key: `${API_BASE}/key`,
@@ -44,6 +54,11 @@ const ENDPOINTS = {
 
 export const DEFAULT_WORKSPACE = 'default'
 export const MODULES_WORKSPACE = 'modules'
+
+/** The route of one language of a workspace: removing it, making it the base, the dialogs that ask first. */
+export function languageUrl(workspace: string, code: string): string {
+  return `${ENDPOINTS.languages}/${encodeURIComponent(workspace)}/${encodeURIComponent(code)}`
+}
 
 const LAST_WORKSPACE_COOKIE = 'dms-lang-workspace'
 const LAST_WORKSPACE_MAX_AGE = 60 * 60 * 24 * 365
@@ -59,11 +74,6 @@ export function isValidWorkspaceId(id: string): boolean {
   return WORKSPACE_ID_RE.test(id) && !RESERVED_WORKSPACE_IDS.has(id)
 }
 
-/** The route of one language of a workspace: removing it, making it the base. */
-function languageUrl(workspace: string, code: string): string {
-  return `${ENDPOINTS.languages}/${encodeURIComponent(workspace)}/${encodeURIComponent(code)}`
-}
-
 function useLastWorkspace() {
   return useDmsCookie<string>(LAST_WORKSPACE_COOKIE, {
     default: () => DEFAULT_WORKSPACE,
@@ -77,7 +87,7 @@ function useWorkspacesState() {
   const lastWorkspace = useLastWorkspace()
   return {
     lastWorkspace,
-    workspaces: useDmsState<WorkspaceSummary[]>(
+    workspaces: useDmsState<ScopedWorkspace[]>(
       'dms-lang-workspaces',
       () => [],
     ),
@@ -122,6 +132,10 @@ function useKeyWrites() {
       send(ENDPOINTS.keyReviewed, 'POST', { workspace, path, locales }),
     revertOverride: (workspace: string, path: string, locales?: string[]) =>
       send(ENDPOINTS.keyOverride, 'DELETE', { workspace, path, locales }),
+    renameKey: (workspace: string, path: string, newPath: string) =>
+      send(ENDPOINTS.keyRename, 'POST', { workspace, path, newPath }),
+    deleteKey: (workspace: string, path: string) =>
+      send(ENDPOINTS.key, 'DELETE', { workspace, path }),
   }
 }
 
@@ -140,16 +154,22 @@ function useWorkspaceWrites() {
       send(ENDPOINTS.workspaceRename, 'POST', { id, newId }),
     deleteWorkspace: (id: string) =>
       send(ENDPOINTS.workspace, 'DELETE', { id }),
+    updateWorkspace: (id: string, change: DetailsChange) =>
+      $authFetch<WorkspaceSummary>(ENDPOINTS.workspace, {
+        method: 'PATCH',
+        body: { id, ...change },
+      }),
+    importWorkspace: (id: string, backup: WorkspaceImport) =>
+      $authFetch<WorkspaceSummary>(ENDPOINTS.import, {
+        method: 'POST',
+        body: { ...backup, format: BACKUP_FORMAT, id },
+      }),
     addLocale: (workspace: string, locale: WorkspaceLocale) =>
       send(ENDPOINTS.locale, 'POST', { workspace, ...locale }),
     removeLocale: (workspace: string, code: string) =>
       $authFetch(languageUrl(workspace, code), { method: 'DELETE' }),
     setDefaultLocale: (workspace: string, code: string) =>
       $authFetch(`${languageUrl(workspace, code)}/base`, { method: 'POST' }),
-    renameKey: (workspace: string, path: string, newPath: string) =>
-      send(ENDPOINTS.keyRename, 'POST', { workspace, path, newPath }),
-    deleteKey: (workspace: string, path: string) =>
-      send(ENDPOINTS.key, 'DELETE', { workspace, path }),
   }
 }
 
@@ -157,6 +177,12 @@ function useWorkspaceReads() {
   const { $authFetch } = useAuthFetch()
   return {
     fetchSummary: () => $authFetch<SummaryResponse>(ENDPOINTS.summary),
+    fetchBackup: (workspace: string) =>
+      $authFetch<WorkspaceBackup>(ENDPOINTS.backup, { query: { workspace } }),
+    fetchFlat: (workspace: string) =>
+      $authFetch<FlatTranslations>(ENDPOINTS.flat, { query: { workspace } }),
+    fetchRow: (workspace: string, key: string) =>
+      $authFetch<KeyRowResponse>(ENDPOINTS.row, { query: { workspace, key } }),
     exportWorkspace: (workspace: string) =>
       $authFetch<Record<string, Record<string, unknown>>>(ENDPOINTS.export, {
         query: { workspace },
@@ -181,12 +207,25 @@ export const useI18nWorkspaces = () => {
     )
   }
 
-  function applyResponse(response: WorkspacesResponse | undefined): void {
-    state.editable.value = response?.editable ?? false
-    state.workspaces.value = response?.workspaces ?? []
-    state.permissions.value = response?.permissions ?? null
-    state.publicBaseUrl.value = response?.publicBaseUrl ?? ''
+  function applyResponse(response: WorkspacesResponse): void {
+    state.editable.value = response.editable
+    state.workspaces.value = response.workspaces
+    state.permissions.value = response.permissions
+    state.publicBaseUrl.value = response.publicBaseUrl
     state.isLoaded.value = true
+  }
+
+  /** Takes the figures a key write answered into the workspace list (the scope bar). */
+  function patchCounts(id: string, counts: FlatCounts): void {
+    state.workspaces.value = state.workspaces.value.map((workspace) =>
+      workspace.id === id
+        ? {
+            ...workspace,
+            totalKeys: counts.totalKeys,
+            baseMissing: counts.baseMissing,
+          }
+        : workspace,
+    )
   }
 
   /** Remembers the workspace a page without `?workspace=` opens on (a new tab, a menu link). */
@@ -194,7 +233,7 @@ export const useI18nWorkspaces = () => {
     if (state.lastWorkspace.value !== id) state.lastWorkspace.value = id
   }
 
-  async function fetchWorkspaces(): Promise<WorkspaceSummary[]> {
+  async function fetchWorkspaces(): Promise<ScopedWorkspace[]> {
     state.requestSeq.value += 1
     const sequence = state.requestSeq.value
     state.isLoading.value = true
@@ -221,6 +260,7 @@ export const useI18nWorkspaces = () => {
     isLoading: readonly(state.isLoading),
     isLoaded: readonly(state.isLoaded),
     fetchWorkspaces,
+    patchCounts,
     canUseWorkspaceId,
     rememberWorkspace,
     ...useWorkspaceReads(),

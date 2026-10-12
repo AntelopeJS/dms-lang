@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { useWorkspaceFlatSync } from '../composables/translation/useWorkspaceFlat'
 import UButton from '@nuxt/ui/components/Button.vue'
-import DmsInstantSaveBadge from '#dms-ui/app/components/save-bar/InstantSaveBadge.vue'
 import type { WorkspaceType } from '../types/lang'
 import type { SaveState } from '../utils/keySaves'
 import LocaleTile from '../build/components/LocaleTile.vue'
@@ -13,8 +11,6 @@ type DetailField = 'description' | 'type' | 'base'
 const DESCRIPTION_ROWS = 2
 
 const { current, canManage, isAdded, isUnknown, allows } = useWorkspaceContext()
-const { flat, isLoaded } = useWorkspaceFlat()
-useWorkspaceFlatSync()
 const { fullName } = useLocaleNames()
 const { addLanguage, makeBase } = useLanguageActions()
 const { updateDetails } = useWorkspaceActions()
@@ -29,8 +25,9 @@ const canManageLanguages = computed(
   () => canManage.value && allows('manageLanguages'),
 )
 const kind = computed(() => current.value?.kind ?? 'default')
+const baseLocale = computed(() => current.value?.defaultLocale ?? '')
 const baseItems = computed(() =>
-  flat.value.locales.map((code) => ({
+  (current.value?.locales ?? []).map(({ code }) => ({
     label: `${fullName(code)} · ${code}`,
     value: code,
   })),
@@ -54,9 +51,9 @@ async function changeBase(code: string) {
 }
 
 const baseModel = computed({
-  get: () => flat.value.defaultLocale,
+  get: () => baseLocale.value,
   set: (code: string) => {
-    if (code !== flat.value.defaultLocale) void changeBase(code)
+    if (code !== baseLocale.value) void changeBase(code)
   },
 })
 
@@ -93,9 +90,11 @@ const hasInstantSaves = computed(
   () => canEditDetails.value || canManageLanguages.value,
 )
 
+const instantSaveBadge = resolveComponent('DmsInstantSaveBadge')
+
 usePageHeaderActions(() =>
   hasInstantSaves.value
-    ? h(DmsInstantSaveBadge, {
+    ? h(instantSaveBadge, {
         state: combineSaveStates(Object.values(saveStates.value)),
       })
     : null,
@@ -186,7 +185,7 @@ usePageHeaderActions(() =>
       :label="$t('dms_lang.workspace.base_label')"
       :description="$t('dms_lang.workspace.base_help')"
     >
-      <USkeleton v-if="!isLoaded" class="h-8 w-64" />
+      <USkeleton v-if="!current" class="h-8 w-64" />
       <USelect
         v-else-if="canManageLanguages"
         v-model="baseModel"
@@ -194,17 +193,17 @@ usePageHeaderActions(() =>
         class="w-full max-w-xs"
       >
         <template #leading>
-          <LocaleTile :code="flat.defaultLocale" size="sm" is-base />
+          <LocaleTile :code="baseLocale" size="sm" is-base />
         </template>
       </USelect>
       <span
         v-else
         class="text-highlighted inline-flex items-center gap-2 text-sm"
       >
-        <LocaleTile :code="flat.defaultLocale" size="sm" is-base />
-        {{ fullName(flat.defaultLocale) }}
+        <LocaleTile :code="baseLocale" size="sm" is-base />
+        {{ fullName(baseLocale) }}
         <span class="text-dimmed font-mono text-xs">
-          {{ flat.defaultLocale }}
+          {{ baseLocale }}
         </span>
       </span>
       <template #details>

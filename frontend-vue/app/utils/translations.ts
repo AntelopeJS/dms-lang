@@ -371,13 +371,6 @@ export function placeholdersOf(text: unknown): string[] {
   return namesOf(scanMessage(text))
 }
 
-/** Placeholders of the base text the translation leaves out. */
-export function missingPlaceholders(base: unknown, value: unknown): string[] {
-  if (isLocaleValueMissing(value)) return []
-  const present = new Set(placeholdersOf(value))
-  return placeholdersOf(base).filter((name) => !present.has(name))
-}
-
 type CompileErrorName = keyof typeof CompileErrorCodes
 
 /** What each error of the vue-i18n compiler means to a translator; any other is `invalidSyntax`. */
@@ -588,22 +581,16 @@ export function hasBlockingIssue(issues: MessageIssue[]): boolean {
   return issues.some((issue) => issue.severity === 'error')
 }
 
-/** The issues of one cell of a row: the base text is checked for syntax only. */
-export function rowIssues(
-  row: FlatTranslationRow,
-  baseLocale: string,
-  locale: string,
-): MessageIssue[] {
-  const base = locale === baseLocale ? '' : row.values[baseLocale]
-  return checkMessage(base, row.values[locale])
-}
-
-export function rowHasIssue(
-  row: FlatTranslationRow,
-  baseLocale: string,
-  locale: string,
-): boolean {
-  return rowIssues(row, baseLocale, locale).length > 0
+/**
+ * Whether the text of a language needs another look, as the server tells:
+ * it has an issue (the rule of {@link checkMessage}), or it was translated
+ * from an older base text. The rule of every "issues" count.
+ */
+export function needsReview(row: FlatTranslationRow, locale: string): boolean {
+  return (
+    (row.issues?.includes(locale) ?? false) ||
+    (row.outdated?.includes(locale) ?? false)
+  )
 }
 
 /** The sentence that explains an issue, in the interface language. */
@@ -676,19 +663,21 @@ export function translatedCount(
   return rows.filter((row) => !isRowValueMissing(row, locale)).length
 }
 
+/** The coverage of each language, from the figures the server keeps. */
 export function languageCoverage(
   flat: FlatTranslations,
   nameOf: (code: string) => string,
 ): LanguageCoverage[] {
   return flat.locales.map((code) => {
-    const translated = translatedCount(flat.rows, code)
+    const missing = flat.localeMissing[code] ?? 0
+    const translated = flat.totalKeys - missing
     return {
       code,
       name: nameOf(code),
       isBase: code === flat.defaultLocale,
-      coverage: coveragePercent(translated, flat.rows.length),
+      coverage: coveragePercent(translated, flat.totalKeys),
       translated,
-      missing: flat.rows.length - translated,
+      missing,
     }
   })
 }
@@ -699,7 +688,9 @@ function groupByNamespace(
   const groups = new Map<string, FlatTranslationRow[]>()
   for (const row of rows) {
     const namespace = namespaceOf(row.key)
-    groups.set(namespace, [...(groups.get(namespace) ?? []), row])
+    const group = groups.get(namespace)
+    if (group) group.push(row)
+    else groups.set(namespace, [row])
   }
   return groups
 }
@@ -720,37 +711,34 @@ export function namespaceCoverage(
   })
 }
 
-export function namespaceCount(rows: FlatTranslationRow[]): number {
-  return new Set(rows.map((row) => namespaceOf(row.key))).size
+/** Where a key put back before `before` (a sibling key or namespace) goes: the end when none is there. */
+function insertionIndex(rows: FlatTranslationRow[], before?: string): number {
+  if (before === undefined) return rows.length
+  const index = rows.findIndex(
+    (entry) =>
+      entry.key === before ||
+      entry.key.startsWith(`${before}${NAMESPACE_SEPARATOR}`),
+  )
+  return index < 0 ? rows.length : index
 }
 
-export function cloneFlat(flat: FlatTranslations): FlatTranslations {
-  return {
-    ...flat,
-    locales: [...flat.locales],
-    rows: flat.rows.map((row) => ({
-      ...row,
-      values: { ...row.values },
-      inherited: row.inherited ? { ...row.inherited } : undefined,
-    })),
-    localeProgress: { ...flat.localeProgress },
-    localeMissing: { ...flat.localeMissing },
-  }
-}
-
-/** Recomputes the counts a local edit changes, as the server would. */
-export function refreshCounts(flat: FlatTranslations): FlatTranslations {
-  const localeProgress: Record<string, number> = {}
-  const localeMissing: Record<string, number> = {}
-  for (const locale of flat.locales) {
-    const translated = translatedCount(flat.rows, locale)
-    const isBase = locale === flat.defaultLocale
-    localeProgress[locale] = isBase
-      ? FULL_COVERAGE
-      : coveragePercent(translated, flat.rows.length)
-    localeMissing[locale] = isBase ? 0 : flat.rows.length - translated
-  }
-  return { ...flat, localeProgress, localeMissing, totalKeys: flat.rows.length }
+/**
+ * The translations with one row put in place: replaced, added (before the
+ * `before` sibling, else at the end), or taken out when there is none (the
+ * key is gone). The other rows are kept as they are.
+ */
+export function withRow(
+  flat: FlatTranslations,
+  key: string,
+  row: FlatTranslationRow | undefined,
+  before?: string,
+): FlatTranslations {
+  const index = flat.rows.findIndex((entry) => entry.key === key)
+  const rows = [...flat.rows]
+  if (row && index >= 0) rows[index] = row
+  else if (row) rows.splice(insertionIndex(rows, before), 0, row)
+  else if (index >= 0) rows.splice(index, 1)
+  return { ...flat, rows }
 }
 
 export const COVERAGE_TEXT_CLASSES: Record<

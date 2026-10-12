@@ -489,7 +489,7 @@
 		"progress": {
 			"translated": "Translated",
 			"missing": "Missing",
-			"issues": "Missing variables",
+			"issues": "Issues",
 			"coverage": "Coverage",
 			"coverage_detail": "No key | Of {n} key | Of {n} keys",
 			"label": "Language progress",

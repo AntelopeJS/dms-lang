@@ -1,28 +1,16 @@
 import { h } from 'vue'
 import UButton from '@nuxt/ui/components/Button.vue'
-import type {
-  WorkspaceKind,
-  WorkspaceSummary,
-  WorkspaceType,
-} from '../../types/lang'
+import type { WorkspaceKind, WorkspaceType } from '../../types/lang'
 import {
-  BACKUP_FORMAT,
   parseBackup,
   type DetailsChange,
   type WorkspaceBackup,
-  type WorkspaceImport,
 } from '../../utils/workspaceBackup'
 import WorkspaceCreateModal from '../../build/components/WorkspaceCreateModal.vue'
 import WorkspaceRenameModal from '../../build/components/WorkspaceRenameModal.vue'
 
 const JSON_FILE_TYPES = '.json,application/json'
 const WORKSPACE_DESCRIPTION_MAX = 500
-const API_BASE = '/api/lang/translations'
-const ENDPOINTS = {
-  workspace: `${API_BASE}/workspace`,
-  backup: `${API_BASE}/backup`,
-  import: `${API_BASE}/import`,
-} as const
 
 const TYPE_ICONS: Record<WorkspaceType, string> = {
   dms: 'i-ph-squares-four',
@@ -82,25 +70,6 @@ export const useWorkspaceTypes = () => {
   }
 }
 
-/** The routes behind a workspace's details, its backup and its import. */
-export const useWorkspaceApi = () => {
-  const { $authFetch } = useAuthFetch()
-  return {
-    updateWorkspace: (id: string, change: DetailsChange) =>
-      $authFetch<WorkspaceSummary>(ENDPOINTS.workspace, {
-        method: 'PATCH',
-        body: { id, ...change },
-      }),
-    fetchBackup: (workspace: string) =>
-      $authFetch<WorkspaceBackup>(ENDPOINTS.backup, { query: { workspace } }),
-    importWorkspace: (id: string, backup: WorkspaceImport) =>
-      $authFetch<WorkspaceSummary>(ENDPOINTS.import, {
-        method: 'POST',
-        body: { ...backup, format: BACKUP_FORMAT, id },
-      }),
-  }
-}
-
 /** What the workspace actions share: the workspaces, the routes and the DMS helpers. */
 interface WorkspaceActionsContext {
   t: ReturnType<typeof useI18n>['t']
@@ -110,7 +79,6 @@ interface WorkspaceActionsContext {
   formatCount: ReturnType<typeof useLangFormat>['formatCount']
   workspaces: ReturnType<typeof useI18nWorkspaces>
   selectWorkspace: ReturnType<typeof useWorkspaceRoute>['selectWorkspace']
-  api: ReturnType<typeof useWorkspaceApi>
   failures: ReturnType<typeof useMutationToast>
   links: ReturnType<typeof useLangLinks>
 }
@@ -179,12 +147,11 @@ async function updateDetails(
   change: DetailsChange,
 ): Promise<boolean> {
   const ok = await context.failures.tryMutate(
-    () => context.api.updateWorkspace(id, change),
+    () => context.workspaces.updateWorkspace(id, change),
     { title: context.t('dms_lang.workspace_details.save_failed') },
   )
   if (!ok) return false
   await context.workspaces.fetchWorkspaces()
-  refreshPageBlocks()
   return true
 }
 
@@ -193,7 +160,7 @@ async function downloadBackup(
   workspace: string,
 ): Promise<void> {
   try {
-    downloadJson(`${workspace}.json`, await context.api.fetchBackup(workspace))
+    downloadJson(`${workspace}.json`, await context.workspaces.fetchBackup(workspace))
   } catch (error) {
     context.failures.reportFailure(error, {
       title: context.t('dms_lang.errors.export_failed'),
@@ -276,7 +243,6 @@ export const useWorkspaceActions = () => {
     formatCount: useLangFormat().formatCount,
     workspaces: useI18nWorkspaces(),
     selectWorkspace: useWorkspaceRoute().selectWorkspace,
-    api: useWorkspaceApi(),
     failures: useMutationToast(),
     links: useLangLinks(),
   }

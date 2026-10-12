@@ -38,6 +38,7 @@ const emit = defineEmits<Emits>()
 const { t } = useI18n()
 const { errorMessage } = useMutationToast()
 const { renameKey } = useI18nWorkspaces()
+const { applyRow } = useWorkspaceFlat()
 
 const isOpen = ref(true)
 const newPath = ref(props.path)
@@ -95,7 +96,8 @@ async function submit() {
   isSubmitting.value = true
   const target = trimmed.value
   try {
-    await renameKey(props.workspace, props.path, target)
+    const response = await renameKey(props.workspace, props.path, target)
+    applyRow(props.workspace, props.path, response)
     close(target)
   } catch (failure) {
     submitError.value = errorMessage(failure)

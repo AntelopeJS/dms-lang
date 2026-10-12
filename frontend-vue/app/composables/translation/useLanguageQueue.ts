@@ -64,16 +64,12 @@ function useQueueQuery() {
   }
 }
 
-function rowChecks(
-  locale: ComputedRef<string>,
-  baseLocale: ComputedRef<string>,
-): RowChecks {
+function rowChecks(locale: ComputedRef<string>): RowChecks {
   const isMissing = (row: FlatTranslationRow) =>
     isRowValueMissing(row, locale.value)
   const isOutdated = (row: FlatTranslationRow) =>
     row.outdated?.includes(locale.value) ?? false
-  const hasIssue = (row: FlatTranslationRow) =>
-    isOutdated(row) || rowHasIssue(row, baseLocale.value, locale.value)
+  const hasIssue = (row: FlatTranslationRow) => needsReview(row, locale.value)
   return {
     isMissing,
     isOutdated,
@@ -205,10 +201,7 @@ export const useLanguageQueue = () => {
   const { route } = useWorkspaceRoute()
   const { flat } = useWorkspaceFlat()
   const locale = computed(() => route.query.locale ?? '')
-  const checks = rowChecks(
-    locale,
-    computed(() => flat.value.defaultLocale),
-  )
+  const checks = rowChecks(locale)
   const order = useNamespaceProgress(flat, locale)
   const scope = useQueueScope(order.hasNamespace)
   const inScope = (row: FlatTranslationRow) =>

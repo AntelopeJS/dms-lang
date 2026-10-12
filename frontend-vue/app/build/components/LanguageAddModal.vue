@@ -24,7 +24,7 @@ const toast = useToast()
 const { addLocale, workspaces } = useI18nWorkspaces()
 const { reportFailure } = useMutationToast()
 const { findLanguages, fullName } = useLocaleNames()
-const { reload } = useWorkspaceFlat()
+const { refresh } = useWorkspaceFlat()
 
 const isOpen = ref(true)
 const search = ref('')
@@ -100,7 +100,7 @@ async function closeAsAdded(code: string) {
     icon: 'i-ph-info',
   })
   close(false)
-  await reload()
+  await refresh()
 }
 
 function close(added: boolean) {

@@ -62,7 +62,7 @@ import {
   resolveFlat,
   resolveRow,
 } from "../utils/resolve";
-import { summarizeWorkspaces } from "../utils/summary";
+import { countTranslated, summarizeWorkspaces } from "../utils/summary";
 import {
   type AddedLocale,
   addLocale,
@@ -134,6 +134,7 @@ interface ListedWorkspace extends WorkspaceSummary {
   publicUrl?: string;
   totalKeys: number;
   baseMissing: number;
+  translatedStrings: number;
 }
 
 function permissionIds(): PermissionIds {
@@ -152,8 +153,13 @@ function listed(
   origin: string,
 ): (workspace: WorkspaceSummary) => ListedWorkspace {
   return (workspace) => {
-    const { totalKeys, baseMissing } = resolveFlat(workspace.id);
-    const entry: ListedWorkspace = { ...workspace, totalKeys, baseMissing };
+    const flat = resolveFlat(workspace.id);
+    const entry: ListedWorkspace = {
+      ...workspace,
+      totalKeys: flat.totalKeys,
+      baseMissing: flat.baseMissing,
+      translatedStrings: countTranslated(flat),
+    };
     const publicUrl = publicLocaleUrl(origin, workspace);
     if (publicUrl !== undefined) entry.publicUrl = publicUrl;
     return entry;

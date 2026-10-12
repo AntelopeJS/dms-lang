@@ -3,9 +3,6 @@
  * overview then shows its first steps instead of figures and a heatmap.
  */
 export const useFirstRun = () => {
-  const { isResolved, isAdded } = useWorkspaceContext()
-  const { flat } = useWorkspaceFlat()
-  return computed(
-    () => isResolved.value && isAdded.value && flat.value.totalKeys === 0,
-  )
+  const { current, isAdded } = useWorkspaceContext()
+  return computed(() => isAdded.value && current.value?.totalKeys === 0)
 }

@@ -1,6 +1,5 @@
 import type { Ref } from 'vue'
-import type { FlatTranslationRow, FlatTranslations } from '../../types/lang'
-import type { KeyRowResponse } from '../../composables/translation/useI18nWorkspaces'
+import type { FlatTranslationRow, KeyRowResponse } from '../../types/lang'
 import {
   keySaveFailure,
   type KeySaveFailure,
@@ -51,42 +50,32 @@ export type KeyWriteOutcome = KeyWriteSaved | KeyWriteFailed
 interface KeySaveContext {
   updateKey: ReturnType<typeof useI18nWorkspaces>['updateKey']
   postReviewed: ReturnType<typeof useI18nWorkspaces>['markReviewed']
-  update: ReturnType<typeof useWorkspaceFlat>['update']
+  translations: ReturnType<typeof useWorkspaceFlat>
   errorMessage: (error: unknown) => string
   translate: ApiMessageTranslate
 }
 
+/** The row a refused write leaves on screen, from what the refusal tells. */
 type FailureChange = (
-  flat: FlatTranslations,
-  key: string,
+  row: FlatTranslationRow,
   failure: KeySaveFailure,
-) => void
+) => FlatTranslationRow
 
 const SAVED_FLASH_MS = 1800
 const SAVED: KeyWriteSaved = { status: 'saved' }
 
 const links = new Map<string, Promise<WriteLink>>()
 
-function replaceRow(
-  flat: FlatTranslations,
-  key: string,
-  row: FlatTranslationRow | undefined,
-) {
-  const index = flat.rows.findIndex((entry) => entry.key === key)
-  if (row && index >= 0) flat.rows[index] = row
-  else if (row) flat.rows.push(row)
-  else if (index >= 0) flat.rows.splice(index, 1)
-}
-
+/** The texts a conflict says the server holds now. */
 function applyCurrent(
-  flat: FlatTranslations,
-  key: string,
+  row: FlatTranslationRow,
   failure: KeySaveFailure,
-) {
-  const row = flat.rows.find((entry) => entry.key === key)
-  if (!row) return
-  for (const [code, value] of Object.entries(failure.current))
-    row.values[code] = savedText(value) ?? undefined
+): FlatTranslationRow {
+  const current = Object.entries(failure.current).map(([code, value]) => [
+    code,
+    savedText(value) ?? undefined,
+  ])
+  return { ...row, values: { ...row.values, ...Object.fromEntries(current) } }
 }
 
 const FAILURE_CHANGES: Partial<Record<KeySaveFailureKind, FailureChange>> = {
@@ -113,9 +102,7 @@ function applyResponse(
   target: KeyTarget,
   response: KeyRowResponse,
 ): KeyWriteOutcome {
-  context.update(target.workspace, (flat) =>
-    replaceRow(flat, target.key, response.row),
-  )
+  context.translations.applyRow(target.workspace, target.key, response)
   return SAVED
 }
 
@@ -127,9 +114,14 @@ function failed(
 ): KeyWriteFailed {
   const failure = keySaveFailure(error, context.translate)
   const change = FAILURE_CHANGES[failure.kind]
-  if (change)
-    context.update(target.workspace, (flat) =>
-      change(flat, target.key, failure),
+  const row = context.translations
+    .flatOf(target.workspace)
+    .rows.find((entry) => entry.key === target.key)
+  if (change && row)
+    context.translations.replaceRow(
+      target.workspace,
+      target.key,
+      change(row, failure),
     )
   const message = failure.details.join(' ') || context.errorMessage(error)
   return { status: 'failed', failure, message, expected, error }
@@ -211,14 +203,14 @@ export function clearsBaseText(
  */
 export function useKeySaves() {
   const { updateKey, markReviewed: postReviewed } = useI18nWorkspaces()
-  const { update } = useWorkspaceFlat()
+  const translations = useWorkspaceFlat()
   const { errorMessage } = useMutationToast()
   const { confirm } = useConfirm()
   const { t } = useI18n()
   const context: KeySaveContext = {
     updateKey,
     postReviewed,
-    update,
+    translations,
     errorMessage,
     translate: (key, params) => t(key, params),
   }
@@ -231,9 +223,7 @@ export function useKeySaves() {
       markReviewed(context, target, code),
     /** Takes a key deleted elsewhere off the translations every page shows. */
     dropRow: (target: KeyTarget) =>
-      update(target.workspace, (flat) =>
-        replaceRow(flat, target.key, undefined),
-      ),
+      translations.replaceRow(target.workspace, target.key, undefined),
     /** Asks before a base text is emptied: the key would go missing everywhere. */
     confirmClearBase: (key: string) =>
       confirm({

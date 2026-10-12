@@ -22,6 +22,13 @@ export interface WorkspaceSummary {
   publicUrl?: string
 }
 
+/** A workspace as /workspaces lists it: its number of keys, of keys without base text and of texts. */
+export interface ScopedWorkspace extends WorkspaceSummary {
+  totalKeys: number
+  baseMissing: number
+  translatedStrings: number
+}
+
 export interface WorkspaceDetails {
   description?: string
   type?: WorkspaceType
@@ -65,17 +72,29 @@ export interface FlatTranslationRow {
   overrides?: Record<string, string>
   /** Languages translated from an older base text. */
   outdated?: string[]
+  /** Languages whose text has an issue, as the server checks it. */
+  issues?: string[]
 }
 
-export interface FlatTranslations {
-  defaultLocale: string
-  locales: string[]
-  rows: FlatTranslationRow[]
+/** The figures of a workspace a write changes. */
+export interface FlatCounts {
   localeProgress: Record<string, number>
   localeMissing: Record<string, number>
   totalKeys: number
   baseMissing: number
   incompleteKeys: number
+}
+
+export interface FlatTranslations extends FlatCounts {
+  defaultLocale: string
+  locales: string[]
+  rows: FlatTranslationRow[]
+}
+
+/** What a write to one key answers: the row as the server now stores it (none once the key is gone) and the figures it changed. */
+export interface KeyRowResponse {
+  row?: FlatTranslationRow
+  counts: FlatCounts
 }
 
 export interface LanguageCoverage {
@@ -92,6 +111,20 @@ export interface NamespaceCoverage {
   keys: number
   coverage: Record<string, number>
   missing: Record<string, number>
+}
+
+/** One namespace of the overview heatmap: its keys and how many each target language lacks. */
+export interface NamespaceRow {
+  namespace: string
+  keys: number
+  missing: Record<string, number>
+}
+
+/** The overview heatmap as /namespaces answers it: the targets and the namespaces, neediest first. */
+export interface NamespaceMatrix {
+  locales: string[]
+  localeMissing: Record<string, number>
+  namespaces: NamespaceRow[]
 }
 
 export type TranslationFilter = 'all' | 'missing' | 'complete' | 'issues'

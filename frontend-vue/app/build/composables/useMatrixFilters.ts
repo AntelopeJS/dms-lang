@@ -66,8 +66,8 @@ function rowStatus(
   const missing = targets.filter((code) => isRowValueMissing(row, code))
   const hasIssue =
     isRowValueMissing(row, base) ||
-    targets.some((code) => row.outdated?.includes(code)) ||
-    [base, ...targets].some((code) => rowHasIssue(row, base, code))
+    (row.issues?.includes(base) ?? false) ||
+    targets.some((code) => needsReview(row, code))
   return { missing, hasIssue }
 }
 

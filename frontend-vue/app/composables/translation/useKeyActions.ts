@@ -1,6 +1,6 @@
 import KeyAddModal from '../../build/components/KeyAddModal.vue'
 import KeyRenameModal from '../../build/components/KeyRenameModal.vue'
-import type { FlatTranslationRow, FlatTranslations } from '../../types/lang'
+import type { FlatTranslationRow, KeyRowResponse } from '../../types/lang'
 
 /** What the key actions share: the selected workspace, its keys and the DMS helpers. */
 interface KeyActionsContext {
@@ -8,7 +8,6 @@ interface KeyActionsContext {
   toast: ReturnType<typeof useToast>
   overlay: ReturnType<typeof useOverlay>
   confirm: ReturnType<typeof useConfirm>['confirm']
-  authFetch: ReturnType<typeof useAuthFetch>['$authFetch']
   workspaces: ReturnType<typeof useI18nWorkspaces>
   translations: ReturnType<typeof useWorkspaceFlat>
   isDefault: ReturnType<typeof useWorkspaceContext>['isDefault']
@@ -21,11 +20,9 @@ interface KeyRemoval {
   /** The group of its texts (`key_delete`, `key_revert`). */
   texts: string
   color: 'error' | 'warning'
-  run: (workspace: string) => Promise<unknown>
+  run: (workspace: string) => Promise<KeyRowResponse>
   undo: (workspace: string, row: FlatTranslationRow) => Promise<void>
 }
-
-const FLAT_ENDPOINT = '/api/lang/translations/flat'
 
 /** The written values of a row, without the languages it lacks. */
 export function filledValues(row: FlatTranslationRow): Record<string, string> {
@@ -45,15 +42,7 @@ async function moduleRows(
   context: KeyActionsContext,
 ): Promise<FlatTranslationRow[]> {
   if (!context.isDefault.value) return []
-  try {
-    const modules = await context.authFetch<Partial<FlatTranslations>>(
-      FLAT_ENDPOINT,
-      { query: { workspace: MODULES_WORKSPACE } },
-    )
-    return modules?.rows ?? []
-  } catch {
-    return []
-  }
+  return (await context.translations.load(MODULES_WORKSPACE)).rows
 }
 
 async function addKey(context: KeyActionsContext): Promise<string[]> {
@@ -92,7 +81,6 @@ async function renameKey(
   })
   const renamed = (await modal.open()) as string | null
   if (!renamed) return null
-  await context.translations.reload()
   notify(
     context,
     context.t('dms_lang.key_rename.done', { path: renamed }),
@@ -121,7 +109,7 @@ function announceRemoval(
   })
 }
 
-/** Asks, runs a removal, reloads, and offers to undo it with the row as it was. */
+/** Asks, runs a removal, puts its answer in place, and offers to undo it with the row as it was. */
 async function removeKeyTexts(
   context: KeyActionsContext,
   removal: KeyRemoval,
@@ -143,11 +131,11 @@ async function removeKeyTexts(
     color: removal.color,
     confirmLabel: t(`dms_lang.${removal.texts}.submit`),
     onConfirm: async () => {
-      await removal.run(workspace)
+      const response = await removal.run(workspace)
+      context.translations.applyRow(workspace, removal.path, response)
     },
   })
   if (!removed) return false
-  await context.translations.reload()
   if (row)
     announceRemoval(context, t(`dms_lang.${removal.texts}.done`, params), () =>
       removal.undo(workspace, row),
@@ -155,14 +143,23 @@ async function removeKeyTexts(
   return true
 }
 
-/** Writes a row back as it was; reloads when it worked. */
+/** The row a removal took away, written back where it was. */
+interface RowRestore {
+  workspace: string
+  row: FlatTranslationRow
+  before?: string
+}
+
+/** Writes a row back as it was and puts the answer in place. */
 async function restoreRow(
   context: KeyActionsContext,
-  write: () => Promise<unknown>,
+  { workspace, row, before }: RowRestore,
+  write: () => Promise<KeyRowResponse>,
 ): Promise<boolean> {
-  const ok = await context.tryMutate(write)
-  if (ok) await context.translations.reload()
-  return ok
+  return context.tryMutate(async () => {
+    const response = await write()
+    context.translations.applyRow(workspace, row.key, response, before)
+  })
 }
 
 function deleteKey(context: KeyActionsContext, path: string) {
@@ -179,7 +176,8 @@ function deleteKey(context: KeyActionsContext, path: string) {
     undo: async (workspace, row) => {
       const write = () =>
         createKey(workspace, row.key, filledValues(row), before)
-      if (!(await restoreRow(context, write))) return
+      if (!(await restoreRow(context, { workspace, row, before }, write)))
+        return
       notify(
         context,
         context.t('dms_lang.key_delete.restored', { path: row.key }),
@@ -198,7 +196,7 @@ function revertToModule(context: KeyActionsContext, path: string) {
     color: 'warning',
     run: (workspace) => revertOverride(workspace, path),
     undo: async (workspace, row) => {
-      await restoreRow(context, () =>
+      await restoreRow(context, { workspace, row }, () =>
         updateKey(workspace, row.key, filledValues(row)),
       )
     },
@@ -212,7 +210,6 @@ export const useKeyActions = () => {
     toast: useToast(),
     overlay: useOverlay(),
     confirm: useConfirm().confirm,
-    authFetch: useAuthFetch().$authFetch,
     workspaces: useI18nWorkspaces(),
     translations: useWorkspaceFlat(),
     isDefault: useWorkspaceContext().isDefault,

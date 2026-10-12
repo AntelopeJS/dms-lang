@@ -1,4 +1,4 @@
-import type { WorkspacePermission, WorkspaceSummary } from '../../types/lang'
+import type { ScopedWorkspace, WorkspacePermission } from '../../types/lang'
 
 /**
  * Read-only view of the selected workspace and of what the current user may
@@ -8,9 +8,8 @@ export const useWorkspaceContext = () => {
   const { workspaces, editable, selectedWorkspace, isLoaded, permissions } =
     useI18nWorkspaces()
   const { hasPermission } = usePermissions()
-  const hasFlat = useFlatPresence()
 
-  const current = computed<WorkspaceSummary | null>(
+  const current = computed<ScopedWorkspace | null>(
     () =>
       workspaces.value.find(
         (workspace) => workspace.id === selectedWorkspace.value,
@@ -21,10 +20,8 @@ export const useWorkspaceContext = () => {
   const isUnknown = computed(
     () => isLoaded.value && !!selectedWorkspace.value && !current.value,
   )
-  /** The workspace and its translations are both in: figures can show. */
-  const isResolved = computed(
-    () => current.value !== null && hasFlat(current.value.id),
-  )
+  /** The workspace is in, with its figures. */
+  const isResolved = computed(() => current.value !== null)
 
   const isDefault = computed(() => current.value?.kind === 'default')
   const isModules = computed(() => current.value?.kind === 'modules')

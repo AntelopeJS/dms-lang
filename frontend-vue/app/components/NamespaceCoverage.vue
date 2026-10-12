@@ -1,14 +1,13 @@
 <script setup lang="ts">
-import { useWorkspaceFlatSync } from '../composables/translation/useWorkspaceFlat'
 import UButton from '@nuxt/ui/components/Button.vue'
-import type { NamespaceCoverage } from '../types/lang'
+import type { NamespaceMatrix, NamespaceRow } from '../types/lang'
 import LocaleTile from '../build/components/LocaleTile.vue'
+import { LANG_REALTIME_TOPIC } from '../composables/translation/useWorkspaceFlat'
 import {
   HIGH_COVERAGE,
   MID_COVERAGE,
   coveragePercent,
   coverageTone,
-  namespaceCoverage,
 } from '../utils/translations'
 
 const MAX_NAMESPACES = 6
@@ -21,59 +20,39 @@ const HEAT_CLASSES: Record<'success' | 'warning' | 'error', string> = {
 }
 
 const { t } = useI18n()
-const { flat, isLoaded } = useWorkspaceFlat()
-useWorkspaceFlatSync()
+const { data } = useChartFetch<NamespaceMatrix>({
+  fetchUrl: `${LANG_API}/namespaces?workspace={{query.workspace}}`,
+  realtimeTopic: LANG_REALTIME_TOPIC,
+})
 const { formatCount } = useLangFormat()
 const links = useLangLinks()
 const { isResolved, isUnknown } = useWorkspaceContext()
 const { nameAmong } = useLocaleNames()
 const isFirstRun = useFirstRun()
 
-function missingCount(code: string): number {
-  return flat.value.localeMissing[code] ?? 0
-}
-
-const targets = computed(() =>
-  flat.value.locales
-    .filter((code) => code !== flat.value.defaultLocale)
-    .sort(
-      (left, right) =>
-        (flat.value.localeProgress[left] ?? 0) -
-          (flat.value.localeProgress[right] ?? 0) ||
-        missingCount(right) - missingCount(left) ||
-        left.localeCompare(right),
-    ),
-)
+const isLoaded = computed(() => data.value !== null)
+const targets = computed(() => data.value?.locales ?? [])
 const locales = computed(() => targets.value.slice(0, MAX_LOCALES))
 const hiddenLocales = computed(
   () => targets.value.length - locales.value.length,
 )
 
-function totalMissing(entry: NamespaceCoverage): number {
-  return Object.values(entry.missing).reduce((sum, count) => sum + count, 0)
-}
-
-const allNamespaces = computed(() =>
-  namespaceCoverage(flat.value.rows, targets.value).sort(
-    (left, right) =>
-      totalMissing(right) / right.keys - totalMissing(left) / left.keys ||
-      totalMissing(right) - totalMissing(left) ||
-      left.namespace.localeCompare(right.namespace),
-  ),
-)
+const allNamespaces = computed(() => data.value?.namespaces ?? [])
 const namespaces = computed(() => allNamespaces.value.slice(0, MAX_NAMESPACES))
 const hiddenNamespaces = computed(
   () => allNamespaces.value.length - namespaces.value.length,
 )
 
 const neediest = computed(() => targets.value[0] ?? '')
-const neediestMissing = computed(() => missingCount(neediest.value))
+const neediestMissing = computed(
+  () => data.value?.localeMissing[neediest.value] ?? 0,
+)
 
-function shownCoverage(entry: NamespaceCoverage, code: string): number {
+function shownCoverage(entry: NamespaceRow, code: string): number {
   return coveragePercent(entry.keys - (entry.missing[code] ?? 0), entry.keys)
 }
 
-function cellLink(entry: NamespaceCoverage, code: string): string {
+function cellLink(entry: NamespaceRow, code: string): string {
   if (!entry.missing[code]) {
     return links.translations({ namespace: entry.namespace })
   }
@@ -84,7 +63,7 @@ function cellLink(entry: NamespaceCoverage, code: string): string {
   })
 }
 
-function cellLabel(entry: NamespaceCoverage, code: string): string {
+function cellLabel(entry: NamespaceRow, code: string): string {
   const missing = entry.missing[code] ?? 0
   const params = {
     namespace: entry.namespace,

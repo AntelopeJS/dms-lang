@@ -489,7 +489,7 @@
 		"progress": {
 			"translated": "Traduites",
 			"missing": "Manquantes",
-			"issues": "Variables manquantes",
+			"issues": "Anomalies",
 			"coverage": "Couverture",
 			"coverage_detail": "Aucune clé | Sur {n} clé | Sur {n} clés",
 			"label": "Avancement de la langue",
