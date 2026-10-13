@@ -31,8 +31,8 @@ importers:
         specifier: 1.14.0
         version: 1.14.0
       '@antelopejs/dms':
-        specifier: '>=0.7.17 <0.8.0'
-        version: 0.7.17(@antelopejs/core@1.14.0)(@antelopejs/interface-auth@0.0.6(@antelopejs/interface-api@0.0.14(@antelopejs/interface-core@0.1.1))(@antelopejs/interface-core@0.1.1))
+        specifier: '>=0.7.18 <0.8.0'
+        version: 0.7.18(@antelopejs/core@1.14.0)(@antelopejs/interface-auth@0.0.6(@antelopejs/interface-api@0.0.14(@antelopejs/interface-core@0.1.1))(@antelopejs/interface-core@0.1.1))
       '@antelopejs/dms-frontend':
         specifier: 0.5.2
         version: 0.5.2(@antelopejs/core@1.14.0)
@@ -137,8 +137,8 @@ importers:
   playground:
     dependencies:
       '@antelopejs/dms':
-        specifier: '>=0.7.17 <0.8.0'
-        version: 0.7.17(@antelopejs/core@1.14.0)(@antelopejs/interface-auth@0.0.6(@antelopejs/interface-api@0.0.14(@antelopejs/interface-core@0.1.1))(@antelopejs/interface-core@0.1.1))
+        specifier: '>=0.7.18 <0.8.0'
+        version: 0.7.18(@antelopejs/core@1.14.0)(@antelopejs/interface-auth@0.0.6(@antelopejs/interface-api@0.0.14(@antelopejs/interface-core@0.1.1))(@antelopejs/interface-core@0.1.1))
       '@antelopejs/interface-api':
         specifier: '>=0.0.14 <1.0.0'
         version: 0.0.14(@antelopejs/interface-core@0.1.1)
@@ -186,8 +186,8 @@ packages:
     peerDependencies:
       '@antelopejs/core': '>=1.13.2 <2'
 
-  '@antelopejs/dms@0.7.17':
-    resolution: {integrity: sha512-uON3hLujLYoPPINEYKUVO421DPS6+p+3OJfEX60Zn1Hm/t2tOdIXf6wAHuWH6b7OCqVE/znK39TpZQ+NORPLAg==}
+  '@antelopejs/dms@0.7.18':
+    resolution: {integrity: sha512-1YH949kS2PS4EPvnSucHx0KF5M5rYSkhPfAOkxE9Okqu0NitwlrASSXlQ8RsqJau9uCrb/FLjDgmomuMR3feDg==}
     peerDependencies:
       '@antelopejs/core': '>=1.13.2 <2'
     peerDependenciesMeta:
@@ -4872,7 +4872,7 @@ snapshots:
       '@oxc-parser/binding-linux-x64-gnu': 0.95.0
       '@oxc-parser/binding-win32-x64-msvc': 0.95.0
 
-  '@antelopejs/dms@0.7.17(@antelopejs/core@1.14.0)(@antelopejs/interface-auth@0.0.6(@antelopejs/interface-api@0.0.14(@antelopejs/interface-core@0.1.1))(@antelopejs/interface-core@0.1.1))':
+  '@antelopejs/dms@0.7.18(@antelopejs/core@1.14.0)(@antelopejs/interface-auth@0.0.6(@antelopejs/interface-api@0.0.14(@antelopejs/interface-core@0.1.1))(@antelopejs/interface-core@0.1.1))':
     dependencies:
       2fa: 0.1.2
       '@antelopejs/interface-api': 0.0.14(@antelopejs/interface-core@0.2.0)
