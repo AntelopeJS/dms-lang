@@ -12,12 +12,16 @@ function assetRoots(root: string): string[] {
     .sort();
 }
 
+function localesDirectory(root: string): string {
+  return join(root, "i18n/locales");
+}
+
 function collectLocales(
   root: string,
   origin: OriginFilter,
   registry: I18nRegistry,
 ): void {
-  const directory = join(root, "i18n/locales");
+  const directory = localesDirectory(root);
   if (!existsSync(directory)) return;
   for (const file of readdirSync(directory, {
     recursive: true,
@@ -41,4 +45,26 @@ export function discoverLocaleRegistry(
       collectLocales(root, origin, registry);
   }
   return registry;
+}
+
+/**
+ * The folders a new language file lands in: each module's locales folder,
+ * listed even while it does not exist, and the folders nested in it.
+ */
+export function localeDirectories(
+  modules: AddFrontendModuleOptions[],
+): string[] {
+  return modules.flatMap((module) =>
+    assetRoots(module.sourcePath).flatMap((root) => {
+      const directory = localesDirectory(root);
+      if (!existsSync(directory)) return [directory];
+      const nested = readdirSync(directory, {
+        recursive: true,
+        withFileTypes: true,
+      })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => join(entry.parentPath, entry.name));
+      return [directory, ...nested.sort()];
+    }),
+  );
 }

@@ -3,7 +3,7 @@ import {
   type FrontendModuleMetadata,
 } from "@antelopejs/interface-dms/page";
 import { filesStamp, memoize } from "./cache";
-import { discoverLocaleRegistry } from "./locale-discovery";
+import { discoverLocaleRegistry, localeDirectories } from "./locale-discovery";
 import { readJson } from "./json";
 import { deepMerge, type LocaleMessages } from "./tree";
 
@@ -16,20 +16,36 @@ interface RegistryEntry {
 
 export type I18nRegistry = Record<string, RegistryEntry[]>;
 
+let modules: FrontendModuleMetadata[] = [];
+let directories: string[] = [];
+let directoriesStamp = "";
 let registry: I18nRegistry = {};
 
 /**
- * Reads the language files of the frontend modules once: the modules are
- * known for good once the DMS started, so their files are listed only here.
+ * Lists the language files of the frontend modules. The modules are known for
+ * good once the DMS started; their files are listed again whenever one of
+ * their locales folders changes, so a language file added by hand shows up
+ * without a restart.
  */
 export async function initializeLocaleRegistry(): Promise<void> {
-  const modules: FrontendModuleMetadata[] = await GetFrontendModules();
+  modules = await GetFrontendModules();
+  scanRegistry();
+}
+
+function scanRegistry(): void {
+  directories = localeDirectories(modules);
+  directoriesStamp = filesStamp(directories);
   registry = discoverLocaleRegistry(modules);
+}
+
+function currentRegistry(): I18nRegistry {
+  if (filesStamp(directories) !== directoriesStamp) scanRegistry();
+  return registry;
 }
 
 /** Every language file of the frontend modules, for a cache that follows them. */
 export function registryFiles(): string[] {
-  return Object.values(registry).flatMap((entries) =>
+  return Object.values(currentRegistry()).flatMap((entries) =>
     entries.map((entry) => entry.path),
   );
 }
@@ -43,7 +59,7 @@ export function loadMessages(origin: OriginFilter): LocaleMessages {
 
 function readMessages(origin: OriginFilter): LocaleMessages {
   const localeMessages: LocaleMessages = {};
-  for (const [localeCode, entries] of Object.entries(registry)) {
+  for (const [localeCode, entries] of Object.entries(currentRegistry())) {
     const files = entries.filter((e) => e.origin === origin);
     if (files.length === 0) continue;
     localeMessages[localeCode] = {};
@@ -59,12 +75,12 @@ function readMessages(origin: OriginFilter): LocaleMessages {
 }
 
 export function getLocaleCodes(origin: OriginFilter): string[] {
-  return Object.entries(registry)
+  return Object.entries(currentRegistry())
     .filter(([, entries]) => entries.some((e) => e.origin === origin))
     .map(([code]) => code);
 }
 
 export function getOwnWriteTarget(localeCode: string): string | null {
-  const entries = registry[localeCode] ?? [];
+  const entries = currentRegistry()[localeCode] ?? [];
   return entries.findLast((e) => e.origin === "own")?.path ?? null;
 }

@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { expect } from "chai";
 import { AddFrontendModule } from "@antelopejs/interface-dms/page";
 import {
+  getLocaleCodes,
   getOwnWriteTarget,
   initializeLocaleRegistry,
   loadMessages,
@@ -58,6 +59,30 @@ describe("[integration] registered locale sources", () => {
     rmSync(high);
     expect(loadMessages("own").en.migrationFixture).to.deep.equal({
       winner: "low",
+    });
+  });
+
+  it("lists a language file added to a locales folder without a restart", async () => {
+    const sourcePath = join(directory, "added");
+    mkdirSync(sourcePath, { recursive: true });
+    await AddFrontendModule({
+      name: "dms-lang-test-added",
+      sourcePath,
+      renderer: { name: "vue", version: "3" },
+      priority: 40,
+      options: { dmsI18nAppLayer: true },
+    });
+    await initializeLocaleRegistry();
+    expect(getLocaleCodes("own")).to.not.include("de");
+    const localeDir = join(sourcePath, "i18n/locales");
+    mkdirSync(localeDir, { recursive: true });
+    writeFileSync(
+      join(localeDir, "app-de-DE.json"),
+      JSON.stringify({ addedFixture: { title: "Neu" } }),
+    );
+    expect(getLocaleCodes("own")).to.include("de");
+    expect(loadMessages("own").de.addedFixture).to.deep.equal({
+      title: "Neu",
     });
   });
 });
