@@ -1,5 +1,5 @@
 import { findWorkspace } from "./catalog";
-import { check } from "./errors";
+import { check, fail } from "./errors";
 import type { ImportInput } from "../validation/workspace.schema";
 import {
   isPlainObject,
@@ -42,6 +42,17 @@ const EXPORTERS: Record<WorkspaceKind, (workspace: string) => LocaleMessages> =
 
 export function exportWorkspace(workspace: string): LocaleMessages {
   return EXPORTERS[workspaceKind(workspace)](workspace);
+}
+
+/** The texts of one language of a workspace, as its language file holds them; 404 when it has no such language. */
+export function exportLanguage(
+  workspace: string,
+  code: string,
+): Record<string, unknown> {
+  const messages = exportWorkspace(workspace);
+  const found = findLocale(Object.keys(messages), code);
+  if (found === undefined) fail("unknown_locale", { locale: code });
+  return messages[found] ?? {};
 }
 
 /** Everything needed to recreate a workspace: its languages, its base, its details and its texts. */

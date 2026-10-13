@@ -31,6 +31,7 @@ import { getTranslationConfig } from "../utils/config";
 import { LANG_API, PUBLIC_PATH } from "../utils/constants";
 import {
   backupWorkspace,
+  exportLanguage,
   exportWorkspace,
   importWorkspace,
 } from "../utils/export";
@@ -291,8 +292,12 @@ export class TranslationsController extends Controller(LANG_API) {
   }
 
   @Get("/export")
-  export(@Parameter("workspace", "query") workspace?: string) {
-    return exportWorkspace(resolveWorkspaceId(workspace));
+  export(
+    @Parameter("workspace", "query") workspace?: string,
+    @Parameter("locale", "query") locale?: string,
+  ) {
+    const id = resolveWorkspaceId(workspace);
+    return locale ? exportLanguage(id, locale) : exportWorkspace(id);
   }
 
   @Get("/backup")

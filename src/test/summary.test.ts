@@ -27,7 +27,7 @@ import {
   type TranslationConfig,
 } from "../utils/config";
 import { localeStats, workspaceAbout, workspaceKpis } from "../utils/blocks";
-import { exportWorkspace } from "../utils/export";
+import { exportLanguage, exportWorkspace } from "../utils/export";
 import { baseConfirm, removalConfirm } from "../utils/dialogs";
 import { workspaceNotice } from "../utils/notices";
 import { publicOrigin, workspaceEndpoint } from "../utils/public-url";
@@ -313,6 +313,14 @@ describe("[integration] workspace summary, export and overrides", () => {
       "it-IT": { checkout: { cta: "Paga" } },
     });
     expect(exportWorkspace("default").en).to.have.property("summaryFixture");
+  });
+
+  it("exports one language of a workspace, matched on its canonical code", () => {
+    expect(exportLanguage(WORKSPACE, "it-it")).to.deep.equal({
+      checkout: { cta: "Paga" },
+    });
+    expect(exportLanguage("default", "en")).to.have.property("summaryFixture");
+    expectError(() => exportLanguage(WORKSPACE, "de"), 404, "unknown_locale");
   });
 
   it("counts the missing project translations for the navigation badge", () => {
