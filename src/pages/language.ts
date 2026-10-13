@@ -2,7 +2,13 @@ import { CustomComponent } from "@antelopejs/interface-dms/base/custom";
 import { Grid, GridRow } from "@antelopejs/interface-dms/base/grid";
 import { StatGroup } from "@antelopejs/interface-dms/base/stat-group";
 import { VStack } from "@antelopejs/interface-dms/base/stack";
+import { DefaultLayout } from "@antelopejs/interface-dms/base/layouts";
 import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
+import {
+  DOWNLOAD_LANGUAGE_BUTTON,
+  OPEN_MATRIX_BUTTON,
+  OPEN_MISSING_IN_MATRIX_BUTTON,
+} from "./header-actions";
 import { workspaceGuard } from "./workspace-guard";
 import {
   followTranslations,
@@ -65,14 +71,24 @@ const content = Grid({ gap: GAP, minColumnWidth: MIN_COLUMN_WIDTH })
   );
 
 @RegisterPage()
-export class LangLanguageController extends PageController(PAGE_ID, {
-  displayName: "$dms_lang.language.page_title",
-  description: "$dms_lang.language.description",
-  module: LANG_MODULE_ID,
-  category: translateCategory,
-  icon: "i-ph-text-aa",
-  order: 2,
-}) {
+export class LangLanguageController extends PageController(
+  PAGE_ID,
+  {
+    displayName: "$dms_lang.language.page_title",
+    description: "$dms_lang.language.description",
+    module: LANG_MODULE_ID,
+    category: translateCategory,
+    icon: "i-ph-text-aa",
+    order: 2,
+  },
+  DefaultLayout({
+    headerActions: [
+      OPEN_MISSING_IN_MATRIX_BUTTON,
+      OPEN_MATRIX_BUTTON,
+      DOWNLOAD_LANGUAGE_BUTTON,
+    ],
+  }),
+) {
   static scope = CustomComponent("DmsLangWorkspaceScope").meta({
     name: `${PERMISSION_TEXTS}.scope`,
     description: `${PERMISSION_TEXTS}.scope_description`,

@@ -39,7 +39,6 @@ const ENDPOINTS = {
   flat: `${API_BASE}/flat`,
   row: `${API_BASE}/row`,
   summary: `${API_BASE}/summary`,
-  export: `${API_BASE}/export`,
   workspace: `${API_BASE}/workspace`,
   workspaceRename: `${API_BASE}/workspace/rename`,
   backup: `${API_BASE}/backup`,
@@ -183,10 +182,6 @@ function useWorkspaceReads() {
       $authFetch<FlatTranslations>(ENDPOINTS.flat, { query: { workspace } }),
     fetchRow: (workspace: string, key: string) =>
       $authFetch<KeyRowResponse>(ENDPOINTS.row, { query: { workspace, key } }),
-    exportWorkspace: (workspace: string) =>
-      $authFetch<Record<string, Record<string, unknown>>>(ENDPOINTS.export, {
-        query: { workspace },
-      }),
   }
 }
 

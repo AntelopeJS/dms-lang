@@ -23,12 +23,11 @@ const LANGUAGE_SUGGESTIONS = 6
 defineOptions({ inheritAttrs: false })
 
 const { t } = useI18n()
-const { selectedWorkspace, exportWorkspace } = useI18nWorkspaces()
+const { selectedWorkspace } = useI18nWorkspaces()
 const { flat, isLoaded } = useWorkspaceFlat()
 useWorkspaceFlatSync()
 const { canManage, isUnknown, isResolved, allows } = useWorkspaceContext()
 const { nameAmong } = useLocaleNames()
-const { reportFailure } = useMutationToast()
 const { removeLanguage, makeBase } = useLanguageActions()
 const links = useLangLinks()
 const router = useDmsRouter()
@@ -85,15 +84,6 @@ const unknownActions = computed(() => [
   },
 ])
 
-async function download() {
-  try {
-    const messages = await exportWorkspace(selectedWorkspace.value)
-    downloadJson(`${locale.value}.json`, messages[locale.value] ?? {})
-  } catch (error) {
-    reportFailure(error, { title: t('dms_lang.errors.export_failed') })
-  }
-}
-
 function remove() {
   return removeLanguage(locale.value, () => router.push(links.overview()))
 }
@@ -117,16 +107,6 @@ watch(
     if (key && shouldFocus) focusEditor()
   },
 )
-
-function downloadButton() {
-  return h(UButton, {
-    label: t('dms_lang.queue.download', { file: `${locale.value}.json` }),
-    icon: 'i-ph-download-simple',
-    color: 'neutral',
-    variant: 'outline',
-    onClick: download,
-  })
-}
 
 function languageMenu() {
   const items = [
@@ -162,26 +142,9 @@ const canManageLanguage = computed(
     !isBase.value,
 )
 
-/** The matrix on what this language lacks; the base opens it unfiltered. */
-function openMatrixButton() {
-  return h(UButton, {
-    label: t('dms_lang.queue.open_matrix'),
-    icon: 'i-ph-table',
-    color: 'neutral',
-    variant: 'outline',
-    to: links.translations({
-      missingIn: isBase.value ? undefined : locale.value,
-      filter: isBase.value ? undefined : 'missing',
-      namespace: session.namespace.value || undefined,
-    }),
-  })
-}
-
-usePageHeaderActions(() => [
-  openMatrixButton(),
-  exists.value ? downloadButton() : null,
+usePageHeaderActions(() =>
   canManageLanguage.value ? languageMenu() : null,
-])
+)
 
 onBeforeUnmount(() => clearTimeout(urlTimer))
 </script>

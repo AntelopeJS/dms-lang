@@ -427,7 +427,7 @@
 			"save_next": "Enregistrer et continuer",
 			"up_next": "Ensuite",
 			"open_matrix": "Ouvrir dans la matrice",
-			"download": "Télécharger {file}",
+			"download": "Télécharger {locale}.json",
 			"more": "Plus d'actions",
 			"back": "Retour à la vue d'ensemble",
 			"done_title": "{name} est entièrement traduit",

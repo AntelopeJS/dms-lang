@@ -16,6 +16,9 @@ import {
 import {
   addKeyButton,
   addLanguageButton,
+  DOWNLOAD_LANGUAGE_BUTTON,
+  OPEN_MATRIX_BUTTON,
+  OPEN_MISSING_IN_MATRIX_BUTTON,
   newWorkspaceButton,
   OPEN_OVERVIEW_BUTTON,
 } from "../pages/header-actions";
@@ -181,12 +184,15 @@ function describeBlockRoutes(): void {
   });
 }
 
-function availabilityOf(button: CustomButton, workspace?: string) {
-  return button.availability?.({
-    tenantId: "",
-    user: undefined,
-    query: workspace === undefined ? {} : { workspace },
-  });
+function availabilityOf(
+  button: CustomButton,
+  workspace?: string,
+  locale?: string,
+) {
+  const query: Record<string, string> = {};
+  if (workspace !== undefined) query.workspace = workspace;
+  if (locale !== undefined) query.locale = locale;
+  return button.availability?.({ tenantId: "", user: undefined, query });
 }
 
 function describeHeaderActions(): void {
@@ -217,6 +223,23 @@ function describeHeaderActions(): void {
     expect(
       await availabilityOf(newWorkspaceButton(createWorkspaceAction)),
     ).to.equal(undefined);
+  });
+
+  it("serves the queue's matrix link and download for the language of the URL", async () => {
+    const shown = async (button: CustomButton, locale?: string) =>
+      (await availabilityOf(button, WORKSPACE, locale)) === undefined;
+    expect(await shown(OPEN_MISSING_IN_MATRIX_BUTTON, "it-it")).to.equal(true);
+    expect(await shown(OPEN_MATRIX_BUTTON, "it-it")).to.equal(false);
+    expect(await shown(OPEN_MISSING_IN_MATRIX_BUTTON, "en-GB")).to.equal(false);
+    expect(await shown(OPEN_MATRIX_BUTTON, "en-GB")).to.equal(true);
+    expect(await shown(OPEN_MATRIX_BUTTON)).to.equal(true);
+    expect(await shown(DOWNLOAD_LANGUAGE_BUTTON, "en-GB")).to.equal(true);
+    expect(await shown(DOWNLOAD_LANGUAGE_BUTTON, "de")).to.equal(false);
+    expect(DOWNLOAD_LANGUAGE_BUTTON.target).to.deep.equal({
+      type: "download",
+      url: "/api/lang/translations/export?workspace={{query.workspace}}&locale={{query.locale}}",
+      filename: "{{query.locale}}.json",
+    });
   });
 
   it("points the header links at the workspace of the URL", () => {

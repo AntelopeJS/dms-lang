@@ -427,7 +427,7 @@
 			"save_next": "Save & next",
 			"up_next": "Up next",
 			"open_matrix": "Open in matrix",
-			"download": "Download {file}",
+			"download": "Download {locale}.json",
 			"more": "More actions",
 			"back": "Back to overview",
 			"done_title": "{name} is fully translated",
