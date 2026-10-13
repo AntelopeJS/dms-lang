@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.1.0
+
+[compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.0.7...v0.1.0)
+
+### 🚀 Enhancements
+
+- **lang:** ⚠️  Port the v2 design on DMS 0.7 ([#26](https://github.com/AntelopeJS/dms-lang/pull/26))
+
+### 🏡 Chore
+
+- **playground:** Run api ^1.3.1 and open module source ranges ([#24](https://github.com/AntelopeJS/dms-lang/pull/24))
+
+#### ⚠️ Breaking Changes
+
+- **lang:** ⚠️  Port the v2 design on DMS 0.7 ([#26](https://github.com/AntelopeJS/dms-lang/pull/26))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli <rizzitelli.antony@pm.me>
+
 ## v0.0.7
 
 [compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.0.6...v0.0.7)
