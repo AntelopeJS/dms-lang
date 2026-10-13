@@ -1,164 +1,51 @@
-import { getLocaleCodes, loadMessages } from "./registry";
+import { filesStamp, memoize } from "./cache";
+import { modulesBaseLocale, projectBaseLocale } from "./catalog";
+import { coveragePercent } from "./coverage";
+import { hasMessageIssue } from "./message-check";
+import { getLocaleCodes, loadMessages, registryFiles } from "./registry";
+import { outdatedLocales } from "./review";
 import {
-  buildTranslationData,
-  collectLeafPaths,
   deepMerge,
-  extractTranslationsByPath,
-  FULL_PROGRESS,
   getValueAtPath,
   isMissing,
+  leafPaths,
   type LocaleMessages,
-  PROGRESS_PRECISION_FACTOR,
-  type TranslationData,
   type TranslationValue,
+  unionKeys,
 } from "./tree";
 import {
-  ALL_WORKSPACE,
-  DEFAULT_WORKSPACE,
   getWorkspaceManifest,
-  listWorkspaces,
   loadWorkspaceMessages,
-  MODULES_WORKSPACE,
+  type TranslationSources,
   type WorkspaceKind,
+  workspaceFiles,
   workspaceKind,
 } from "./workspaces";
-
-export {
-  ALL_WORKSPACE,
-  DEFAULT_WORKSPACE,
-  MODULES_WORKSPACE,
-  type WorkspaceKind,
-  workspaceKind,
-};
-
-export interface ByPathResult {
-  translations: Record<string, TranslationValue>;
-  inherited?: Record<string, TranslationValue>;
-}
-
-interface WorkspaceResolver {
-  data(workspace: string, fallbackDefaultLocale: string): TranslationData;
-  byPath(workspace: string, path: string): ByPathResult;
-}
-
-function unionKeys(messages: LocaleMessages): Record<string, unknown> {
-  let union: Record<string, unknown> = {};
-  for (const localeMessages of Object.values(messages)) {
-    union = deepMerge(union, localeMessages);
-  }
-  return union;
-}
-
-function mergedPresence(
-  own: LocaleMessages,
-  external: LocaleMessages,
-): LocaleMessages {
-  const presence: LocaleMessages = {};
-  for (const locale of getLocaleCodes("own")) {
-    presence[locale] = deepMerge(external[locale] ?? {}, own[locale] ?? {});
-  }
-  return presence;
-}
-
-function ownData(
-  _workspace: string,
-  fallbackDefaultLocale: string,
-): TranslationData {
-  const own = loadMessages("own");
-  const external = loadMessages("external");
-  const presence = mergedPresence(own, external);
-  const structure = { [fallbackDefaultLocale]: unionKeys(own) };
-  return buildTranslationData(structure, fallbackDefaultLocale, presence);
-}
-
-function ownByPath(_workspace: string, path: string): ByPathResult {
-  const own = loadMessages("own");
-  const external = loadMessages("external");
-  const translations: Record<string, TranslationValue> = {};
-  const inherited: Record<string, TranslationValue> = {};
-  for (const locale of getLocaleCodes("own")) {
-    translations[locale] = getValueAtPath(
-      own[locale],
-      path,
-    ) as TranslationValue;
-    inherited[locale] = getValueAtPath(
-      external[locale],
-      path,
-    ) as TranslationValue;
-  }
-  return { translations, inherited };
-}
-
-function modulesData(
-  _workspace: string,
-  fallbackDefaultLocale: string,
-): TranslationData {
-  const external = loadMessages("external");
-  const defaultLocale = external[fallbackDefaultLocale]
-    ? fallbackDefaultLocale
-    : (Object.keys(external)[0] ?? fallbackDefaultLocale);
-  return buildTranslationData(external, defaultLocale);
-}
-
-function modulesByPath(_workspace: string, path: string): ByPathResult {
-  return {
-    translations: extractTranslationsByPath(loadMessages("external"), path),
-  };
-}
-
-function addedData(workspace: string): TranslationData {
-  const manifest = getWorkspaceManifest(workspace);
-  return buildTranslationData(
-    loadWorkspaceMessages(workspace),
-    manifest.defaultLocale,
-  );
-}
-
-function addedByPath(workspace: string, path: string): ByPathResult {
-  return {
-    translations: extractTranslationsByPath(
-      loadWorkspaceMessages(workspace),
-      path,
-    ),
-  };
-}
-
-const RESOLVERS: Record<WorkspaceKind, WorkspaceResolver> = {
-  default: { data: ownData, byPath: ownByPath },
-  modules: { data: modulesData, byPath: modulesByPath },
-  added: { data: addedData, byPath: addedByPath },
-};
-
-export function resolveTranslationData(
-  workspace: string,
-  fallbackDefaultLocale: string,
-): TranslationData {
-  return RESOLVERS[workspaceKind(workspace)].data(
-    workspace,
-    fallbackDefaultLocale,
-  );
-}
-
-export function resolveTranslationsByPath(
-  workspace: string,
-  path: string,
-): ByPathResult {
-  return RESOLVERS[workspaceKind(workspace)].byPath(workspace, path);
-}
 
 export interface FlatRow {
   key: string;
   values: Record<string, TranslationValue>;
   inherited?: Record<string, TranslationValue>;
+  overridden?: boolean;
+  overrides?: Record<string, TranslationValue>;
+  outdated?: string[];
+  /** Languages whose text has an issue (see {@link hasMessageIssue}); the base text is checked alone. */
+  issues?: string[];
 }
 
-export interface FlatResult {
-  defaultLocale: string;
-  locales: string[];
-  rows: FlatRow[];
+/** The figures of a workspace a write changes, sent back with the row it wrote. */
+export interface FlatCounts {
   localeProgress: Record<string, number>;
   localeMissing: Record<string, number>;
   totalKeys: number;
+  baseMissing: number;
+  incompleteKeys: number;
+}
+
+export interface FlatResult extends FlatCounts {
+  defaultLocale: string;
+  locales: string[];
+  rows: FlatRow[];
 }
 
 interface FlatContext {
@@ -166,32 +53,31 @@ interface FlatContext {
   locales: string[];
   presence: LocaleMessages;
   inherited?: LocaleMessages;
+  overrides?: LocaleMessages;
+  sources?: TranslationSources;
 }
 
-function ownFlatContext(
-  _workspace: string,
-  fallbackDefaultLocale: string,
-): FlatContext {
+/** The keys of a workspace: the union of its language files, the base language first. */
+function keysOf(context: FlatContext): Record<string, unknown> {
+  const { [context.defaultLocale]: base, ...others } = context.presence;
+  return deepMerge(base ?? {}, unionKeys(others));
+}
+
+function ownFlatContext(): FlatContext {
   return {
-    defaultLocale: fallbackDefaultLocale,
+    defaultLocale: projectBaseLocale(),
     locales: getLocaleCodes("own"),
     presence: loadMessages("own"),
     inherited: loadMessages("external"),
   };
 }
 
-function modulesFlatContext(
-  _workspace: string,
-  fallbackDefaultLocale: string,
-): FlatContext {
-  const external = loadMessages("external");
-  const defaultLocale = external[fallbackDefaultLocale]
-    ? fallbackDefaultLocale
-    : (Object.keys(external)[0] ?? fallbackDefaultLocale);
+function modulesFlatContext(): FlatContext {
   return {
-    defaultLocale,
+    defaultLocale: modulesBaseLocale(),
     locales: getLocaleCodes("external"),
-    presence: external,
+    presence: loadMessages("external"),
+    overrides: loadMessages("own"),
   };
 }
 
@@ -201,17 +87,20 @@ function addedFlatContext(workspace: string): FlatContext {
     defaultLocale: manifest.defaultLocale,
     locales: manifest.locales.map((locale) => locale.code),
     presence: loadWorkspaceMessages(workspace),
+    sources: manifest.sources,
   };
 }
 
-const FLAT_CONTEXTS: Record<
-  WorkspaceKind,
-  (workspace: string, fallbackDefaultLocale: string) => FlatContext
-> = {
-  default: ownFlatContext,
-  modules: modulesFlatContext,
-  added: addedFlatContext,
-};
+const FLAT_CONTEXTS: Record<WorkspaceKind, (workspace: string) => FlatContext> =
+  {
+    default: ownFlatContext,
+    modules: modulesFlatContext,
+    added: addedFlatContext,
+  };
+
+function contextOf(workspace: string): FlatContext {
+  return FLAT_CONTEXTS[workspaceKind(workspace)](workspace);
+}
 
 function valuesAtPath(
   messages: LocaleMessages,
@@ -226,114 +115,145 @@ function valuesAtPath(
   return values;
 }
 
-function computeLocaleMissing(
-  rows: FlatRow[],
-  locales: string[],
-  defaultLocale: string,
-): Record<string, number> {
-  const localeMissing: Record<string, number> = {};
-  for (const locale of locales) {
-    if (locale === defaultLocale) {
-      localeMissing[locale] = 0;
-      continue;
-    }
-    let missing = 0;
-    for (const row of rows) {
-      if (isMissing(row.values[locale])) missing += 1;
-    }
-    localeMissing[locale] = missing;
-  }
-  return localeMissing;
+function presentValues(
+  values: Record<string, TranslationValue>,
+): Record<string, TranslationValue> {
+  return Object.fromEntries(
+    Object.entries(values).filter(([, value]) => !isMissing(value)),
+  );
 }
 
-export function resolveFlat(
-  workspace: string,
-  fallbackDefaultLocale: string,
-): FlatResult {
-  const data = resolveTranslationData(workspace, fallbackDefaultLocale);
-  const context = FLAT_CONTEXTS[workspaceKind(workspace)](
-    workspace,
-    fallbackDefaultLocale,
+function addOverrides(row: FlatRow, context: FlatContext): void {
+  if (!context.overrides) return;
+  const overrides = presentValues(
+    valuesAtPath(context.overrides, context.locales, row.key),
   );
+  row.overridden = Object.keys(overrides).length > 0;
+  if (row.overridden) row.overrides = overrides;
+}
 
-  const rows: FlatRow[] = collectLeafPaths(data.tree).map((key) => {
-    const row: FlatRow = {
-      key,
-      values: valuesAtPath(context.presence, context.locales, key),
-    };
-    if (context.inherited) {
-      row.inherited = valuesAtPath(context.inherited, context.locales, key);
-    }
-    return row;
-  });
+function issueLocales(context: FlatContext, row: FlatRow): string[] {
+  const base = row.values[context.defaultLocale];
+  return context.locales.filter((locale) =>
+    hasMessageIssue(
+      locale === context.defaultLocale ? "" : base,
+      row.values[locale],
+    ),
+  );
+}
 
-  const localeMissing = computeLocaleMissing(
-    rows,
-    context.locales,
+function buildFlatRow(context: FlatContext, key: string): FlatRow {
+  const row: FlatRow = {
+    key,
+    values: valuesAtPath(context.presence, context.locales, key),
+  };
+  if (context.inherited) {
+    row.inherited = valuesAtPath(context.inherited, context.locales, key);
+  }
+  addOverrides(row, context);
+  const outdated = outdatedLocales(
+    context.sources,
+    context.presence,
     context.defaultLocale,
+    key,
   );
+  if (outdated.length > 0) row.outdated = outdated;
+  const issues = issueLocales(context, row);
+  if (issues.length > 0) row.issues = issues;
+  return row;
+}
 
+/**
+ * Whether the text of a language needs another look: it has an issue, or it
+ * was translated from an older base text. The rule of every "issues" count:
+ * the Language page's figures, its queue and the matrix filter.
+ */
+export function needsReview(row: FlatRow, locale: string): boolean {
+  return (
+    (row.issues?.includes(locale) ?? false) ||
+    (row.outdated?.includes(locale) ?? false)
+  );
+}
+
+export function isRowMissing(row: FlatRow, locale: string): boolean {
+  return isMissing(row.values[locale]) && isMissing(row.inherited?.[locale]);
+}
+
+function countMissing(rows: FlatRow[], locale: string): number {
+  return rows.filter((row) => isRowMissing(row, locale)).length;
+}
+
+function summarizeRows(context: FlatContext, rows: FlatRow[]): FlatResult {
+  const localeMissing: Record<string, number> = {};
+  const localeProgress: Record<string, number> = {};
+  for (const locale of context.locales) {
+    const missing = countMissing(rows, locale);
+    localeMissing[locale] = missing;
+    localeProgress[locale] = coveragePercent(
+      rows.length - missing,
+      rows.length,
+    );
+  }
+  const targets = context.locales.filter(
+    (locale) => locale !== context.defaultLocale,
+  );
   return {
     defaultLocale: context.defaultLocale,
     locales: context.locales,
     rows,
-    localeProgress: data.localeProgress,
+    localeProgress,
     localeMissing,
-    totalKeys: data.totalKeys,
+    totalKeys: rows.length,
+    baseMissing: localeMissing[context.defaultLocale] ?? 0,
+    incompleteKeys: rows.filter((row) =>
+      targets.some((locale) => isRowMissing(row, locale)),
+    ).length,
   };
 }
 
-export function resolveAggregatedFlat(
-  fallbackDefaultLocale: string,
-): FlatResult {
-  const ids = [
-    DEFAULT_WORKSPACE,
-    MODULES_WORKSPACE,
-    ...listWorkspaces().map((workspace) => workspace.id),
-  ];
-  const parts = ids.map((id) => resolveFlat(id, fallbackDefaultLocale));
+const STAMPED_FILES: Record<WorkspaceKind, (workspace: string) => string[]> = {
+  default: registryFiles,
+  modules: registryFiles,
+  added: workspaceFiles,
+};
 
-  const defaultLocale = parts[0]?.defaultLocale || fallbackDefaultLocale;
+function computeFlat(workspace: string): FlatResult {
+  const context = contextOf(workspace);
+  const rows = leafPaths(keysOf(context)).map((key) =>
+    buildFlatRow(context, key),
+  );
+  return summarizeRows(context, rows);
+}
 
-  const rows: FlatRow[] = [];
-  const expected: Record<string, number> = {};
-  const existing: Record<string, number> = {};
-  const localeMissing: Record<string, number> = {};
-  let totalKeys = 0;
+/**
+ * The rows of a workspace and their coverage; default and modules take the
+ * base language the server decides. Computed once, then kept until a write
+ * of the module or a change of its files on disk: every block of a page
+ * reads the same result. Shared: callers must not change it.
+ */
+export function resolveFlat(workspace: string): FlatResult {
+  const files = STAMPED_FILES[workspaceKind(workspace)](workspace);
+  return memoize(`flat:${workspace}`, filesStamp(files), () =>
+    computeFlat(workspace),
+  );
+}
 
-  for (const part of parts) {
-    totalKeys += part.totalKeys;
-    for (const row of part.rows) rows.push(row);
-    for (const locale of part.locales) {
-      const missing = part.localeMissing[locale] ?? 0;
-      expected[locale] = (expected[locale] ?? 0) + part.totalKeys;
-      existing[locale] = (existing[locale] ?? 0) + (part.totalKeys - missing);
-      localeMissing[locale] = (localeMissing[locale] ?? 0) + missing;
-    }
-  }
-
-  const localeProgress: Record<string, number> = {};
-  for (const locale of Object.keys(expected)) {
-    const expectedKeys = expected[locale] ?? 0;
-    localeProgress[locale] =
-      expectedKeys > 0
-        ? Math.round(
-            (existing[locale] / expectedKeys) * PROGRESS_PRECISION_FACTOR,
-          ) / FULL_PROGRESS
-        : 0;
-  }
-
-  if (defaultLocale) {
-    localeProgress[defaultLocale] = FULL_PROGRESS;
-    localeMissing[defaultLocale] = 0;
-  }
-
+/** The figures of a workspace a write changes. */
+export function flatCounts(workspace: string): FlatCounts {
+  const flat = resolveFlat(workspace);
   return {
-    defaultLocale,
-    locales: Object.keys(expected).sort(),
-    rows,
-    localeProgress,
-    localeMissing,
-    totalKeys,
+    localeProgress: flat.localeProgress,
+    localeMissing: flat.localeMissing,
+    totalKeys: flat.totalKeys,
+    baseMissing: flat.baseMissing,
+    incompleteKeys: flat.incompleteKeys,
   };
+}
+
+/** The current row of one key, as /flat lists it (`undefined` once the key is gone). */
+export function resolveRow(
+  workspace: string,
+  key: string,
+): FlatRow | undefined {
+  return resolveFlat(workspace).rows.find((row) => row.key === key);
 }

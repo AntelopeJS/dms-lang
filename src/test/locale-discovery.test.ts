@@ -3,7 +3,10 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { expect } from "chai";
 import type { AddFrontendModuleOptions } from "@antelopejs/interface-dms/page";
-import { discoverLocaleRegistry } from "../utils/locale-discovery";
+import {
+  discoverLocaleRegistry,
+  localeDirectories,
+} from "../utils/locale-discovery";
 
 describe("[unit] Vue locale discovery", () => {
   let directory: string;
@@ -63,5 +66,19 @@ describe("[unit] Vue locale discovery", () => {
     ]);
     rmSync(path);
     expect(discoverLocaleRegistry(modules)).to.deep.equal({});
+  });
+
+  it("lists the locales folders a new file lands in, missing ones included", () => {
+    localeFile("app/i18n/locales/nested/app-fr-FR.json");
+    localeFile("dms/layers/core/i18n/locales/core-en-GB.json");
+    mkdirSync(join(directory, "dms/layers/empty"), { recursive: true });
+    expect(
+      localeDirectories([module("app", true), module("dms")]),
+    ).to.deep.equal([
+      join(directory, "app/i18n/locales"),
+      join(directory, "app/i18n/locales/nested"),
+      join(directory, "dms/layers/core/i18n/locales"),
+      join(directory, "dms/layers/empty/i18n/locales"),
+    ]);
   });
 });

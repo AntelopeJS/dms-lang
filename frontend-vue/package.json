@@ -7,7 +7,7 @@
   "license": "Apache-2.0",
   "packageManager": "pnpm@10.6.5",
   "engines": {
-    "@antelopejs/dms-frontend": ">=0.2.8 <0.4.0"
+    "@antelopejs/dms-frontend": ">=0.5.2 <0.6.0"
   },
   "scripts": {
     "build": "ajs dms build",
@@ -17,15 +17,13 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
-  "dependencies": {
-    "@vueuse/core": "^14.3.0"
-  },
   "devDependencies": {
-    "@antelopejs/core": "1.13.4",
-    "@antelopejs/dms-frontend": "0.3.2",
+    "@antelopejs/core": "1.14.0",
+    "@antelopejs/dms-frontend": "0.5.2",
     "@eslint/js": "^9",
     "@typescript-eslint/eslint-plugin": "^8",
     "@typescript-eslint/parser": "^8",
+    "@vueuse/core": "^14.4.0",
     "eslint": "^9",
     "eslint-plugin-vue": "^9",
     "globals": "^15",
@@ -36,6 +34,10 @@
   },
   "peerDependencies": {
     "@nuxt/ui": "4.10.0",
+    "@vueuse/core": "^14.4.0",
     "vue": "^3.5.0"
+  },
+  "dependencies": {
+    "@intlify/message-compiler": "^11.1.12"
   }
 }

@@ -1,21 +1,114 @@
-import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
+import { Banner } from "@antelopejs/interface-dms/base/banner";
 import { CustomComponent } from "@antelopejs/interface-dms/base/custom";
+import { Grid, GridRow } from "@antelopejs/interface-dms/base/grid";
+import { KeyValueList } from "@antelopejs/interface-dms/base/key-value-list";
+import { StatGroup } from "@antelopejs/interface-dms/base/stat-group";
+import { VStack } from "@antelopejs/interface-dms/base/stack";
 import { DefaultLayout } from "@antelopejs/interface-dms/base/layouts";
+import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
+import { addLanguageButton } from "./header-actions";
+import { manageLanguagesAction } from "./actions";
+import { languagesTable } from "./languages-table";
+import { workspaceGuard } from "./workspace-guard";
+import {
+  followTranslations,
+  LANG_MODULE_ID,
+  LANG_REALTIME_TOPIC,
+  translateCategory,
+} from "./module";
+import { LANG_API, PERMISSION_TEXTS } from "../utils/constants";
+
+const PAGE_ID = "overview";
+const TEXTS = `${PERMISSION_TEXTS}.overview`;
+const SIDE_GAP = "1rem";
+const MIN_COLUMN_WIDTH = "320px";
+const LANGUAGES_SPAN = 2;
+const KPI_COUNT = 4;
+const ENDPOINT_ROWS = 2;
+const API = LANG_API;
+
+const languages = languagesTable(manageLanguagesAction).meta({
+  name: `${TEXTS}.languages`,
+  description: `${TEXTS}.languages_description`,
+  icon: "i-ph-list-numbers",
+});
+
+const namespaces = CustomComponent("DmsLangNamespaceCoverage").meta({
+  name: `${TEXTS}.namespaces`,
+  description: `${TEXTS}.namespaces_description`,
+  icon: "i-ph-squares-four",
+});
+
+const endpoint = KeyValueList({
+  title: "$dms_lang.endpoint.title",
+  fetchUrl: `${LANG_API}/endpoint?workspace={{query.workspace}}`,
+  realtimeTopic: LANG_REALTIME_TOPIC,
+  skeletonCount: ENDPOINT_ROWS,
+}).meta({
+  name: `${TEXTS}.endpoint`,
+  description: `${TEXTS}.endpoint_description`,
+  icon: "i-ph-plugs",
+});
+
+const side = VStack({ alignment: "stretch", spacing: SIDE_GAP })
+  .meta({ name: `${TEXTS}.side`, icon: "i-ph-sidebar-simple" })
+  .child("namespaces", namespaces)
+  .child("endpoint", endpoint);
+
+const notice = Banner({
+  fetchUrl: `${API}/notice?workspace={{query.workspace}}&page=${PAGE_ID}`,
+  realtimeTopic: LANG_REALTIME_TOPIC,
+}).meta({
+  name: `${TEXTS}.notice`,
+  description: `${TEXTS}.notice_description`,
+  icon: "i-ph-info",
+});
+
+const kpis = StatGroup({
+  layout: "cards",
+  label: "$dms_lang.kpis.label",
+  fetchUrl: `${API}/kpis?workspace={{query.workspace}}`,
+  realtimeTopic: LANG_REALTIME_TOPIC,
+  skeletonCount: KPI_COUNT,
+}).meta({
+  name: `${TEXTS}.kpis`,
+  description: `${TEXTS}.kpis_description`,
+  icon: "i-ph-chart-bar",
+});
+
+const content = Grid({ gap: SIDE_GAP, minColumnWidth: MIN_COLUMN_WIDTH })
+  .meta({ name: `${TEXTS}.content`, icon: "i-ph-layout" })
+  .child(
+    "main",
+    GridRow()
+      .meta({ name: `${TEXTS}.content`, icon: "i-ph-rows" })
+      .child("languages", languages, { colSpan: LANGUAGES_SPAN })
+      .child("side", side),
+  );
 
 @RegisterPage()
 export class LangOverviewController extends PageController(
-  "overview",
+  PAGE_ID,
   {
     displayName: "$dms_lang.overview.title",
-    module: "lang",
-    icon: "i-ph-gauge",
     description: "$dms_lang.overview.description",
+    module: LANG_MODULE_ID,
+    category: translateCategory,
+    icon: "i-ph-gauge",
     order: 0,
   },
-  DefaultLayout({ fullWidth: true }),
+  DefaultLayout({ headerActions: [addLanguageButton(manageLanguagesAction)] }),
 ) {
-  static overviewComponent = CustomComponent("DmsLangOverview").meta({
-    name: "$dms_lang.overview.title",
-    icon: "i-ph-gauge",
+  static scope = CustomComponent("DmsLangWorkspaceScope").meta({
+    name: `${PERMISSION_TEXTS}.scope`,
+    description: `${PERMISSION_TEXTS}.scope_description`,
+    icon: "i-ph-stack",
   });
+
+  static scoped = workspaceGuard()
+    .child("notice", notice)
+    .child("kpis", kpis)
+    .child("content", content);
 }
+
+followTranslations(translateCategory, PAGE_ID);
