@@ -348,7 +348,8 @@ function languagesLabel(count: number): string {
   return t('dms_lang.matrix.languages_counted', { count }, count)
 }
 
-usePageHeaderActions(() => [
+usePageHeaderActions(
+  () => [
   h(
     UDropdownMenu,
     {
@@ -382,14 +383,9 @@ usePageHeaderActions(() => [
         disabled: !isLoaded.value,
       }),
   ),
-  canManageKeys.value
-    ? h(UButton, {
-        label: t('dms_lang.key_add.title'),
-        icon: 'i-ph-plus',
-        onClick: () => addKey(),
-      })
-    : null,
-])
+],
+  { order: -1 },
+)
 
 watch(
   () => [filters.value, selectedWorkspace.value],

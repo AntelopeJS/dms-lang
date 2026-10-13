@@ -26,8 +26,7 @@ const { data } = useChartFetch<NamespaceMatrix>({
 })
 const { formatCount } = useLangFormat()
 const links = useLangLinks()
-const { isResolved, isUnknown, canManage, allows } = useWorkspaceContext()
-const { addLanguage } = useLanguageActions()
+const { isResolved, isUnknown } = useWorkspaceContext()
 const { nameAmong } = useLocaleNames()
 const isFirstRun = useFirstRun()
 
@@ -82,15 +81,6 @@ const gridTemplate = computed(
 )
 
 usePageHeaderActions(() => [
-  canManage.value && allows('manageLanguages')
-    ? h(UButton, {
-        label: t('dms_lang.languages.add'),
-        icon: 'i-ph-plus',
-        color: 'neutral',
-        variant: 'outline',
-        onClick: () => addLanguage(),
-      })
-    : null,
   isResolved.value && neediestMissing.value
     ? h(UButton, {
         label: t(

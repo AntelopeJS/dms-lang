@@ -1,6 +1,9 @@
 import { CustomComponent } from "@antelopejs/interface-dms/base/custom";
 import { StatGroup } from "@antelopejs/interface-dms/base/stat-group";
+import { DefaultLayout } from "@antelopejs/interface-dms/base/layouts";
 import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
+import { requireAction } from "./component-action";
+import { newWorkspaceButton } from "./header-actions";
 import { followTranslations, LANG_MODULE_ID, manageCategory } from "./module";
 import { PERMISSION_TEXTS } from "../utils/constants";
 
@@ -26,14 +29,24 @@ export const workspaceList = CustomComponent("DmsLangWorkspaceList")
   });
 
 @RegisterPage()
-export class LangWorkspacesController extends PageController(PAGE_ID, {
-  displayName: "$dms_lang.workspaces.title",
-  description: "$dms_lang.workspaces.description",
-  module: LANG_MODULE_ID,
-  category: manageCategory,
-  icon: "i-ph-stack",
-  order: 0,
-}) {
+export class LangWorkspacesController extends PageController(
+  PAGE_ID,
+  {
+    displayName: "$dms_lang.workspaces.title",
+    description: "$dms_lang.workspaces.description",
+    module: LANG_MODULE_ID,
+    category: manageCategory,
+    icon: "i-ph-stack",
+    order: 0,
+  },
+  DefaultLayout({
+    headerActions: [
+      newWorkspaceButton(
+        requireAction(workspaceList, WORKSPACE_LIST_ACTIONS.create),
+      ),
+    ],
+  }),
+) {
   static kinds = StatGroup({
     layout: "joined",
     label: `${KINDS}.label`,

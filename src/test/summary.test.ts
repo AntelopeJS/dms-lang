@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect } from "chai";
 import { GetApiBaseUrl } from "@antelopejs/interface-dms/api-base-url";
+import type { CustomButton } from "@antelopejs/interface-dms/base/types/custom-button";
 import { AddFrontendModule } from "@antelopejs/interface-dms/page";
 import {
   createWorkspaceAction,
@@ -12,7 +13,12 @@ import {
   manageLanguagesAction,
   renameWorkspaceAction,
 } from "../pages/actions";
-import { OPEN_OVERVIEW_BUTTON } from "../pages/header-actions";
+import {
+  addKeyButton,
+  addLanguageButton,
+  newWorkspaceButton,
+  OPEN_OVERVIEW_BUTTON,
+} from "../pages/header-actions";
 import { workspaceGuard } from "../pages/workspace-guard";
 import { findWorkspace, listAllWorkspaces } from "../utils/catalog";
 import {
@@ -175,6 +181,52 @@ function describeBlockRoutes(): void {
   });
 }
 
+function availabilityOf(button: CustomButton, workspace?: string) {
+  return button.availability?.({
+    tenantId: "",
+    user: undefined,
+    query: workspace === undefined ? {} : { workspace },
+  });
+}
+
+function describeHeaderActions(): void {
+  const hidden = { hidden: true };
+
+  it("hides the header writes the workspace of the URL refuses", async () => {
+    const addKey = addKeyButton(manageKeysAction);
+    expect(await availabilityOf(addKey, WORKSPACE)).to.equal(undefined);
+    expect(await availabilityOf(addKey, "modules")).to.deep.equal(hidden);
+    expect(await availabilityOf(addKey, "nope")).to.deep.equal(hidden);
+    const addLanguage = addLanguageButton(manageLanguagesAction);
+    expect(await availabilityOf(addLanguage, WORKSPACE)).to.equal(undefined);
+    expect(await availabilityOf(addLanguage)).to.deep.equal(hidden);
+  });
+
+  it("hides every header write on a read-only server", async () => {
+    const config = getTranslationConfig();
+    setTranslationConfig({ ...config, editable: false });
+    try {
+      const newWorkspace = newWorkspaceButton(createWorkspaceAction);
+      expect(await availabilityOf(newWorkspace)).to.deep.equal(hidden);
+      expect(
+        await availabilityOf(addKeyButton(manageKeysAction), WORKSPACE),
+      ).to.deep.equal(hidden);
+    } finally {
+      setTranslationConfig(config);
+    }
+    expect(
+      await availabilityOf(newWorkspaceButton(createWorkspaceAction)),
+    ).to.equal(undefined);
+  });
+
+  it("points the header links at the workspace of the URL", () => {
+    const url = (addKeyButton(manageKeysAction).target as PageTarget).url;
+    expect(url).to.include("workspace={{query.workspace}}");
+    expect(url).to.include("q={{query.q}}");
+    expect(url).to.match(/action=add-key$/);
+  });
+}
+
 describe("[integration] workspace summary, export and overrides", () => {
   let directory: string;
   let previous: TranslationConfig;
@@ -286,4 +338,5 @@ describe("[integration] workspace summary, export and overrides", () => {
     ]);
   });
   describeBlockRoutes();
+  describeHeaderActions();
 });
