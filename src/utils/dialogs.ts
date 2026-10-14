@@ -15,7 +15,7 @@ import { type FlatResult, isRowMissing, resolveFlat } from "./resolve";
 
 const LISTED_KEYS = 20;
 const SHOWN_KEYS = 5;
-const LANGUAGE_FILE = "{code}.json";
+const LANGUAGE_FILE = "{{row.code}}.json";
 
 /** Saves the file of the language before it goes, from the public route. */
 const DOWNLOAD_LANGUAGE: ConfirmDialogSecondaryAction = {
@@ -23,7 +23,7 @@ const DOWNLOAD_LANGUAGE: ConfirmDialogSecondaryAction = {
   icon: "i-ph-download-simple",
   target: {
     type: "download",
-    url: `${PUBLIC_PATH}/{workspace}/${LANGUAGE_FILE}`,
+    url: `${PUBLIC_PATH}/{{row.workspace}}/${LANGUAGE_FILE}`,
     filename: LANGUAGE_FILE,
   },
 };

@@ -16,7 +16,7 @@ const BASE = { field: "isBase", equals: true };
 const EDITABLE_BASE = { and: [BASE, { field: "canEdit", equals: true }] };
 const TARGET = { field: "isBase", equals: false };
 const MANAGEABLE = { and: [TARGET, { field: "canManage", equals: true }] };
-const LANGUAGE_URL = `${LANG_API}/languages/{workspace}/{code}`;
+const LANGUAGE_URL = `${LANG_API}/languages/{{row.workspace}}/{{row.code}}`;
 
 const columns = {
   name: {
@@ -57,7 +57,7 @@ const PAGE_LINKS: CustomRowAction[] = [
     icon: "i-ph-translate",
     target: {
       type: "page",
-      url: `${PAGES_URL}/language?workspace={workspace}&locale={code}`,
+      url: `${PAGES_URL}/language?workspace={{row.workspace}}&locale={{row.code}}`,
     },
     rule: TARGET,
     isVisible: true,
@@ -70,7 +70,7 @@ const PAGE_LINKS: CustomRowAction[] = [
     icon: "i-ph-table",
     target: {
       type: "page",
-      url: `${PAGES_URL}/translations?workspace={workspace}`,
+      url: `${PAGES_URL}/translations?workspace={{row.workspace}}`,
     },
     rule: EDITABLE_BASE,
     isVisible: true,
