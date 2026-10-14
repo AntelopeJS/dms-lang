@@ -5,6 +5,7 @@ import { defineConfig } from "@antelopejs/interface-core/config";
 import { MongoMemoryReplSet } from "mongodb-memory-server-core";
 
 const API_PORT = 5021;
+const LOCAL_BUILD_COMMAND = process.env.DMS_PREBUILT ? [] : ["pnpm build"];
 const JWT_SECRET = "test-jwt-secret";
 const MONGO_BINARY_VERSION = "8.0.8";
 
@@ -24,7 +25,7 @@ export default defineConfig({
       source: {
         type: "local",
         path: ".",
-        installCommand: ["pnpm build"],
+        installCommand: LOCAL_BUILD_COMMAND,
       },
       config: {},
     },
