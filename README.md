@@ -6,19 +6,11 @@
 <a href="https://antelopejs.com"><img src="https://img.shields.io/badge/Docs-18181B?style=for-the-badge&color=000000" alt="Documentation"></a>
 </div>
 
-Language and translation management for AntelopeJS DMS, available under `/modules/lang`.
+Language and translation management for the AntelopeJS DMS, available under `/modules/lang`: coverage at a glance, a translation matrix, a per-language translation queue, and translation workspaces served publicly to your other apps.
 
-It provides, under two sidebar groups:
+![The Lang overview](./docs/images/overview.png)
 
-- **Translate › Overview**: the coverage of each language of the selected workspace, a namespace × language heatmap and the public locale endpoint.
-- **Translate › Translations**: a key-by-language matrix with per-cell save state, placeholder checks, "Missing in" and namespace filters, a key editor drawer and CSV export.
-- **Language** (opened from Overview): a translation queue for one language, with its progress by namespace.
-- **Manage › Workspaces**: every workspace with its kind, size and coverage, and the creation of new ones.
-- **Workspace settings** (opened from Workspaces): name, base language, languages, ready-to-paste app snippets and a danger zone.
-
-Every page names the workspace it works on in a scope bar, which also switches it; the selection is kept in the page URL (`?workspace=`). The command palette offers Translate missing keys, Add a translation key, Add a language and New translation workspace.
-
-Write routes check the permission of the page action they belong to (`modules.lang.translate.translations.scoped.matrix.edit`, `….keys`, `modules.lang.manage.workspaces.list.create`, …); module pages stay owner-only, as every DMS module.
+**Documentation: [dms.antelopejs.com/docs/modules/lang](https://dms.antelopejs.com/docs/modules/lang)** (sources in [`docs/`](./docs)).
 
 ## Installation
 
@@ -28,20 +20,11 @@ Add the module to a project that already uses `@antelopejs/dms`:
 ajs project modules add @antelopejs/dms-lang
 ```
 
-## Configuration
+Writes are disabled by default; set `editable: true` in the module's `config` to allow them. See [Configuration](https://dms.antelopejs.com/docs/modules/lang/configuration).
 
-Workspace mutations are disabled by default. Enable them explicitly in `antelope.config.ts` when
-the running process should be allowed to create, rename, and delete workspaces, locales, keys, and
-translations:
+## Claude Code skill
 
-```typescript
-config: {
-  editable: true,
-}
-```
-
-Added workspaces are stored in the module's `i18n-workspaces` directory. The module also registers
-its bundled locale source and registry as a DMS frontend module.
+The package ships the `dms-lang` skill in [`skills/`](./skills), declared in `package.json` under `antelopeJs.skills`.
 
 ## Development
 
@@ -60,9 +43,3 @@ Its pages read the data they render with the DMS's `useApiData`, which a server 
 `pnpm test:unit` checks locale discovery, the coverage, placeholder and message helpers of the frontend and the locale files, and renders the workspace composables on a server with the installed adapter and `useApiData` (`tests/frontend-runtime.mjs`). The backend tests (`src/test`: keys, workspaces, validation, coverage, summaries) run with `pnpm test` only: every backend file reaches an AntelopeJS interface (`@antelopejs/interface-api` for the errors, `@antelopejs/interface-dms` for the pages), and an interface refuses to load outside the AntelopeJS runtime. `pnpm test:frontend` compiles the module alongside the published core DMS frontend with the adapter's source verifier.
 
 Run `pnpm dev` for the backend and `pnpm frontend:dev` for the Inertia workspace. The playground connects to MongoDB at `mongodb://localhost:27017`; set `MONGO_URL` to use another instance. The frontend workspace uses the `ajs dms` commands for development, preparation and production builds. Use `pnpm typecheck` for the backend; run `pnpm typecheck` in the generated Vite workspace for frontend types. The adapter owns the generated aliases, auto-import declarations and Vue compiler configuration.
-
-## Locale sources no longer require a frontend build
-
-At module startup, Lang obtains the registered frontend sources through `GetFrontendModules()`, after backend construction completes. Each translation read discovers JSON files under `i18n/locales`, including the DMS's nested `layers/*` directories. Files follow the adapter convention, such as `app-en-GB.json` and `lang-fr-FR.json`. Changes to files appear on subsequent reads; registering another frontend module requires restarting the backend.
-
-Module translations remain external and read-only. An application's frontend registration marks its own writable translations with `options: { dmsI18nAppLayer: true }`, replacing the same flag in its old Nuxt configuration. The playground demonstrates this registration. Editing also requires the existing Lang `editable: true` setting. No locale path list or generated registry file is required.
