@@ -131,8 +131,8 @@ function describeBlockRoutes(): void {
     expect(dialog.params?.code).to.equal("it-IT");
     expect(dialog.secondaryAction?.target).to.deep.equal({
       type: "download",
-      url: "/i18n/{workspace}/{code}.json",
-      filename: "{code}.json",
+      url: "/i18n/{{row.workspace}}/{{row.code}}.json",
+      filename: "{{row.code}}.json",
     });
     const endpoint = workspaceEndpoint(WORKSPACE, ORIGIN);
     expect(endpoint.items[0]).to.include({

@@ -75,7 +75,7 @@ async function download(
   })
   const objectUrl = URL.createObjectURL(response._data ?? new Blob([]))
   try {
-    downloadFile(objectUrl, fillLiteral(target.filename ?? '', params))
+    downloadFile(objectUrl, interpolateRowText(target.filename ?? '', params))
   } finally {
     URL.revokeObjectURL(objectUrl)
   }
