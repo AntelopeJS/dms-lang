@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.1.1
+
+[compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.1.0...v0.1.1)
+
+### 📦 Build
+
+- **deps:** Bump @antelopejs/dms to 0.8.0 and interface-dms to 0.6.0 ([#30](https://github.com/AntelopeJS/dms-lang/pull/30))
+
+### 🤖 CI
+
+- Speed up pipeline ([#29](https://github.com/AntelopeJS/dms-lang/pull/29))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli <rizzitelli.antony@pm.me>
+
 ## v0.1.0
 
 [compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.0.7...v0.1.0)
