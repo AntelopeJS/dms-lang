@@ -86,23 +86,10 @@ function useWorkspacesState() {
   const lastWorkspace = useLastWorkspace()
   return {
     lastWorkspace,
-    workspaces: useDmsState<ScopedWorkspace[]>(
-      'dms-lang-workspaces',
-      () => [],
-    ),
-    editable: useDmsState<boolean>('dms-lang-workspaces-editable', () => false),
-    permissions: useDmsState<WorkspacePermissionIds | null>(
-      'dms-lang-workspaces-permissions',
-      () => null,
-    ),
-    publicBaseUrl: useDmsState<string>('dms-lang-public-base-url', () => ''),
-    isLoading: useDmsState<boolean>('dms-lang-workspaces-loading', () => false),
-    isLoaded: useDmsState<boolean>('dms-lang-workspaces-loaded', () => false),
     selectedWorkspace: useDmsState<string>(
       'dms-lang-selected-workspace',
       () => lastWorkspace.value || DEFAULT_WORKSPACE,
     ),
-    requestSeq: useDmsState<number>('dms-lang-workspaces-seq', () => 0),
   }
 }
 
@@ -175,7 +162,6 @@ function useWorkspaceWrites() {
 function useWorkspaceReads() {
   const { $authFetch } = useAuthFetch()
   return {
-    fetchSummary: () => $authFetch<SummaryResponse>(ENDPOINTS.summary),
     fetchBackup: (workspace: string) =>
       $authFetch<WorkspaceBackup>(ENDPOINTS.backup, { query: { workspace } }),
     fetchFlat: (workspace: string) =>
@@ -185,42 +171,46 @@ function useWorkspaceReads() {
   }
 }
 
+/** The workspaces with their figures, for the workspace list page. */
+export const useWorkspaceSummary = () =>
+  useApiData<SummaryResponse>(ENDPOINTS.summary)
+
 /**
  * The workspaces of the module, the one selected for every page, and the
- * routes that read and change them. The selection follows the page URL
- * (`?workspace=`, see useWorkspaceRoute): a workspace the URL names but the
- * list lacks stays selected, so the page can say it does not exist.
+ * routes that read and change them. The list is read with the page, once for
+ * every block showing it: a server render hands it to the browser. The
+ * selection follows the page URL (`?workspace=`, see useWorkspaceRoute): a
+ * workspace the URL names but the list lacks stays selected, so the page can
+ * say it does not exist.
  */
 export const useI18nWorkspaces = () => {
-  const { $authFetch } = useAuthFetch()
   const state = useWorkspacesState()
+  const list = useApiData<WorkspacesResponse>(ENDPOINTS.workspaces)
+  const workspaces = computed(() => list.data.value?.workspaces ?? [])
 
   function canUseWorkspaceId(id: string): boolean {
     return (
       isValidWorkspaceId(id) &&
-      !state.workspaces.value.some((workspace) => workspace.id === id)
+      !workspaces.value.some((workspace) => workspace.id === id)
     )
-  }
-
-  function applyResponse(response: WorkspacesResponse): void {
-    state.editable.value = response.editable
-    state.workspaces.value = response.workspaces
-    state.permissions.value = response.permissions
-    state.publicBaseUrl.value = response.publicBaseUrl
-    state.isLoaded.value = true
   }
 
   /** Takes the figures a key write answered into the workspace list (the scope bar). */
   function patchCounts(id: string, counts: FlatCounts): void {
-    state.workspaces.value = state.workspaces.value.map((workspace) =>
-      workspace.id === id
-        ? {
-            ...workspace,
-            totalKeys: counts.totalKeys,
-            baseMissing: counts.baseMissing,
-          }
-        : workspace,
-    )
+    const current = list.data.value
+    if (!current) return
+    list.data.value = {
+      ...current,
+      workspaces: current.workspaces.map((workspace) =>
+        workspace.id === id
+          ? {
+              ...workspace,
+              totalKeys: counts.totalKeys,
+              baseMissing: counts.baseMissing,
+            }
+          : workspace,
+      ),
+    }
   }
 
   /** Remembers the workspace a page without `?workspace=` opens on (a new tab, a menu link). */
@@ -228,32 +218,21 @@ export const useI18nWorkspaces = () => {
     if (state.lastWorkspace.value !== id) state.lastWorkspace.value = id
   }
 
+  /** Reads the list again, after a write or a change heard from elsewhere. */
   async function fetchWorkspaces(): Promise<ScopedWorkspace[]> {
-    state.requestSeq.value += 1
-    const sequence = state.requestSeq.value
-    state.isLoading.value = true
-    try {
-      const response = await $authFetch<WorkspacesResponse>(
-        ENDPOINTS.workspaces,
-      )
-      if (sequence !== state.requestSeq.value) return state.workspaces.value
-      applyResponse(response)
-      return state.workspaces.value
-    } catch {
-      return state.workspaces.value
-    } finally {
-      if (sequence === state.requestSeq.value) state.isLoading.value = false
-    }
+    await list.refresh()
+    return workspaces.value
   }
 
   return {
-    workspaces: state.workspaces,
-    editable: state.editable,
-    permissions: readonly(state.permissions),
-    publicBaseUrl: readonly(state.publicBaseUrl),
+    workspaces,
+    editable: computed(() => list.data.value?.editable ?? false),
+    permissions: computed(() => list.data.value?.permissions ?? null),
+    publicBaseUrl: computed(() => list.data.value?.publicBaseUrl ?? ''),
     selectedWorkspace: state.selectedWorkspace,
-    isLoading: readonly(state.isLoading),
-    isLoaded: readonly(state.isLoaded),
+    isLoading: computed(() => list.pending.value),
+    /** The list was read once: the page can tell a workspace it lacks. */
+    isLoaded: computed(() => list.data.value !== null),
     fetchWorkspaces,
     patchCounts,
     canUseWorkspaceId,
