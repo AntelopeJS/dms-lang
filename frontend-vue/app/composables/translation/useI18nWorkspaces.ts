@@ -244,6 +244,10 @@ export const useI18nWorkspaces = () => {
     isLoading: computed(() => list.pending.value),
     /** The list was read once: the page can tell a workspace it lacks. */
     isLoaded: computed(() => list.data.value !== null),
+    /** Resolves once the list was read: what a server render waits for. */
+    whenLoaded: async (): Promise<void> => {
+      await list
+    },
     fetchWorkspaces,
     patchCounts,
     patchSummary,

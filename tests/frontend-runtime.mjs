@@ -156,6 +156,7 @@ export async function serverRender(setup, { url = "/", respond } = {}) {
   return {
     html,
     payload,
+    redirect: runtime.serverRedirect,
     reads: made,
     untransferred: made.filter((read) => !transferred.includes(read)),
   };
