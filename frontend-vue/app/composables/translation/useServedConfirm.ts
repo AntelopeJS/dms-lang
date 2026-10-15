@@ -40,7 +40,7 @@ type ConfirmRun = () => Promise<unknown>
 
 type Params = Record<string, unknown>
 
-/** What resolving and running a served dialog needs from the DMS. */
+/** What resolving a served dialog and running its download needs from the DMS. */
 interface ServedContext {
   t: ReturnType<typeof useI18n>['t']
   authFetch: ReturnType<typeof useAuthFetch>['$authFetch']
@@ -117,6 +117,30 @@ function confirmOptionsOf(context: ServedContext, dialog: ServedDialog) {
 }
 
 /**
+ * Reads the dialog a route serves, once an action asks: a dialog reads
+ * what it shows when it opens. `null` once the read failed, said in a toast.
+ */
+function useServedDialog() {
+  const url = ref<string | null>(null)
+  const read = useApiData<ServedDialog>(url, {
+    immediate: false,
+    server: false,
+    refreshOnPageRefresh: false,
+  })
+  const { reportFailure } = useMutationToast()
+
+  return async (from: string): Promise<ServedDialog | null> => {
+    url.value = from
+    await read.execute({ dedupe: 'defer' })
+    if (read.error.value) {
+      reportFailure(read.error.value)
+      return null
+    }
+    return read.data.value
+  }
+}
+
+/**
  * Asks with the dialog the server words for an action (the one a table row
  * action asks with, through `confirm: { from }`), so the action asks the
  * same question wherever it starts: its texts, its impact, the code to type
@@ -128,16 +152,7 @@ export function useServedConfirm() {
     authFetch: useAuthFetch().$authFetch,
   }
   const { confirm } = useConfirm()
-  const { reportFailure } = useMutationToast()
-
-  async function loadDialog(url: string): Promise<ServedDialog | null> {
-    try {
-      return await context.authFetch<ServedDialog>(url)
-    } catch (error) {
-      reportFailure(error)
-      return null
-    }
-  }
+  const loadDialog = useServedDialog()
 
   return async (url: string, run: ConfirmRun): Promise<boolean> => {
     const dialog = await loadDialog(url)

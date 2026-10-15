@@ -68,7 +68,12 @@ registerHooks({
         },
       },
     );
-    return { format: "module", source: outputText, shortCircuit: true };
+    // Vite's build flags, which the test sets per side.
+    const source = outputText.replaceAll(
+      "import.meta.env",
+      "globalThis.__VITE_ENV__",
+    );
+    return { format: "module", source, shortCircuit: true };
   },
 });
 
@@ -95,8 +100,9 @@ Object.assign(globalThis, {
         method: (options.method ?? "GET").toUpperCase(),
         query: options.query ?? {},
       };
-      reads.push(read);
-      return backend(read);
+      const response = await Promise.resolve(backend(read));
+      reads.push({ ...read, response });
+      return response;
     },
   }),
 });
@@ -109,14 +115,20 @@ export const frontend = (path) =>
     ).href
   );
 
-/** The requests the payload carries the responses of. */
-function transferredRequests(payload) {
-  return Object.keys({ ...payload.data, ...payload.errors })
-    .filter((key) => key.startsWith("$dmsfetch:"))
-    .map((key) => {
-      const [method, , url] = JSON.parse(key.slice("$dmsfetch:".length));
-      return `${method} ${url}`;
-    });
+/**
+ * The requests the payload carries the responses of. The renderer keys a
+ * request by a digest the page does not reveal, so a request is matched by
+ * its response.
+ */
+function transferredRequests(payload, answered) {
+  const carried = new Set(
+    Object.values({ ...payload.data, ...payload.errors }).map((value) =>
+      JSON.stringify(value),
+    ),
+  );
+  return answered
+    .filter(({ response }) => carried.has(JSON.stringify(response)))
+    .map(({ request }) => request);
 }
 
 /**
@@ -127,6 +139,7 @@ function transferredRequests(payload) {
 export async function serverRender(setup, { url = "/", respond } = {}) {
   backend = respond ?? (() => ({}));
   reads.length = 0;
+  globalThis.__VITE_ENV__ = { SSR: true };
   const runtime = engine.createDmsFrontendRuntime(undefined, {}, true);
   runtime.route.fullPath = url;
   const app = vue.createSSRApp({ setup: () => setup() });
@@ -134,14 +147,35 @@ export async function serverRender(setup, { url = "/", respond } = {}) {
   app.config.warnHandler = () => {};
   const html = await renderToString(app);
   const payload = engine.serializeDmsPayload(runtime);
-  const made = reads.map((read) => `${read.method} ${read.url}`);
-  const transferred = transferredRequests(payload);
+  const answered = reads.map((read) => ({
+    request: `${read.method} ${read.url}`,
+    response: read.response,
+  }));
+  const made = answered.map(({ request }) => request);
+  const transferred = transferredRequests(payload, answered);
   return {
     html,
     payload,
     reads: made,
     untransferred: made.filter((read) => !transferred.includes(read)),
   };
+}
+
+/**
+ * Runs `setup` in a browser's runtime, as a component's setup does, with no
+ * server render before it, answering each backend request with `respond`.
+ * `reads` lists the requests made so far, with their query.
+ */
+export function browserRun(setup, { respond } = {}) {
+  backend = respond ?? (() => ({}));
+  reads.length = 0;
+  globalThis.__VITE_ENV__ = { SSR: false };
+  const runtime = engine.createDmsFrontendRuntime(undefined, undefined, false);
+  const app = vue.createApp({});
+  engine.provideDmsFrontendRuntime(app, runtime);
+  const scope = vue.effectScope();
+  const result = app.runWithContext(() => scope.run(setup));
+  return { result, reads, stop: () => scope.stop() };
 }
 
 export { vue };

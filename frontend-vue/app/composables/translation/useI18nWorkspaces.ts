@@ -1,7 +1,6 @@
 import { useDmsCookie, useDmsState } from '#dms/frontend-module'
 import type {
   FlatCounts,
-  FlatTranslations,
   KeyRowResponse,
   ScopedWorkspace,
   WorkspaceDetails,
@@ -34,7 +33,7 @@ type KeyValues = Record<string, unknown>
 /** The routes of the module's API. */
 export const LANG_API = '/api/lang/translations'
 const API_BASE = LANG_API
-const ENDPOINTS = {
+export const ENDPOINTS = {
   workspaces: `${API_BASE}/workspaces`,
   flat: `${API_BASE}/flat`,
   row: `${API_BASE}/row`,
@@ -159,15 +158,12 @@ function useWorkspaceWrites() {
   }
 }
 
-function useWorkspaceReads() {
+/** The backup file a download saves: a file the user keeps, not data a page shows. */
+function useWorkspaceDownloads() {
   const { $authFetch } = useAuthFetch()
   return {
     fetchBackup: (workspace: string) =>
       $authFetch<WorkspaceBackup>(ENDPOINTS.backup, { query: { workspace } }),
-    fetchFlat: (workspace: string) =>
-      $authFetch<FlatTranslations>(ENDPOINTS.flat, { query: { workspace } }),
-    fetchRow: (workspace: string, key: string) =>
-      $authFetch<KeyRowResponse>(ENDPOINTS.row, { query: { workspace, key } }),
   }
 }
 
@@ -195,22 +191,37 @@ export const useI18nWorkspaces = () => {
     )
   }
 
-  /** Takes the figures a key write answered into the workspace list (the scope bar). */
-  function patchCounts(id: string, counts: FlatCounts): void {
+  function mapWorkspace(
+    id: string,
+    change: (workspace: ScopedWorkspace) => ScopedWorkspace,
+  ): void {
     const current = list.data.value
     if (!current) return
     list.data.value = {
       ...current,
       workspaces: current.workspaces.map((workspace) =>
-        workspace.id === id
-          ? {
-              ...workspace,
-              totalKeys: counts.totalKeys,
-              baseMissing: counts.baseMissing,
-            }
-          : workspace,
+        workspace.id === id ? change(workspace) : workspace,
       ),
     }
+  }
+
+  /** Takes the figures a key write answered into the workspace list (the scope bar). */
+  function patchCounts(id: string, counts: FlatCounts): void {
+    mapWorkspace(id, (workspace) => ({
+      ...workspace,
+      totalKeys: counts.totalKeys,
+      baseMissing: counts.baseMissing,
+    }))
+  }
+
+  /** Takes the workspace a details write answered into the list, its figures kept. */
+  function patchSummary(summary: WorkspaceSummary): void {
+    mapWorkspace(summary.id, (workspace) => ({
+      ...summary,
+      totalKeys: workspace.totalKeys,
+      baseMissing: workspace.baseMissing,
+      translatedStrings: workspace.translatedStrings,
+    }))
   }
 
   /** Remembers the workspace a page without `?workspace=` opens on (a new tab, a menu link). */
@@ -235,9 +246,10 @@ export const useI18nWorkspaces = () => {
     isLoaded: computed(() => list.data.value !== null),
     fetchWorkspaces,
     patchCounts,
+    patchSummary,
     canUseWorkspaceId,
     rememberWorkspace,
-    ...useWorkspaceReads(),
+    ...useWorkspaceDownloads(),
     ...useWorkspaceWrites(),
     ...useKeyWrites(),
   }
