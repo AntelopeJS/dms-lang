@@ -1,6 +1,7 @@
 import path from "node:path";
 import { AddFrontendModule } from "@antelopejs/interface-dms/page";
 import { setTranslationConfig } from "./utils/config";
+import { PUBLIC_PATH } from "./utils/constants";
 import { initializeLocaleRegistry } from "./utils/registry";
 
 export * from "./pages";
@@ -25,6 +26,7 @@ export async function construct(config: DmsLangConfig = {}): Promise<void> {
     renderer: { name: "vue", version: "3" },
     configKey: "dmsLang",
     priority: 0,
+    backendProxies: [{ path: `${PUBLIC_PATH}/**`, auth: "none" }],
   });
 }
 
