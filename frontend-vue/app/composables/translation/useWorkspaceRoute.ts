@@ -21,14 +21,8 @@ const LOCALE_QUERY = 'locale'
 export const useWorkspaceRoute = () => {
   const route = useDmsRoute()
   const router = useDmsRouter()
-  const {
-    selectedWorkspace,
-    workspaces,
-    isLoaded,
-    isLoading,
-    fetchWorkspaces,
-    rememberWorkspace,
-  } = useI18nWorkspaces()
+  const { selectedWorkspace, workspaces, rememberWorkspace } =
+    useI18nWorkspaces()
 
   const queryWorkspace = computed(() => route.query.workspace || '')
   const pageAction = computed(() => route.query[PAGE_ACTION_QUERY] || '')
@@ -53,10 +47,6 @@ export const useWorkspaceRoute = () => {
     if (list.some((entry) => entry.id === workspace)) {
       rememberWorkspace(workspace)
     }
-  })
-
-  onMounted(() => {
-    if (!isLoaded.value && !isLoading.value) fetchWorkspaces()
   })
 
   /** The language the queue opens on in a workspace: the current one when it is there, else its first translation. */
