@@ -123,30 +123,30 @@ function useFilterQuery() {
   return filters
 }
 
+/**
+ * The columns shown, in their order: the workspace's languages, base first,
+ * until this browser remembers a choice for the workspace. Derived rather than
+ * copied by a watcher, so a server render (whose translations arrive after
+ * setup) and the hydration of its HTML show the same columns; the choice
+ * remembered in this browser applies once mounted, as a server cannot read it.
+ */
 function useColumnOrder() {
   const { selectedWorkspace } = useI18nWorkspaces()
   const { flat } = useWorkspaceFlat()
-  const order = ref<string[]>([])
   const stored = useStorage<Partial<StoredColumns> | null>(
     () => `${COLUMNS_STORAGE}${selectedWorkspace.value}`,
     null,
     undefined,
-    { serializer: StorageSerializers.object },
+    { serializer: StorageSerializers.object, initOnMounted: true },
   )
-  watch(
-    () => `${selectedWorkspace.value}|${flat.value.locales.join(',')}`,
-    () => {
-      const { locales, defaultLocale } = flat.value
-      order.value = restoredOrder(
-        locales,
-        defaultLocale,
-        columnsOf(stored.value),
-      )
-    },
-    { immediate: true },
+  const order = computed(() =>
+    restoredOrder(
+      flat.value.locales,
+      flat.value.defaultLocale,
+      columnsOf(stored.value),
+    ),
   )
   function saveOrder(next: string[]) {
-    order.value = next
     stored.value = {
       shown: next,
       hidden: flat.value.locales.filter((code) => !next.includes(code)),
