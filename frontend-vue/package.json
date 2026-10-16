@@ -18,7 +18,7 @@
     "lint:fix": "eslint . --fix"
   },
   "devDependencies": {
-    "@antelopejs/core": "1.14.0",
+    "@antelopejs/core": "1.15.2",
     "@antelopejs/dms-frontend": "0.6.0",
     "@eslint/js": "^9",
     "@typescript-eslint/eslint-plugin": "^8",
