@@ -96,7 +96,7 @@ async function openCreate(
   })
   const created = (await modal.open()) as string | null
   if (!created) return null
-  await context.workspaces.fetchWorkspaces()
+  await refreshPageBlocks()
   const texts = backup ? 'workspace_import' : 'workspace_create'
   succeed(context, context.t(`dms_lang.${texts}.done`, { name: created }))
   await context.selectWorkspace(created, { page: 'workspace' })
@@ -131,7 +131,7 @@ async function renameWorkspace(
   })
   const renamed = (await modal.open()) as string | null
   if (!renamed) return null
-  await context.workspaces.fetchWorkspaces()
+  await refreshPageBlocks()
   succeed(
     context,
     context.t('dms_lang.workspace_rename.done', { name: renamed }),
@@ -219,7 +219,7 @@ async function deleteWorkspace(
     body: () => backupButton(context, workspace),
     onConfirm: async () => {
       await workspaces.deleteWorkspace(workspace)
-      await workspaces.fetchWorkspaces()
+      await refreshPageBlocks()
     },
   })
   if (!deleted) return false
