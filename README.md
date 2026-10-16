@@ -63,7 +63,7 @@ On DMS 0.8, use `@antelopejs/dms-lang` 0.1.
 - [Extending](https://dms.antelopejs.com/docs/modules/lang/extending)
 - [FAQ](https://dms.antelopejs.com/docs/modules/lang/faq)
 
-The guide's sources live in [`docs/`](./docs). The package also ships the `dms-lang` Claude Code skill in [`skills/`](./skills), declared under `antelopeJs.skills`.
+The canonical guide lives in [`docs/`](./docs), including the [supported extension boundary](./docs/5.extending.md#supported-extension-boundary). There is no separate DMS Lang interface package. The package also ships the `dms-lang` Claude Code skill in [`skills/`](./skills), declared under `antelopeJs.skills`.
 
 ## Contributing
 
