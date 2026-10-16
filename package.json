@@ -1,6 +1,19 @@
 {
   "name": "@antelopejs/dms-lang",
   "version": "0.2.0",
+  "description": "Language and translation management for the AntelopeJS DMS: coverage overview, translation matrix, translation queue and public translation workspaces.",
+  "keywords": [
+    "antelopejs",
+    "dms",
+    "dms-module",
+    "i18n",
+    "localization",
+    "translations"
+  ],
+  "homepage": "https://dms.antelopejs.com/docs/modules/lang",
+  "bugs": {
+    "url": "https://github.com/AntelopeJS/dms-lang/issues"
+  },
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
