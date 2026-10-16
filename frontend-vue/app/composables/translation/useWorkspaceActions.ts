@@ -146,13 +146,11 @@ async function updateDetails(
   id: string,
   change: DetailsChange,
 ): Promise<boolean> {
-  const ok = await context.failures.tryMutate(
-    () => context.workspaces.updateWorkspace(id, change),
+  const { workspaces } = context
+  return context.failures.tryMutate(
+    async () => workspaces.patchSummary(await workspaces.updateWorkspace(id, change)),
     { title: context.t('dms_lang.workspace_details.save_failed') },
   )
-  if (!ok) return false
-  await context.workspaces.fetchWorkspaces()
-  return true
 }
 
 async function downloadBackup(

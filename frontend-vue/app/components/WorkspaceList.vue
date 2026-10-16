@@ -9,6 +9,7 @@ import {
 } from '../utils/workspaces'
 import type { WorkspaceSort } from '../utils/workspaces'
 import LocaleTile from '../build/components/LocaleTile.vue'
+import { useWorkspaceSummary } from '../composables/translation/useI18nWorkspaces'
 
 interface WorkspaceStat {
   id: string
@@ -42,8 +43,7 @@ const SORT_LABELS: Record<WorkspaceSort, string> = {
 
 const { t } = useI18n()
 const { formatCount } = useLangFormat()
-const { fetchSummary, selectedWorkspace, editable, fetchWorkspaces } =
-  useI18nWorkspaces()
+const { selectedWorkspace, editable } = useI18nWorkspaces()
 const { createWorkspace, importWorkspace } = useWorkspaceActions()
 const { typeIcon, typeLabel, kindIcon } = useWorkspaceTypes()
 const { pageAction, clearPageAction, selectWorkspace } = useWorkspaceRoute()
@@ -53,10 +53,17 @@ const { getPreference, setPreference } = usePreferences()
 
 const canCreate = computed(() => editable.value && allows('createWorkspace'))
 
-const summary = ref<WorkspaceStats[]>([])
-const isLoaded = ref(false)
-const hasError = ref(false)
-const isLoading = ref(false)
+// The workspaces' figures, read with the page.
+const summaryRead = useWorkspaceSummary()
+const summary = computed<WorkspaceStats[]>(
+  () => summaryRead.data.value?.workspaces ?? [],
+)
+const isLoaded = computed(() => summaryRead.data.value !== null)
+const isLoading = computed(() => summaryRead.pending.value)
+// A failure kept while it is tried again still shows the skeleton.
+const hasError = computed(
+  () => summaryRead.error.value != null && !isLoading.value,
+)
 const search = ref('')
 const sort = computed<WorkspaceSort>({
   get: () => {
@@ -88,19 +95,8 @@ function isWorkspaceSort(value: unknown): value is WorkspaceSort {
   return typeof value === 'string' && Object.hasOwn(SORT_LABELS, value)
 }
 
-async function load() {
-  isLoading.value = true
-  try {
-    const response = await fetchSummary()
-    summary.value = response.workspaces
-    editable.value = response.editable
-    hasError.value = false
-    isLoaded.value = true
-  } catch {
-    hasError.value = true
-  } finally {
-    isLoading.value = false
-  }
+function load() {
+  void summaryRead.refresh()
 }
 
 function statsOf(workspace: WorkspaceStats): WorkspaceStat[] {
@@ -212,10 +208,6 @@ watch(
   { immediate: true },
 )
 
-onMounted(() => {
-  load()
-  fetchWorkspaces()
-})
 </script>
 
 <template>

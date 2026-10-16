@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useLangChanges } from '../composables/translation/useWorkspaceFlat'
-import { useDmsRouter, useDmsState } from '#dms/frontend-module'
 import type { DropdownMenuItem } from '@nuxt/ui'
 import type { WorkspaceSummary } from '../types/lang'
 import LocaleTile from '../build/components/LocaleTile.vue'
@@ -13,8 +12,7 @@ const MENU_FILTER_FIELDS = ['label', 'description', 'workspaceId', 'summary']
 
 const { t } = useI18n()
 const { formatCount } = useLangFormat()
-const { workspaces, editable, isLoaded, selectedWorkspace } =
-  useI18nWorkspaces()
+const { workspaces, editable, isLoaded, whenLoaded } = useI18nWorkspaces()
 const {
   current,
   isEditable,
@@ -25,14 +23,12 @@ const {
 } = useWorkspaceContext()
 useLangChanges()
 const {
-  route,
   switchLink,
   queryWorkspace,
   pageAction,
   clearPageAction,
   currentPage,
 } = useWorkspaceRoute()
-const router = useDmsRouter()
 
 /** What the bar says about the workspace shown, from the workspace list. */
 const scope = computed(() => ({
@@ -178,44 +174,10 @@ const firstRunActions = computed(() => [
   },
 ])
 
-/**
- * The workspace a page opened without `?workspace=` was given: the one
- * remembered, or the project files once that one turns out to be gone.
- */
-const filledFromMemory = useDmsState<string>(
-  'dms-lang-workspace-filled',
-  () => '',
-)
-
-function fillWorkspace(workspace: string): void {
-  void router.replace(linkWithQuery(route.path, { ...route.query, workspace }))
+if (import.meta.env.SSR && !queryWorkspace.value && !pageAction.value) {
+  await whenLoaded()
 }
-
-watch(
-  [queryWorkspace, pageAction],
-  ([workspace, action]) => {
-    if (import.meta.env.SSR || workspace || action) return
-    const isKnown = workspaces.value.some(
-      (entry) => entry.id === selectedWorkspace.value,
-    )
-    const fallback =
-      isKnown || !isLoaded.value ? selectedWorkspace.value : DEFAULT_WORKSPACE
-    filledFromMemory.value = fallback
-    fillWorkspace(fallback)
-  },
-  { immediate: true },
-)
-
-watch(
-  [isUnknown, queryWorkspace],
-  ([unknown, workspace]) => {
-    if (import.meta.env.SSR || !unknown) return
-    if (!workspace || workspace !== filledFromMemory.value) return
-    filledFromMemory.value = ''
-    fillWorkspace(DEFAULT_WORKSPACE)
-  },
-  { immediate: true },
-)
+useWorkspaceFill()
 
 watch(
   [pageAction, isResolved],

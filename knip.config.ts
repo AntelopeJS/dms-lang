@@ -8,6 +8,12 @@ const knipConfig = antelopeKnipConfig({
 
 knipConfig.ignoreUnresolved = ["#dms/frontend-module", "#dms/frontend-build"];
 knipConfig.ignore = [...(knipConfig.ignore ?? []), ".amp/**"];
+// The frontend tests import Vue as the installed renderer resolves it
+// (tests/frontend-runtime.mjs), not from the root.
+knipConfig.ignoreDependencies = [
+  ...(knipConfig.ignoreDependencies ?? []),
+  "vue",
+];
 // The DMS loads the frontend without imports knip can follow: the components
 // through the `import.meta.glob` of dms.frontend.ts, and the composables,
 // utils and types through the auto-imports dms.frontend.build.ts registers.

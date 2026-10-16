@@ -42,7 +42,7 @@ async function moduleRows(
   context: KeyActionsContext,
 ): Promise<FlatTranslationRow[]> {
   if (!context.isDefault.value) return []
-  return (await context.translations.load(MODULES_WORKSPACE)).rows
+  return (await context.translations.loadModules()).rows
 }
 
 async function addKey(context: KeyActionsContext): Promise<string[]> {

@@ -126,27 +126,24 @@ function useFilterQuery() {
 function useColumnOrder() {
   const { selectedWorkspace } = useI18nWorkspaces()
   const { flat } = useWorkspaceFlat()
-  const order = ref<string[]>([])
   const stored = useStorage<Partial<StoredColumns> | null>(
     () => `${COLUMNS_STORAGE}${selectedWorkspace.value}`,
     null,
     undefined,
     { serializer: StorageSerializers.object },
   )
-  watch(
-    () => `${selectedWorkspace.value}|${flat.value.locales.join(',')}`,
-    () => {
-      const { locales, defaultLocale } = flat.value
-      order.value = restoredOrder(
-        locales,
-        defaultLocale,
-        columnsOf(stored.value),
-      )
-    },
-    { immediate: true },
+  const isMounted = ref(false)
+  onMounted(() => {
+    isMounted.value = true
+  })
+  const order = computed(() =>
+    restoredOrder(
+      flat.value.locales,
+      flat.value.defaultLocale,
+      isMounted.value ? columnsOf(stored.value) : null,
+    ),
   )
   function saveOrder(next: string[]) {
-    order.value = next
     stored.value = {
       shown: next,
       hidden: flat.value.locales.filter((code) => !next.includes(code)),
@@ -159,7 +156,8 @@ function useColumnOrder() {
  * The view of the matrix a user chose: the filters live in the URL (a link
  * or a refresh shows the same keys, Back undoes a filter change made by a
  * link) and the columns shown, in their order, are remembered per workspace
- * in this browser.
+ * in this browser and applied once the page is mounted: a server render
+ * shows every language, as the browser's first render does.
  */
 export function useMatrixView() {
   const { flat } = useWorkspaceFlat()
