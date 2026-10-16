@@ -255,12 +255,12 @@ export const useWorkspaceFlat = () => {
     },
     /**
      * After a write of this tab whose answer the next step reads (the
-     * language just added, the new base): the page, and the translations
-     * when the page holds them, which the page's refresh leaves.
+     * language just added, the new base): the workspace list, and the
+     * translations when the page holds them, which the page's refresh leaves.
      */
     refresh: async () => {
       const flat = selected.data.value === null ? undefined : selected.refresh()
-      await Promise.all([flat, refreshPageBlocks()])
+      await Promise.all([flat, workspaces.fetchWorkspaces()])
     },
     applyRow,
     replaceRow,
