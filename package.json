@@ -1,6 +1,19 @@
 {
   "name": "@antelopejs/dms-lang",
   "version": "0.2.0",
+  "description": "Language and translation management for the AntelopeJS DMS: coverage overview, translation matrix, translation queue and public translation workspaces.",
+  "keywords": [
+    "antelopejs",
+    "dms",
+    "dms-module",
+    "i18n",
+    "localization",
+    "translations"
+  ],
+  "homepage": "https://dms.antelopejs.com/docs/modules/lang",
+  "bugs": {
+    "url": "https://github.com/AntelopeJS/dms-lang/issues"
+  },
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -10,7 +23,8 @@
     "dist",
     "!dist/test",
     "!dist/.tsbuildinfo",
-    "frontend-vue"
+    "frontend-vue",
+    "skills"
   ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -47,13 +61,13 @@
   "dependencies": {
     "@antelopejs/interface-api": ">=0.0.14 <1.0.0",
     "@antelopejs/interface-api-util": ">=0.1.2 <1.0.0",
-    "@antelopejs/interface-core": ">=0.1.1 <1.0.0",
+    "@antelopejs/interface-core": ">=0.2.3 <1.0.0",
     "@antelopejs/interface-dms": ">=0.7.0 <1.0.0",
     "@intlify/message-compiler": "^11.1.12",
     "zod": "~3.24.2"
   },
   "devDependencies": {
-    "@antelopejs/core": "1.14.0",
+    "@antelopejs/core": "1.15.2",
     "@antelopejs/dms": ">=0.9.0 <1.0.0",
     "@antelopejs/dms-frontend": "0.6.0",
     "@antelopejs/tooling-configs": ">=0.0.7 <1.0.0",
@@ -77,6 +91,9 @@
   "antelopeJs": {
     "baseUrl": "dist",
     "implements": [],
-    "test": "src/test/harness.ts"
+    "test": "src/test/harness.ts",
+    "skills": [
+      "./skills"
+    ]
   }
 }
