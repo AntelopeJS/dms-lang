@@ -8,7 +8,7 @@ interface LanguageActionsContext {
   t: ReturnType<typeof useI18n>['t']
   toast: ReturnType<typeof useToast>
   overlay: ReturnType<typeof useOverlay>
-  confirmServed: ReturnType<typeof useServedConfirm>
+  confirmFrom: ReturnType<typeof useConfirmFrom>['confirmFrom']
   formatCount: ReturnType<typeof useLangFormat>['formatCount']
   workspaces: ReturnType<typeof useI18nWorkspaces>
   translations: ReturnType<typeof useWorkspaceFlat>
@@ -99,10 +99,11 @@ async function removeLanguage(
 ): Promise<boolean> {
   const workspace = context.workspaces.selectedWorkspace.value
   const route = languageRoute(context, code)
-  const removed = await context.confirmServed(
-    `${route}/${REMOVAL_CONFIRM}`,
-    () => context.workspaces.removeLocale(workspace, code),
-  )
+  const removed = await context.confirmFrom(`${route}/${REMOVAL_CONFIRM}`, {
+    onConfirm: async () => {
+      await context.workspaces.removeLocale(workspace, code)
+    },
+  })
   if (!removed) return false
   notify(context, context.t('dms_lang.language_remove.done'))
   await dialogsLeft(context)
@@ -122,9 +123,11 @@ async function makeBase(
 ): Promise<boolean> {
   const workspace = context.workspaces.selectedWorkspace.value
   const route = languageRoute(context, code)
-  const confirmed = await context.confirmServed(`${route}/${BASE_CONFIRM}`, () =>
-    context.workspaces.setDefaultLocale(workspace, code),
-  )
+  const confirmed = await context.confirmFrom(`${route}/${BASE_CONFIRM}`, {
+    onConfirm: async () => {
+      await context.workspaces.setDefaultLocale(workspace, code)
+    },
+  })
   if (!confirmed) return false
   await context.translations.refresh()
   notify(
@@ -141,7 +144,7 @@ export const useLanguageActions = () => {
     t: useI18n().t,
     toast: useToast(),
     overlay: useOverlay(),
-    confirmServed: useServedConfirm(),
+    confirmFrom: useConfirmFrom().confirmFrom,
     formatCount: useLangFormat().formatCount,
     workspaces: useI18nWorkspaces(),
     translations: useWorkspaceFlat(),
