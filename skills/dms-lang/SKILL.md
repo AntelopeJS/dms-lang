@@ -26,6 +26,7 @@ ajs project modules add @antelopejs/dms-lang
 - `config.editable: true` in `antelope.config.ts` allows every write. Default `false`: writes fail with a read-only error.
 - The project's own frontend module needs `options: { dmsI18nAppLayer: true }` in `AddFrontendModule`; its `i18n/locales/app-<locale>.json` files become the writable **Project files** workspace.
 - A new frontend module is discovered at backend start only; file edits show on the next read.
+- Lang 0.2 requires `@antelopejs/dms` >=0.9 (interface-dms 0.7, renderer `@antelopejs/dms-frontend` 0.6); Lang 0.1 is the DMS 0.8 line.
 
 ## Workspaces
 
@@ -47,4 +48,6 @@ Overview, Translation matrix (`translations`), Translation queue (`language?loca
 - In `default`, a key a module already translates counts as translated ("From a module"); writing a value overrides it.
 - Write routes check page-action permissions (`modules.lang.translate.translations.scoped.matrix.edit`, `….keys`, `modules.lang.manage.workspaces.list.create`, …) on top of `@AuthOwnerOnly`.
 - Writes publish on the realtime topic `dms-lang.translations`.
+- Pages render on the server (`useApiData`); a page without `?workspace=` is redirected server-side to the remembered workspace or `default`.
+- The public files are declared to the frontend server (`backendProxies: [{ path: "/i18n/**", auth: "none" }]`), so they answer on the dashboard origin as well as the backend's.
 - Labels of a page or custom block you write stay i18n keys (`$app.my_page.title`) in `app-*.json`; Lang is where people translate them, never a reason to hard-code text.
