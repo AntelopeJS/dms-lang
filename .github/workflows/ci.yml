@@ -76,7 +76,6 @@ jobs:
             .antelope/cache
             ~/.cache/mongodb-binaries
           key: antelope-${{ runner.os }}-${{ hashFiles('src/test/harness.ts', 'pnpm-lock.yaml') }}
-          restore-keys: antelope-${{ runner.os }}-
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
