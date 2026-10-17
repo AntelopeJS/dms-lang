@@ -21,6 +21,7 @@ const {
   isUnknown,
   isResolved,
 } = useWorkspaceContext()
+const { labelOf } = useWorkspaceLabel()
 useLangChanges()
 const {
   switchLink,
@@ -43,10 +44,7 @@ const { addLanguage } = useLanguageActions()
 const { typeIcon, typeLabel, kindIcon } = useWorkspaceTypes()
 
 function workspaceLabel(workspace: WorkspaceSummary | null): string {
-  if (!workspace) return ''
-  return t(`dms_lang.workspace_kinds.${workspace.kind}.label`, {
-    name: workspace.id,
-  })
+  return workspace ? labelOf(workspace) : ''
 }
 
 function trailingIconOf(workspace: WorkspaceSummary): string | undefined {

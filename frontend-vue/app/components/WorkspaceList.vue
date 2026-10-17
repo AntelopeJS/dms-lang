@@ -48,6 +48,7 @@ const { createWorkspace, importWorkspace } = useWorkspaceActions()
 const { typeIcon, typeLabel, kindIcon } = useWorkspaceTypes()
 const { pageAction, clearPageAction, selectWorkspace } = useWorkspaceRoute()
 const { allows } = useWorkspaceContext()
+const { labelOf } = useWorkspaceLabel()
 const links = useLangLinks()
 const { getPreference, setPreference } = usePreferences()
 
@@ -154,9 +155,7 @@ function kindPill(workspace: WorkspaceStats): WorkspacePill {
 function labelsOf(workspace: WorkspaceStats): string[] {
   return [
     kindPill(workspace).label,
-    t(`dms_lang.workspace_kinds.${workspace.kind}.label`, {
-      name: workspace.id,
-    }),
+    labelOf(workspace),
   ]
 }
 
@@ -307,11 +306,7 @@ watch(
             <div class="min-w-0 flex-1">
               <div class="flex flex-wrap items-center gap-2">
                 <h3 class="text-highlighted truncate text-base font-semibold">
-                  {{
-                    $t(`dms_lang.workspace_kinds.${workspace.kind}.label`, {
-                      name: workspace.id,
-                    })
-                  }}
+                  {{ labelOf(workspace) }}
                 </h3>
                 <DmsStatusPill
                   dot="none"
