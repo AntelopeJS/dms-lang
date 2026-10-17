@@ -49,6 +49,7 @@ const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const { t } = useI18n()
+const { label: workspaceLabel } = useWorkspaceLabel()
 const { errorMessage } = useMutationToast()
 const toast = useToast()
 const { updateKey, createKey } = useI18nWorkspaces()
@@ -228,7 +229,7 @@ async function submit() {
     v-model:open="isOpen"
     :title="$t('dms_lang.key_add.title')"
     :description="
-      $t('dms_lang.key_add.description', { workspace: props.workspace })
+      $t('dms_lang.key_add.description', { workspace: workspaceLabel })
     "
     :ui="{ content: 'sm:max-w-lg' }"
     @update:open="(open: boolean) => !open && close()"

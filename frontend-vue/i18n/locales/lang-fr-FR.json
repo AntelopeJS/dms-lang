@@ -59,7 +59,7 @@
 			"corrupt_file": "Un fichier de traduction n'est pas un JSON valide : corrigez-le avant de modifier.",
 			"corrupt_manifest": "Le fichier de réglages de l'espace de travail n'est pas un JSON valide : corrigez-le avant de modifier.",
 			"not_configured": "Le dossier des espaces de travail n'est pas configuré.",
-			"invalid_backup": "Ce fichier n'est pas une sauvegarde de workspace.",
+			"invalid_backup": "Ce fichier n'est pas une sauvegarde d'espace.",
 			"newer_backup": "Cette sauvegarde a été enregistrée par une version plus récente du module Traductions : mettez le module à jour pour l'importer.",
 			"message_syntax": {
 				"expected_token": "Il manque un caractère là où le message en attend un.",
@@ -205,7 +205,7 @@
 			"hint_added": "Publié à l'adresse {url}",
 			"server_read_only_title": "La modification est désactivée sur ce serveur",
 			"server_read_only_description": "Les valeurs s'affichent en lecture seule. Mettez editable: true dans la configuration du module dms-lang pour les modifier ici.",
-			"settings": "Paramètres de {name}",
+			"settings": "Paramètres de « {name} »",
 			"unknown_title": "Espace introuvable",
 			"unknown_description": "Il a peut-être été renommé ou supprimé. Aucun autre espace n'est affiché à sa place.",
 			"unknown_action": "Voir les espaces"
@@ -436,7 +436,7 @@
 			"no_issues_description": "Chaque traduction est valide, garde les variables de son texte de base et n'est pas à revoir.",
 			"review_issues": "Revoir les anomalies ({count})",
 			"unknown_title": "{code} n'est pas une langue de cet espace",
-			"unknown_description": "Choisissez une des langues de {workspace}.",
+			"unknown_description": "Choisissez une des langues de « {workspace} ».",
 			"unknown_pick": "Traduire en {name}",
 			"pick_title": "Choisissez une langue à traduire",
 			"base_title": "{name} est la langue de base",
@@ -504,7 +504,7 @@
 			"hint": "Choisissez un espace de noms pour y limiter la file."
 		},
 		"language_add": {
-			"title": "Ajouter une langue à {workspace}",
+			"title": "Ajouter une langue à « {workspace} »",
 			"description": "Crée un fichier vide. Chaque clé démarre comme manquante et affiche le texte en {base} comme référence.",
 			"search": "Rechercher une langue ou saisir un code (pt-BR)",
 			"added": "Ajoutée",
@@ -525,7 +525,7 @@
 			"locked": "Les langues des fichiers du projet et des modules suivent les fichiers sur le disque. Créez un espace pour gérer ses langues ici."
 		},
 		"language_remove": {
-			"title": "Retirer {name} de {workspace} ?",
+			"title": "Retirer {name} de « {workspace} » ?",
 			"description": "Les applications qui demandent {url} reçoivent une erreur 404.",
 			"file": "{file} est supprimé",
 			"strings": "Textes traduits perdus",
@@ -604,7 +604,7 @@
 		},
 		"key_add": {
 			"title": "Ajouter une clé",
-			"description": "Ajoutée à {workspace}. Écrivez le texte dans les langues que vous connaissez ; les autres apparaîtront comme manquantes.",
+			"description": "Ajoutée à « {workspace} ». Écrivez le texte dans les langues que vous connaissez ; les autres apparaîtront comme manquantes.",
 			"path": "Chemin de la clé",
 			"texts_required": "Écrivez le texte dans au moins une langue pour ajouter la clé.",
 			"path_help": "Séparé par des points, comme checkout.coupon.invalid.",
@@ -635,7 +635,7 @@
 		},
 		"key_delete": {
 			"title": "Supprimer {path} ?",
-			"description": "La clé, qui n'a encore aucun texte, est retirée de tous les fichiers de {workspace}. | La clé et sa traduction ({locales}) sont retirées de tous les fichiers de {workspace}. | La clé et ses {count} traductions ({locales}) sont retirées de tous les fichiers de {workspace}.",
+			"description": "La clé, qui n'a encore aucun texte, est retirée de tous les fichiers de « {workspace} ». | La clé et sa traduction ({locales}) sont retirées de tous les fichiers de « {workspace} ». | La clé et ses {count} traductions ({locales}) sont retirées de tous les fichiers de « {workspace} ».",
 			"submit": "Supprimer la clé",
 			"done": "Clé {path} supprimée",
 			"restored": "Clé {path} restaurée"
