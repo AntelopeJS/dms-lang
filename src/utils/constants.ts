@@ -13,5 +13,5 @@ export const PUBLIC_PATH = "/i18n";
 /** The pages of the module in the dashboard. */
 export const PAGES_URL = "/modules/lang";
 
-/** Where the project files of the dashboard keep their texts. */
-export const PROJECT_FILES = "frontend-vue/i18n/locales/app-*.json";
+/** Where the project files of the dashboard keep their texts: any `<name>-<xx-XX>.json` file. */
+export const PROJECT_FILES = "frontend-vue/i18n/locales/*-xx-XX.json";

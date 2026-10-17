@@ -2,7 +2,7 @@ import { filesStamp, memoize } from "./cache";
 import { modulesBaseLocale, projectBaseLocale } from "./catalog";
 import { coveragePercent } from "./coverage";
 import { hasMessageIssue } from "./message-check";
-import { getLocaleCodes, loadMessages, registryFiles } from "./registry";
+import { getLocaleCodes, loadMessages, registryStamp } from "./registry";
 import { outdatedLocales } from "./review";
 import {
   deepMerge,
@@ -211,10 +211,10 @@ function summarizeRows(context: FlatContext, rows: FlatRow[]): FlatResult {
   };
 }
 
-const STAMPED_FILES: Record<WorkspaceKind, (workspace: string) => string[]> = {
-  default: registryFiles,
-  modules: registryFiles,
-  added: workspaceFiles,
+const WORKSPACE_STAMPS: Record<WorkspaceKind, (workspace: string) => string> = {
+  default: registryStamp,
+  modules: registryStamp,
+  added: (workspace) => filesStamp(workspaceFiles(workspace)),
 };
 
 function computeFlat(workspace: string): FlatResult {
@@ -228,14 +228,12 @@ function computeFlat(workspace: string): FlatResult {
 /**
  * The rows of a workspace and their coverage; default and modules take the
  * base language the server decides. Computed once, then kept until a write
- * of the module or a change of its files on disk: every block of a page
+ * or a change of its files or registered modules: every block of a page
  * reads the same result. Shared: callers must not change it.
  */
 export function resolveFlat(workspace: string): FlatResult {
-  const files = STAMPED_FILES[workspaceKind(workspace)](workspace);
-  return memoize(`flat:${workspace}`, filesStamp(files), () =>
-    computeFlat(workspace),
-  );
+  const stamp = WORKSPACE_STAMPS[workspaceKind(workspace)](workspace);
+  return memoize(`flat:${workspace}`, stamp, () => computeFlat(workspace));
 }
 
 /** The figures of a workspace a write changes. */

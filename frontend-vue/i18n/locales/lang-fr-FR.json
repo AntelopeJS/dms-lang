@@ -124,7 +124,7 @@
 				"label": "Types d'espaces",
 				"default_eyebrow": "Projet",
 				"default_title": "Fichiers du projet",
-				"default_detail": "Les fichiers app-*.json du tableau de bord.",
+				"default_detail": "Les fichiers de langue du module frontend du tableau de bord.",
 				"added_eyebrow": "Espace",
 				"added_title": "Espaces que vous créez",
 				"added_detail": "Servis publiquement en JSON pour vos applications.",
@@ -156,7 +156,7 @@
 			"backup_help": "Tous les fichiers de langue et les paramètres de cet espace dans un seul fichier JSON. « Importer… » sur la page Espaces de traduction en refait un espace.",
 			"backup": "Télécharger une sauvegarde (.json)",
 			"source_label": "Emplacement des textes",
-			"source_help_default": "Les textes de votre DMS, dans les fichiers app-*.json du projet, chargés par le DMS lui-même. Pour ajouter une langue, ajoutez son fichier à côté, comme app-it.json pour l'italien.",
+			"source_help_default": "Les textes de votre DMS, dans les fichiers de langue (tout nom-xx-XX.json) du module frontend du projet, chargés par le DMS lui-même. Pour ajouter une langue, ajoutez son fichier à côté, comme app-it-IT.json pour l'italien.",
 			"source_help_modules": "Fournis par chaque module installé et chargés par le DMS. En lecture seule : pour modifier un texte, surchargez-le depuis Traductions ; la surcharge est écrite dans les fichiers du projet.",
 			"keys_note_title": "Une clé existe dans toutes les langues",
 			"keys_note_description": "Une clé existe dès qu'une langue a un texte pour elle ; une langue sans ce texte affiche celui de la langue de base dans votre application."
@@ -165,9 +165,9 @@
 			"default": {
 				"label": "Fichiers du projet",
 				"kind": "Projet",
-				"hint": "Les fichiers app-*.json de votre application",
+				"hint": "Les fichiers de langue de votre application",
 				"description": "Libellés de ce tableau de bord : menus, pages personnalisées, formulaires.",
-				"source": "frontend-vue/i18n/locales/app-*.json · ajoutez une langue en ajoutant un fichier",
+				"source": "frontend-vue/i18n/locales/*-xx-XX.json · ajoutez une langue en ajoutant un fichier",
 				"files": "Un fichier JSON par langue dans le dossier i18n/locales de votre projet.",
 				"folder": "frontend-vue/i18n/locales"
 			},
@@ -759,7 +759,7 @@
 			"keys_title": "Les clés sont communes à toutes les langues",
 			"keys_description": "Une clé existe dès qu'une langue a un texte pour elle. Une langue sans ce texte la compte comme manquante, et votre application affiche la langue de base à la place.",
 			"default_title": "Les textes de ce tableau de bord",
-			"default_description": "Enregistrés dans frontend-vue/i18n/locales/app-*.json et chargés par le tableau de bord lui-même, sans URL publique. Pour ajouter une langue, ajoutez son fichier dans ce dossier, comme app-it.json pour l'italien.",
+			"default_description": "Enregistrés dans frontend-vue/i18n/locales/*-xx-XX.json et chargés par le tableau de bord lui-même, sans URL publique. Pour ajouter une langue, ajoutez son fichier dans ce dossier, comme app-it-IT.json pour l'italien.",
 			"modules_title": "Clés fournies par les modules installés",
 			"modules_description": "Lecture seule : elles changent quand un module est installé ou mis à jour. Pour modifier un texte dans ce tableau de bord, surchargez sa clé dans les fichiers du projet.",
 			"browse_keys": "Parcourir les clés"

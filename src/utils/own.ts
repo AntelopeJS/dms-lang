@@ -4,8 +4,8 @@ import type { KeyStore } from "./keys";
 import { getLocaleCodes, getOwnWriteTarget, loadMessages } from "./registry";
 import { projectBaseLocale } from "./catalog";
 
-function writeTarget(locale: string): string {
-  const target = getOwnWriteTarget(locale);
+function writeTarget(locale: string, segments: string[]): string {
+  const target = getOwnWriteTarget(locale, segments);
   if (target === null) fail("undeclared_locale", { locale }, "no_project_file");
   return target;
 }
@@ -17,7 +17,8 @@ export function ownKeyStore(): KeyStore {
     baseLocale: projectBaseLocale(),
     messages: loadMessages("own"),
     reference: loadMessages("external"),
-    load: (locale) => readJsonForWrite(writeTarget(locale)),
-    save: (locale, data) => writeJson(writeTarget(locale), data),
+    load: (locale, segments) => readJsonForWrite(writeTarget(locale, segments)),
+    save: (locale, data, segments) =>
+      writeJson(writeTarget(locale, segments), data),
   };
 }

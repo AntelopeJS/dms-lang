@@ -33,8 +33,13 @@ export interface KeyStore {
   messages: LocaleMessages;
   /** Read-only keys that count as existing (the modules under the project files). */
   reference: LocaleMessages;
-  load(locale: string): Record<string, unknown>;
-  save(locale: string, data: Record<string, unknown>): void;
+  /**
+   * The file of a locale the key at `segments` is written to; a store split
+   * in several files per locale picks the one that key belongs in.
+   */
+  load(locale: string, segments: string[]): Record<string, unknown>;
+  /** Writes back what {@link KeyStore.load} returned for the same locale and key. */
+  save(locale: string, data: Record<string, unknown>, segments: string[]): void;
   track?(change: KeyChange): void;
 }
 
@@ -169,10 +174,10 @@ function applyTexts(
   before?: string[],
 ): void {
   for (const [locale, text] of Object.entries(texts)) {
-    const data = store.load(locale);
+    const data = store.load(locale, segments);
     if (text === null) deleteAtPath(data, segments);
     else insertAtPath(data, segments, text, before);
-    store.save(locale, data);
+    store.save(locale, data, segments);
   }
 }
 
@@ -334,10 +339,11 @@ export function renameKey(
   for (const locale of store.locales) {
     const value = getValueAtPath(store.messages[locale], source);
     if (value === undefined || isPlainObject(value)) continue;
-    const data = store.load(locale);
+    // The key moves within the file that defines it.
+    const data = store.load(locale, from);
     deleteAtPath(data, from);
     setAtPath(data, to, value);
-    store.save(locale, data);
+    store.save(locale, data, from);
   }
   store.track?.({ path: source, newPath: target, messages: remaining });
   return target;
@@ -350,9 +356,9 @@ export function deleteKey(store: KeyStore, path: string): void {
   const key = segments.join(".");
   for (const locale of store.locales) {
     if (nodeKindAt(store.messages[locale], segments) !== "leaf") continue;
-    const data = store.load(locale);
+    const data = store.load(locale, segments);
     deleteAtPath(data, segments);
-    store.save(locale, data);
+    store.save(locale, data, segments);
   }
   store.track?.({ path: key, messages: store.messages });
 }
@@ -374,9 +380,9 @@ export function removeOverride(
   check(hasLeaf(store.reference, segments), "not_an_override", { path });
   for (const locale of targetLocales(store, locales)) {
     if (nodeKindAt(store.messages[locale], segments) !== "leaf") continue;
-    const data = store.load(locale);
+    const data = store.load(locale, segments);
     deleteAtPath(data, segments);
-    store.save(locale, data);
+    store.save(locale, data, segments);
   }
 }
 
