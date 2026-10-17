@@ -7,8 +7,8 @@ export interface LocaleFile {
   data: Record<string, unknown>;
 }
 
-/** The name prefix of the project file a key no other file claims is written to. */
-export const DEFAULT_FILE_PREFIX = "app-";
+/** The fallback catalog, excluding domain files such as `app-crm-en-GB.json`. */
+const DEFAULT_FILE_RE = /^app-[a-z]{2}-[A-Z]{2}\.json$/;
 
 /** How many leading segments of a key are a namespace the file already holds. */
 function namespaceDepth(
@@ -52,7 +52,7 @@ function bestFile(
  *    whose value shows);
  * 2. else the file holding the longest namespace of the key (`helio.crm` for
  *    `helio.crm.title`), the last one on a tie;
- * 3. else the last `app-*` file;
+ * 3. else the last `app-<xx-XX>.json` file;
  * 4. else the last file.
  */
 export function writeTargetOf(
@@ -66,8 +66,7 @@ export function writeTargetOf(
     namespaceDepth(file.data, segments),
   );
   const fallback =
-    files.findLast((file) =>
-      basename(file.path).startsWith(DEFAULT_FILE_PREFIX),
-    ) ?? files.at(-1);
+    files.findLast((file) => DEFAULT_FILE_RE.test(basename(file.path))) ??
+    files.at(-1);
   return (defining ?? nearest ?? fallback)?.path;
 }

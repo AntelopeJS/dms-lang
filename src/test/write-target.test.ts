@@ -52,8 +52,15 @@ describe("[unit] project file write target", () => {
   });
 
   it("writes a key of a new namespace to the app file", () => {
-    expect(writeTargetOf(files, ["billing", "title"])).to.equal(
+    const withAppDomain = [
+      ...files,
+      file("app-zebra-en-GB.json", { zebra: { title: "Zebra" } }),
+    ];
+    expect(writeTargetOf(withAppDomain, ["billing", "title"])).to.equal(
       "app-en-GB.json",
+    );
+    expect(writeTargetOf(withAppDomain, ["zebra", "subtitle"])).to.equal(
+      "app-zebra-en-GB.json",
     );
   });
 
