@@ -84,16 +84,17 @@ function currentRegistry(): I18nRegistry {
   return registry;
 }
 
-/** Every language file of the frontend modules, for a cache that follows them. */
-export function registryFiles(): string[] {
-  return Object.values(currentRegistry()).flatMap((entries) =>
+/** Tracks file contents and module metadata, including origin changes at unchanged paths. */
+export function registryStamp(): string {
+  const files = Object.values(currentRegistry()).flatMap((entries) =>
     entries.map((entry) => entry.path),
   );
+  return JSON.stringify([modulesStamp, filesStamp(files)]);
 }
 
-/** The messages of the files of one origin, merged per language; read again once a file changed. */
+/** The messages of one origin, merged per language; refreshed when files or modules change. */
 export function loadMessages(origin: OriginFilter): LocaleMessages {
-  return memoize(`messages:${origin}`, filesStamp(registryFiles()), () =>
+  return memoize(`messages:${origin}`, registryStamp(), () =>
     readMessages(origin),
   );
 }
@@ -124,7 +125,7 @@ export function getLocaleCodes(origin: OriginFilter): string[] {
 /**
  * The project file a key of a locale is written to (see
  * {@link writeTargetOf}): the one defining it, else the one holding its
- * longest namespace, else the `app-*` file; null when the project has no
+ * longest namespace, else the `app-<xx-XX>.json` file; null when the project has no
  * file for the locale.
  */
 export function getOwnWriteTarget(

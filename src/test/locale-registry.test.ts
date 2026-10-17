@@ -17,6 +17,7 @@ import {
   initializeLocaleRegistry,
   loadMessages,
 } from "../utils/registry";
+import { resolveFlat } from "../utils/resolve";
 
 /** Longer than the registry's refresh of the frontend modules. */
 const LATE_MODULE_TIMEOUT_MS = 6000;
@@ -98,6 +99,48 @@ describe("[integration] registered locale sources", () => {
     expect(loadMessages("own").de.addedFixture).to.deep.equal({
       title: "Neu",
     });
+  });
+
+  it("moves cached messages and matrix rows when a module changes origin", async () => {
+    const sourcePath = join(directory, "reclassified");
+    const localeDir = join(sourcePath, "i18n/locales");
+    mkdirSync(localeDir, { recursive: true });
+    writeFileSync(
+      join(localeDir, "app-fi-FI.json"),
+      JSON.stringify({ reclassifiedFixture: { title: "Otsikko" } }),
+    );
+    const module = {
+      name: "dms-lang-test-reclassified",
+      sourcePath,
+      renderer: { name: "vue", version: "3" },
+      priority: 45,
+    };
+    for (const isOwn of [true, false, true]) {
+      await AddFrontendModule({
+        ...module,
+        options: { dmsI18nAppLayer: isOwn },
+      });
+      await initializeLocaleRegistry();
+      const owner = isOwn ? "own" : "external";
+      const other = isOwn ? "external" : "own";
+      expect(loadMessages(owner).fi?.reclassifiedFixture).to.deep.equal({
+        title: "Otsikko",
+      });
+      expect(loadMessages(other).fi).to.equal(undefined);
+      const project = resolveFlat("default");
+      const installed = resolveFlat("modules");
+      const owningRows = isOwn ? project : installed;
+      const otherRows = isOwn ? installed : project;
+      expect(owningRows.locales).to.include("fi");
+      expect(
+        owningRows.rows.find((row) => row.key === "reclassifiedFixture.title")
+          ?.values.fi,
+      ).to.equal("Otsikko");
+      expect(otherRows.locales).to.not.include("fi");
+      expect(
+        otherRows.rows.some((row) => row.key === "reclassifiedFixture.title"),
+      ).to.equal(false);
+    }
   });
 });
 
