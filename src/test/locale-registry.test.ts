@@ -1,8 +1,16 @@
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect } from "chai";
 import { AddFrontendModule } from "@antelopejs/interface-dms/page";
+import { createKey, updateKey } from "../utils/keys";
+import { ownKeyStore } from "../utils/own";
 import {
   getLocaleCodes,
   getOwnWriteTarget,
@@ -52,7 +60,9 @@ describe("[integration] registered locale sources", () => {
     expect(loadMessages("own").en.migrationFixture).to.deep.equal({
       winner: "high",
     });
-    expect(getOwnWriteTarget("en")).to.equal(high);
+    expect(getOwnWriteTarget("en", ["migrationFixture", "winner"])).to.equal(
+      high,
+    );
     writeFileSync(
       high,
       JSON.stringify({ migrationFixture: { winner: "edited" } }),
@@ -91,7 +101,11 @@ describe("[integration] registered locale sources", () => {
   });
 });
 
-describe("[integration] project files registered late", () => {
+function readFile(path: string): unknown {
+  return JSON.parse(readFileSync(path, "utf-8"));
+}
+
+describe("[integration] project files split by domain or registered late", () => {
   let directory: string;
 
   before(() => {
@@ -99,6 +113,30 @@ describe("[integration] project files registered late", () => {
   });
   after(() => {
     rmSync(directory, { recursive: true, force: true });
+  });
+
+  it("writes each key to the project file of its domain", async () => {
+    const sourcePath = join(directory, "split");
+    const localeDir = join(sourcePath, "i18n/locales");
+    mkdirSync(localeDir, { recursive: true });
+    const crm = join(localeDir, "splitcrm-nl-NL.json");
+    const team = join(localeDir, "splitteam-nl-NL.json");
+    writeFileSync(crm, JSON.stringify({ splitCrm: { title: "CRM" } }));
+    writeFileSync(team, JSON.stringify({ splitTeam: { title: "Team" } }));
+    await AddFrontendModule({
+      name: "dms-lang-test-split",
+      sourcePath,
+      renderer: { name: "vue", version: "3" },
+      priority: 50,
+      options: { dmsI18nAppLayer: true },
+    });
+    await initializeLocaleRegistry();
+    updateKey(ownKeyStore(), "splitCrm.title", { nl: "Klanten" });
+    createKey(ownKeyStore(), "splitCrm.subtitle", { nl: "Pijplijn" });
+    expect(readFile(crm)).to.deep.equal({
+      splitCrm: { title: "Klanten", subtitle: "Pijplijn" },
+    });
+    expect(readFile(team)).to.deep.equal({ splitTeam: { title: "Team" } });
   });
 
   it("follows a frontend module registered after the registry started", async function () {

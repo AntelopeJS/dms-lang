@@ -50,7 +50,7 @@
     "typecheck": "tsc --noEmit",
     "format": "oxfmt . && pnpm --dir frontend-vue format",
     "test": "[ -n \"$DMS_PREBUILT\" ] || pnpm run build && ajs module test .",
-    "test:unit": "[ -n \"$DMS_PREBUILT\" ] || pnpm run build && mocha dist/test/locale-discovery.test.js && node --test tests/*.test.mjs",
+    "test:unit": "[ -n \"$DMS_PREBUILT\" ] || pnpm run build && mocha dist/test/locale-discovery.test.js dist/test/write-target.test.js && node --test tests/*.test.mjs",
     "test:node": "[ -n \"$DMS_PREBUILT\" ] || pnpm run build && node --test tests/*.test.mjs",
     "test:frontend": "ajs dms verify-source --layer node_modules/@antelopejs/dms/frontend-vue --module frontend-vue",
     "release": "pnpm run lint && release-it",

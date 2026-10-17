@@ -6,6 +6,7 @@ import { filesStamp, memoize } from "./cache";
 import { discoverLocaleRegistry, localeDirectories } from "./locale-discovery";
 import { readJson } from "./json";
 import { deepMerge, type LocaleMessages } from "./tree";
+import { writeTargetOf } from "./write-target";
 
 export type OriginFilter = "own" | "external";
 
@@ -120,7 +121,18 @@ export function getLocaleCodes(origin: OriginFilter): string[] {
     .map(([code]) => code);
 }
 
-export function getOwnWriteTarget(localeCode: string): string | null {
-  const entries = currentRegistry()[localeCode] ?? [];
-  return entries.findLast((e) => e.origin === "own")?.path ?? null;
+/**
+ * The project file a key of a locale is written to (see
+ * {@link writeTargetOf}): the one defining it, else the one holding its
+ * longest namespace, else the `app-*` file; null when the project has no
+ * file for the locale.
+ */
+export function getOwnWriteTarget(
+  localeCode: string,
+  segments: string[],
+): string | null {
+  const files = (currentRegistry()[localeCode] ?? [])
+    .filter((e) => e.origin === "own")
+    .map(({ path }) => ({ path, data: readJson(path) }));
+  return writeTargetOf(files, segments) ?? null;
 }
