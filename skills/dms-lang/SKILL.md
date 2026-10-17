@@ -24,7 +24,7 @@ ajs project modules add @antelopejs/dms-lang
 ```
 
 - `config.editable: true` in `antelope.config.ts` allows every write. Default `false`: writes fail with a read-only error.
-- The project's own frontend module needs `options: { dmsI18nAppLayer: true }` in `AddFrontendModule`; every `i18n/locales/<name>-<xx-XX>.json` file of it (subfolders and `layers/*` included) becomes the writable **Project files** workspace. `app-` is a convention, not a requirement: one file per domain (`crm-en-GB.json`, `team-en-GB.json`) works. A file without the `-xx-XX` region suffix (`app-it.json`) is ignored.
+- The project's own frontend module needs `options: { dmsI18nAppLayer: true }` in `AddFrontendModule`; its `<name>-<xx-XX>.json` files become the writable **Project files** workspace. Lang scans `i18n/locales` recursively, or `layers/*/i18n/locales` instead when `layers` exists (the root locale folder is then ignored). `app-` is a convention, not a requirement: one file per domain (`crm-en-GB.json`, `team-en-GB.json`) works. A file without the `-xx-XX` region suffix (`app-it.json`) is ignored.
 - Writes to the project files go to the file defining the key; a new key goes to the file holding its longest namespace, else to `app-<xx-XX>.json`, else to the last file of the language. A rename stays in the key's file.
 - Frontend modules registered or removed after Lang started (in their own `construct`/`start`) are picked up within ~2 s, no restart; file edits show on the next read.
 - `config.workspacesDir` stores the created workspaces outside the module's install folder (default `i18n-workspaces/` inside it, wiped by a reinstall).
@@ -48,6 +48,7 @@ Overview, Translation matrix (`translations`), Translation queue (`language?loca
 
 - Messages use the vue-i18n format: `{name}` placeholders, `one | many` plurals, a literal `@` written `{'@'}`. A placeholder that differs from the base text is flagged as an issue.
 - In `default`, a key a module already translates counts as translated ("From a module"); writing a value overrides it.
+- Deleting, clearing or renaming a key changes only its winning project-file definition per language; an older duplicate can become visible again. See `docs/3.configuration.md`, **Project files**, before removing layered overrides.
 - Write routes check page-action permissions (`modules.lang.translate.translations.scoped.matrix.edit`, `….keys`, `modules.lang.manage.workspaces.list.create`, …) on top of `@AuthOwnerOnly`.
 - Writes publish on the realtime topic `dms-lang.translations`.
 - Pages render on the server (`useApiData`); a page without `?workspace=` is redirected server-side to the remembered workspace or `default`.
