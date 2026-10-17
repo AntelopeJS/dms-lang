@@ -124,7 +124,7 @@
 				"label": "Workspace kinds",
 				"default_eyebrow": "Project",
 				"default_title": "Project files",
-				"default_detail": "The dashboard's own app-*.json files.",
+				"default_detail": "The locale files of the dashboard's own frontend module.",
 				"added_eyebrow": "Workspace",
 				"added_title": "Workspaces you create",
 				"added_detail": "Served publicly as JSON for your apps.",
@@ -156,7 +156,7 @@
 			"backup_help": "Every language file and the settings of this workspace in one JSON file. Import… on the Workspaces page turns it back into a workspace.",
 			"backup": "Download backup (.json)",
 			"source_label": "Where the texts live",
-			"source_help_default": "Your DMS's own texts, in the app-*.json files of your project, loaded by the DMS itself. To add a language, add its file next to them, such as app-it.json for Italian.",
+			"source_help_default": "Your DMS's own texts, in the locale files (any name-xx-XX.json) of your project's frontend module, loaded by the DMS itself. To add a language, add its file next to them, such as app-it-IT.json for Italian.",
 			"source_help_modules": "Shipped inside each installed module and loaded by the DMS. Read-only: to change a text, override it from Translations; the override is written to your project files.",
 			"keys_note_title": "A key exists in every language",
 			"keys_note_description": "A key exists as soon as one language has a text for it; a language without that text falls back to the base language in your app."
@@ -165,9 +165,9 @@
 			"default": {
 				"label": "Project files",
 				"kind": "Project",
-				"hint": "Your app's own app-*.json files",
+				"hint": "Your app's own locale files",
 				"description": "Labels of this dashboard: menus, custom pages, forms.",
-				"source": "frontend-vue/i18n/locales/app-*.json · add a language by adding a file",
+				"source": "frontend-vue/i18n/locales/*-xx-XX.json · add a language by adding a file",
 				"files": "One JSON file per language in your project's i18n/locales folder.",
 				"folder": "frontend-vue/i18n/locales"
 			},
@@ -759,7 +759,7 @@
 			"keys_title": "Keys are shared by every language",
 			"keys_description": "A key exists as soon as one language has a text for it. A language without that text counts it as missing, and your app shows the base language instead.",
 			"default_title": "The texts of this dashboard",
-			"default_description": "Stored in frontend-vue/i18n/locales/app-*.json and loaded by the dashboard itself, not served at a public URL. To add a language, add its file to that folder, such as app-it.json for Italian.",
+			"default_description": "Stored in frontend-vue/i18n/locales/*-xx-XX.json and loaded by the dashboard itself, not served at a public URL. To add a language, add its file to that folder, such as app-it-IT.json for Italian.",
 			"modules_title": "Keys shipped by installed modules",
 			"modules_description": "Read-only: they change when a module is installed or upgraded. To change a text in this dashboard, override its key in Project files.",
 			"browse_keys": "Browse keys"
