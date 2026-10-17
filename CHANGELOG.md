@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.3.0
+
+[compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.2.1...v0.3.0)
+
+### 🩹 Fixes
+
+- Discover late frontend modules and write project keys to their own file ([#39](https://github.com/AntelopeJS/dms-lang/pull/39))
+
+### ❤️ Contributors
+
+- Maxime Westhoven ([@mwesto](http://github.com/mwesto))
+
 ## v0.2.1
 
 [compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.2.0...v0.2.1)
