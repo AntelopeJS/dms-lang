@@ -2,7 +2,7 @@ import path from "node:path";
 import { AddFrontendModule } from "@antelopejs/interface-dms/page";
 import { setTranslationConfig } from "./utils/config";
 import { PUBLIC_PATH } from "./utils/constants";
-import { initializeLocaleRegistry } from "./utils/registry";
+import { initializeLocaleRegistry, stopLocaleRegistry } from "./utils/registry";
 
 export * from "./pages";
 export * from "./routes";
@@ -32,4 +32,8 @@ export async function construct(config: DmsLangConfig = {}): Promise<void> {
 
 export async function start(): Promise<void> {
   await initializeLocaleRegistry();
+}
+
+export function stop(): void {
+  stopLocaleRegistry();
 }

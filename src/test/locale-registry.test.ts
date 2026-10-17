@@ -10,6 +10,10 @@ import {
   loadMessages,
 } from "../utils/registry";
 
+/** Longer than the registry's refresh of the frontend modules. */
+const LATE_MODULE_TIMEOUT_MS = 6000;
+const POLL_MS = 100;
+
 describe("[integration] registered locale sources", () => {
   let directory: string;
 
@@ -84,5 +88,39 @@ describe("[integration] registered locale sources", () => {
     expect(loadMessages("own").de.addedFixture).to.deep.equal({
       title: "Neu",
     });
+  });
+});
+
+describe("[integration] project files registered late", () => {
+  let directory: string;
+
+  before(() => {
+    directory = mkdtempSync(join(tmpdir(), "dms-lang-project-"));
+  });
+  after(() => {
+    rmSync(directory, { recursive: true, force: true });
+  });
+
+  it("follows a frontend module registered after the registry started", async function () {
+    this.timeout(LATE_MODULE_TIMEOUT_MS);
+    await initializeLocaleRegistry();
+    const sourcePath = join(directory, "late");
+    const localeDir = join(sourcePath, "i18n/locales");
+    mkdirSync(localeDir, { recursive: true });
+    writeFileSync(
+      join(localeDir, "late-sv-SE.json"),
+      JSON.stringify({ lateFixture: { title: "Sen" } }),
+    );
+    expect(getLocaleCodes("own")).to.not.include("sv");
+    await AddFrontendModule({
+      name: "dms-lang-test-late",
+      sourcePath,
+      renderer: { name: "vue", version: "3" },
+      priority: 60,
+      options: { dmsI18nAppLayer: true },
+    });
+    while (!getLocaleCodes("own").includes("sv"))
+      await new Promise((resolve) => setTimeout(resolve, POLL_MS));
+    expect(loadMessages("own").sv.lateFixture).to.deep.equal({ title: "Sen" });
   });
 });

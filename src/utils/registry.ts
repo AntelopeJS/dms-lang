@@ -16,19 +16,59 @@ interface RegistryEntry {
 
 export type I18nRegistry = Record<string, RegistryEntry[]>;
 
+/**
+ * How often the list of frontend modules is read again: a module that
+ * registers its frontend after this one started (modules start in parallel)
+ * or that is taken down shows up or leaves within this delay.
+ */
+const MODULES_REFRESH_MS = 2000;
+
 let modules: FrontendModuleMetadata[] = [];
+let modulesStamp = "";
+let refreshTimer: NodeJS.Timeout | undefined;
 let directories: string[] = [];
 let directoriesStamp = "";
 let registry: I18nRegistry = {};
 
 /**
- * Lists the language files of the frontend modules. The modules are known for
- * good once the DMS started; their files are listed again whenever one of
- * their locales folders changes, so a language file added by hand shows up
+ * Lists the language files of the frontend modules and keeps following them:
+ * the list of modules is read again every {@link MODULES_REFRESH_MS}, and
+ * their files are listed again whenever one of their locales folders changes,
+ * so a module registered late or a language file added by hand shows up
  * without a restart.
  */
 export async function initializeLocaleRegistry(): Promise<void> {
-  modules = await GetFrontendModules();
+  await refreshModules();
+  refreshTimer ??= setInterval(() => {
+    void refreshModules();
+  }, MODULES_REFRESH_MS);
+  refreshTimer.unref();
+}
+
+/** Stops following the list of frontend modules (the module stops). */
+export function stopLocaleRegistry(): void {
+  clearInterval(refreshTimer);
+  refreshTimer = undefined;
+}
+
+/** What of a frontend module its language files depend on. */
+function moduleStamp(module: FrontendModuleMetadata): string {
+  const isOwn = module.options?.dmsI18nAppLayer === true;
+  return JSON.stringify([module.name, module.sourcePath, isOwn]);
+}
+
+async function refreshModules(): Promise<void> {
+  let next: FrontendModuleMetadata[];
+  try {
+    next = await GetFrontendModules();
+  } catch {
+    // The DMS is going down or restarting: keep the modules known so far.
+    return;
+  }
+  const stamp = next.map(moduleStamp).join("\n");
+  if (stamp === modulesStamp) return;
+  modules = next;
+  modulesStamp = stamp;
   scanRegistry();
 }
 
