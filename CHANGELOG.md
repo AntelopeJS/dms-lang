@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.2.1
+
+[compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.2.0...v0.2.1)
+
+### 📖 Documentation
+
+- Add user guide, screenshots and dms-lang skill ([#31](https://github.com/AntelopeJS/dms-lang/pull/31))
+- Streamline agent guidance ([#35](https://github.com/AntelopeJS/dms-lang/pull/35))
+- Clarify the supported Lang integration boundary ([#36](https://github.com/AntelopeJS/dms-lang/pull/36))
+- Make dense guide sections easier to scan ([#37](https://github.com/AntelopeJS/dms-lang/pull/37))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli <rizzitelli.antony@pm.me>
+
 ## v0.2.0
 
 [compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.1.1...v0.2.0)
