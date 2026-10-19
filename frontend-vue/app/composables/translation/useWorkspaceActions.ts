@@ -79,6 +79,7 @@ interface WorkspaceActionsContext {
   formatCount: ReturnType<typeof useLangFormat>['formatCount']
   workspaces: ReturnType<typeof useI18nWorkspaces>
   selectWorkspace: ReturnType<typeof useWorkspaceRoute>['selectWorkspace']
+  currentPage: ReturnType<typeof useWorkspaceRoute>['currentPage']
   failures: ReturnType<typeof useMutationToast>
   links: ReturnType<typeof useLangLinks>
 }
@@ -209,6 +210,7 @@ async function deleteWorkspace(
   impact: DeleteImpact,
 ): Promise<boolean> {
   const { t, workspaces } = context
+  const page = context.currentPage.value
   const deleted = await context.confirm({
     title: t('dms_lang.workspace_delete.title', { name: workspace }),
     description: t('dms_lang.workspace_delete.description'),
@@ -218,21 +220,27 @@ async function deleteWorkspace(
     impact: deleteImpact(context, workspace, impact),
     body: () => backupButton(context, workspace),
     onConfirm: async () => {
-      await workspaces.deleteWorkspace(workspace)
+      await deleteAfterLeaving({
+        leave: () =>
+          context.selectWorkspace(DEFAULT_WORKSPACE, {
+            page: 'workspaces',
+            replace: true,
+          }),
+        remove: () => workspaces.deleteWorkspace(workspace),
+        restore: () =>
+          context.selectWorkspace(workspace, { page, replace: true }),
+      })
       await workspaces.fetchWorkspaces()
     },
   })
   if (!deleted) return false
   succeed(context, t('dms_lang.workspace_delete.done', { name: workspace }))
-  await context.selectWorkspace(DEFAULT_WORKSPACE, {
-    page: 'workspaces',
-    replace: true,
-  })
   return true
 }
 
 /** Create, import, rename, back up and delete workspaces. */
 export const useWorkspaceActions = () => {
+  const { selectWorkspace, currentPage } = useWorkspaceRoute()
   const context: WorkspaceActionsContext = {
     t: useI18n().t,
     toast: useToast(),
@@ -240,7 +248,8 @@ export const useWorkspaceActions = () => {
     confirm: useConfirm().confirm,
     formatCount: useLangFormat().formatCount,
     workspaces: useI18nWorkspaces(),
-    selectWorkspace: useWorkspaceRoute().selectWorkspace,
+    selectWorkspace,
+    currentPage,
     failures: useMutationToast(),
     links: useLangLinks(),
   }

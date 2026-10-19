@@ -3,6 +3,7 @@ import { test } from "node:test";
 import { coveragePercent } from "../frontend-vue/app/utils/translations.ts";
 import { serverErrorCode } from "../frontend-vue/app/composables/translation/useMutationToast.ts";
 import {
+  deleteAfterLeaving,
   matchesWorkspace,
   sortWorkspaces,
 } from "../frontend-vue/app/utils/workspaces.ts";
@@ -63,4 +64,37 @@ test("workspaces are found by name, description or label and sorted", () => {
     "modules",
   ]);
   assert.deepEqual(list[0].id, "default");
+});
+
+function deletionSteps(remove) {
+  const calls = [];
+  const step = (name, run) => async () => {
+    calls.push(name);
+    await run?.();
+  };
+  return {
+    calls,
+    steps: {
+      leave: step("leave"),
+      remove: step("remove", remove),
+      restore: step("restore"),
+    },
+  };
+}
+
+test("a workspace is deleted once the page has left it", async () => {
+  const { calls, steps } = deletionSteps();
+  await deleteAfterLeaving(steps);
+  assert.deepEqual(
+    calls,
+    ["leave", "remove"],
+    "no block still shows the workspace when its deletion is announced",
+  );
+});
+
+test("a failed deletion brings the page back to the workspace", async () => {
+  const failure = new Error("refused");
+  const { calls, steps } = deletionSteps(() => Promise.reject(failure));
+  await assert.rejects(deleteAfterLeaving(steps), failure);
+  assert.deepEqual(calls, ["leave", "remove", "restore"]);
 });
