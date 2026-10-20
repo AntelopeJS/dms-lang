@@ -44,6 +44,8 @@ interface PanelState {
   /** The props the open panel's body was last given. */
   props: PanelProps
   pendingSwitch: PendingSwitch | null
+  /** Removes the open panel's J / K listener. */
+  stopSteps: (() => void) | null
   isDisposed: boolean
 }
 
@@ -65,6 +67,33 @@ const DRAWER_DIRECTION = 'right'
 // user drags it to under it (its `sizeKey` defaults to the `containerId`), on
 // this device. One panel is open at a time, so the id stays unique.
 const DRAWER_ID = 'dms-lang-key-panel'
+
+// J and K step through the keys as they step through a DMS row drawer's rows
+// (its `listenRowSteps`), unless the user types in a field.
+const STEP_KEYS: Record<string, 'next' | 'previous'> = { j: 'next', k: 'previous' }
+const TYPING_TAGS = new Set(['INPUT', 'TEXTAREA', 'SELECT'])
+
+function isTypingTarget(target: EventTarget | null): boolean {
+  const element = target as HTMLElement | null
+  if (!element) return false
+  return element.isContentEditable || TYPING_TAGS.has(element.tagName)
+}
+
+/** Listens to J and K while the panel is open; returns the removal. */
+function listenSteps(context: PanelContext): () => void {
+  const onKey = (event: KeyboardEvent) => {
+    if (event.metaKey || event.ctrlKey || event.altKey) return
+    if (isTypingTarget(event.target)) return
+    const step = STEP_KEYS[event.key.toLowerCase()]
+    const header = context.header.value
+    if (!step || !header) return
+    event.preventDefault()
+    const canStep = step === 'next' ? header.hasNext : header.hasPrevious
+    if (canStep) header[step]()
+  }
+  window.addEventListener('keydown', onKey)
+  return () => window.removeEventListener('keydown', onKey)
+}
 
 function linkWithKey(context: PanelContext, key: string | undefined): string {
   const { route } = context
@@ -159,6 +188,7 @@ function show(context: PanelContext, request: PanelRequest): Promise<boolean> {
     headerComponent: KeyEditorHeader,
     headerComponentOptions: { header: () => context.header.value },
   })
+  state.stopSteps = listenSteps(context)
   void state.drawer.result.then(() => onClosed(context))
   return Promise.resolve(true)
 }
@@ -186,6 +216,8 @@ function onClosed(context: PanelContext) {
   const { state, route } = context
   state.drawer = null
   state.props = {}
+  state.stopSteps?.()
+  state.stopSteps = null
   settleSwitch(context, null)
   if (!state.isDisposed) dropSeed(context, context.shownKey.value)
   context.shownKey.value = ''
@@ -257,6 +289,7 @@ function watchPanel(context: PanelContext) {
  * The key panel of the matrix: one panel at a time (opening another key
  * moves the open panel to it), and the key it shows in the URL (`?key=`), so
  * a link or a refresh opens it again and the browser's Back button closes it.
+ * J and K step to the next and previous key while it is open.
  * The open panel may refuse another key (one of its fields waits for a
  * choice): `open` tells whether it took the key, so nothing handed over is
  * dropped before it did.
@@ -279,6 +312,7 @@ export function useKeyPanel(options: PanelOptions) {
       drawer: null,
       props: {},
       pendingSwitch: null,
+      stopSteps: null,
       isDisposed: false,
     },
   }
