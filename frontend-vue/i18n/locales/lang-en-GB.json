@@ -376,8 +376,7 @@
 			"outdated": "To review"
 		},
 		"drawer": {
-			"key": "Key",
-			"eyebrow": "Key · {path}",
+			"position": "{index} of {total}",
 			"previous": "Previous key",
 			"next": "Next key",
 			"missing": "{n} missing | {n} missing",

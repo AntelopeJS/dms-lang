@@ -539,6 +539,8 @@ watchEffect(() =>
     missingCount: missingCount.value,
     issueCount: issueCount.value,
     placeholders: formatTokens(placeholdersOf(baseText.value)),
+    index: position.value,
+    total: props.keys.length,
     hasPrevious: hasPrevious.value,
     hasNext: hasNext.value,
     previous: () => go(-1),

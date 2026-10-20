@@ -376,8 +376,7 @@
 			"outdated": "À revoir"
 		},
 		"drawer": {
-			"key": "Clé",
-			"eyebrow": "Clé · {path}",
+			"position": "{index} sur {total}",
 			"previous": "Clé précédente",
 			"next": "Clé suivante",
 			"missing": "{n} manquante | {n} manquantes",
