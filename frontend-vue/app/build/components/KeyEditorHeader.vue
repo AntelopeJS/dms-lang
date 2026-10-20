@@ -28,11 +28,13 @@ const shown = computed(() => props.header())
         size="xs"
         truncate
       />
-      <h2
+      <!-- Not a heading: the drawer's (visually hidden) title already names
+        the dialog after the key. -->
+      <p
         class="text-highlighted font-mono text-[15px] leading-[1.3] font-semibold break-all"
       >
         {{ shown.key }}
-      </h2>
+      </p>
       <div
         v-if="shown.missingCount || shown.issueCount || shown.placeholders"
         class="flex flex-wrap items-center gap-1.5"

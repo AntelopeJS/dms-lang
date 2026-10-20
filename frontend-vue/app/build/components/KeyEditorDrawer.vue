@@ -111,6 +111,7 @@ const fieldErrors = ref<Record<string, string>>({})
 const blocked = ref<Record<string, boolean>>({})
 const states = useSaveStates(fieldStates)
 const body = useTemplateRef<HTMLElement>('body')
+const fieldIds = useId()
 let queue: Promise<unknown> = Promise.resolve()
 
 const key = computed(() => currentKey.value)
@@ -260,6 +261,11 @@ function discardDraft(code: string) {
 function overwrite(code: string) {
   editStarts.set(code, storedOf(code))
   save([code])
+}
+
+// Labels a language's field with its name, for assistive technologies.
+function fieldIdOf(code: string): string {
+  return `${fieldIds}-${code}`
 }
 
 function fieldInput(code: string): HTMLTextAreaElement | null {
@@ -554,7 +560,14 @@ onMounted(() => show(key.value))
       >
         <div class="flex items-center gap-2 text-sm">
           <LocaleTile :code="code" size="sm" :is-base="code === base" />
-          <span class="text-highlighted font-medium">
+          <label
+            v-if="props.editable"
+            :for="fieldIdOf(code)"
+            class="text-highlighted font-medium"
+          >
+            {{ nativeName(code) }}
+          </label>
+          <span v-else class="text-highlighted font-medium">
             {{ nativeName(code) }}
           </span>
           <span class="text-dimmed font-mono text-xs">{{ code }}</span>
@@ -636,6 +649,7 @@ onMounted(() => show(key.value))
         </div>
         <UTextarea
           v-if="props.editable"
+          :id="fieldIdOf(code)"
           :model-value="draftOf(code)"
           autoresize
           :rows="1"
