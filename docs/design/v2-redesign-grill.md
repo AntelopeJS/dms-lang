@@ -178,7 +178,7 @@ A "Missing in" filter (any language or one) independent of the shown columns
 (L-07). Column headers carry their missing count and a coverage bar.
 
 **Q5.5 Key editor drawer?**
-Clicking a key opens a slideover with every language stacked, the base text as
+Clicking a key opens the DMS drawer (`useDrawer`, from the right) with every language stacked, the base text as
 reference, placeholder checks with "Insert {token}", previous / next key,
 rename and delete, and Save (all changed languages in one request).
 
