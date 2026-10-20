@@ -43,7 +43,6 @@ interface PanelState {
   drawer: DrawerOverlay | null
   /** The props the open panel's body was last given. */
   props: PanelProps
-  pushedFrom: string | null
   pendingSwitch: PendingSwitch | null
   isDisposed: boolean
 }
@@ -62,6 +61,10 @@ interface PanelContext {
 
 const KEY_QUERY = 'key'
 const DRAWER_DIRECTION = 'right'
+// Every key opens the same drawer, under one id: the DMS keeps the width the
+// user drags it to under it (its `sizeKey` defaults to the `containerId`), on
+// this device. One panel is open at a time, so the id stays unique.
+const DRAWER_ID = 'dms-lang-key-panel'
 
 function linkWithKey(context: PanelContext, key: string | undefined): string {
   const { route } = context
@@ -149,6 +152,7 @@ function show(context: PanelContext, request: PanelRequest): Promise<boolean> {
   // what the body hands over; its title only names the dialog.
   state.drawer = context.drawers.open({
     direction: DRAWER_DIRECTION,
+    containerId: DRAWER_ID,
     title: request.key,
     component: KeyEditorDrawer,
     componentOptions: state.props,
@@ -166,7 +170,6 @@ async function open(
   if (context.state.drawer) return show(context, request)
   void show(context, request)
   if (context.route.query[KEY_QUERY] === request.key) return true
-  context.state.pushedFrom = linkWithKey(context, undefined)
   await context.router.push(linkWithKey(context, request.key))
   return true
 }
@@ -179,28 +182,6 @@ function onNavigate(context: PanelContext, key: string) {
     void context.router.replace(linkWithKey(context, key))
 }
 
-function nextRoute(context: PanelContext): Promise<void> {
-  return new Promise((resolve) => {
-    const stop = watch(
-      () => context.route.fullPath,
-      () => {
-        stop()
-        resolve()
-      },
-    )
-  })
-}
-
-async function leaveKeyEntry(context: PanelContext, from: string | null) {
-  const without = linkWithKey(context, undefined)
-  if (from === null) return context.router.replace(without)
-  const isBack = nextRoute(context)
-  context.router.back()
-  await isBack
-  if (linkWithKey(context, undefined) !== without)
-    await context.router.replace(without)
-}
-
 function onClosed(context: PanelContext) {
   const { state, route } = context
   state.drawer = null
@@ -208,10 +189,11 @@ function onClosed(context: PanelContext) {
   settleSwitch(context, null)
   if (!state.isDisposed) dropSeed(context, context.shownKey.value)
   context.shownKey.value = ''
-  const from = state.pushedFrom
-  state.pushedFrom = null
   if (state.isDisposed || !route.query[KEY_QUERY]) return
-  void leaveKeyEntry(context, from)
+  // Replaced, not left by going Back: a history step back renders the page
+  // anew (Inertia restores it from the history), which would fold the
+  // matrix's groups and lose its scroll.
+  void context.router.replace(linkWithKey(context, undefined))
 }
 
 function isOpenable(context: PanelContext, key: string): boolean {
@@ -296,7 +278,6 @@ export function useKeyPanel(options: PanelOptions) {
       shownWorkspace: '',
       drawer: null,
       props: {},
-      pushedFrom: null,
       pendingSwitch: null,
       isDisposed: false,
     },
