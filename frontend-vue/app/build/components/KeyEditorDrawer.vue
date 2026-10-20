@@ -6,6 +6,7 @@ import {
   type SaveState,
 } from '../../utils/keySaves'
 import type { CellHold } from '../composables/useCellSaves'
+import { useScrollAreaFill } from '../composables/useScrollAreaFill'
 import {
   clearsBaseText,
   useEditStarts,
@@ -111,6 +112,9 @@ const fieldErrors = ref<Record<string, string>>({})
 const blocked = ref<Record<string, boolean>>({})
 const states = useSaveStates(fieldStates)
 const body = useTemplateRef<HTMLElement>('body')
+const panel = useTemplateRef<HTMLElement>('panel')
+// Down to the drawer's bottom edge, where the footer waits under a short key.
+const fill = useScrollAreaFill(panel)
 const fieldIds = useId()
 let queue: Promise<unknown> = Promise.resolve()
 
@@ -552,7 +556,7 @@ onMounted(() => show(key.value))
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div ref="panel" class="flex flex-col gap-4" :style="fill">
     <div ref="body" class="space-y-4">
       <div
         v-for="code in locales"
@@ -560,7 +564,7 @@ onMounted(() => show(key.value))
         :data-locale="code"
         class="space-y-1.5"
       >
-        <div class="flex items-center gap-2 text-sm">
+        <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
           <LocaleTile :code="code" size="sm" :is-base="code === base" />
           <label
             v-if="props.editable"
@@ -814,9 +818,12 @@ onMounted(() => show(key.value))
     </div>
     <!-- The footer band of a form in a DMS drawer (DmsForm's `container`
       surface): it sticks to the drawer's bottom edge while the languages run
-      past it. -->
+      past it, and the panel's height (`fill`) keeps it there under a short
+      key rather than under the last field. A size container: the shortcut
+      hint follows the drawer's width, not the window's. -->
     <div
-      class="border-default bg-default sticky bottom-[calc(var(--dms-form-foot-pb,0px)*-1)] z-10 -mx-[var(--dms-form-foot-px,0px)] -mb-[var(--dms-form-foot-pb,0px)] space-y-2 border-t px-[var(--dms-form-foot-px,0px)] pt-3 pb-[var(--dms-form-foot-pb,12px)]"
+      data-key-panel-footer
+      class="@container border-default bg-default sticky mt-auto bottom-[calc(var(--dms-form-foot-pb,0px)*-1)] z-10 -mx-[var(--dms-form-foot-px,0px)] -mb-[var(--dms-form-foot-pb,0px)] space-y-2 border-t px-[var(--dms-form-foot-px,0px)] pt-3 pb-[var(--dms-form-foot-pb,12px)]"
     >
       <div
         v-if="props.editable"
@@ -831,7 +838,7 @@ onMounted(() => show(key.value))
           </span>
           <template v-else>{{ $t('dms_lang.drawer.autosave') }}</template>
         </span>
-        <span class="hidden items-center gap-1 sm:inline-flex">
+        <span class="hidden items-center gap-1 @sm:inline-flex">
           <ShortcutKbds :keys="KEY_PANEL_KEYS.saveNext" />
           {{ $t('dms_lang.drawer.save_next') }}
         </span>
