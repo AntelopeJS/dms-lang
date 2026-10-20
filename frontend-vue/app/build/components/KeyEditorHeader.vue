@@ -39,10 +39,11 @@ const position = computed(() => {
 })
 </script>
 
-<!-- The DMS row header's layout (a row drawer's): the key as the title, its
-  place among the matrix's keys under it, previous / next beside it; the
-  drawer adds its close button. The namespaces above the key follow the
-  place, and wrap rather than run under the buttons on a phone. -->
+<!-- The DMS row header's layout and sizes (a row drawer's): the key as the
+  title, its place among the matrix's keys under it, previous / next beside
+  it (J and K too, see useKeyPanel); the drawer adds its close button. As
+  the DMS's, a long title wraps onto two lines before it is cut; the
+  namespaces above the key follow the place on one line, cut at its end. -->
 <template>
   <div v-if="shown" class="flex min-w-0 items-start gap-2">
     <div class="min-w-0 flex-1 space-y-1.5">
@@ -51,7 +52,8 @@ const position = computed(() => {
           the dialog after the key. -->
         <p
           data-key-panel-title
-          class="text-highlighted font-mono text-[15px] leading-[1.3] font-semibold [overflow-wrap:anywhere]"
+          class="text-highlighted line-clamp-2 font-mono text-[17px] leading-[1.3] font-[650] tracking-[-0.02em] [overflow-wrap:anywhere]"
+          :title="shown.key"
         >
           <template v-for="(segment, index) in segments" :key="index">
             <span>{{ segment }}</span>
@@ -60,16 +62,21 @@ const position = computed(() => {
         </p>
         <p
           v-if="position || shown.crumbs"
-          class="text-muted mt-0.5 flex flex-wrap items-baseline gap-x-1.5 text-[12.5px]"
+          class="text-muted mt-0.5 flex min-w-0 items-baseline gap-x-1.5 text-[12.5px]"
         >
-          <span v-if="position" data-key-panel-position class="tabular-nums">
+          <span
+            v-if="position"
+            data-key-panel-position
+            class="shrink-0 tabular-nums"
+          >
             {{ position }}
           </span>
           <span v-if="position && shown.crumbs" aria-hidden="true">·</span>
           <span
             v-if="shown.crumbs"
             data-key-panel-crumbs
-            class="min-w-0 font-mono [overflow-wrap:anywhere]"
+            class="min-w-0 truncate font-mono"
+            :title="shown.crumbs"
           >
             {{ shown.crumbs }}
           </span>
