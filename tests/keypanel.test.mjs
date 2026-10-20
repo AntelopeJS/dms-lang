@@ -84,3 +84,34 @@ test("the key panel lays out by the drawer's width, not the window's", () => {
   for (const source of [BODY, HEADER])
     assert.doesNotMatch(source, /class="[^"]*(?<![@\w-])(sm|md|lg|xl):/);
 });
+
+test("J and K step through the keys as in a DMS row drawer, not while typing", () => {
+  assert.match(PANEL, /\{ j: 'next', k: 'previous' \}/);
+  assert.match(PANEL, /if \(isTypingTarget\(event\.target\)\) return/);
+  assert.match(PANEL, /event\.metaKey \|\| event\.ctrlKey \|\| event\.altKey/);
+  // Listening from the drawer's opening to its closing only.
+  assert.match(PANEL, /state\.stopSteps = listenSteps\(context\)/);
+  assert.match(PANEL, /state\.stopSteps\?\.\(\)/);
+});
+
+test("the key panel's header has the DMS drawer row header's sizes", () => {
+  const title = HEADER.match(/data-key-panel-title\s+class="([^"]+)"/)?.[1];
+  assert.ok(title, "the title is marked");
+  // drawerRowHeader's heading: what makes the header as tall as a row drawer's.
+  for (const size of [
+    "text-[17px]",
+    "leading-[1.3]",
+    "font-[650]",
+    "tracking-[-0.02em]",
+  ])
+    assert.ok(title.split(" ").includes(size), size);
+});
+
+test("the key panel's header stays compact: the key on two lines, the namespaces on one", () => {
+  const title = HEADER.match(/data-key-panel-title\s+class="([^"]+)"/)?.[1];
+  assert.match(title, /\bline-clamp-2\b/);
+  const crumbs = HEADER.match(/data-key-panel-crumbs\s+class="([^"]+)"/)?.[1];
+  assert.ok(crumbs, "the namespaces are marked");
+  assert.match(crumbs, /\btruncate\b/);
+  assert.doesNotMatch(HEADER, /flex-wrap items-baseline/);
+});
