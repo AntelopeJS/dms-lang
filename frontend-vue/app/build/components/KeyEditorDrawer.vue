@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { useMediaQuery } from '@vueuse/core'
-import type { FlatTranslationRow } from '../../types/lang'
+import type { FlatTranslationRow, KeyPanelHeader } from '../../types/lang'
 import {
   storedText,
   type ExpectedText,
@@ -44,14 +43,22 @@ interface Props {
   focusLocale?: string
   /** Text typed elsewhere (a matrix cell) for the key that opens. */
   initialDrafts?: Record<string, string>
+  /**
+   * Set to `false` to close the panel from outside (the URL lost its key):
+   * it saves what it can, hands the rest to the matrix cells, and closes.
+   */
   open?: boolean
   /** A read-only module key can be overridden in the project files. */
   canOverride?: boolean
+  /** The DMS drawer this panel is the body of: closing it saves first. */
+  containerId?: string
 }
 
 interface Emits {
-  close: []
-  'update:open': [open: boolean]
+  /** Closes the DMS drawer without running its close guard again. */
+  success: []
+  /** What the drawer's header (`KeyEditorHeader`) shows. */
+  header: [header: KeyPanelHeader]
   navigate: [key: string]
   override: [key: string]
   /** Texts that could not be saved as the panel closed, handed to their cells. */
@@ -65,7 +72,6 @@ interface KnownInherited {
 
 type FieldStatus = 'missing' | 'inherited' | 'overridden' | 'outdated' | 'done'
 
-const WIDE_SCREEN_QUERY = '(min-width: 1024px)'
 const BASE_MISSING_LABEL = 'dms_lang.matrix.source_missing'
 const FIELD_STATUS_LABELS: Record<FieldStatus, string> = {
   missing: 'dms_lang.matrix.missing',
@@ -81,6 +87,7 @@ const props = withDefaults(defineProps<Props>(), {
   initialDrafts: undefined,
   open: true,
   canOverride: false,
+  containerId: undefined,
 })
 const emit = defineEmits<Emits>()
 
@@ -103,9 +110,7 @@ const fieldStates = ref<Record<string, SaveState>>({})
 const fieldErrors = ref<Record<string, string>>({})
 const blocked = ref<Record<string, boolean>>({})
 const states = useSaveStates(fieldStates)
-const isWide = useMediaQuery(WIDE_SCREEN_QUERY)
 const body = useTemplateRef<HTMLElement>('body')
-let isClosing = false
 let queue: Promise<unknown> = Promise.resolve()
 
 const key = computed(() => currentKey.value)
@@ -147,6 +152,10 @@ const hasInherited = computed(() =>
 const pendingCount = computed(() => locales.value.filter(isWaiting).length)
 const isBusy = computed(() =>
   Object.values(fieldStates.value).includes('saving'),
+)
+const hasPrevious = computed(() => position.value > 0)
+const hasNext = computed(
+  () => position.value >= 0 && position.value < props.keys.length - 1,
 )
 
 useUnsavedChanges({ dirty: () => changedCodes.value.length > 0 })
@@ -406,16 +415,7 @@ async function saveAndNext() {
 
 function finish() {
   isOpen.value = false
-  emit('update:open', false)
-  emit('close')
-}
-
-async function requestClose() {
-  if (isClosing || !isOpen.value) return
-  isClosing = true
-  const isSaved = await flush()
-  isClosing = false
-  if (isSaved) finish()
+  emit('success')
 }
 
 function blockingText(code: string): string {
@@ -437,29 +437,8 @@ function holdOf(code: string): CellHold {
 
 async function closeFromOutside() {
   const isSaved = await flush()
-  isOpen.value = false
   if (!isSaved) emit('keep', changedCodes.value.map(holdOf))
-  emit('close')
-}
-
-function onToggle(open: boolean) {
-  if (!open) requestClose()
-}
-
-function onDismissAttempt() {
-  if (!isWide.value) requestClose()
-}
-
-function onEscape() {
-  const panel = body.value?.closest('[role="dialog"]')
-  if (isWide.value && !panel?.contains(document.activeElement)) return
-  requestClose()
-}
-
-function onOpenAutoFocus(event: Event) {
-  if (!props.focusLocale) return
-  event.preventDefault()
-  focusField(props.focusLocale)
+  finish()
 }
 
 async function rename() {
@@ -537,415 +516,356 @@ watch(
 watch(
   () => props.open,
   (open) => {
-    if (open && !isOpen.value) {
-      isOpen.value = true
-      show(props.keys[props.startIndex] ?? key.value)
-    } else if (!open && isOpen.value) closeFromOutside()
+    if (!open && isOpen.value) closeFromOutside()
   },
+)
+
+// The drawer's X, Escape and a click outside close it through its guards:
+// the panel saves first and stays open on what it could not save, the
+// field that holds it saying why.
+if (props.containerId)
+  onScopeDispose(useLeaveGuard().addGuard(props.containerId, flush))
+
+watchEffect(() =>
+  emit('header', {
+    key: key.value,
+    crumbs: crumbs.value,
+    missingCount: missingCount.value,
+    issueCount: issueCount.value,
+    placeholders: formatTokens(placeholdersOf(baseText.value)),
+    hasPrevious: hasPrevious.value,
+    hasNext: hasNext.value,
+    previous: () => go(-1),
+    next: () => go(1),
+  }),
 )
 
 onMounted(() => show(key.value))
 </script>
 
 <template>
-  <USlideover
-    :open="isOpen"
-    :title="key"
-    :modal="!isWide"
-    :overlay="!isWide"
-    :dismissible="false"
-    :content="{
-      onOpenAutoFocus,
-      onEscapeKeyDown: onEscape,
-    }"
-    :ui="{ content: 'sm:max-w-xl', body: 'space-y-3' }"
-    @update:open="onToggle"
-    @close:prevent="onDismissAttempt"
-  >
-    <template #title>
-      <span class="font-mono break-all">{{ key }}</span>
-    </template>
-    <template #description>
-      <span class="block space-y-2">
-        <DmsEyebrow
-          as="span"
-          :label="
-            crumbs
-              ? $t('dms_lang.drawer.eyebrow', { path: crumbs })
-              : $t('dms_lang.drawer.key')
-          "
-          size="xs"
-          truncate
-        />
-        <span class="flex flex-wrap items-center gap-1.5">
-          <DmsStatusPill
-            v-if="missingCount"
-            dot="none"
-            tone="warning"
-            size="sm"
-            :label="$t('dms_lang.drawer.missing', missingCount)"
-          />
-          <DmsStatusPill
-            v-if="issueCount"
-            dot="none"
-            tone="error"
-            size="sm"
-            icon="i-ph-warning"
-            :label="$t('dms_lang.drawer.issues', issueCount)"
-          />
-          <span
-            v-if="placeholdersOf(baseText).length"
-            class="text-dimmed inline-flex items-center gap-1.5 text-xs"
-          >
-            <UIcon name="i-ph-brackets-curly" class="size-3.5" />
-            {{ $t('dms_lang.drawer.placeholders') }}
-            <PlaceholderText :text="formatTokens(placeholdersOf(baseText))" />
+  <div class="space-y-4">
+    <div ref="body" class="space-y-4">
+      <div
+        v-for="code in locales"
+        :key="`${key}-${code}`"
+        :data-locale="code"
+        class="space-y-1.5"
+      >
+        <div class="flex items-center gap-2 text-sm">
+          <LocaleTile :code="code" size="sm" :is-base="code === base" />
+          <span class="text-highlighted font-medium">
+            {{ nativeName(code) }}
           </span>
-        </span>
-      </span>
-    </template>
-    <template #actions>
-      <UButton
-        icon="i-ph-caret-up"
-        color="neutral"
-        variant="ghost"
-        size="xs"
-        :disabled="position <= 0"
-        :aria-label="$t('dms_lang.drawer.previous')"
-        @click="go(-1)"
-      />
-      <UButton
-        icon="i-ph-caret-down"
-        color="neutral"
-        variant="ghost"
-        size="xs"
-        :disabled="position < 0 || position >= props.keys.length - 1"
-        :aria-label="$t('dms_lang.drawer.next')"
-        @click="go(1)"
-      />
-    </template>
-
-    <template #body>
-      <div ref="body" class="space-y-4">
-        <div
-          v-for="code in locales"
-          :key="`${key}-${code}`"
-          :data-locale="code"
-          class="space-y-1.5"
-        >
-          <div class="flex items-center gap-2 text-sm">
-            <LocaleTile :code="code" size="sm" :is-base="code === base" />
-            <span class="text-highlighted font-medium">
-              {{ nativeName(code) }}
-            </span>
-            <span class="text-dimmed font-mono text-xs">{{ code }}</span>
-            <DmsStatusPill
-              v-if="code === base"
-              dot="none"
-              tone="neutral"
-              size="sm"
-              :label="$t('dms_lang.common.base')"
-            />
-            <span class="ml-auto inline-flex items-center gap-1.5 text-xs">
-              <span
-                v-if="hasConflict(code)"
-                class="text-error inline-flex items-center gap-1 font-medium"
-              >
-                <UIcon name="i-ph-warning" class="size-3.5" />
-                {{ $t('dms_lang.drawer.conflict') }}
-              </span>
-              <template v-else-if="saveStateOf(code) !== 'idle'">
-                <DmsSaveStatus
-                  :state="saveStateOf(code)"
-                  @retry="save([code])"
-                />
-                <UButton
-                  v-if="saveStateOf(code) === 'error'"
-                  size="xs"
-                  color="neutral"
-                  variant="link"
-                  :label="$t('dms_lang.drawer.discard')"
-                  @click="discardDraft(code)"
-                />
-              </template>
-              <span
-                v-else-if="statusOf(code) === 'missing'"
-                class="text-warning font-mono font-semibold uppercase"
-              >
-                {{
-                  $t(
-                    code === base
-                      ? BASE_MISSING_LABEL
-                      : FIELD_STATUS_LABELS.missing,
-                  )
-                }}
-              </span>
-              <template v-else-if="statusOf(code) !== 'done'">
-                <span
-                  :class="
-                    statusOf(code) === 'outdated'
-                      ? 'text-warning font-medium'
-                      : 'text-dimmed'
-                  "
-                >
-                  {{ $t(FIELD_STATUS_LABELS[statusOf(code)]) }}
-                </span>
-                <UButton
-                  v-if="statusOf(code) === 'overridden' && props.editable"
-                  size="xs"
-                  color="neutral"
-                  variant="link"
-                  :label="$t('dms_lang.drawer.use_module')"
-                  @click="(setDraft(code, ''), save([code]))"
-                />
-                <UButton
-                  v-else-if="statusOf(code) === 'outdated' && props.editable"
-                  size="xs"
-                  color="neutral"
-                  variant="link"
-                  icon="i-ph-check"
-                  :label="$t('dms_lang.drawer.mark_reviewed')"
-                  @click="markReviewed(code)"
-                />
-              </template>
-              <UIcon
-                v-else-if="code !== base && !issuesOf(code).length"
-                name="i-ph-check"
-                class="text-success size-4"
-              />
-            </span>
-          </div>
-          <UTextarea
-            v-if="props.editable"
-            :model-value="draftOf(code)"
-            autoresize
-            :rows="1"
-            :maxrows="10"
-            class="w-full"
-            :color="issuesOf(code).length ? 'error' : undefined"
-            :highlight="issuesOf(code).length > 0"
-            @update:model-value="(value: string) => setDraft(code, value)"
-            @blur="onFieldBlur(code)"
-            @keydown.meta.enter.prevent="saveAndNext"
-            @keydown.ctrl.enter.prevent="saveAndNext"
+          <span class="text-dimmed font-mono text-xs">{{ code }}</span>
+          <DmsStatusPill
+            v-if="code === base"
+            dot="none"
+            tone="neutral"
+            size="sm"
+            :label="$t('dms_lang.common.base')"
           />
-          <div
-            v-else
-            class="border-default rounded-md border bg-(--dms-bg-muted) px-3 py-2 text-sm"
-          >
-            <PlaceholderText v-if="draftOf(code)" :text="draftOf(code)" />
-            <span v-else class="text-dimmed">—</span>
-            <p
-              v-if="row.overrides?.[code]"
-              class="text-dimmed border-default mt-2 border-t pt-2 text-xs"
+          <span class="ml-auto inline-flex items-center gap-1.5 text-xs">
+            <span
+              v-if="hasConflict(code)"
+              class="text-error inline-flex items-center gap-1 font-medium"
             >
-              {{ $t('dms_lang.drawer.project_value') }}
-              <PlaceholderText
-                :text="row.overrides[code]"
-                class="text-default"
-              />
-            </p>
-          </div>
-          <div
-            v-if="hasConflict(code)"
-            class="border-error/40 space-y-1.5 rounded-md border px-3 py-2 text-xs"
-          >
-            <p class="text-dimmed">
-              <template v-if="ownOf(code)">
-                {{ $t('dms_lang.drawer.conflict_value') }}
-                <PlaceholderText :text="ownOf(code)" class="text-default" />
-              </template>
-              <template v-else>
-                {{ $t('dms_lang.drawer.conflict_empty') }}
-              </template>
-            </p>
-            <p class="text-dimmed">{{ $t('dms_lang.drawer.conflict_help') }}</p>
-            <div class="flex flex-wrap gap-1.5">
-              <UButton
-                size="xs"
-                color="error"
-                variant="soft"
-                :label="$t('dms_lang.drawer.overwrite')"
-                @mousedown.prevent
-                @click="overwrite(code)"
+              <UIcon name="i-ph-warning" class="size-3.5" />
+              {{ $t('dms_lang.drawer.conflict') }}
+            </span>
+            <template v-else-if="saveStateOf(code) !== 'idle'">
+              <DmsSaveStatus
+                :state="saveStateOf(code)"
+                @retry="save([code])"
               />
               <UButton
+                v-if="saveStateOf(code) === 'error'"
                 size="xs"
                 color="neutral"
-                variant="outline"
+                variant="link"
                 :label="$t('dms_lang.drawer.discard')"
-                @mousedown.prevent
                 @click="discardDraft(code)"
               />
-            </div>
-          </div>
-          <p v-else-if="fieldErrors[code]" class="text-error text-xs">
-            {{ fieldErrors[code] }}
-          </p>
-          <div
-            v-if="props.editable && issuesOf(code).length"
-            class="space-y-1 text-xs"
-          >
-            <div
-              v-for="issue in issuesOf(code)"
-              :key="issue.kind"
-              class="flex flex-wrap items-center gap-x-3 gap-y-1"
+            </template>
+            <span
+              v-else-if="statusOf(code) === 'missing'"
+              class="text-warning font-mono font-semibold uppercase"
             >
+              {{
+                $t(
+                  code === base
+                    ? BASE_MISSING_LABEL
+                    : FIELD_STATUS_LABELS.missing,
+                )
+              }}
+            </span>
+            <template v-else-if="statusOf(code) !== 'done'">
               <span
                 :class="
-                  issue.severity === 'error' ? 'text-error' : 'text-warning'
+                  statusOf(code) === 'outdated'
+                    ? 'text-warning font-medium'
+                    : 'text-dimmed'
                 "
               >
-                {{ messageIssueText(issue, t) }}
-                <template v-if="issue.kind === 'missing'">
-                  {{
-                    $t(
-                      'dms_lang.drawer.issue_help',
-                      { tokens: formatTokens(issue.tokens) },
-                      issue.count,
-                    )
-                  }}
-                </template>
+                {{ $t(FIELD_STATUS_LABELS[statusOf(code)]) }}
               </span>
-              <template v-if="issue.kind === 'missing'">
-                <UButton
-                  v-for="token in issue.tokens"
-                  :key="token"
-                  size="xs"
-                  color="error"
-                  variant="soft"
-                  :label="
-                    $t('dms_lang.drawer.insert', {
-                      token: formatTokens([token]),
-                    })
-                  "
-                  @mousedown.prevent
-                  @click="insertAtCaret(code, formatTokens([token]))"
-                />
-                <UButton
-                  v-if="
-                    issue.tokens.length === 1 &&
-                    issueOfKind(code, 'extra')?.tokens.length === 1
-                  "
-                  size="xs"
-                  color="error"
-                  variant="soft"
-                  :label="
-                    $t('dms_lang.message_issue.replace', {
-                      token: formatTokens(issue.tokens),
-                    })
-                  "
-                  @mousedown.prevent
-                  @click="
-                    rewrite(
-                      code,
-                      replacePlaceholder(
-                        draftOf(code),
-                        issueOfKind(code, 'extra')?.tokens[0] ?? '',
-                        issue.tokens[0],
-                      ),
-                    )
-                  "
-                />
-              </template>
               <UButton
-                v-else-if="
-                  issue.severity === 'error' &&
-                  escapeMessage(draftOf(code)) !== draftOf(code)
+                v-if="statusOf(code) === 'overridden' && props.editable"
+                size="xs"
+                color="neutral"
+                variant="link"
+                :label="$t('dms_lang.drawer.use_module')"
+                @click="(setDraft(code, ''), save([code]))"
+              />
+              <UButton
+                v-else-if="statusOf(code) === 'outdated' && props.editable"
+                size="xs"
+                color="neutral"
+                variant="link"
+                icon="i-ph-check"
+                :label="$t('dms_lang.drawer.mark_reviewed')"
+                @click="markReviewed(code)"
+              />
+            </template>
+            <UIcon
+              v-else-if="code !== base && !issuesOf(code).length"
+              name="i-ph-check"
+              class="text-success size-4"
+            />
+          </span>
+        </div>
+        <UTextarea
+          v-if="props.editable"
+          :model-value="draftOf(code)"
+          autoresize
+          :rows="1"
+          :maxrows="10"
+          class="w-full"
+          :color="issuesOf(code).length ? 'error' : undefined"
+          :highlight="issuesOf(code).length > 0"
+          @update:model-value="(value: string) => setDraft(code, value)"
+          @blur="onFieldBlur(code)"
+          @keydown.meta.enter.prevent="saveAndNext"
+          @keydown.ctrl.enter.prevent="saveAndNext"
+        />
+        <div
+          v-else
+          class="border-default rounded-md border bg-(--dms-bg-muted) px-3 py-2 text-sm"
+        >
+          <PlaceholderText v-if="draftOf(code)" :text="draftOf(code)" />
+          <span v-else class="text-dimmed">—</span>
+          <p
+            v-if="row.overrides?.[code]"
+            class="text-dimmed border-default mt-2 border-t pt-2 text-xs"
+          >
+            {{ $t('dms_lang.drawer.project_value') }}
+            <PlaceholderText
+              :text="row.overrides[code]"
+              class="text-default"
+            />
+          </p>
+        </div>
+        <div
+          v-if="hasConflict(code)"
+          class="border-error/40 space-y-1.5 rounded-md border px-3 py-2 text-xs"
+        >
+          <p class="text-dimmed">
+            <template v-if="ownOf(code)">
+              {{ $t('dms_lang.drawer.conflict_value') }}
+              <PlaceholderText :text="ownOf(code)" class="text-default" />
+            </template>
+            <template v-else>
+              {{ $t('dms_lang.drawer.conflict_empty') }}
+            </template>
+          </p>
+          <p class="text-dimmed">{{ $t('dms_lang.drawer.conflict_help') }}</p>
+          <div class="flex flex-wrap gap-1.5">
+            <UButton
+              size="xs"
+              color="error"
+              variant="soft"
+              :label="$t('dms_lang.drawer.overwrite')"
+              @mousedown.prevent
+              @click="overwrite(code)"
+            />
+            <UButton
+              size="xs"
+              color="neutral"
+              variant="outline"
+              :label="$t('dms_lang.drawer.discard')"
+              @mousedown.prevent
+              @click="discardDraft(code)"
+            />
+          </div>
+        </div>
+        <p v-else-if="fieldErrors[code]" class="text-error text-xs">
+          {{ fieldErrors[code] }}
+        </p>
+        <div
+          v-if="props.editable && issuesOf(code).length"
+          class="space-y-1 text-xs"
+        >
+          <div
+            v-for="issue in issuesOf(code)"
+            :key="issue.kind"
+            class="flex flex-wrap items-center gap-x-3 gap-y-1"
+          >
+            <span
+              :class="
+                issue.severity === 'error' ? 'text-error' : 'text-warning'
+              "
+            >
+              {{ messageIssueText(issue, t) }}
+              <template v-if="issue.kind === 'missing'">
+                {{
+                  $t(
+                    'dms_lang.drawer.issue_help',
+                    { tokens: formatTokens(issue.tokens) },
+                    issue.count,
+                  )
+                }}
+              </template>
+            </span>
+            <template v-if="issue.kind === 'missing'">
+              <UButton
+                v-for="token in issue.tokens"
+                :key="token"
+                size="xs"
+                color="error"
+                variant="soft"
+                :label="
+                  $t('dms_lang.drawer.insert', {
+                    token: formatTokens([token]),
+                  })
+                "
+                @mousedown.prevent
+                @click="insertAtCaret(code, formatTokens([token]))"
+              />
+              <UButton
+                v-if="
+                  issue.tokens.length === 1 &&
+                  issueOfKind(code, 'extra')?.tokens.length === 1
                 "
                 size="xs"
                 color="error"
                 variant="soft"
-                icon="i-ph-magic-wand"
-                :label="$t('dms_lang.message_issue.escape')"
+                :label="
+                  $t('dms_lang.message_issue.replace', {
+                    token: formatTokens(issue.tokens),
+                  })
+                "
                 @mousedown.prevent
-                @click="rewrite(code, escapeMessage(draftOf(code)))"
+                @click="
+                  rewrite(
+                    code,
+                    replacePlaceholder(
+                      draftOf(code),
+                      issueOfKind(code, 'extra')?.tokens[0] ?? '',
+                      issue.tokens[0],
+                    ),
+                  )
+                "
               />
-            </div>
-          </div>
-          <p
-            v-else-if="
-              props.editable &&
-              code !== base &&
-              baseText &&
-              statusOf(code) === 'missing'
-            "
-            class="text-dimmed text-xs"
-          >
-            {{ $t('dms_lang.drawer.reference') }}
-            <PlaceholderText :text="baseText" />
-          </p>
-        </div>
-      </div>
-    </template>
-
-    <template #footer>
-      <div class="w-full space-y-2">
-        <div
-          v-if="props.editable"
-          class="text-dimmed flex items-center justify-between gap-2 text-xs"
-        >
-          <span aria-live="polite">
-            <template v-if="isBusy">
-              {{ $t('dms_lang.drawer.saving') }}
             </template>
-            <span v-else-if="pendingCount" class="text-error">
-              {{ $t('dms_lang.drawer.unsaved_count', pendingCount) }}
-            </span>
-            <template v-else>{{ $t('dms_lang.drawer.autosave') }}</template>
-          </span>
-          <span class="hidden items-center gap-1 sm:inline-flex">
-            <ShortcutKbds :keys="KEY_PANEL_KEYS.saveNext" />
-            {{ $t('dms_lang.drawer.save_next') }}
-          </span>
-        </div>
-        <div class="flex w-full items-center gap-2">
-          <template v-if="props.manageKeys && isStored">
             <UButton
-              v-if="!hasInherited"
-              icon="i-ph-pencil-simple"
-              color="neutral"
-              variant="ghost"
-              size="sm"
-              :label="$t('dms_lang.drawer.rename')"
-              @click="rename"
-            />
-            <UButton
-              :icon="
-                hasInherited ? 'i-ph-arrow-counter-clockwise' : 'i-ph-trash'
+              v-else-if="
+                issue.severity === 'error' &&
+                escapeMessage(draftOf(code)) !== draftOf(code)
               "
-              :color="hasInherited ? 'neutral' : 'error'"
-              variant="ghost"
-              size="sm"
-              :label="
-                hasInherited
-                  ? $t('dms_lang.drawer.revert_module')
-                  : $t('dms_lang.drawer.delete')
-              "
-              @click="remove"
+              size="xs"
+              color="error"
+              variant="soft"
+              icon="i-ph-magic-wand"
+              :label="$t('dms_lang.message_issue.escape')"
+              @mousedown.prevent
+              @click="rewrite(code, escapeMessage(draftOf(code)))"
             />
-          </template>
-          <UButton
-            v-if="!props.editable && props.canOverride"
-            icon="i-ph-git-fork"
-            color="neutral"
-            variant="outline"
-            size="sm"
-            :label="$t('dms_lang.override.action')"
-            @click="emit('override', key)"
-          />
-          <div class="flex-1" />
-          <UButton
-            v-if="props.editable"
-            icon="i-ph-check"
-            size="sm"
-            :loading="isBusy"
-            :disabled="!changedCodes.length"
-            :label="$t('dms_lang.drawer.save')"
-            @click="flush()"
-          />
+          </div>
         </div>
+        <p
+          v-else-if="
+            props.editable &&
+            code !== base &&
+            baseText &&
+            statusOf(code) === 'missing'
+          "
+          class="text-dimmed text-xs"
+        >
+          {{ $t('dms_lang.drawer.reference') }}
+          <PlaceholderText :text="baseText" />
+        </p>
       </div>
-    </template>
-  </USlideover>
+    </div>
+    <!-- The footer band of a form in a DMS drawer (DmsForm's `container`
+      surface): it sticks to the drawer's bottom edge while the languages run
+      past it. -->
+    <div
+      class="border-default bg-default sticky bottom-[calc(var(--dms-form-foot-pb,0px)*-1)] z-10 -mx-[var(--dms-form-foot-px,0px)] -mb-[var(--dms-form-foot-pb,0px)] space-y-2 border-t px-[var(--dms-form-foot-px,0px)] pt-3 pb-[var(--dms-form-foot-pb,12px)]"
+    >
+      <div
+        v-if="props.editable"
+        class="text-dimmed flex items-center justify-between gap-2 text-xs"
+      >
+        <span aria-live="polite">
+          <template v-if="isBusy">
+            {{ $t('dms_lang.drawer.saving') }}
+          </template>
+          <span v-else-if="pendingCount" class="text-error">
+            {{ $t('dms_lang.drawer.unsaved_count', pendingCount) }}
+          </span>
+          <template v-else>{{ $t('dms_lang.drawer.autosave') }}</template>
+        </span>
+        <span class="hidden items-center gap-1 sm:inline-flex">
+          <ShortcutKbds :keys="KEY_PANEL_KEYS.saveNext" />
+          {{ $t('dms_lang.drawer.save_next') }}
+        </span>
+      </div>
+      <div class="flex w-full items-center gap-2">
+        <template v-if="props.manageKeys && isStored">
+          <UButton
+            v-if="!hasInherited"
+            icon="i-ph-pencil-simple"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            :label="$t('dms_lang.drawer.rename')"
+            @click="rename"
+          />
+          <UButton
+            :icon="
+              hasInherited ? 'i-ph-arrow-counter-clockwise' : 'i-ph-trash'
+            "
+            :color="hasInherited ? 'neutral' : 'error'"
+            variant="ghost"
+            size="sm"
+            :label="
+              hasInherited
+                ? $t('dms_lang.drawer.revert_module')
+                : $t('dms_lang.drawer.delete')
+            "
+            @click="remove"
+          />
+        </template>
+        <UButton
+          v-if="!props.editable && props.canOverride"
+          icon="i-ph-git-fork"
+          color="neutral"
+          variant="outline"
+          size="sm"
+          :label="$t('dms_lang.override.action')"
+          @click="emit('override', key)"
+        />
+        <div class="flex-1" />
+        <UButton
+          v-if="props.editable"
+          icon="i-ph-check"
+          size="sm"
+          :loading="isBusy"
+          :disabled="!changedCodes.length"
+          :label="$t('dms_lang.drawer.save')"
+          @click="flush()"
+        />
+      </div>
+    </div>
+  </div>
 </template>
