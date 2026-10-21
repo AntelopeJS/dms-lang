@@ -377,8 +377,6 @@
 		},
 		"drawer": {
 			"position": "{index} of {total}",
-			"previous": "Previous key",
-			"next": "Next key",
 			"missing": "{n} missing | {n} missing",
 			"issues": "{n} issue | {n} issues",
 			"placeholders": "Variables",

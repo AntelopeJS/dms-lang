@@ -1,8 +1,8 @@
-import type { Ref, ShallowRef } from 'vue'
+import type { Ref } from 'vue'
 import { useDmsRouter, useDmsState } from '#dms/frontend-module'
+import type { DrawerRowHeader } from '#dms-ui/app/composables/containers/types'
 import type { FlatTranslationRow, KeyPanelHeader } from '../../types/lang'
 import KeyEditorDrawer from '../components/KeyEditorDrawer.vue'
-import KeyEditorHeader from '../components/KeyEditorHeader.vue'
 import type { CellHold } from './useCellSaves'
 
 export interface PanelRequest {
@@ -44,15 +44,12 @@ interface PanelState {
   /** The props the open panel's body was last given. */
   props: PanelProps
   pendingSwitch: PendingSwitch | null
-  /** Removes the open panel's J / K listener. */
-  stopSteps: (() => void) | null
   isDisposed: boolean
 }
 
 interface PanelContext {
   options: PanelOptions
   drawers: ReturnType<typeof useDrawer>
-  header: ShallowRef<KeyPanelHeader | null>
   router: ReturnType<typeof useDmsRouter>
   route: ReturnType<typeof useWorkspaceRoute>['route']
   seeds: Ref<Record<string, FlatTranslationRow>>
@@ -64,35 +61,30 @@ interface PanelContext {
 const KEY_QUERY = 'key'
 const DRAWER_DIRECTION = 'right'
 // Every key opens the same drawer, under one id: the DMS keeps the width the
-// user drags it to under it (its `sizeKey` defaults to the `containerId`), on
-// this device. One panel is open at a time, so the id stays unique.
+// user drags it to under its `sizeKey`, on this device. One panel is open at
+// a time, so the id stays unique.
 const DRAWER_ID = 'dms-lang-key-panel'
+const POSITION_LABEL = '$dms_lang.drawer.position'
 
-// J and K step through the keys as they step through a DMS row drawer's rows
-// (its `listenRowSteps`), unless the user types in a field.
-const STEP_KEYS: Record<string, 'next' | 'previous'> = { j: 'next', k: 'previous' }
-const TYPING_TAGS = new Set(['INPUT', 'TEXTAREA', 'SELECT'])
-
-function isTypingTarget(target: EventTarget | null): boolean {
-  const element = target as HTMLElement | null
-  if (!element) return false
-  return element.isContentEditable || TYPING_TAGS.has(element.tagName)
-}
-
-/** Listens to J and K while the panel is open; returns the removal. */
-function listenSteps(context: PanelContext): () => void {
-  const onKey = (event: KeyboardEvent) => {
-    if (event.metaKey || event.ctrlKey || event.altKey) return
-    if (isTypingTarget(event.target)) return
-    const step = STEP_KEYS[event.key.toLowerCase()]
-    const header = context.header.value
-    if (!step || !header) return
-    event.preventDefault()
-    const canStep = step === 'next' ? header.hasNext : header.hasPrevious
-    if (canStep) header[step]()
+/**
+ * The DMS row header for the key the body shows: the key, its place among
+ * the matrix's keys, previous / next and J / K. A key opened off the list
+ * has no place in it, so no steps.
+ */
+function rowHeaderOf(header: KeyPanelHeader): DrawerRowHeader {
+  if (header.index < 0) return { title: header.key }
+  return {
+    title: header.key,
+    positionLabel: POSITION_LABEL,
+    navigation: {
+      index: header.index,
+      total: header.total,
+      hasPrev: header.hasPrevious,
+      hasNext: header.hasNext,
+      prev: header.previous,
+      next: header.next,
+    },
   }
-  window.addEventListener('keydown', onKey)
-  return () => window.removeEventListener('keydown', onKey)
 }
 
 function linkWithKey(context: PanelContext, key: string | undefined): string {
@@ -133,7 +125,8 @@ function propsFor(context: PanelContext, request: PanelRequest): PanelProps {
     onNavigate: (key: string) => onNavigate(context, key),
     onOverride: options.onOverride,
     onKeep: options.onKeep,
-    onHeader: (header: KeyPanelHeader) => (context.header.value = header),
+    onHeader: (header: KeyPanelHeader) =>
+      context.state.drawer?.patch({ rowHeader: rowHeaderOf(header) }),
   }
 }
 
@@ -175,20 +168,18 @@ function show(context: PanelContext, request: PanelRequest): Promise<boolean> {
   }
   if (state.drawer) return switchKey(context, request)
   context.shownKey.value = request.key
-  context.header.value = null
   state.props = propsFor(context, request)
-  // The DMS drawer draws the head (the key, its state, previous / next) from
-  // what the body hands over; its title only names the dialog.
+  // The DMS row header names the key; the body hands over its place among
+  // the keys as it shows one (`onHeader`).
   state.drawer = context.drawers.open({
     direction: DRAWER_DIRECTION,
     containerId: DRAWER_ID,
+    sizeKey: DRAWER_ID,
     title: request.key,
+    rowHeader: { title: request.key },
     component: KeyEditorDrawer,
     componentOptions: state.props,
-    headerComponent: KeyEditorHeader,
-    headerComponentOptions: { header: () => context.header.value },
   })
-  state.stopSteps = listenSteps(context)
   void state.drawer.result.then(() => onClosed(context))
   return Promise.resolve(true)
 }
@@ -216,8 +207,6 @@ function onClosed(context: PanelContext) {
   const { state, route } = context
   state.drawer = null
   state.props = {}
-  state.stopSteps?.()
-  state.stopSteps = null
   settleSwitch(context, null)
   if (!state.isDisposed) dropSeed(context, context.shownKey.value)
   context.shownKey.value = ''
@@ -289,7 +278,8 @@ function watchPanel(context: PanelContext) {
  * The key panel of the matrix: one panel at a time (opening another key
  * moves the open panel to it), and the key it shows in the URL (`?key=`), so
  * a link or a refresh opens it again and the browser's Back button closes it.
- * J and K step to the next and previous key while it is open.
+ * J and K step to the next and previous key while it is open (the DMS row
+ * header's).
  * The open panel may refuse another key (one of its fields waits for a
  * choice): `open` tells whether it took the key, so nothing handed over is
  * dropped before it did.
@@ -298,7 +288,6 @@ export function useKeyPanel(options: PanelOptions) {
   const context: PanelContext = {
     options,
     drawers: useDrawer(),
-    header: shallowRef(null),
     router: useDmsRouter(),
     route: useWorkspaceRoute().route,
     seeds: useDmsState<Record<string, FlatTranslationRow>>(
@@ -312,7 +301,6 @@ export function useKeyPanel(options: PanelOptions) {
       drawer: null,
       props: {},
       pendingSwitch: null,
-      stopSteps: null,
       isDisposed: false,
     },
   }

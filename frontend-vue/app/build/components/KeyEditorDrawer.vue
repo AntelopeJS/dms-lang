@@ -6,7 +6,6 @@ import {
   type SaveState,
 } from '../../utils/keySaves'
 import type { CellHold } from '../composables/useCellSaves'
-import { useScrollAreaFill } from '../composables/useScrollAreaFill'
 import {
   clearsBaseText,
   useEditStarts,
@@ -58,7 +57,7 @@ interface Props {
 interface Emits {
   /** Closes the DMS drawer without running its close guard again. */
   success: []
-  /** What the drawer's header (`KeyEditorHeader`) shows. */
+  /** The key shown and its place among the keys, for the DMS row header. */
   header: [header: KeyPanelHeader]
   navigate: [key: string]
   override: [key: string]
@@ -112,9 +111,6 @@ const fieldErrors = ref<Record<string, string>>({})
 const blocked = ref<Record<string, boolean>>({})
 const states = useSaveStates(fieldStates)
 const body = useTemplateRef<HTMLElement>('body')
-const panel = useTemplateRef<HTMLElement>('panel')
-// Down to the drawer's bottom edge, where the footer waits under a short key.
-const fill = useScrollAreaFill(panel)
 const fieldIds = useId()
 let queue: Promise<unknown> = Promise.resolve()
 
@@ -148,6 +144,10 @@ const missingCount = computed(
 )
 const issueCount = computed(
   () => locales.value.filter((code) => issuesOf(code).length > 0).length,
+)
+/** The base text's placeholders, `{price} {count}`; empty without any. */
+const placeholders = computed(() =>
+  formatTokens(placeholdersOf(baseText.value)),
 )
 const hasInherited = computed(() =>
   Object.values(row.value.inherited ?? {}).some(
@@ -539,10 +539,6 @@ if (props.containerId)
 watchEffect(() =>
   emit('header', {
     key: key.value,
-    crumbs: crumbs.value,
-    missingCount: missingCount.value,
-    issueCount: issueCount.value,
-    placeholders: formatTokens(placeholdersOf(baseText.value)),
     index: position.value,
     total: props.keys.length,
     hasPrevious: hasPrevious.value,
@@ -556,7 +552,52 @@ onMounted(() => show(key.value))
 </script>
 
 <template>
-  <div ref="panel" class="flex flex-col gap-4" :style="fill">
+  <!-- Fills the drawer's flex body, so the DMS footer sits at its end. -->
+  <div class="flex flex-1 flex-col gap-4">
+    <!-- What the DMS row header does not say of the key: the namespaces
+      above it, what it misses, its placeholders. -->
+    <div
+      v-if="crumbs || missingCount || issueCount || placeholders"
+      data-key-panel-summary
+      class="space-y-1.5"
+    >
+      <p
+        v-if="crumbs"
+        data-key-panel-crumbs
+        class="text-muted min-w-0 truncate font-mono text-[12.5px]"
+        :title="crumbs"
+      >
+        {{ crumbs }}
+      </p>
+      <div
+        v-if="missingCount || issueCount || placeholders"
+        class="flex flex-wrap items-center gap-1.5"
+      >
+        <DmsStatusPill
+          v-if="missingCount"
+          dot="none"
+          tone="warning"
+          size="sm"
+          :label="$t('dms_lang.drawer.missing', missingCount)"
+        />
+        <DmsStatusPill
+          v-if="issueCount"
+          dot="none"
+          tone="error"
+          size="sm"
+          icon="i-ph-warning"
+          :label="$t('dms_lang.drawer.issues', issueCount)"
+        />
+        <span
+          v-if="placeholders"
+          class="text-dimmed inline-flex items-center gap-1.5 text-xs"
+        >
+          <UIcon name="i-ph-brackets-curly" class="size-3.5" />
+          {{ $t('dms_lang.drawer.placeholders') }}
+          <PlaceholderText :text="placeholders" />
+        </span>
+      </div>
+    </div>
     <div ref="body" class="space-y-4">
       <div
         v-for="code in locales"
@@ -816,79 +857,76 @@ onMounted(() => show(key.value))
         </p>
       </div>
     </div>
-    <!-- The footer band of a form in a DMS drawer (DmsForm's `container`
-      surface): it sticks to the drawer's bottom edge while the languages run
-      past it, and the panel's height (`fill`) keeps it there under a short
-      key rather than under the last field. A size container: the shortcut
-      hint follows the drawer's width, not the window's. -->
-    <div
-      data-key-panel-footer
-      class="@container border-default bg-default sticky mt-auto bottom-[calc(var(--dms-form-foot-pb,0px)*-1)] z-10 -mx-[var(--dms-form-foot-px,0px)] -mb-[var(--dms-form-foot-pb,0px)] space-y-2 border-t px-[var(--dms-form-foot-px,0px)] pt-3 pb-[var(--dms-form-foot-pb,12px)]"
-    >
-      <div
-        v-if="props.editable"
-        class="text-dimmed flex items-center justify-between gap-2 text-xs"
-      >
-        <span aria-live="polite">
-          <template v-if="isBusy">
-            {{ $t('dms_lang.drawer.saving') }}
-          </template>
-          <span v-else-if="pendingCount" class="text-error">
-            {{ $t('dms_lang.drawer.unsaved_count', pendingCount) }}
-          </span>
-          <template v-else>{{ $t('dms_lang.drawer.autosave') }}</template>
-        </span>
-        <span class="hidden items-center gap-1 @sm:inline-flex">
-          <ShortcutKbds :keys="KEY_PANEL_KEYS.saveNext" />
-          {{ $t('dms_lang.drawer.save_next') }}
-        </span>
-      </div>
-      <div class="flex w-full items-center gap-2">
-        <template v-if="props.manageKeys && isStored">
-          <UButton
-            v-if="!hasInherited"
-            icon="i-ph-pencil-simple"
-            color="neutral"
-            variant="ghost"
-            size="sm"
-            :label="$t('dms_lang.drawer.rename')"
-            @click="rename"
-          />
-          <UButton
-            :icon="
-              hasInherited ? 'i-ph-arrow-counter-clockwise' : 'i-ph-trash'
-            "
-            :color="hasInherited ? 'neutral' : 'error'"
-            variant="ghost"
-            size="sm"
-            :label="
-              hasInherited
-                ? $t('dms_lang.drawer.revert_module')
-                : $t('dms_lang.drawer.delete')
-            "
-            @click="remove"
-          />
-        </template>
-        <UButton
-          v-if="!props.editable && props.canOverride"
-          icon="i-ph-git-fork"
-          color="neutral"
-          variant="outline"
-          size="sm"
-          :label="$t('dms_lang.override.action')"
-          @click="emit('override', key)"
-        />
-        <div class="flex-1" />
-        <UButton
+    <!-- The DMS footer: at the drawer's bottom edge under a short key,
+      sticking there while the languages run past it. A size container: the
+      shortcut hint follows the drawer's width, not the window's. -->
+    <DmsContainerFooter data-key-panel-footer>
+      <div class="@container w-full space-y-2">
+        <div
           v-if="props.editable"
-          icon="i-ph-check"
-          size="sm"
-          :loading="isBusy"
-          :disabled="!changedCodes.length"
-          :label="$t('dms_lang.drawer.save')"
-          @click="flush()"
-        />
+          class="text-dimmed flex items-center justify-between gap-2 text-xs"
+        >
+          <span aria-live="polite">
+            <template v-if="isBusy">
+              {{ $t('dms_lang.drawer.saving') }}
+            </template>
+            <span v-else-if="pendingCount" class="text-error">
+              {{ $t('dms_lang.drawer.unsaved_count', pendingCount) }}
+            </span>
+            <template v-else>{{ $t('dms_lang.drawer.autosave') }}</template>
+          </span>
+          <span class="hidden items-center gap-1 @sm:inline-flex">
+            <ShortcutKbds :keys="KEY_PANEL_KEYS.saveNext" />
+            {{ $t('dms_lang.drawer.save_next') }}
+          </span>
+        </div>
+        <div class="flex w-full items-center gap-2">
+          <template v-if="props.manageKeys && isStored">
+            <UButton
+              v-if="!hasInherited"
+              icon="i-ph-pencil-simple"
+              color="neutral"
+              variant="ghost"
+              size="sm"
+              :label="$t('dms_lang.drawer.rename')"
+              @click="rename"
+            />
+            <UButton
+              :icon="
+                hasInherited ? 'i-ph-arrow-counter-clockwise' : 'i-ph-trash'
+              "
+              :color="hasInherited ? 'neutral' : 'error'"
+              variant="ghost"
+              size="sm"
+              :label="
+                hasInherited
+                  ? $t('dms_lang.drawer.revert_module')
+                  : $t('dms_lang.drawer.delete')
+              "
+              @click="remove"
+            />
+          </template>
+          <UButton
+            v-if="!props.editable && props.canOverride"
+            icon="i-ph-git-fork"
+            color="neutral"
+            variant="outline"
+            size="sm"
+            :label="$t('dms_lang.override.action')"
+            @click="emit('override', key)"
+          />
+          <div class="flex-1" />
+          <UButton
+            v-if="props.editable"
+            icon="i-ph-check"
+            size="sm"
+            :loading="isBusy"
+            :disabled="!changedCodes.length"
+            :label="$t('dms_lang.drawer.save')"
+            @click="flush()"
+          />
+        </div>
       </div>
-    </div>
+    </DmsContainerFooter>
   </div>
 </template>

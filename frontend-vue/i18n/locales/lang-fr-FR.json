@@ -377,8 +377,6 @@
 		},
 		"drawer": {
 			"position": "{index} sur {total}",
-			"previous": "Clé précédente",
-			"next": "Clé suivante",
 			"missing": "{n} manquante | {n} manquantes",
 			"issues": "{n} anomalie | {n} anomalies",
 			"placeholders": "Variables",
