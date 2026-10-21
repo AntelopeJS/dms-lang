@@ -3,6 +3,8 @@ import { useDmsRouter, useDmsState } from '#dms/frontend-module'
 import type { DrawerRowHeader } from '#dms-ui/app/composables/containers/types'
 import type { FlatTranslationRow, KeyPanelHeader } from '../../types/lang'
 import KeyEditorDrawer from '../components/KeyEditorDrawer.vue'
+import KeyStatus from '../components/KeyStatus.vue'
+import { NAMESPACE_SEPARATOR } from '../../utils/translations'
 import type { CellHold } from './useCellSaves'
 
 export interface PanelRequest {
@@ -66,24 +68,47 @@ const DRAWER_DIRECTION = 'right'
 const DRAWER_ID = 'dms-lang-key-panel'
 const POSITION_LABEL = '$dms_lang.drawer.position'
 
+// The key keeps its look in the DMS row header: in mono, wrapped only after
+// its separators, the namespaces above it after its place among the keys,
+// what it misses, its issues and its placeholders under them.
+const KEY_LOOK = {
+  titleClass: 'font-mono',
+  titleBreakAfter: NAMESPACE_SEPARATOR,
+  subtitleClass: 'font-mono',
+} as const
+
+/** The DMS row header of a key just opened, before its body hands it over. */
+function openingRowHeader(key: string): DrawerRowHeader {
+  return { title: key, ...KEY_LOOK }
+}
+
 /**
  * The DMS row header for the key the body shows: the key, its place among
- * the matrix's keys, previous / next and J / K. A key opened off the list
- * has no place in it, so no steps.
+ * the matrix's keys, previous / next and J / K, its namespaces and status.
+ * A key opened off the list has no place in it, so no steps.
  */
 function rowHeaderOf(header: KeyPanelHeader): DrawerRowHeader {
-  if (header.index < 0) return { title: header.key }
   return {
     title: header.key,
-    positionLabel: POSITION_LABEL,
-    navigation: {
-      index: header.index,
-      total: header.total,
-      hasPrev: header.hasPrevious,
-      hasNext: header.hasNext,
-      prev: header.previous,
-      next: header.next,
+    ...KEY_LOOK,
+    subtitle: header.crumbs || undefined,
+    component: KeyStatus,
+    componentOptions: {
+      missingCount: header.missingCount,
+      issueCount: header.issueCount,
+      placeholders: header.placeholders,
     },
+    ...(header.index >= 0 && {
+      positionLabel: POSITION_LABEL,
+      navigation: {
+        index: header.index,
+        total: header.total,
+        hasPrev: header.hasPrevious,
+        hasNext: header.hasNext,
+        prev: header.previous,
+        next: header.next,
+      },
+    }),
   }
 }
 
@@ -176,7 +201,7 @@ function show(context: PanelContext, request: PanelRequest): Promise<boolean> {
     containerId: DRAWER_ID,
     sizeKey: DRAWER_ID,
     title: request.key,
-    rowHeader: { title: request.key },
+    rowHeader: openingRowHeader(request.key),
     component: KeyEditorDrawer,
     componentOptions: state.props,
   })

@@ -57,7 +57,7 @@ interface Props {
 interface Emits {
   /** Closes the DMS drawer without running its close guard again. */
   success: []
-  /** The key shown and its place among the keys, for the DMS row header. */
+  /** What the DMS row header shows of the key (`useKeyPanel`). */
   header: [header: KeyPanelHeader]
   navigate: [key: string]
   override: [key: string]
@@ -539,6 +539,10 @@ if (props.containerId)
 watchEffect(() =>
   emit('header', {
     key: key.value,
+    crumbs: crumbs.value,
+    missingCount: missingCount.value,
+    issueCount: issueCount.value,
+    placeholders: placeholders.value,
     index: position.value,
     total: props.keys.length,
     hasPrevious: hasPrevious.value,
@@ -554,50 +558,6 @@ onMounted(() => show(key.value))
 <template>
   <!-- Fills the drawer's flex body, so the DMS footer sits at its end. -->
   <div class="flex flex-1 flex-col gap-4">
-    <!-- What the DMS row header does not say of the key: the namespaces
-      above it, what it misses, its placeholders. -->
-    <div
-      v-if="crumbs || missingCount || issueCount || placeholders"
-      data-key-panel-summary
-      class="space-y-1.5"
-    >
-      <p
-        v-if="crumbs"
-        data-key-panel-crumbs
-        class="text-muted min-w-0 truncate font-mono text-[12.5px]"
-        :title="crumbs"
-      >
-        {{ crumbs }}
-      </p>
-      <div
-        v-if="missingCount || issueCount || placeholders"
-        class="flex flex-wrap items-center gap-1.5"
-      >
-        <DmsStatusPill
-          v-if="missingCount"
-          dot="none"
-          tone="warning"
-          size="sm"
-          :label="$t('dms_lang.drawer.missing', missingCount)"
-        />
-        <DmsStatusPill
-          v-if="issueCount"
-          dot="none"
-          tone="error"
-          size="sm"
-          icon="i-ph-warning"
-          :label="$t('dms_lang.drawer.issues', issueCount)"
-        />
-        <span
-          v-if="placeholders"
-          class="text-dimmed inline-flex items-center gap-1.5 text-xs"
-        >
-          <UIcon name="i-ph-brackets-curly" class="size-3.5" />
-          {{ $t('dms_lang.drawer.placeholders') }}
-          <PlaceholderText :text="placeholders" />
-        </span>
-      </div>
-    </div>
     <div ref="body" class="space-y-4">
       <div
         v-for="code in locales"

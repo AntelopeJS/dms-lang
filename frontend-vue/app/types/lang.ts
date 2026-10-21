@@ -135,6 +135,12 @@ export type TranslationFilter = 'all' | 'missing' | 'complete' | 'issues'
  */
 export interface KeyPanelHeader {
   key: string
+  /** The namespaces above the key, `common › actions`; empty at the root. */
+  crumbs: string
+  missingCount: number
+  issueCount: number
+  /** The base text's placeholders, `{price} {count}`; empty without any. */
+  placeholders: string
   /** The key's place among the keys the panel steps through, from 0; -1 off the list. */
   index: number
   total: number

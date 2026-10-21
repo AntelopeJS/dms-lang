@@ -73,8 +73,12 @@ test("J and K are the DMS row header's, not the panel's own", () => {
   assert.match(PANEL, /navigation: \{/);
 });
 
-test("the namespaces above the key stay on one line", () => {
-  const crumbs = BODY.match(/data-key-panel-crumbs\s+class="([^"]+)"/)?.[1];
-  assert.ok(crumbs, "the namespaces are marked");
-  assert.match(crumbs, /\btruncate\b/);
+test("the row header keeps the key's look: mono, wrapped after its separators, its namespaces and status", () => {
+  assert.match(PANEL, /titleClass: 'font-mono',/);
+  assert.match(PANEL, /titleBreakAfter: NAMESPACE_SEPARATOR,/);
+  assert.match(PANEL, /subtitle: header\.crumbs \|\| undefined,/);
+  assert.match(PANEL, /subtitleClass: 'font-mono',/);
+  assert.match(PANEL, /component: KeyStatus,/);
+  // The opening header already has the key's look: no flash of another font.
+  assert.match(PANEL, /rowHeader: openingRowHeader\(request\.key\)/);
 });
