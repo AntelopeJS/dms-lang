@@ -51,6 +51,8 @@ export function announce(change: WorkspaceChange): void {
   if (change.keys) payload.keys = change.keys;
   PublishMessage(LANG_REALTIME_TOPIC, REALTIME_CHANGE, {
     actorId: change.actor._id,
+    // A table declared with `ignoreOwnRealtimeEvents` skips its own tab's echo.
+    originSessionId: change.session,
     payload,
   }).catch(() => undefined);
 }

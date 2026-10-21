@@ -43,31 +43,3 @@ export function sortWorkspaces<T extends ListedWorkspace>(
 ): T[] {
   return [...workspaces].sort(WORKSPACE_COMPARATORS[sort])
 }
-
-/** The steps of deleting the workspace a page shows. */
-export interface WorkspaceDeletionSteps {
-  /** Moves the page off the workspace. */
-  leave: () => Promise<void>
-  /** Deletes the workspace. */
-  remove: () => Promise<void>
-  /** Brings the page back to the workspace, when it is still there. */
-  restore: () => Promise<void>
-}
-
-/**
- * Deletes a workspace once the page has left it: the deletion's realtime
- * event reaches the deleting tab too, often before its answer, and a block
- * still showing the workspace would read it again and get a 404. On a failure
- * the page goes back to the workspace and the error is passed on.
- */
-export async function deleteAfterLeaving(
-  steps: WorkspaceDeletionSteps,
-): Promise<void> {
-  await steps.leave()
-  try {
-    await steps.remove()
-  } catch (error) {
-    await steps.restore()
-    throw error
-  }
-}

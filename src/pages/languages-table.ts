@@ -126,6 +126,10 @@ export function languagesTable(manageLanguages: Action) {
     defaultSort: { field: "coverage" },
     pinnedRows: BASE,
     realtimeTopic: LANG_REALTIME_TOPIC,
+    // The tab that deletes the workspace leaves its page once the DELETE
+    // answers: reading the languages again on its own echo would ask for the
+    // deleted workspace (404). Other tabs still refresh.
+    ignoreOwnRealtimeEvents: true,
     layout: "full",
     labelKey: "name",
     rowActions: { custom: [...PAGE_LINKS, ...managedActions(manageLanguages)] },
