@@ -19,8 +19,11 @@ import {
 } from "../utils/registry";
 import { resolveFlat } from "../utils/resolve";
 
-/** Longer than the registry's refresh of the frontend modules. */
-const LATE_MODULE_TIMEOUT_MS = 6000;
+/**
+ * Well under the 2 s the registry used to poll the frontend modules at: a
+ * late module shows up on `FrontendModulesChanged`, not on a timer.
+ */
+const LATE_MODULE_TIMEOUT_MS = 1000;
 const POLL_MS = 100;
 
 describe("[integration] registered locale sources", () => {
