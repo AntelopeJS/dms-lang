@@ -1,8 +1,8 @@
 import path from "node:path";
 import { AddFrontendModule } from "@antelopejs/interface-dms/page";
 import { setTranslationConfig } from "./utils/config";
-import { PUBLIC_PATH } from "./utils/constants";
 import { initializeLocaleRegistry, stopLocaleRegistry } from "./utils/registry";
+import { frontendModule } from "./frontend-module";
 
 export * from "./pages";
 export * from "./routes";
@@ -21,7 +21,6 @@ interface DmsLangConfig {
 const DEFAULT_WORKSPACES_DIR = path.join(__dirname, "../i18n-workspaces");
 
 export async function construct(config: DmsLangConfig = {}): Promise<void> {
-  const sourcePath = path.join(__dirname, "../frontend-vue");
   const workspacesDir = path.resolve(
     config.workspacesDir ?? DEFAULT_WORKSPACES_DIR,
   );
@@ -31,14 +30,7 @@ export async function construct(config: DmsLangConfig = {}): Promise<void> {
     editable: config.editable ?? false,
   });
 
-  await AddFrontendModule({
-    name: "@antelopejs/dms-lang-frontend-vue",
-    sourcePath,
-    renderer: { name: "vue", version: "3" },
-    configKey: "dmsLang",
-    priority: 0,
-    backendProxies: [{ path: `${PUBLIC_PATH}/**`, auth: "none" }],
-  });
+  await AddFrontendModule(frontendModule());
 }
 
 export async function start(): Promise<void> {
