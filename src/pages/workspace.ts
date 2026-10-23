@@ -18,6 +18,8 @@ import {
   LANG_REALTIME_TOPIC,
   manageCategory,
 } from "./module";
+import { LangWorkspacesController } from "./workspaces";
+import { workspaceSummary } from "../utils/catalog";
 import { LANG_API, PERMISSION_TEXTS } from "../utils/constants";
 import { SNIPPET_KINDS } from "../utils/snippets";
 
@@ -170,8 +172,18 @@ export class LangWorkspaceController extends PageController(
     category: manageCategory,
     icon: "i-ph-gear-six",
     order: 1,
+    // Its list: the page opens it once the workspace it shows is deleted.
+    parent: LangWorkspacesController,
   },
-  DefaultLayout({ headerActions: [OPEN_OVERVIEW_BUTTON] }),
+  DefaultLayout({
+    // The workspace the page shows: a tab on it leaves for the list once
+    // another deletes it.
+    record: ({ query }) => {
+      const summary = workspaceSummary(query?.workspace);
+      return summary && { ...summary };
+    },
+    headerActions: [OPEN_OVERVIEW_BUTTON],
+  }),
 ) {
   static scope = CustomComponent("DmsLangWorkspaceScope").meta({
     name: `${PERMISSION_TEXTS}.scope`,

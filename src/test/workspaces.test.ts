@@ -9,6 +9,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runInNewContext } from "node:vm";
 import { expect } from "chai";
+import { GetMetadata } from "@antelopejs/interface-core";
+import type { ComponentFilterContext } from "@antelopejs/interface-dms/component";
+import { PageMetadata } from "@antelopejs/interface-dms/page";
+import { LangWorkspaceController } from "../pages/workspace";
 import { manageLanguagesAction } from "../pages/actions";
 import { languagesTable } from "../pages/languages-table";
 import { workspaceKpis } from "../utils/blocks";
@@ -365,3 +369,22 @@ function describeManifestWrites(directoryOf: () => string): void {
     expect(readFileSync(manifest, "utf-8")).to.equal("{ broken");
   });
 }
+
+describe("[integration] the workspace page's record", () => {
+  // The DMS leaves a detail page whose record goes missing: the workspace
+  // page reads its workspace as its record, and opens the list once deleted.
+  it("reads the workspace of its URL as the workspace page's record", async () => {
+    const metadata = GetMetadata(LangWorkspaceController, PageMetadata);
+    const options = metadata.layout?.options as {
+      record?: (context: ComponentFilterContext) => unknown;
+    };
+    const record = (workspace?: string) =>
+      options.record?.({
+        query: workspace ? { workspace } : {},
+      } as ComponentFilterContext);
+    expect(await record()).to.include({ id: "default" });
+    expect(await record("Modules")).to.include({ id: "modules" });
+    expect(await record("nope")).to.equal(undefined);
+    expect(metadata.pageInfo?.parentSlug).to.match(/\/workspaces$/);
+  });
+});
