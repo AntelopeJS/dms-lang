@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.3.1
+
+[compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.3.0...v0.3.1)
+
+### 🩹 Fixes
+
+- **frontend:** Run on @antelopejs/dms-frontend 0.7 ([#44](https://github.com/AntelopeJS/dms-lang/pull/44))
+
+### 📖 Documentation
+
+- Clarify learning paths and illustrate real outcomes ([#40](https://github.com/AntelopeJS/dms-lang/pull/40))
+
+### 🤖 CI
+
+- Add the ubuntu job required by the branch rulesets ([#42](https://github.com/AntelopeJS/dms-lang/pull/42))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli <rizzitelli.antony@pm.me>
+
 ## v0.3.0
 
 [compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.2.1...v0.3.0)
