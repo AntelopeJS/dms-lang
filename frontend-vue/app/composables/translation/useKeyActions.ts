@@ -11,6 +11,7 @@ interface KeyActionsContext {
   workspaces: ReturnType<typeof useI18nWorkspaces>
   translations: ReturnType<typeof useWorkspaceFlat>
   isDefault: ReturnType<typeof useWorkspaceContext>['isDefault']
+  workspaceLabel: ReturnType<typeof useWorkspaceLabel>['label']
   tryMutate: ReturnType<typeof useMutationToast>['tryMutate']
 }
 
@@ -121,7 +122,7 @@ async function removeKeyTexts(
   const count = filled.length
   const params = {
     path: removal.path,
-    workspace,
+    workspace: context.workspaceLabel.value,
     count,
     locales: filled.join(', '),
   }
@@ -213,6 +214,7 @@ export const useKeyActions = () => {
     workspaces: useI18nWorkspaces(),
     translations: useWorkspaceFlat(),
     isDefault: useWorkspaceContext().isDefault,
+    workspaceLabel: useWorkspaceLabel().label,
     tryMutate: useMutationToast().tryMutate,
   }
   return {

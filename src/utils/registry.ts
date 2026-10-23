@@ -1,4 +1,5 @@
 import {
+  FrontendModulesChanged,
   GetFrontendModules,
   type FrontendModuleMetadata,
 } from "@antelopejs/interface-dms/page";
@@ -17,39 +18,33 @@ interface RegistryEntry {
 
 export type I18nRegistry = Record<string, RegistryEntry[]>;
 
-/**
- * How often the list of frontend modules is read again: a module that
- * registers its frontend after this one started (modules start in parallel)
- * or that is taken down shows up or leaves within this delay.
- */
-const MODULES_REFRESH_MS = 2000;
-
 let modules: FrontendModuleMetadata[] = [];
 let modulesStamp = "";
-let refreshTimer: NodeJS.Timeout | undefined;
 let directories: string[] = [];
 let directoriesStamp = "";
 let registry: I18nRegistry = {};
 
+function onModulesChanged(): void {
+  void refreshModules();
+}
+
 /**
  * Lists the language files of the frontend modules and keeps following them:
- * the list of modules is read again every {@link MODULES_REFRESH_MS}, and
- * their files are listed again whenever one of their locales folders changes,
- * so a module registered late or a language file added by hand shows up
- * without a restart.
+ * the list of modules is read again whenever the DMS says it changed
+ * (`FrontendModulesChanged`), and their files are listed again whenever one
+ * of their locales folders changes, so a module registered late or a
+ * language file added by hand shows up without a restart.
  */
 export async function initializeLocaleRegistry(): Promise<void> {
+  // Registered before the first read: a module registering in between is
+  // not missed.
+  FrontendModulesChanged.register(onModulesChanged);
   await refreshModules();
-  refreshTimer ??= setInterval(() => {
-    void refreshModules();
-  }, MODULES_REFRESH_MS);
-  refreshTimer.unref();
 }
 
 /** Stops following the list of frontend modules (the module stops). */
 export function stopLocaleRegistry(): void {
-  clearInterval(refreshTimer);
-  refreshTimer = undefined;
+  FrontendModulesChanged.unregister(onModulesChanged);
 }
 
 /** What of a frontend module its language files depend on. */

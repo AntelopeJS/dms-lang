@@ -37,8 +37,18 @@ function readLocale(file) {
   return flatten(JSON.parse(readFileSync(join(LOCALES, file), "utf8")));
 }
 
-const en = readLocale("lang-en-GB.json");
+const SOURCE_FILE = "lang-en-GB.json";
+/** A placeholder, a linked message or a path: what a translation keeps as is. */
+const UNTRANSLATED_PART = /\{[^}]*\}|@:[\w.]+|\S*\/\S*/g;
+/** A word or an identifier such as `node_modules` or `vue-i18n`. */
+const WORD = /\p{L}[\p{L}\w-]+/gu;
+
+const en = readLocale(SOURCE_FILE);
 const fr = readLocale("lang-fr-FR.json");
+/** Every language shipped next to English, by file name. */
+const translations = readdirSync(LOCALES)
+  .filter((file) => file.endsWith(".json") && file !== SOURCE_FILE)
+  .map((file) => ({ file, messages: readLocale(file) }));
 const branches = new Set(
   [...en.keys()].flatMap((key) =>
     key
@@ -138,17 +148,39 @@ const references = files.flatMap((file) =>
   ),
 );
 
-test("both languages have the same keys", () => {
-  assert.deepEqual(
-    [...en.keys()].filter((key) => !fr.has(key)),
-    [],
-    "missing in French",
+test("every language has the keys of English, and no other", () => {
+  assert.ok(translations.length > 0, "the translations were found");
+  for (const { file, messages } of translations) {
+    assert.deepEqual(
+      [...en.keys()].filter((key) => !messages.has(key)),
+      [],
+      `missing in ${file}`,
+    );
+    assert.deepEqual(
+      [...messages.keys()].filter((key) => !en.has(key)),
+      [],
+      `missing in ${SOURCE_FILE}`,
+    );
+  }
+});
+
+/**
+ * A text of several words left as its English source was not translated. A
+ * single word ("Description", "Type", "DMS") may well read the same in both
+ * languages, and placeholders and paths are never translated.
+ */
+test("no sentence is left in English in another language", () => {
+  const wordsOf = (value) =>
+    String(value).replace(UNTRANSLATED_PART, " ").match(WORD) ?? [];
+  const untranslated = translations.flatMap(({ file, messages }) =>
+    [...en]
+      .filter(
+        ([key, value]) =>
+          wordsOf(value).length > 1 && messages.get(key) === value,
+      )
+      .map(([key, value]) => `${file} ${key}: ${JSON.stringify(value)}`),
   );
-  assert.deepEqual(
-    [...fr.keys()].filter((key) => !en.has(key)),
-    [],
-    "missing in English",
-  );
+  assert.deepEqual(untranslated, []);
 });
 
 test("every message is a vue-i18n message that compiles, without stray spaces", () => {

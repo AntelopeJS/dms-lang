@@ -433,7 +433,7 @@
 			"no_issues_description": "Every translation is valid, keeps the variables of its base text and needs no review.",
 			"review_issues": "Review issues ({count})",
 			"unknown_title": "{code} is not a language of this workspace",
-			"unknown_description": "Pick one of the languages of {workspace}.",
+			"unknown_description": "Pick one of the languages of “{workspace}”.",
 			"unknown_pick": "Translate {name}",
 			"pick_title": "Choose a language to translate",
 			"base_title": "{name} is the base language",
@@ -501,7 +501,7 @@
 			"hint": "Pick a namespace to scope the queue to it."
 		},
 		"language_add": {
-			"title": "Add a language to {workspace}",
+			"title": "Add a language to “{workspace}”",
 			"description": "Creates an empty file. Every key starts as missing and shows the {base} text as reference.",
 			"search": "Search languages or type a code (pt-BR)",
 			"added": "Added",
@@ -522,7 +522,7 @@
 			"locked": "Project files and module languages follow the files on disk. Create a workspace to manage its languages here."
 		},
 		"language_remove": {
-			"title": "Remove {name} from {workspace}?",
+			"title": "Remove {name} from “{workspace}”?",
 			"description": "Apps requesting {url} get a 404.",
 			"file": "{file} is deleted",
 			"strings": "Translated strings lost",
@@ -601,7 +601,7 @@
 		},
 		"key_add": {
 			"title": "Add key",
-			"description": "Added to {workspace}. Write the text in the languages you know now; the others show as missing.",
+			"description": "Added to “{workspace}”. Write the text in the languages you know now; the others show as missing.",
 			"path": "Key path",
 			"texts_required": "Write the text in at least one language to add the key.",
 			"path_help": "Dot-separated, such as checkout.coupon.invalid.",
@@ -632,7 +632,7 @@
 		},
 		"key_delete": {
 			"title": "Delete {path}?",
-			"description": "The key, which has no text yet, is removed from every file of {workspace}. | The key and its translation ({locales}) are removed from every file of {workspace}. | The key and its {count} translations ({locales}) are removed from every file of {workspace}.",
+			"description": "The key, which has no text yet, is removed from every file of “{workspace}”. | The key and its translation ({locales}) are removed from every file of “{workspace}”. | The key and its {count} translations ({locales}) are removed from every file of “{workspace}”.",
 			"submit": "Delete key",
 			"done": "Key {path} deleted",
 			"restored": "Key {path} restored"
