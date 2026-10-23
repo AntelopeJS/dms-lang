@@ -23,6 +23,7 @@ const { addLocale, workspaces } = useI18nWorkspaces()
 const { reportFailure } = useMutationToast()
 const { findLanguages, fullName } = useLocaleNames()
 const { refresh } = useWorkspaceFlat()
+const { label: workspaceLabel } = useWorkspaceLabel()
 
 const isOpen = ref(true)
 const search = ref('')
@@ -110,7 +111,7 @@ function close(added: boolean) {
 <template>
   <UModal
     v-model:open="isOpen"
-    :title="$t('dms_lang.language_add.title', { workspace: props.workspace })"
+    :title="$t('dms_lang.language_add.title', { workspace: workspaceLabel })"
     :description="
       $t('dms_lang.language_add.description', { base: props.baseName })
     "
