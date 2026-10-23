@@ -6,7 +6,12 @@ const knipConfig = antelopeKnipConfig({
   entry: ["src/test/harness.ts"],
 });
 
-knipConfig.ignoreUnresolved = ["#dms/frontend-module", "#dms/frontend-build"];
+// `#dms-ui/*` is the DMS UI layer, aliased by the frontend build like `#dms/*`.
+knipConfig.ignoreUnresolved = [
+  "#dms/frontend-module",
+  "#dms/frontend-build",
+  /^#dms-ui\//,
+];
 knipConfig.ignore = [...(knipConfig.ignore ?? []), ".amp/**"];
 // The frontend tests import Vue as the installed renderer resolves it
 // (tests/frontend-runtime.mjs), not from the root.
