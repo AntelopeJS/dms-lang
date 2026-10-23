@@ -23,10 +23,10 @@ const LANGUAGE_SUGGESTIONS = 6
 defineOptions({ inheritAttrs: false })
 
 const { t } = useI18n()
-const { selectedWorkspace } = useI18nWorkspaces()
 const { flat, isLoaded } = useWorkspaceFlat()
 useWorkspaceFlatSync()
 const { canManage, isUnknown, isResolved, allows } = useWorkspaceContext()
+const { label } = useWorkspaceLabel()
 const { nameAmong } = useLocaleNames()
 const { removeLanguage, makeBase } = useLanguageActions()
 const links = useLangLinks()
@@ -172,7 +172,7 @@ onBeforeUnmount(() => clearTimeout(urlTimer))
       "
       :description="
         $t('dms_lang.queue.unknown_description', {
-          workspace: selectedWorkspace,
+          workspace: label,
         })
       "
       :actions="unknownActions"
