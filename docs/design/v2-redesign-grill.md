@@ -178,9 +178,13 @@ A "Missing in" filter (any language or one) independent of the shown columns
 (L-07). Column headers carry their missing count and a coverage bar.
 
 **Q5.5 Key editor drawer?**
-Clicking a key opens a slideover with every language stacked, the base text as
-reference, placeholder checks with "Insert {token}", previous / next key,
-rename and delete, and Save (all changed languages in one request).
+Clicking a key opens the DMS drawer (`useDrawer`, from the right) with every language stacked, the base text as
+reference, placeholder checks with "Insert {token}", previous / next key
+(J and K too, outside a field, as in a DMS row drawer), rename and delete, and
+Save (all changed languages in one request). Its header follows the DMS row
+header and its sizes: the key as the title (wrapping after its dots, two lines
+at most), its place among the matrix's keys and the namespaces under it (one
+line); its footer sticks to the drawer's bottom edge.
 
 **Q5.6 Add, rename, delete key?**
 Add key asks the path and the base text ("Add another" keeps the dialog open);

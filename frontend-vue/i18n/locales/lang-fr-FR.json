@@ -376,10 +376,7 @@
 			"outdated": "À revoir"
 		},
 		"drawer": {
-			"key": "Clé",
-			"eyebrow": "Clé · {path}",
-			"previous": "Clé précédente",
-			"next": "Clé suivante",
+			"position": "{index} sur {total}",
 			"missing": "{n} manquante | {n} manquantes",
 			"issues": "{n} anomalie | {n} anomalies",
 			"placeholders": "Variables",

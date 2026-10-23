@@ -128,3 +128,24 @@ export interface NamespaceMatrix {
 }
 
 export type TranslationFilter = 'all' | 'missing' | 'complete' | 'issues'
+
+/**
+ * The key open in the key panel's body and its place among the keys: the
+ * body hands it over as it changes, the DMS row header draws it.
+ */
+export interface KeyPanelHeader {
+  key: string
+  /** The namespaces above the key, `common › actions`; empty at the root. */
+  crumbs: string
+  missingCount: number
+  issueCount: number
+  /** The base text's placeholders, `{price} {count}`; empty without any. */
+  placeholders: string
+  /** The key's place among the keys the panel steps through, from 0; -1 off the list. */
+  index: number
+  total: number
+  hasPrevious: boolean
+  hasNext: boolean
+  previous: () => void
+  next: () => void
+}

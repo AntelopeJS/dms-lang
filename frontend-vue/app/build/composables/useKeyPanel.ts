@@ -1,7 +1,10 @@
 import type { Ref } from 'vue'
 import { useDmsRouter, useDmsState } from '#dms/frontend-module'
-import type { FlatTranslationRow } from '../../types/lang'
+import type { DrawerRowHeader } from '#dms-ui/app/composables/containers/types'
+import type { FlatTranslationRow, KeyPanelHeader } from '../../types/lang'
 import KeyEditorDrawer from '../components/KeyEditorDrawer.vue'
+import KeyStatus from '../components/KeyStatus.vue'
+import { NAMESPACE_SEPARATOR } from '../../utils/translations'
 import type { CellHold } from './useCellSaves'
 
 export interface PanelRequest {
@@ -29,7 +32,8 @@ export interface PanelOptions {
   onUnknown?: (key: string) => void
 }
 
-type DrawerOverlay = ReturnType<ReturnType<typeof useOverlay>['create']>
+type DrawerOverlay = ReturnType<ReturnType<typeof useDrawer>['open']>
+type PanelProps = Record<string, unknown>
 
 interface PendingSwitch {
   key: string
@@ -39,14 +43,15 @@ interface PendingSwitch {
 interface PanelState {
   shownWorkspace: string
   drawer: DrawerOverlay | null
-  pushedFrom: string | null
+  /** The props the open panel's body was last given. */
+  props: PanelProps
   pendingSwitch: PendingSwitch | null
   isDisposed: boolean
 }
 
 interface PanelContext {
   options: PanelOptions
-  overlay: ReturnType<typeof useOverlay>
+  drawers: ReturnType<typeof useDrawer>
   router: ReturnType<typeof useDmsRouter>
   route: ReturnType<typeof useWorkspaceRoute>['route']
   seeds: Ref<Record<string, FlatTranslationRow>>
@@ -56,6 +61,56 @@ interface PanelContext {
 }
 
 const KEY_QUERY = 'key'
+const DRAWER_DIRECTION = 'right'
+// Every key opens the same drawer, under one id: the DMS keeps the width the
+// user drags it to under its `sizeKey`, on this device. One panel is open at
+// a time, so the id stays unique.
+const DRAWER_ID = 'dms-lang-key-panel'
+const POSITION_LABEL = '$dms_lang.drawer.position'
+
+// The key keeps its look in the DMS row header: in mono, wrapped only after
+// its separators, the namespaces above it after its place among the keys,
+// what it misses, its issues and its placeholders under them.
+const KEY_LOOK = {
+  titleClass: 'font-mono',
+  titleBreakAfter: NAMESPACE_SEPARATOR,
+  subtitleClass: 'font-mono',
+} as const
+
+/** The DMS row header of a key just opened, before its body hands it over. */
+function openingRowHeader(key: string): DrawerRowHeader {
+  return { title: key, ...KEY_LOOK }
+}
+
+/**
+ * The DMS row header for the key the body shows: the key, its place among
+ * the matrix's keys, previous / next and J / K, its namespaces and status.
+ * A key opened off the list has no place in it, so no steps.
+ */
+function rowHeaderOf(header: KeyPanelHeader): DrawerRowHeader {
+  return {
+    title: header.key,
+    ...KEY_LOOK,
+    subtitle: header.crumbs || undefined,
+    component: KeyStatus,
+    componentOptions: {
+      missingCount: header.missingCount,
+      issueCount: header.issueCount,
+      placeholders: header.placeholders,
+    },
+    ...(header.index >= 0 && {
+      positionLabel: POSITION_LABEL,
+      navigation: {
+        index: header.index,
+        total: header.total,
+        hasPrev: header.hasPrevious,
+        hasNext: header.hasNext,
+        prev: header.previous,
+        next: header.next,
+      },
+    }),
+  }
+}
 
 function linkWithKey(context: PanelContext, key: string | undefined): string {
   const { route } = context
@@ -78,7 +133,7 @@ function dropSeed(context: PanelContext, key: string) {
   if (dropped) context.seeds.value = rest
 }
 
-function propsFor(context: PanelContext, request: PanelRequest) {
+function propsFor(context: PanelContext, request: PanelRequest): PanelProps {
   const { options } = context
   const keys = options.keys()
   const index = keys.indexOf(request.key)
@@ -95,7 +150,21 @@ function propsFor(context: PanelContext, request: PanelRequest) {
     onNavigate: (key: string) => onNavigate(context, key),
     onOverride: options.onOverride,
     onKeep: options.onKeep,
+    onHeader: (header: KeyPanelHeader) =>
+      context.state.drawer?.patch({ rowHeader: rowHeaderOf(header) }),
   }
+}
+
+/** Changes some of the open panel's props, keeping the others. */
+function patchPanel(context: PanelContext, props: PanelProps) {
+  const { state } = context
+  state.props = { ...state.props, ...props }
+  state.drawer?.patch({ componentOptions: state.props })
+}
+
+/** Asks the open panel to save what it can and close (see its `open`). */
+function closePanel(context: PanelContext) {
+  patchPanel(context, { open: false })
 }
 
 function settleSwitch(context: PanelContext, shown: string | null) {
@@ -106,12 +175,11 @@ function settleSwitch(context: PanelContext, shown: string | null) {
 
 function switchKey(
   context: PanelContext,
-  drawer: DrawerOverlay,
   request: PanelRequest,
 ): Promise<boolean> {
   return new Promise((settle) => {
     context.state.pendingSwitch = { key: request.key, settle }
-    drawer.patch(propsFor(context, request))
+    patchPanel(context, propsFor(context, request))
   })
 }
 
@@ -120,17 +188,24 @@ function show(context: PanelContext, request: PanelRequest): Promise<boolean> {
   state.shownWorkspace = context.workspace.value
   settleSwitch(context, null)
   if (state.drawer && request.key === context.shownKey.value) {
-    state.drawer.patch(propsFor(context, request))
+    patchPanel(context, propsFor(context, request))
     return Promise.resolve(true)
   }
-  if (state.drawer) return switchKey(context, state.drawer, request)
+  if (state.drawer) return switchKey(context, request)
   context.shownKey.value = request.key
-  state.drawer = context.overlay.create(KeyEditorDrawer, {
-    destroyOnClose: true,
+  state.props = propsFor(context, request)
+  // The DMS row header names the key; the body hands over its place among
+  // the keys as it shows one (`onHeader`).
+  state.drawer = context.drawers.open({
+    direction: DRAWER_DIRECTION,
+    containerId: DRAWER_ID,
+    sizeKey: DRAWER_ID,
+    title: request.key,
+    rowHeader: openingRowHeader(request.key),
+    component: KeyEditorDrawer,
+    componentOptions: state.props,
   })
-  void state.drawer
-    .open(propsFor(context, request))
-    .then(() => onClosed(context))
+  void state.drawer.result.then(() => onClosed(context))
   return Promise.resolve(true)
 }
 
@@ -141,50 +216,30 @@ async function open(
   if (context.state.drawer) return show(context, request)
   void show(context, request)
   if (context.route.query[KEY_QUERY] === request.key) return true
-  context.state.pushedFrom = linkWithKey(context, undefined)
   await context.router.push(linkWithKey(context, request.key))
   return true
 }
 
 function onNavigate(context: PanelContext, key: string) {
   context.shownKey.value = key
+  context.state.drawer?.patch({ title: key })
   settleSwitch(context, key)
   if (context.route.query[KEY_QUERY] !== key)
     void context.router.replace(linkWithKey(context, key))
 }
 
-function nextRoute(context: PanelContext): Promise<void> {
-  return new Promise((resolve) => {
-    const stop = watch(
-      () => context.route.fullPath,
-      () => {
-        stop()
-        resolve()
-      },
-    )
-  })
-}
-
-async function leaveKeyEntry(context: PanelContext, from: string | null) {
-  const without = linkWithKey(context, undefined)
-  if (from === null) return context.router.replace(without)
-  const isBack = nextRoute(context)
-  context.router.back()
-  await isBack
-  if (linkWithKey(context, undefined) !== without)
-    await context.router.replace(without)
-}
-
 function onClosed(context: PanelContext) {
   const { state, route } = context
   state.drawer = null
+  state.props = {}
   settleSwitch(context, null)
   if (!state.isDisposed) dropSeed(context, context.shownKey.value)
   context.shownKey.value = ''
-  const from = state.pushedFrom
-  state.pushedFrom = null
   if (state.isDisposed || !route.query[KEY_QUERY]) return
-  void leaveKeyEntry(context, from)
+  // Replaced, not left by going Back: a history step back renders the page
+  // anew (Inertia restores it from the history), which would fold the
+  // matrix's groups and lose its scroll.
+  void context.router.replace(linkWithKey(context, undefined))
 }
 
 function isOpenable(context: PanelContext, key: string): boolean {
@@ -195,7 +250,7 @@ function isOpenable(context: PanelContext, key: string): boolean {
 }
 
 function followQuery(context: PanelContext, key: string) {
-  if (!key) return context.state.drawer?.close()
+  if (!key) return closePanel(context)
   if (key === context.shownKey.value || !isOpenable(context, key)) return
   void show(context, { key })
 }
@@ -204,13 +259,14 @@ function followWorkspace(context: PanelContext, workspace: string) {
   const { drawer, shownWorkspace } = context.state
   const shownKey = context.shownKey.value
   if (!drawer || !shownKey || shownWorkspace === workspace) return
-  if (!isOpenable(context, shownKey)) return drawer.close()
+  if (!isOpenable(context, shownKey)) return closePanel(context)
   void show(context, { key: shownKey })
 }
 
 function patchRights(context: PanelContext) {
   const { options } = context
-  context.state.drawer?.patch({
+  if (!context.state.drawer) return
+  patchPanel(context, {
     editable: options.editable(),
     manageKeys: options.manageKeys(),
     canOverride: options.canOverride(),
@@ -247,6 +303,8 @@ function watchPanel(context: PanelContext) {
  * The key panel of the matrix: one panel at a time (opening another key
  * moves the open panel to it), and the key it shows in the URL (`?key=`), so
  * a link or a refresh opens it again and the browser's Back button closes it.
+ * J and K step to the next and previous key while it is open (the DMS row
+ * header's).
  * The open panel may refuse another key (one of its fields waits for a
  * choice): `open` tells whether it took the key, so nothing handed over is
  * dropped before it did.
@@ -254,7 +312,7 @@ function watchPanel(context: PanelContext) {
 export function useKeyPanel(options: PanelOptions) {
   const context: PanelContext = {
     options,
-    overlay: useOverlay(),
+    drawers: useDrawer(),
     router: useDmsRouter(),
     route: useWorkspaceRoute().route,
     seeds: useDmsState<Record<string, FlatTranslationRow>>(
@@ -266,7 +324,7 @@ export function useKeyPanel(options: PanelOptions) {
     state: {
       shownWorkspace: '',
       drawer: null,
-      pushedFrom: null,
+      props: {},
       pendingSwitch: null,
       isDisposed: false,
     },
@@ -274,7 +332,7 @@ export function useKeyPanel(options: PanelOptions) {
   watchPanel(context)
   onBeforeUnmount(() => {
     context.state.isDisposed = true
-    context.state.drawer?.close()
+    closePanel(context)
   })
   return {
     open: (request: PanelRequest) => open(context, request),
