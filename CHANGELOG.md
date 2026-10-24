@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.4.1
+
+[compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.4.0...v0.4.1)
+
+### 🚀 Enhancements
+
+- **workspace:** Declare the workspace page's record and its list ([#50](https://github.com/AntelopeJS/dms-lang/pull/50))
+
+### 📦 Build
+
+- Run on @antelopejs/dms 0.11, interface-dms 0.9 and dms-frontend 0.9 ([#51](https://github.com/AntelopeJS/dms-lang/pull/51))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli <rizzitelli.antony@pm.me>
+
 ## v0.4.0
 
 [compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.3.1...v0.4.0)
