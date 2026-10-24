@@ -28,5 +28,6 @@
         "*"
       ]
     }
-  }
+  },
+  "dmsFrontend": "dist/frontend-module.js"
 }
