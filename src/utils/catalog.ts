@@ -67,10 +67,20 @@ export function resolveWorkspaceId(workspace?: string): string {
   return fail("unknown_workspace", { id: workspace });
 }
 
+/**
+ * The summary of a workspace, by any id {@link resolveWorkspaceId} accepts (an empty id is the
+ * project files); `undefined` when it does not exist.
+ */
+export function workspaceSummary(
+  workspace?: string,
+): WorkspaceSummary | undefined {
+  const id = normalizeWorkspaceId(workspace) || DEFAULT_WORKSPACE;
+  return listAllWorkspaces().find((entry) => entry.id === id);
+}
+
 /** The summary of an existing workspace, by any id {@link resolveWorkspaceId} accepts; 404 otherwise. */
 export function findWorkspace(workspace?: string): WorkspaceSummary {
-  const id = resolveWorkspaceId(workspace);
-  const summary = listAllWorkspaces().find((entry) => entry.id === id);
+  const summary = workspaceSummary(workspace);
   if (summary === undefined) fail("unknown_workspace", { id: workspace });
   return summary;
 }
