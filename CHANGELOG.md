@@ -4,6 +4,13 @@
 
 [compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.4.0...v0.4.1)
 
+### ⚠️ Breaking changes
+
+This patch release contains breaking changes. Ranges such as `^0.4.0` resolve to it.
+
+- Requires `@antelopejs/dms` 0.11 (`>=0.11.0 <1.0.0`), `@antelopejs/interface-dms` `>=0.9.0 <1.0.0` and the renderer `@antelopejs/dms-frontend` 0.9 (`>=0.9.0 <0.10.0`). Projects on DMS 0.10 must stay on 0.4.0.
+- The workspace page declares its record through interface-dms 0.9's `record` option: when the workspace is deleted, the DMS shows a "Deleted" toast and opens the workspace list ([#50](https://github.com/AntelopeJS/dms-lang/pull/50)).
+
 ### 🚀 Enhancements
 
 - **workspace:** Declare the workspace page's record and its list ([#50](https://github.com/AntelopeJS/dms-lang/pull/50))
