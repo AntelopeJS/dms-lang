@@ -11,7 +11,8 @@ An AntelopeJS DMS module for language management over i18n workspaces (own, modu
 | `tests`         | `node:test` suites for the frontend helpers and the locale files. Some read the build output       |
 | `frontend-vue`  | The Vue layer the DMS loads. ESLint and Prettier own it, not oxlint and oxfmt                      |
 | `playground`    | A DMS project that loads this module, for `pnpm dev`                                               |
-| `skills`, `docs`| Shipped with the package (`antelopeJs.skills`) and the source of dms.antelopejs.com/docs/modules/lang |
+| `skills`        | Ships with the package and reaches users through `antelopeJs.skills`                               |
+| `docs`          | The source of dms.antelopejs.com/docs/modules/lang. Not in the package                             |
 
 The module rewrites `**/i18n/locales/*.json` at run time with tab indentation, so oxfmt ignores them. Do not reformat them.
 
@@ -19,16 +20,15 @@ The module rewrites `**/i18n/locales/*.json` at run time with tab indentation, s
 
 The supported DMS versions are in the README's compatibility table. Keep these in step when you move to a new DMS minor:
 
-- `@antelopejs/dms` and `@antelopejs/interface-dms` in `dependencies`, `devDependencies`, `playground/package.json` and the `dms` module of `src/test/harness.ts`.
-- `@antelopejs/dms-frontend`, pinned in both `devDependencies` and capped below the next minor in `frontend-vue/package.json` `engines`.
+- `@antelopejs/dms` in `devDependencies`, `playground/package.json` and the `dms` module of `src/test/harness.ts`.
+- `@antelopejs/interface-dms` in `dependencies` and `playground/package.json`.
+- `@antelopejs/dms-frontend`, pinned in the root and playground `devDependencies`, and capped below the next minor in `frontend-vue/package.json` `engines`.
 
 A release that raises the DMS floor is breaking. List it under `### ⚠️ Breaking changes` in `CHANGELOG.md`, in a `docs(changelog)` pull request after the release commit.
 
 ## Tests
 
 `pnpm test` builds once, then runs the `src/test` suites against an in-memory MongoDB and the `tests` suites. `pnpm run checks` runs it. It does not run `pnpm test:frontend`, which builds and typechecks `frontend-vue` against the DMS layer and has its own CI job. Run it when you change the Vue layer.
-
-`pnpm knip:all` also reports unused files and exports. Expect findings: the DMS reaches components and composables through `import.meta.glob` and auto-imports. Confirm each one before you remove it.
 
 ## Orb
 
