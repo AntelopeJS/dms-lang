@@ -8,7 +8,7 @@ An AntelopeJS DMS module for language management over i18n workspaces (own, modu
 | --------------- | -------------------------------------------------------------------------------------------------- |
 | `src`           | The backend module: routes, pages, validation. Builds to `dist`                                    |
 | `src/test`      | Mocha suites that `ajs module test` runs from `dist/test` against a booted DMS (`harness.ts`)      |
-| `tests`         | `node:test` suites for the frontend helpers and the locale files. Some read the build output       |
+| `tests`         | `node:test` suites for the frontend helpers and the locale files. One reads the build output        |
 | `frontend-vue`  | The Vue layer the DMS loads. ESLint and Prettier own it, not oxlint and oxfmt                      |
 | `playground`    | A DMS project that loads this module, for `pnpm dev`                                               |
 | `skills`        | Ships with the package and reaches users through `antelopeJs.skills`                               |
