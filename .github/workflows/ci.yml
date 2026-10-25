@@ -16,73 +16,18 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-# Three independent jobs instead of one sequence: the pull request waits for
-# the slowest of them (verify-source) rather than for the sum of all steps.
-# The branch rulesets require the `ubuntu` check, which aggregates them.
+# Two independent jobs instead of one sequence: the pull request waits for
+# the slowest of them rather than for the sum of all steps. The branch
+# rulesets require the `ubuntu` check, which aggregates them.
 jobs:
-  static:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-
-      # Before setup-node: its pnpm cache resolves the store by running pnpm.
-      # No version input — package.json `packageManager` is the pin, which
-      # also spares the job the corepack bootstrap.
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          # .nvmrc is the version of record. oxlint needs at least 22.18 to
-          # read a TypeScript config, which every value there clears.
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - run: pnpm install --frozen-lockfile
-      - uses: AntelopeJS/tooling-configs/actions/docs@310e3d861b2da2244902854379176c91e1ebc68e
-        with:
-          files: |
-            README.md
-            docs
-      - run: pnpm lint
-      # oxlint's type-aware pass degrades to `any` on a broken tsconfig
-      # without failing, so the typecheck is what catches it.
-      - run: pnpm typecheck
-      # Unused dependencies only. `pnpm knip:all` also reports dead files and
-      # exports, which need a human to confirm, so they stay out of the gate.
-      - run: pnpm knip
-
-  backend:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    env:
-      # The build step below is the only build of the job: the test scripts
-      # and the test harness `installCommand` skip their own rebuild.
-      DMS_PREBUILT: "1"
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      # The AntelopeJS modules the harness packs and installs and the MongoDB
-      # binary it starts. Without them every run downloads the whole stack
-      # before the first test.
-      - uses: actions/cache@v4
-        with:
-          path: |
-            .antelope/cache
-            ~/.cache/mongodb-binaries
-          key: antelope-${{ runner.os }}-${{ hashFiles('src/test/harness.ts', 'pnpm-lock.yaml') }}
-
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build
-      - run: pnpm test
-      # The frontend helpers and the locale files, under node:test: no DMS
-      # boot, and one file reads the build output.
-      - run: pnpm test:node
+  # `pnpm run checks`: typecheck, lint, format, knip, the backend and node
+  # tests (one build), size, ratchet and sync.
+  checks:
+    uses: AntelopeJS/.github/.github/workflows/ci-node.yml@v1
+    with:
+      docs-files: |
+        README.md
+        docs
 
   frontend:
     runs-on: ubuntu-latest
@@ -104,7 +49,7 @@ jobs:
   # above succeeded.
   ubuntu:
     if: always()
-    needs: [static, backend, frontend]
+    needs: [checks, frontend]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
