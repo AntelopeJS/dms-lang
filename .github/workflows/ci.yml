@@ -23,11 +23,19 @@ jobs:
   # `pnpm run checks`: typecheck, lint, format, knip, the backend and node
   # tests (one build), size, ratchet and sync.
   checks:
-    uses: AntelopeJS/.github/.github/workflows/ci-node.yml@v1
+    uses: AntelopeJS/.github/.github/workflows/ci-node.yml@ci/ci-node-optional-cache
     with:
       docs-files: |
         README.md
         docs
+      cache-paths: |
+        .antelope/cache
+        ~/.cache/mongodb-binaries
+      cache-key-files: |
+        src/test/harness.ts
+        pnpm-lock.yaml
+      extra-commands: |
+        du -sh .antelope/cache ~/.cache/mongodb-binaries
 
   frontend:
     runs-on: ubuntu-latest
