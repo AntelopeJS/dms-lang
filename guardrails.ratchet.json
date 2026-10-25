@@ -1,0 +1,19 @@
+{
+  "rules": {
+    "antelopejs/no-comments": 64,
+    "antelopejs/no-constant-value-assertion": 1,
+    "antelopejs/no-fs-read-in-tests": 8,
+    "anti-slop/no-known-value-widening": 4,
+    "anti-slop/no-runtime-typeof": 20,
+    "anti-slop/no-unknown-parameters": 28,
+    "anti-slop/no-unknown-returns": 10,
+    "anti-slop/no-unsafe-dictionary-type": 41,
+    "anti-slop/require-safety-comment-for-type-assertion": 26
+  },
+  "oversizeFiles": {
+    "frontend-vue/app/components/TranslationMatrix.vue": 25409,
+    "frontend-vue/app/utils/translations.ts": 23533,
+    "frontend-vue/i18n/locales/lang-en-GB.json": 40422,
+    "frontend-vue/i18n/locales/lang-fr-FR.json": 45665
+  }
+}
