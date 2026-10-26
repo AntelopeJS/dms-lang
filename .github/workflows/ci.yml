@@ -28,6 +28,12 @@ jobs:
       docs-files: |
         README.md
         docs
+      cache-paths: |
+        .antelope/cache
+        ~/.cache/mongodb-binaries
+      cache-key-files: |
+        src/test/harness.ts
+        pnpm-lock.yaml
 
   frontend:
     runs-on: ubuntu-latest
