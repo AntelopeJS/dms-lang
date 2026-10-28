@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "lang-translate-dashboard",
+      "area": "modules",
+      "style": "clean",
+      "prompt": "Translate the dashboard into German.",
+      "expect": {
+        "skills": ["dms-lang"],
+        "acceptable": ["dms", "dms-pages"]
+      }
+    },
+    {
+      "id": "lang-raw-keys-casual",
+      "area": "modules",
+      "style": "casual",
+      "prompt": "some labels show the raw i18n key instead of the text",
+      "expect": {
+        "skills": ["dms-lang"],
+        "acceptable": ["dms", "dms-pages"]
+      }
+    },
+    {
+      "id": "dms-lang-readonly-project-files",
+      "area": "modules",
+      "style": "clean",
+      "prompt": "I installed dms-lang but every edit fails with a read-only error and my app-en-GB.json is not listed as the project workspace. What do I configure?",
+      "expect": {
+        "skills": ["dms-lang"],
+        "acceptable": ["dms", "dms-project"],
+        "mustMention": ["editable", "dmsI18nAppLayer"]
+      }
+    },
+    {
+      "id": "dms-lang-not-mail-locale",
+      "area": "modules",
+      "style": "clean",
+      "prompt": "My welcome e-mail template needs a Dutch version, and a send should fall back to English when the recipient's locale is missing.",
+      "expect": {
+        "skills": ["dms-mailing"],
+        "acceptable": ["dms"],
+        "avoid": ["dms-lang"]
+      }
+    }
+  ]
+}
