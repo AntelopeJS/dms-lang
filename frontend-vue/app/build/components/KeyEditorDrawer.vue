@@ -17,6 +17,7 @@ import {
   formatTokens,
   hasBlockingIssue,
   isLocaleValueMissing,
+  messageIssueText,
   NAMESPACE_SEPARATOR,
   placeholdersOf,
   stringValue,
