@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import UButton from '@nuxt/ui/components/Button.vue'
+
 /** The banner of the matrix over the rows finished since it opened: how many, and hiding them. */
 defineProps<{
   doneCount: number
