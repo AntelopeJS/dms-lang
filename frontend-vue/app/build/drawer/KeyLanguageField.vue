@@ -84,7 +84,10 @@ const props = defineProps<{
         {{ $t('dms_lang.drawer.conflict') }}
       </span>
       <template v-else-if="saveStateOf(code) !== 'idle'">
-        <DmsSaveStatus :state="saveStateOf(code)" @retry="save([code])" />
+        <DmsSaveStatus
+          :state="saveStateOf(code)"
+          @retry="save([code])"
+        />
         <UButton
           v-if="saveStateOf(code) === 'error'"
           size="xs"
@@ -99,7 +102,11 @@ const props = defineProps<{
         class="text-warning font-mono font-semibold uppercase"
       >
         {{
-          $t(code === base ? BASE_MISSING_LABEL : FIELD_STATUS_LABELS.missing)
+          $t(
+            code === base
+              ? BASE_MISSING_LABEL
+              : FIELD_STATUS_LABELS.missing,
+          )
         }}
       </span>
       <template v-else-if="statusOf(code) !== 'done'">
@@ -154,7 +161,7 @@ const props = defineProps<{
   />
   <div
     v-else
-    class="border-default bg-(--dms-bg-muted) rounded-md border px-3 py-2 text-sm"
+    class="border-default rounded-md border bg-(--dms-bg-muted) px-3 py-2 text-sm"
   >
     <PlaceholderText v-if="draftOf(code)" :text="draftOf(code)" />
     <span v-else class="text-dimmed">—</span>
@@ -163,7 +170,10 @@ const props = defineProps<{
       class="text-dimmed border-default mt-2 border-t pt-2 text-xs"
     >
       {{ $t('dms_lang.drawer.project_value') }}
-      <PlaceholderText :text="row.overrides[code]" class="text-default" />
+      <PlaceholderText
+        :text="row.overrides[code]"
+        class="text-default"
+      />
     </p>
   </div>
   <div
@@ -202,13 +212,20 @@ const props = defineProps<{
   <p v-else-if="fieldErrors[code]" class="text-error text-xs">
     {{ fieldErrors[code] }}
   </p>
-  <div v-if="props.editable && issuesOf(code).length" class="space-y-1 text-xs">
+  <div
+    v-if="props.editable && issuesOf(code).length"
+    class="space-y-1 text-xs"
+  >
     <div
       v-for="issue in issuesOf(code)"
       :key="issue.kind"
       class="flex flex-wrap items-center gap-x-3 gap-y-1"
     >
-      <span :class="issue.severity === 'error' ? 'text-error' : 'text-warning'">
+      <span
+        :class="
+          issue.severity === 'error' ? 'text-error' : 'text-warning'
+        "
+      >
         {{ messageIssueText(issue, t) }}
         <template v-if="issue.kind === 'missing'">
           {{
