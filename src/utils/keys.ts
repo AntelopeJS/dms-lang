@@ -321,7 +321,10 @@ function assertOwnKey(store: KeyStore, segments: string[]): void {
   );
 }
 
-/** Moves a key in every locale; 409 when the target holds a key or a namespace. */
+/**
+ * Moves a key in every locale, within the file that defines it; 409 when the
+ * target holds a key or a namespace.
+ */
 export function renameKey(
   store: KeyStore,
   path: string,
@@ -339,7 +342,6 @@ export function renameKey(
   for (const locale of store.locales) {
     const value = getValueAtPath(store.messages[locale], source);
     if (value === undefined || isPlainObject(value)) continue;
-    // The key moves within the file that defines it.
     const data = store.load(locale, from);
     deleteAtPath(data, from);
     setAtPath(data, to, value);

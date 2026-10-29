@@ -1,15 +1,19 @@
-// The frontend's composables on the renderer's real data layer and the
-// DMS's real `useApiData`, as installed at the root (`@antelopejs/dms-frontend`,
-// `@antelopejs/dms`), for the tests that render them on a server: what a
-// render reads from the backend, and what it hands the browser.
-//
-// TypeScript is transpiled as it loads (the renderer's and the DMS's sources
-// live in node_modules, where Node strips no types), `#dms/frontend-module`
-// is the renderer's, Vue is the renderer's own copy, and what the renderer
-// reads of Inertia and vue-i18n, in the browser only, is left out: its
-// router is a history that records each visit and moves the page to it. A `.vue`
-// file is compiled by the renderer's Vue compiler, its template inlined in its
-// setup, as Vite compiles it.
+/**
+ * @packageDocumentation
+ * The frontend's composables on the renderer's real data layer and the
+ * DMS's real `useApiData`, as installed at the root (`@antelopejs/dms-frontend`,
+ * `@antelopejs/dms`), for the tests that render them on a server: what a
+ * render reads from the backend, and what it hands the browser.
+ *
+ * TypeScript is transpiled as it loads (the renderer's and the DMS's sources
+ * live in node_modules, where Node strips no types), `#dms/frontend-module`
+ * is the renderer's, Vue is the renderer's own copy, and what the renderer
+ * reads of Inertia and vue-i18n, in the browser only, is replaced: Inertia's
+ * router by a history that records each visit and moves the page to it,
+ * vue-i18n by a `useI18n` that throws. A `.vue` file is compiled by the
+ * renderer's Vue compiler, its template inlined in its setup, as Vite
+ * compiles it.
+ */
 import { createRequire, registerHooks } from "node:module";
 import { readFileSync, realpathSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -17,7 +21,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const require = createRequire(import.meta.url);
 const ts = require("typescript");
 
-// Their own location, where pnpm puts what they import.
+/** Their own location, where pnpm puts what they import. */
 const installed = (path) =>
   pathToFileURL(
     realpathSync(
@@ -87,7 +91,7 @@ registerHooks({
         },
       },
     );
-    // Vite's build flags, which the test sets per side.
+    /** Vite's build flags, which the test sets per side. */
     const source = outputText.replaceAll(
       "import.meta.env",
       "globalThis.__VITE_ENV__",
@@ -119,8 +123,10 @@ const { useApiData } = await import(USE_API_DATA);
 const reads = [];
 let backend = () => ({});
 
-// The application's auto-imports: Vue's API, the renderer's, and the DMS
-// layers' the composables call.
+/**
+ * The application's auto-imports: Vue's API, the renderer's, and the DMS
+ * layers' the composables call.
+ */
 for (const [name, value] of Object.entries(vue))
   if (/^[a-z]/.test(name)) globalThis[name] = value;
 Object.assign(globalThis, {

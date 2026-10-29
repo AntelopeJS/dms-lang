@@ -2,9 +2,12 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { frontend, serverRender, vue } from "./helpers/frontend-runtime.mjs";
 
-// A page opened without `?workspace=` (a menu link) is given one by a server
-// redirect, so it renders the workspace's data rather than an empty page the
-// browser fills in afterwards.
+/**
+ * @packageDocumentation
+ * A page opened without `?workspace=` (a menu link) is given one by a server
+ * redirect, so it renders the workspace's data rather than an empty page the
+ * browser fills in afterwards.
+ */
 
 Object.assign(
   globalThis,
@@ -37,8 +40,10 @@ function respond({ url }) {
 async function renderPage(url) {
   return serverRender(
     async () => {
-      // What a component's `<script setup>` compiles an `await` to: the
-      // setup goes on in the component once the list is in.
+      /**
+       * What a component's `<script setup>` compiles an `await` to: the
+       * setup goes on in the component once the list is in.
+       */
       const workspaces = useI18nWorkspaces();
       const [loaded, restore] = vue.withAsyncContext(() =>
         workspaces.whenLoaded(),

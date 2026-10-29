@@ -8,10 +8,13 @@ import {
   vue,
 } from "./helpers/frontend-runtime.mjs";
 
-// The translations of a workspace (the matrix, the queue) and the dialogs a
-// route serves are read with useApiData: the translations by a server
-// render, which hands them to the browser, then row by row as the module's
-// realtime changes name them; a served dialog once its action asks.
+/**
+ * @packageDocumentation
+ * The translations of a workspace (the matrix, the queue) and the dialogs a
+ * route serves are read with useApiData: the translations by a server
+ * render, which hands them to the browser, then row by row as the module's
+ * realtime changes name them; a served dialog once its action asks.
+ */
 
 const workspacesModule = await frontend(
   "composables/translation/useI18nWorkspaces.ts",

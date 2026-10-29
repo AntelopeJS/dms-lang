@@ -229,7 +229,7 @@ function describeLanguages(): void {
       return { ok: file !== null, json: async () => file?.messages };
     };
     const { code } = workspaceSnippet(WORKSPACE, "fetch", API_BASE);
-    // The snippet as an app runs it, with the files of the workspace served.
+    /** The snippet as an app runs it, with the files of the workspace served. */
     const run = async (language: string) => {
       const messages = await runInNewContext(
         `(async () => { ${code}
@@ -363,8 +363,10 @@ function describeManifestWrites(directoryOf: () => string): void {
 }
 
 describe("[integration] the workspace page's record", () => {
-  // The DMS leaves a detail page whose record goes missing: the workspace
-  // page reads its workspace as its record, and opens the list once deleted.
+  /**
+   * The DMS leaves a detail page whose record goes missing: the workspace
+   * page reads its workspace as its record, and opens the list once deleted.
+   */
   it("reads the workspace of its URL as the workspace page's record", async () => {
     const metadata = GetMetadata(LangWorkspaceController, PageMetadata);
     const options = metadata.layout?.options as {
