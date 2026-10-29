@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import UButton from '@nuxt/ui/components/Button.vue'
 import type { WorkspaceKind, WorkspaceStats } from '../types/lang'
-import { COVERAGE_TEXT_CLASSES, coverageTone } from '../utils/translations'
+import { COVERAGE_TEXT_CLASSES, coverageTone } from '../utils/coverage'
 import {
   PUBLIC_URL_METHOD,
   matchesWorkspace,

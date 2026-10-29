@@ -6,7 +6,7 @@ import type {
   FlatTranslations,
   KeyRowResponse,
 } from '../../types/lang'
-import { EMPTY_FLAT, withRow } from '../../utils/translations'
+import { EMPTY_FLAT, withRow } from '../../utils/coverage'
 
 /** Realtime topic the backend publishes on after each write. */
 export const LANG_REALTIME_TOPIC = 'dms-lang.translations'

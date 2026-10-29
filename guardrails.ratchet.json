@@ -7,8 +7,6 @@
     "anti-slop/require-safety-comment-for-type-assertion": 7
   },
   "oversizeFiles": {
-    "frontend-vue/app/build/components/KeyEditorDrawer.vue": 27632,
-    "frontend-vue/app/components/TranslationMatrix.vue": 25409,
-    "frontend-vue/app/utils/translations.ts": 23533
+    "frontend-vue/app/build/components/KeyEditorDrawer.vue": 27632
   }
 }

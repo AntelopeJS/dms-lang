@@ -1,10 +1,7 @@
 <script setup lang="ts">
 import type { LanguageCoverage } from '../../../types/lang'
 import LocaleTile from '../LocaleTile.vue'
-import {
-  COVERAGE_TEXT_CLASSES,
-  coverageTone,
-} from '../../../utils/translations'
+import { COVERAGE_TEXT_CLASSES, coverageTone } from '../../../utils/coverage'
 
 interface Props {
   languages: LanguageCoverage[]

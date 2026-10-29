@@ -5,25 +5,17 @@ import {
   useElementSize,
   useIntersectionObserver,
 } from '@vueuse/core'
-import UButton from '@nuxt/ui/components/Button.vue'
-import UDropdownMenu from '@nuxt/ui/components/DropdownMenu.vue'
 import { useDmsRouter } from '#dms/frontend-module'
 import type { FlatTranslationRow, LanguageCoverage } from '../types/lang'
 import { useWorkspaceFlatSync } from '../composables/translation/useWorkspaceFlat'
-import {
-  coverageTone,
-  languageCoverage,
-  stringValue,
-} from '../utils/translations'
-import { exportFileName, translationsCsv } from '../utils/matrixExport'
-import LocaleTile from '../build/components/LocaleTile.vue'
+import { stringValue } from '../utils/translations'
+import { languageCoverage } from '../utils/coverage'
 import PlaceholderText from '../build/components/PlaceholderText.vue'
 import MatrixCell from '../build/components/matrix/MatrixCell.vue'
 import MatrixColumns from '../build/components/matrix/MatrixColumns.vue'
 import MatrixGroupHeader from '../build/components/matrix/MatrixGroupHeader.vue'
 import MatrixKeyCell from '../build/components/matrix/MatrixKeyCell.vue'
 import MatrixToolbar from '../build/components/matrix/MatrixToolbar.vue'
-import ShortcutKbds from '../build/components/ShortcutKbds.vue'
 import {
   useCellSaves,
   type CellAddress,
@@ -41,6 +33,11 @@ import { useKeyPanel } from '../build/composables/useKeyPanel'
 import { useMatrixRows } from '../build/composables/useMatrixRows'
 import { useMatrixView } from '../build/composables/useMatrixView'
 import { useMatrixFilters } from '../build/composables/useMatrixFilters'
+import { useMatrixExport } from '../build/composables/useMatrixExport'
+import MatrixDoneBanner from '../build/matrix/MatrixDoneBanner.vue'
+import MatrixFooter from '../build/matrix/MatrixFooter.vue'
+import MatrixLanguageHeader from '../build/matrix/MatrixLanguageHeader.vue'
+import MatrixNoRows from '../build/matrix/MatrixNoRows.vue'
 import { MATRIX_KEYS, shortcutName } from '../utils/shortcuts'
 
 const COMPACT_WIDTH = 768
@@ -321,71 +318,16 @@ function hideDone() {
   pinned.value = new Set()
 }
 
-function exportCsv(isView: boolean) {
-  const base = flat.value.defaultLocale
-  const ordered = isView
-    ? columnCodes.value
-    : [...new Set([...order.value, ...flat.value.locales])].filter((code) =>
-        flat.value.locales.includes(code),
-      )
-  const locales = [base, ...ordered.filter((code) => code !== base)]
-  const content = translationsCsv(
-    isView ? rows.value : flat.value.rows,
-    locales,
-  )
-  downloadText(
-    exportFileName(selectedWorkspace.value, isView ? locales : undefined),
-    content,
-    'text/csv;charset=utf-8',
-  )
-}
-
-function keysLabel(count: number): string {
-  return t('dms_lang.matrix.group_keys', { count: formatCount(count) }, count)
-}
-
-function languagesLabel(count: number): string {
-  return t('dms_lang.matrix.languages_counted', { count }, count)
-}
-
-usePageHeaderActions(
-  () => [
-  h(
-    UDropdownMenu,
-    {
-      items: [
-        {
-          label: t('dms_lang.matrix.export_view', {
-            keys: keysLabel(rows.value.length),
-            languages: languagesLabel(columnCodes.value.length),
-          }),
-          icon: 'i-ph-funnel',
-          onSelect: () => exportCsv(true),
-        },
-        {
-          label: t('dms_lang.matrix.export_all', {
-            keys: keysLabel(flat.value.rows.length),
-            languages: languagesLabel(flat.value.locales.length),
-          }),
-          icon: 'i-ph-table',
-          onSelect: () => exportCsv(false),
-        },
-      ],
-      content: { align: 'end' },
-    },
-    () =>
-      h(UButton, {
-        label: t('dms_lang.matrix.export'),
-        icon: 'i-ph-download-simple',
-        trailingIcon: 'i-ph-caret-down',
-        color: 'neutral',
-        variant: 'outline',
-        disabled: !isLoaded.value,
-      }),
-  ),
-],
-  { order: -1 },
-)
+useMatrixExport({
+  t,
+  formatCount,
+  flat,
+  rows,
+  columnCodes,
+  order,
+  selectedWorkspace,
+  isLoaded,
+})
 
 watch(
   () => [filters.value, selectedWorkspace.value],
@@ -469,30 +411,12 @@ onBeforeUnmount(() => {
       />
     </div>
 
-    <div
+    <MatrixDoneBanner
       v-if="doneCount"
-      class="border-default bg-success/5 flex flex-wrap items-center gap-2 border-b px-4 py-2 text-sm"
-      role="status"
-    >
-      <UIcon name="i-ph-check-circle" class="text-success size-4" />
-      <span class="text-default">
-        {{
-          $t(
-            'dms_lang.matrix.done_banner',
-            { count: formatCount(doneCount) },
-            doneCount,
-          )
-        }}
-      </span>
-      <UButton
-        size="xs"
-        color="neutral"
-        variant="outline"
-        class="ml-auto"
-        :label="$t('dms_lang.matrix.hide_done')"
-        @click="hideDone"
-      />
-    </div>
+      :done-count="doneCount"
+      :format-count="formatCount"
+      :hide-done="hideDone"
+    />
 
     <DmsEmptyState
       v-if="hasError && !isLoaded"
@@ -526,54 +450,14 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <DmsEmptyState
+    <MatrixNoRows
       v-else-if="!rows.length"
-      :variant="flat.rows.length ? 'no-result' : 'no-data'"
-      size="lg"
-      hatched
-      :title="
-        flat.rows.length
-          ? $t('dms_lang.matrix.no_match', { search: filters.search })
-          : $t('dms_lang.matrix.no_keys')
-      "
-      :description="
-        flat.rows.length
-          ? $t(
-              'dms_lang.matrix.no_match_description',
-              { count: formatCount(flat.rows.length) },
-              flat.rows.length,
-            )
-          : $t('dms_lang.matrix.no_keys_description')
-      "
-      :actions="[
-        ...(flat.rows.length
-          ? [
-              {
-                label: $t(
-                  'dms_lang.matrix.show_all',
-                  { count: formatCount(flat.rows.length) },
-                  flat.rows.length,
-                ),
-                color: 'neutral',
-                variant: 'outline',
-                onClick: resetFilters,
-              },
-            ]
-          : []),
-        ...(canManageKeys
-          ? [
-              {
-                label: filters.search
-                  ? $t('dms_lang.matrix.add_named', { key: filters.search })
-                  : $t('dms_lang.key_add.title'),
-                icon: 'i-ph-plus',
-                color: 'neutral',
-                variant: 'ghost',
-                onClick: () => addKey(),
-              },
-            ]
-          : []),
-      ]"
+      :flat="flat"
+      :filters="filters"
+      :can-manage-keys="canManageKeys"
+      :format-count="formatCount"
+      :reset-filters="resetFilters"
+      :add-key="addKey"
     />
 
     <div v-else-if="isCompact && compactColumn">
@@ -658,42 +542,10 @@ onBeforeUnmount(() => {
               :key="column.code"
               class="border-default border-b border-l px-3 pt-2.5 pb-0 text-left font-normal"
             >
-              <div class="flex items-center gap-2">
-                <LocaleTile
-                  :code="column.code"
-                  size="sm"
-                  :is-base="column.isBase"
-                  :siblings="columnSiblings"
-                />
-                <span class="text-highlighted truncate font-medium">
-                  {{ column.name }}
-                </span>
-                <DmsStatusPill
-                  v-if="column.isBase"
-                  dot="none"
-                  tone="neutral"
-                  size="sm"
-                  :label="$t('dms_lang.common.base')"
-                />
-                <span
-                  v-else
-                  class="text-dimmed ml-auto font-mono text-[10.5px] whitespace-nowrap"
-                >
-                  {{
-                    $t(
-                      'dms_lang.matrix.column_missing',
-                      { count: formatCount(column.missing) },
-                      column.missing,
-                    )
-                  }}
-                </span>
-              </div>
-              <DmsMeter
-                class="mt-2"
-                :value="column.coverage"
-                :max="100"
-                size="xs"
-                :tone="column.isBase ? 'primary' : coverageTone(column.coverage)"
+              <MatrixLanguageHeader
+                :column="column"
+                :column-siblings="columnSiblings"
+                :format-count="formatCount"
               />
             </th>
           </tr>
@@ -760,50 +612,13 @@ onBeforeUnmount(() => {
       <div v-if="view.hasMore.value" ref="sentinel" class="h-8" />
     </div>
 
-    <div
+    <MatrixFooter
       v-if="isLoaded"
-      class="border-default text-dimmed flex flex-wrap items-center gap-x-4 gap-y-1 border-t px-4 py-2 text-xs"
-    >
-      <span>
-        {{
-          $t(
-            'dms_lang.matrix.footer_keys',
-            { count: formatCount(counts.missing) },
-            counts.missing,
-          )
-        }}
-        ·
-        {{
-          $t(
-            'dms_lang.matrix.footer_cells',
-            { count: formatCount(counts.cells), languages: countedLabel },
-            counts.cells,
-          )
-        }}
-      </span>
-      <span
-        v-if="canEditValues && !isCompact"
-        class="ml-auto inline-flex flex-wrap items-center gap-3"
-      >
-        <span class="inline-flex items-center gap-1">
-          <ShortcutKbds :keys="MATRIX_KEYS.saveDown" />
-          {{ $t('dms_lang.matrix.shortcut_save_down') }}
-        </span>
-        <span class="inline-flex items-center gap-1">
-          <ShortcutKbds :keys="MATRIX_KEYS.nextCell" />
-          {{ $t('dms_lang.matrix.shortcut_next_cell') }}
-        </span>
-        <span class="inline-flex items-center gap-1">
-          <ShortcutKbds :keys="MATRIX_KEYS.nextMissing" />
-          /
-          <ShortcutKbds :keys="MATRIX_KEYS.previousMissing" />
-          {{ $t('dms_lang.matrix.shortcut_next_missing') }}
-        </span>
-        <span class="inline-flex items-center gap-1">
-          <ShortcutKbds :keys="MATRIX_KEYS.openPanel" />
-          {{ $t('dms_lang.matrix.open_panel') }}
-        </span>
-      </span>
-    </div>
+      :counts="counts"
+      :counted-label="countedLabel"
+      :can-edit-values="canEditValues"
+      :is-compact="isCompact"
+      :format-count="formatCount"
+    />
   </DmsCard>
 </template>
