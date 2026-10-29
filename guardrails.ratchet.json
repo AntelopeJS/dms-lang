@@ -6,7 +6,5 @@
     "anti-slop/no-unsafe-dictionary-type": 35,
     "anti-slop/require-safety-comment-for-type-assertion": 7
   },
-  "oversizeFiles": {
-    "frontend-vue/app/build/components/KeyEditorDrawer.vue": 27632
-  }
+  "oversizeFiles": {}
 }
