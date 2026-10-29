@@ -18,7 +18,7 @@ const ALLOWED_METHODS = "GET,HEAD,OPTIONS";
 const PREFLIGHT_MAX_AGE = "86400";
 const CACHE_POLICY = "no-cache";
 /** Runs before the CORS middleware of the api module (HIGHEST), so its origin list does not apply here. */
-const BEFORE_API_CORS = (HandlerPriority.HIGHEST - 1) as HandlerPriority;
+const BEFORE_API_CORS = HandlerPriority.HIGHEST - 1;
 
 /** Opens the public files to any origin, without credentials, whatever the CORS config of the api module. */
 function openToAnyOrigin(response: HTTPResult): void {

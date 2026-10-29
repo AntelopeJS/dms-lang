@@ -43,19 +43,11 @@ import { keyStoreOf } from "../utils/key-stores";
 import { createKey } from "../utils/keys";
 import { addLocale, createWorkspace } from "../utils/workspaces";
 import { expectError } from "./errors";
+import { type LocaleTree } from "./helpers/files";
 import { filled, requestHandler } from "./helpers/routes";
 
 const WORKSPACE = "storefront";
 const ORIGIN = "http://127.0.0.1:5021";
-
-interface PageTarget {
-  type: "page";
-  url: string;
-}
-
-interface LocaleTree {
-  [key: string]: string | LocaleTree;
-}
 
 function writeLocale(root: string, file: string, messages: LocaleTree): void {
   const directory = join(root, "i18n/locales");
@@ -167,8 +159,9 @@ function describeBlockRoutes(): void {
   });
 
   it("points the settings header at the overview of the workspace of the URL", () => {
-    const { url } = OPEN_OVERVIEW_BUTTON.target as PageTarget;
-    expect(url).to.equal(
+    const { target } = OPEN_OVERVIEW_BUTTON;
+    if (target.type !== "page") expect.fail("a page button");
+    expect(target.url).to.equal(
       "/modules/lang/overview?workspace={{query.workspace}}",
     );
   });
@@ -251,7 +244,9 @@ function describeHeaderActions(): void {
   });
 
   it("points the header links at the workspace of the URL", () => {
-    const url = (addKeyButton(manageKeysAction).target as PageTarget).url;
+    const { target } = addKeyButton(manageKeysAction);
+    if (target.type !== "page") expect.fail("a page button");
+    const { url } = target;
     expect(url).to.include("workspace={{query.workspace}}");
     expect(url).to.include("q={{query.q}}");
     expect(url).to.match(/action=add-key$/);

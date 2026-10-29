@@ -6,6 +6,7 @@ import {
   updateManifest,
   type WorkspaceManifest,
 } from "./workspaces";
+import { isString } from "./guards";
 
 const HASH_LENGTH = 12;
 
@@ -20,7 +21,7 @@ function baseText(
   path: string,
 ): string | undefined {
   const value = getValueAtPath(messages[base], path);
-  return typeof value === "string" && !isMissing(value) ? value : undefined;
+  return isString(value) && !isMissing(value) ? value : undefined;
 }
 
 function recordTexts(

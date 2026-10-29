@@ -1,4 +1,5 @@
 import { isPlainObject } from "./json";
+import { isObject, isString } from "./guards";
 
 export type TranslationValue = string | number | boolean | null | undefined;
 
@@ -38,7 +39,7 @@ export function getValueAtPath(
   let current: unknown = obj;
 
   for (const key of keys) {
-    if (current && typeof current === "object" && Object.hasOwn(current, key)) {
+    if (isObject(current) && Object.hasOwn(current, key)) {
       current = (current as Record<string, unknown>)[key];
     } else {
       return undefined;
@@ -51,7 +52,7 @@ export function getValueAtPath(
 /** A value with no text: absent, null, empty or made of spaces only. */
 export function isMissing(value: unknown): boolean {
   if (value === undefined || value === null) return true;
-  return typeof value === "string" && value.trim() === "";
+  return isString(value) && value.trim() === "";
 }
 
 /** The keys of every locale merged: a key exists as soon as one language file holds it. */

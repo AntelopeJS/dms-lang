@@ -106,7 +106,7 @@ function valuesAtPath(
   messages: LocaleMessages,
   locales: string[],
   path: string,
-): Record<string, TranslationValue> {
+) {
   const values: Record<string, TranslationValue> = {};
   for (const locale of locales) {
     const value = getValueAtPath(messages[locale], path);

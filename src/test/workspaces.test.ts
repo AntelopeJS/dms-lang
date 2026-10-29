@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { runInNewContext } from "node:vm";
 import { expect } from "chai";
 import { GetMetadata } from "@antelopejs/interface-core";
-import type { ComponentFilterContext } from "@antelopejs/interface-dms/component";
+import type { DefaultLayoutOptions } from "@antelopejs/interface-dms/base";
 import { PageMetadata } from "@antelopejs/interface-dms/page";
 import { LangWorkspaceController } from "../pages/workspace";
 import { manageLanguagesAction } from "../pages/actions";
@@ -24,7 +24,7 @@ import { listLanguages } from "../utils/languages";
 import { keyStoreOf } from "../utils/key-stores";
 import { createKey, updateKey } from "../utils/keys";
 import { resolveFlat } from "../utils/resolve";
-import { readText } from "./helpers/files";
+import { type LocaleTree, readText } from "./helpers/files";
 import {
   addLocale,
   createWorkspace,
@@ -54,7 +54,7 @@ const KEYS_DETAIL = {
   },
 };
 
-function writeFile(path: string, data: unknown): void {
+function writeFile(path: string, data: LocaleTree): void {
   writeFileSync(path, JSON.stringify(data));
 }
 
@@ -369,13 +369,13 @@ describe("[integration] the workspace page's record", () => {
    */
   it("reads the workspace of its URL as the workspace page's record", async () => {
     const metadata = GetMetadata(LangWorkspaceController, PageMetadata);
-    const options = metadata.layout?.options as {
-      record?: (context: ComponentFilterContext) => unknown;
-    };
+    const options = metadata.layout?.options as DefaultLayoutOptions;
     const record = (workspace?: string) =>
       options.record?.({
+        tenantId: "",
+        user: undefined,
         query: workspace ? { workspace } : {},
-      } as ComponentFilterContext);
+      });
     expect(await record()).to.include({ id: "default" });
     expect(await record("Modules")).to.include({ id: "modules" });
     expect(await record("nope")).to.equal(undefined);

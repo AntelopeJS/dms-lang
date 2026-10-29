@@ -1,11 +1,10 @@
 {
   "rules": {
-    "anti-slop/no-known-value-widening": 4,
-    "anti-slop/no-runtime-typeof": 18,
-    "anti-slop/no-unknown-parameters": 28,
-    "anti-slop/no-unknown-returns": 10,
-    "anti-slop/no-unsafe-dictionary-type": 41,
-    "anti-slop/require-safety-comment-for-type-assertion": 26
+    "anti-slop/no-known-value-widening": 1,
+    "anti-slop/no-unknown-parameters": 27,
+    "anti-slop/no-unknown-returns": 6,
+    "anti-slop/no-unsafe-dictionary-type": 35,
+    "anti-slop/require-safety-comment-for-type-assertion": 7
   },
   "oversizeFiles": {
     "frontend-vue/app/build/components/KeyEditorDrawer.vue": 27632,

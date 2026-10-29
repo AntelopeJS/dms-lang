@@ -6,6 +6,7 @@ import type { User } from "@antelopejs/interface-dms/auth/db";
 import { PublishMessage } from "@antelopejs/interface-dms/realtime";
 import { MakeParameterAndPropertyDecorator } from "@antelopejs/interface-core/decorators";
 import { LANG_REALTIME_TOPIC } from "../pages/module";
+import { isString } from "./guards";
 
 /** The header the DMS frontend sends its realtime session id in, with every request. */
 const SESSION_HEADER = "x-realtime-session";
@@ -31,7 +32,7 @@ interface WorkspaceChangePayload extends Record<string, unknown> {
 
 function sessionOf(context: RequestContext): string | undefined {
   const value = context.rawRequest.headers[SESSION_HEADER];
-  return typeof value === "string" && value !== "" ? value : undefined;
+  return isString(value) && value !== "" ? value : undefined;
 }
 
 /** The realtime session of the tab sending the request, when it has one. */

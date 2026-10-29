@@ -18,6 +18,16 @@ import {
  * any.
  */
 
+/** Whether a value is a string. */
+function isString(value: unknown): value is string {
+  return typeof value === "string";
+}
+
+/** Whether a value is an object, an array included, and not `null`. */
+function isObject(value: unknown): value is object {
+  return typeof value === "object" && value !== null;
+}
+
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const LOCALES = join(ROOT, "frontend-vue/i18n/locales");
 const SOURCES = [
@@ -37,7 +47,7 @@ const CONST_TEMPLATE = /\$\{([A-Z][A-Z0-9_]*)\}/g;
 function flatten(messages, prefix = "", out = new Map()) {
   for (const [name, value] of Object.entries(messages)) {
     const key = prefix ? `${prefix}.${name}` : name;
-    if (value && typeof value === "object") flatten(value, key, out);
+    if (isObject(value)) flatten(value, key, out);
     else out.set(key, value);
   }
   return out;
@@ -106,7 +116,7 @@ function resolveConstants(text, shared) {
   let resolved = text;
   for (let pass = 0; pass < 3; pass += 1) {
     resolved = resolved.replace(CONST_TEMPLATE, (all, name) =>
-      typeof constants[name] === "string" && !constants[name].includes("${")
+      isString(constants[name]) && !constants[name].includes("${")
         ? constants[name]
         : all,
     );
@@ -195,7 +205,7 @@ function untranslatedSentences() {
 /** Every message is a vue-i18n message that compiles, without stray spaces. */
 function brokenMessages() {
   const problemsOf = (value) =>
-    typeof value === "string"
+    isString(value)
       ? checkMessage("", value).map((issue) => issue.kind)
       : ["not a text"];
   return Object.entries({ en, fr }).flatMap(([language, messages]) =>

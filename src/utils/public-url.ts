@@ -22,6 +22,18 @@ export async function publicOrigin(): Promise<string> {
 export type PublicWorkspace = Pick<WorkspaceSummary, "id" | "kind">;
 
 /**
+ * The public URL of a language of the added workspace `id` (`{locale}` by
+ * default: the template).
+ */
+export function addedLocaleUrl(
+  origin: string,
+  id: string,
+  locale = LOCALE_TOKEN,
+): string {
+  return `${origin}${PUBLIC_PATH}/${id}/${locale}.json`;
+}
+
+/**
  * The public URL of a language of an added workspace (`{locale}` by default:
  * the template). Undefined for the project files and the modules, which the
  * public endpoint does not serve.
@@ -32,7 +44,7 @@ export function publicLocaleUrl(
   locale = LOCALE_TOKEN,
 ): string | undefined {
   if (workspace.kind !== "added") return undefined;
-  return `${origin}${PUBLIC_PATH}/${workspace.id}/${locale}.json`;
+  return addedLocaleUrl(origin, workspace.id, locale);
 }
 
 /** A URL template with its `{locale}` written as `token`. */
@@ -102,13 +114,11 @@ export function workspaceEndpoint(
   origin: string,
 ): BlockItems<KeyValueListItem> {
   const summary = findWorkspace(workspace);
-  const url = publicLocaleUrl(origin, summary);
-  if (summary.kind !== "added" || !url) {
-    return {
-      items: LOCAL_ENDPOINTS[summary.kind as keyof typeof LOCAL_ENDPOINTS],
-    };
-  }
+  if (summary.kind !== "added") return { items: LOCAL_ENDPOINTS[summary.kind] };
   return {
-    items: publicEndpoint(url, summary.defaultLocale || FALLBACK_LOCALE),
+    items: publicEndpoint(
+      addedLocaleUrl(origin, summary.id),
+      summary.defaultLocale || FALLBACK_LOCALE,
+    ),
   };
 }

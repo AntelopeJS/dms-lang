@@ -14,6 +14,7 @@ import {
 import { findLocale } from "./locale-codes";
 import { assertMessageSyntax } from "./message-syntax";
 import { getValueAtPath, isMissing, type LocaleMessages } from "./tree";
+import { isString } from "./guards";
 
 /** Texts by locale: a string is written, `null` removes the value. */
 export type LocaleTexts = Record<string, string | null>;
@@ -122,7 +123,7 @@ function textOf(value: string | null): string | null {
 }
 
 /** The texts of a request on the locales of the store; an empty text is no text. */
-function parseTexts(store: KeyStore, values: LocaleTexts = {}): LocaleTexts {
+function parseTexts(store: KeyStore, values: LocaleTexts = {}) {
   const texts: LocaleTexts = {};
   for (const [code, value] of Object.entries(values))
     texts[storeLocale(store, code)] = textOf(value);
@@ -142,7 +143,7 @@ function currentText(
   path: string,
 ): string | null {
   const value = getValueAtPath(data, path);
-  return typeof value === "string" && !isMissing(value) ? value : null;
+  return isString(value) && !isMissing(value) ? value : null;
 }
 
 function assertExpected(

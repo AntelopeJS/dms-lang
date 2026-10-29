@@ -15,7 +15,7 @@ function firstMessage(error: ZodError): string {
  * `$dms_lang.errors.*` key (a generic one when zod worded it), the stable
  * `invalid_body` code and the zod `issues` the DMS `useFieldErrors` reads.
  */
-function refusal(error: unknown): unknown {
+function refusal(error: unknown) {
   if (!(error instanceof ZodError)) return errorBody(INVALID_BODY);
   return {
     ...errorBody(INVALID_BODY, { issues: error.issues }),
