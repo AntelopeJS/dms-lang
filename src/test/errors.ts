@@ -7,7 +7,12 @@ interface ErrorBody {
   code: string;
   message: string;
   current?: Record<string, string | null>;
-  [detail: string]: unknown;
+  id?: string;
+  locale?: string;
+  problems?: string[];
+  details?: string[];
+  /** Zod issues on a refused input, message issues on a refused text. */
+  issues?: unknown;
 }
 
 /** The status and JSON body of the HTTP error `run` throws. */
