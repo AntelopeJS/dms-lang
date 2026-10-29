@@ -9,6 +9,7 @@ on:
   # the secret scanner ran.
   pull_request:
 
+  workflow_dispatch: null
 permissions:
   contents: read
 
@@ -22,7 +23,7 @@ concurrency:
 jobs:
   # `pnpm run checks`: typecheck, lint, format, knip, the backend and node
   # tests (one build), size, ratchet and sync.
-  checks:
+  ci:
     uses: AntelopeJS/.github/.github/workflows/ci-node.yml@v1
     with:
       docs-files: |
@@ -34,6 +35,9 @@ jobs:
       cache-key-files: |
         src/test/harness.ts
         pnpm-lock.yaml
+    permissions:
+      contents: write
+      actions: write
 
   frontend:
     runs-on: ubuntu-latest
@@ -55,7 +59,7 @@ jobs:
   # above succeeded.
   ubuntu:
     if: always()
-    needs: [checks, frontend]
+    needs: [ci, frontend]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
