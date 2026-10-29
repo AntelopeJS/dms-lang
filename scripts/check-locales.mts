@@ -1,3 +1,13 @@
+/**
+ * @packageDocumentation
+ * Invariants of the frontend's locale catalogs: every language carries the
+ * keys of English and no other; no sentence is left in English in another
+ * language; every message compiles as a vue-i18n message without stray
+ * spaces; both languages use the same variables; every key the code names
+ * exists; every error reason of the API and every error of the message
+ * compiler has a message; the key panel's position reads `{index}` before
+ * `{total}`. Prints the violations only; exits 1 when there are any.
+ */
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -6,17 +16,6 @@ import {
   checkMessage,
   placeholdersOf,
 } from "../frontend-vue/app/utils/translations.ts";
-
-/**
- * @packageDocumentation
- * Invariants of the frontend's locale catalogs: every language carries the
- * keys of English and no other; no sentence is left in English in another
- * language; every message compiles as a vue-i18n message without stray
- * spaces; both languages use the same variables; every key the code names
- * exists; every error reason of the API and every error of the message
- * compiler has a message. Prints the violations only; exits 1 when there are
- * any.
- */
 
 /** Whether a value is a string. */
 function isString(value: unknown): value is string {
@@ -267,6 +266,16 @@ function unexplainedSyntaxErrors() {
     .map((key) => `no sentence for the message compiler error: ${key}`);
 }
 
+/** The position of the key panel's key among the keys reads `{index}` before `{total}` in every language. */
+function misorderedPosition() {
+  const key = "dms_lang.drawer.position";
+  return [{ file: SOURCE_FILE, messages: en }, ...translations]
+    .filter(
+      ({ messages }) => !/\{index\}.*\{total\}/.test(String(messages.get(key))),
+    )
+    .map(({ file }) => `${file} ${key} does not read {index} before {total}`);
+}
+
 const failures = [
   ...missingKeys(),
   ...untranslatedSentences(),
@@ -275,6 +284,7 @@ const failures = [
   ...unknownKeys(),
   ...unexplainedErrors(),
   ...unexplainedSyntaxErrors(),
+  ...misorderedPosition(),
 ];
 for (const failure of failures) console.error(failure);
 if (failures.length > 0) process.exitCode = 1;

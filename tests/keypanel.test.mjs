@@ -1,3 +1,9 @@
+/**
+ * @packageDocumentation
+ * The key panel of the matrix: `useKeyPanel` opens it as a DMS drawer, and
+ * `KeyEditorDrawer` is its body. The DMS's own composables are stand-ins
+ * that record what the panel asks of them.
+ */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { setTimeout as sleep } from "node:timers/promises";
@@ -8,13 +14,6 @@ import {
   serverRender,
   vue,
 } from "./helpers/frontend-runtime.mjs";
-import { localeMessage } from "./helpers/locales.mjs";
-
-/**
- * The key panel of the matrix: `useKeyPanel` opens it as a DMS drawer, and
- * `KeyEditorDrawer` is its body. The DMS's own composables are stand-ins
- * that record what the panel asks of them.
- */
 
 const ORIGIN = "http://frontend.local";
 const drawers = [];
@@ -83,9 +82,7 @@ const { default: KeyEditorDrawer } = await frontend(
   "build/components/KeyEditorDrawer.vue",
 );
 const { default: KeyStatus } = await frontend("build/components/KeyStatus.vue");
-const { NAMESPACE_SEPARATOR, placeholdersOf } = await frontend(
-  "utils/translations.ts",
-);
+const { NAMESPACE_SEPARATOR } = await frontend("utils/translations.ts");
 
 const API = "/api/lang/translations";
 const PAGE = "/modules/lang/translations?workspace=default";
@@ -229,12 +226,6 @@ test("the key panel's header is the DMS row header: the key in its look, then it
     "a key off the list has no steps",
   );
   assert.equal("positionLabel" in unplaced, false);
-  for (const file of ["lang-en-GB.json", "lang-fr-FR.json"])
-    assert.deepEqual(
-      placeholdersOf(localeMessage(file, "dms_lang.drawer.position")).sort(),
-      ["index", "total"],
-      `${file} places the key among the keys`,
-    );
 });
 
 test("J and K are the DMS row header's, not the panel's own", async () => {
