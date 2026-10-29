@@ -126,11 +126,11 @@ export default defineConfig({
         },
       };
     },
+    /**
+     * Awaited inside ajs's finally: a rejection here would replace the run's
+     * real outcome with a teardown stack.
+     */
     async cleanup() {
-      /**
-       * Awaited inside ajs's finally: a rejection here would replace the run's
-       * real outcome with a teardown stack.
-       */
       try {
         if (mongod) await mongod.stop();
       } catch (error) {

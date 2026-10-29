@@ -12,7 +12,8 @@
  * router by a history that records each visit and moves the page to it,
  * vue-i18n by a `useI18n` that throws. A `.vue` file is compiled by the
  * renderer's Vue compiler, its template inlined in its setup, as Vite
- * compiles it.
+ * compiles it. The application's auto-imports the composables call (Vue's
+ * API, the renderer's and the DMS layers') are globals.
  */
 import { createRequire, registerHooks } from "node:module";
 import { readFileSync, realpathSync } from "node:fs";
@@ -123,10 +124,6 @@ const { useApiData } = await import(USE_API_DATA);
 const reads = [];
 let backend = () => ({});
 
-/**
- * The application's auto-imports: Vue's API, the renderer's, and the DMS
- * layers' the composables call.
- */
 for (const [name, value] of Object.entries(vue))
   if (/^[a-z]/.test(name)) globalThis[name] = value;
 Object.assign(globalThis, {

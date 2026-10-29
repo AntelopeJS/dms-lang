@@ -363,10 +363,6 @@ function describeManifestWrites(directoryOf: () => string): void {
 }
 
 describe("[integration] the workspace page's record", () => {
-  /**
-   * The DMS leaves a detail page whose record goes missing: the workspace
-   * page reads its workspace as its record, and opens the list once deleted.
-   */
   it("reads the workspace of its URL as the workspace page's record", async () => {
     const metadata = GetMetadata(LangWorkspaceController, PageMetadata);
     const options = metadata.layout?.options as DefaultLayoutOptions;

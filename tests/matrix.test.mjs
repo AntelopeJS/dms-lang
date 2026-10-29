@@ -1,11 +1,11 @@
-import assert from "node:assert/strict";
-import { test } from "node:test";
-import * as translations from "../frontend-vue/app/utils/translations.ts";
-
 /**
  * @packageDocumentation
  * The matrix files use the utilities the DMS build auto-imports.
  */
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import * as translations from "../frontend-vue/app/utils/translations.ts";
+
 Object.assign(globalThis, translations);
 
 const { exportFileName, translationsCsv } =

@@ -1,11 +1,10 @@
-import { readFileSync } from "node:fs";
-
 /**
  * @packageDocumentation
  * The playground runs the DMS release the module is developed against: the
  * range of its `dms` source follows the module's own dev dependency. Prints
  * the mismatch only; exits 1 when there is one.
  */
+import { readFileSync } from "node:fs";
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
 const DMS_SOURCE =

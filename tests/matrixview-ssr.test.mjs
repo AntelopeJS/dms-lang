@@ -1,7 +1,3 @@
-import assert from "node:assert/strict";
-import { test } from "node:test";
-import { frontend, serverRender, vue } from "./helpers/frontend-runtime.mjs";
-
 /**
  * @packageDocumentation
  * The matrix's columns are the workspace's languages, base first: a server
@@ -9,6 +5,9 @@ import { frontend, serverRender, vue } from "./helpers/frontend-runtime.mjs";
  * without a mismatch. A user's own order, kept in this browser, applies once
  * the page is mounted.
  */
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { frontend, serverRender, vue } from "./helpers/frontend-runtime.mjs";
 
 Object.assign(
   globalThis,
