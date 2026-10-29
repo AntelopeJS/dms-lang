@@ -20,6 +20,7 @@ import {
   workspaceKind,
   writeNewWorkspace,
 } from "./workspaces";
+import { isString } from "./guards";
 
 export const BACKUP_FORMAT = "dms-lang.workspace";
 export const BACKUP_VERSION = 1;
@@ -89,7 +90,7 @@ function childLocation(at: TreeLocation, key: string): TreeLocation {
  * vue-i18n compiles, an empty text left out (and the namespace it empties).
  */
 function cleanTree(node: unknown, at: TreeLocation): unknown {
-  if (typeof node === "string") {
+  if (isString(node)) {
     if (node.trim() === "") return undefined;
     assertMessageSyntax(at.locale, node);
     return node;
@@ -156,7 +157,7 @@ function importedLocales(backup: ImportInput): WorkspaceLocale[] {
 }
 
 function importedMessages(
-  messages: Record<string, unknown>,
+  messages: ImportInput["messages"],
   locales: WorkspaceLocale[],
 ): LocaleMessages {
   const result: LocaleMessages = {};

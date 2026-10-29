@@ -8,7 +8,7 @@ import {
   MID_COVERAGE,
   coveragePercent,
   coverageTone,
-} from '../utils/translations'
+} from '../utils/coverage'
 
 const MAX_NAMESPACES = 6
 const MAX_LOCALES = 6

@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { coveragePercent } from "../frontend-vue/app/utils/translations.ts";
+import { frontend } from "./helpers/frontend-runtime.mjs";
 import { serverErrorCode } from "../frontend-vue/app/composables/translation/useMutationToast.ts";
 import {
   matchesWorkspace,
   sortWorkspaces,
 } from "../frontend-vue/app/utils/workspaces.ts";
+
+const { coveragePercent } = await frontend("utils/coverage.ts");
 
 test("coverage never rounds a gap up to 100", () => {
   assert.equal(coveragePercent(200, 201), 99);

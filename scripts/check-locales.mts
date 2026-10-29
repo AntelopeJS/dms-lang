@@ -1,12 +1,31 @@
-import assert from "node:assert/strict";
+/**
+ * @packageDocumentation
+ * Invariants of the frontend's locale catalogs: every language carries the
+ * keys of English and no other; no sentence is left in English in another
+ * language; every message compiles as a vue-i18n message without stray
+ * spaces; both languages use the same variables; every key the code names
+ * exists; every error reason of the API and every error of the message
+ * compiler has a message; the key panel's position reads `{index}` before
+ * `{total}`. Prints the violations only; exits 1 when there are any.
+ */
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
-import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+import { CompileErrorCodes } from "@intlify/message-compiler";
 import {
   checkMessage,
   placeholdersOf,
 } from "../frontend-vue/app/utils/translations.ts";
+
+/** Whether a value is a string. */
+function isString(value: unknown): value is string {
+  return typeof value === "string";
+}
+
+/** Whether a value is an object, an array included, and not `null`. */
+function isObject(value: unknown): value is object {
+  return typeof value === "object" && value !== null;
+}
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const LOCALES = join(ROOT, "frontend-vue/i18n/locales");
@@ -27,7 +46,7 @@ const CONST_TEMPLATE = /\$\{([A-Z][A-Z0-9_]*)\}/g;
 function flatten(messages, prefix = "", out = new Map()) {
   for (const [name, value] of Object.entries(messages)) {
     const key = prefix ? `${prefix}.${name}` : name;
-    if (value && typeof value === "object") flatten(value, key, out);
+    if (isObject(value)) flatten(value, key, out);
     else out.set(key, value);
   }
   return out;
@@ -96,7 +115,7 @@ function resolveConstants(text, shared) {
   let resolved = text;
   for (let pass = 0; pass < 3; pass += 1) {
     resolved = resolved.replace(CONST_TEMPLATE, (all, name) =>
-      typeof constants[name] === "string" && !constants[name].includes("${")
+      isString(constants[name]) && !constants[name].includes("${")
         ? constants[name]
         : all,
     );
@@ -148,77 +167,78 @@ const references = files.flatMap((file) =>
   ),
 );
 
-test("every language has the keys of English, and no other", () => {
-  assert.ok(translations.length > 0, "the translations were found");
-  for (const { file, messages } of translations) {
-    assert.deepEqual(
-      [...en.keys()].filter((key) => !messages.has(key)),
-      [],
-      `missing in ${file}`,
-    );
-    assert.deepEqual(
-      [...messages.keys()].filter((key) => !en.has(key)),
-      [],
-      `missing in ${SOURCE_FILE}`,
-    );
-  }
-});
+/** Every language has the keys of English, and no other. */
+function missingKeys() {
+  if (translations.length === 0) return ["no translation was found"];
+  return translations.flatMap(({ file, messages }) => [
+    ...[...en.keys()]
+      .filter((key) => !messages.has(key))
+      .map((key) => `missing in ${file}: ${key}`),
+    ...[...messages.keys()]
+      .filter((key) => !en.has(key))
+      .map((key) => `missing in ${SOURCE_FILE}: ${key}`),
+  ]);
+}
 
 /**
  * A text of several words left as its English source was not translated. A
  * single word ("Description", "Type", "DMS") may well read the same in both
  * languages, and placeholders and paths are never translated.
  */
-test("no sentence is left in English in another language", () => {
+function untranslatedSentences() {
   const wordsOf = (value) =>
     String(value).replace(UNTRANSLATED_PART, " ").match(WORD) ?? [];
-  const untranslated = translations.flatMap(({ file, messages }) =>
+  return translations.flatMap(({ file, messages }) =>
     [...en]
       .filter(
         ([key, value]) =>
           wordsOf(value).length > 1 && messages.get(key) === value,
       )
-      .map(([key, value]) => `${file} ${key}: ${JSON.stringify(value)}`),
+      .map(
+        ([key, value]) =>
+          `left in English: ${file} ${key}: ${JSON.stringify(value)}`,
+      ),
   );
-  assert.deepEqual(untranslated, []);
-});
+}
 
-test("every message is a vue-i18n message that compiles, without stray spaces", () => {
+/** Every message is a vue-i18n message that compiles, without stray spaces. */
+function brokenMessages() {
   const problemsOf = (value) =>
-    typeof value === "string"
+    isString(value)
       ? checkMessage("", value).map((issue) => issue.kind)
       : ["not a text"];
-  const broken = Object.entries({ en, fr }).flatMap(([language, messages]) =>
+  return Object.entries({ en, fr }).flatMap(([language, messages]) =>
     [...messages]
       .filter(([, value]) => problemsOf(value).length > 0)
       .map(
         ([key, value]) =>
-          `${language} ${key} (${problemsOf(value).join(", ")}): ${JSON.stringify(value)}`,
+          `broken message: ${language} ${key} (${problemsOf(value).join(", ")}): ${JSON.stringify(value)}`,
       ),
   );
-  assert.deepEqual(broken, []);
-});
+}
 
-test("both languages use the same variables", () => {
+/** Both languages use the same variables. */
+function differentVariables() {
   const sorted = (value) => placeholdersOf(value).sort().join(",");
-  const different = [...en]
+  return [...en]
     .filter(([key, value]) => sorted(value) !== sorted(fr.get(key)))
-    .map(([key]) => key);
-  assert.deepEqual(different, []);
-});
+    .map(([key]) => `other variables in fr: ${key}`);
+}
 
-test("every key the code names exists", () => {
-  assert.ok(references.length > 100, "the key references were found");
+/** Every key the code names exists. */
+function unknownKeys() {
+  if (references.length <= 100) return ["the key references were not found"];
   const missing = references
     .filter(
       ({ key, canBeBranch }) =>
         !en.has(key) && !(canBeBranch && branches.has(key)),
     )
-    .map(({ key, file }) => `${file}: ${key}`);
-  assert.deepEqual([...new Set(missing)], []);
-});
+    .map(({ key, file }) => `unknown key: ${file}: ${key}`);
+  return [...new Set(missing)];
+}
 
-test("every error reason of the API has a message", () => {
+/** Every error reason of the API has a message. */
+function unexplainedErrors() {
   const source = readFileSync(join(ROOT, "src/utils/errors.ts"), "utf8");
   const statuses = source.slice(
     source.indexOf("ERROR_STATUS = {"),
@@ -232,19 +252,39 @@ test("every error reason of the API has a message", () => {
     ...[...statuses.matchAll(/^\s+(\w+):/gm)].map((match) => match[1]),
     ...[...reasons.matchAll(/"(\w+)"/g)].map((match) => match[1]),
   ];
-  assert.ok(keys.length > 30, "the error reasons were found");
-  assert.deepEqual(
-    keys.filter((key) => !en.has(`dms_lang.errors.${key}`)),
-    [],
-  );
-});
+  if (keys.length <= 30) return ["the error reasons were not found"];
+  return keys
+    .filter((key) => !en.has(`dms_lang.errors.${key}`))
+    .map((key) => `no message for the API error: dms_lang.errors.${key}`);
+}
 
-test("every error of the message compiler has a sentence", async () => {
-  const { CompileErrorCodes } = await import("@intlify/message-compiler");
-  assert.deepEqual(
-    Object.keys(CompileErrorCodes)
-      .map((name) => `dms_lang.errors.message_syntax.${name.toLowerCase()}`)
-      .filter((key) => !en.has(key)),
-    [],
-  );
-});
+/** Every error of the message compiler has a sentence. */
+function unexplainedSyntaxErrors() {
+  return Object.keys(CompileErrorCodes)
+    .map((name) => `dms_lang.errors.message_syntax.${name.toLowerCase()}`)
+    .filter((key) => !en.has(key))
+    .map((key) => `no sentence for the message compiler error: ${key}`);
+}
+
+/** The position of the key panel's key among the keys reads `{index}` before `{total}` in every language. */
+function misorderedPosition() {
+  const key = "dms_lang.drawer.position";
+  return [{ file: SOURCE_FILE, messages: en }, ...translations]
+    .filter(
+      ({ messages }) => !/\{index\}.*\{total\}/.test(String(messages.get(key))),
+    )
+    .map(({ file }) => `${file} ${key} does not read {index} before {total}`);
+}
+
+const failures = [
+  ...missingKeys(),
+  ...untranslatedSentences(),
+  ...brokenMessages(),
+  ...differentVariables(),
+  ...unknownKeys(),
+  ...unexplainedErrors(),
+  ...unexplainedSyntaxErrors(),
+  ...misorderedPosition(),
+];
+for (const failure of failures) console.error(failure);
+if (failures.length > 0) process.exitCode = 1;

@@ -171,9 +171,10 @@ export function setAtPath(
   for (let i = 0; i < segments.length - 1; i++) {
     const seg = segments[i];
     if (seg === undefined) return;
-    if (!Object.hasOwn(current, seg) || !isPlainObject(current[seg]))
-      defineEntry(current, seg, {});
-    current = current[seg] as Record<string, unknown>;
+    const existing = Object.hasOwn(current, seg) ? current[seg] : undefined;
+    const child = isPlainObject(existing) ? existing : {};
+    if (child !== existing) defineEntry(current, seg, child);
+    current = child;
   }
   defineEntry(current, last, value);
 }
@@ -242,14 +243,11 @@ export function deleteAtPath(
   let current = obj;
   for (let i = 0; i < segments.length - 1; i++) {
     const seg = segments[i];
-    if (
-      seg === undefined ||
-      !Object.hasOwn(current, seg) ||
-      !isPlainObject(current[seg])
-    )
-      return;
+    if (seg === undefined) return;
+    const child = Object.hasOwn(current, seg) ? current[seg] : undefined;
+    if (!isPlainObject(child)) return;
     stack.push({ parent: current, key: seg });
-    current = current[seg] as Record<string, unknown>;
+    current = child;
   }
   Reflect.deleteProperty(current, last);
 

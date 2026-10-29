@@ -5,10 +5,6 @@ import { validate } from "../validation/validate";
 import { workspaceSchema } from "../validation/workspace.schema";
 import { expectError } from "./errors";
 
-interface Issue {
-  path: (string | number)[];
-}
-
 const KEY = { workspace: "shop", path: "a.b" };
 
 describe("[unit] route inputs are validated at the entry", () => {
@@ -20,7 +16,7 @@ describe("[unit] route inputs are validated at the entry", () => {
         "invalid_body",
       );
       expect(body.message).to.equal("$dms_lang.errors.invalid_value");
-      expect((body.issues as Issue[])[0]?.path[0]).to.equal("values");
+      expect(body).to.have.nested.property("issues[0].path[0]", "values");
     }
     expect(
       validate(keySchema.create, { ...KEY, values: { en: "x", fr: null } }),
@@ -34,7 +30,7 @@ describe("[unit] route inputs are validated at the entry", () => {
       "invalid_body",
     );
     expect(body.message).to.equal("$dms_lang.errors.invalid_body");
-    expect((body.issues as Issue[])[0]?.path).to.deep.equal(["before"]);
+    expect(body).to.have.deep.nested.property("issues[0].path", ["before"]);
   });
 
   it("refuses an unknown snippet or page instead of looking it up", () => {
@@ -50,7 +46,7 @@ describe("[unit] route inputs are validated at the entry", () => {
 
   it("refuses a backup of another format or of a newer version", () => {
     const backup = { id: "copy", messages: { en: {} } };
-    const refusal = (stamp: Record<string, unknown>) =>
+    const refusal = (stamp: { format?: string; version?: number | string }) =>
       expectError(
         () => validate(workspaceSchema.import, { ...backup, ...stamp }),
         400,

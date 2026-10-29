@@ -18,6 +18,7 @@ import {
   normalizeLocaleCode,
 } from "./locale-codes";
 import type { LocaleMessages } from "./tree";
+import { isObject, isString } from "./guards";
 
 export interface WorkspaceLocale {
   code: string;
@@ -27,6 +28,11 @@ export interface WorkspaceLocale {
 
 export const WORKSPACE_TYPES = ["dms", "website", "mobile", "other"] as const;
 type WorkspaceType = (typeof WORKSPACE_TYPES)[number];
+
+/** Whether a value is one of the workspace types. */
+function isWorkspaceType(value: unknown): value is WorkspaceType {
+  return WORKSPACE_TYPES.some((type) => type === value);
+}
 
 export interface WorkspaceDetails {
   description?: string;
@@ -159,14 +165,13 @@ function localeCodesOf(dir: string): string[] {
 
 function storedDetails(stored: Partial<WorkspaceManifest>): WorkspaceDetails {
   const details: WorkspaceDetails = {};
-  if (typeof stored.description === "string" && stored.description !== "")
+  if (isString(stored.description) && stored.description !== "")
     details.description = stored.description;
-  if (WORKSPACE_TYPES.includes(stored.type as WorkspaceType))
-    details.type = stored.type;
+  if (isWorkspaceType(stored.type)) details.type = stored.type;
   return details;
 }
 
-type JsonReader = (path: string) => Record<string, unknown>;
+type JsonReader = typeof readJson;
 
 function readManifestAt(
   dir: string,
@@ -187,8 +192,7 @@ function readManifestAt(
     locales,
     ...storedDetails(stored),
   };
-  if (stored.sources && typeof stored.sources === "object")
-    manifest.sources = stored.sources;
+  if (isObject(stored.sources)) manifest.sources = stored.sources;
   return manifest;
 }
 
@@ -321,8 +325,8 @@ function cleanDetails(input: DetailsInput): WorkspaceDetails {
 export function validateLocaleEntry(locale: WorkspaceLocale): WorkspaceLocale {
   const { code, name, flag } = locale;
   const entry: WorkspaceLocale = { code: normalizeLocaleCode(code) };
-  if (typeof name === "string" && name.trim() !== "") entry.name = name.trim();
-  if (typeof flag === "string" && flag.trim() !== "") entry.flag = flag.trim();
+  if (isString(name) && name.trim() !== "") entry.name = name.trim();
+  if (isString(flag) && flag.trim() !== "") entry.flag = flag.trim();
   return entry;
 }
 

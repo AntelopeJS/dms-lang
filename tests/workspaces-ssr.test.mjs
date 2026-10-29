@@ -1,10 +1,12 @@
+/**
+ * @packageDocumentation
+ * The workspace list every page's scope bar shows, and the figures of the
+ * workspace list page, are read by a server render and handed to the
+ * browser, which then does not ask again.
+ */
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { frontend, serverRender, vue } from "./frontend-runtime.mjs";
-
-// The workspace list every page's scope bar shows, and the figures of the
-// workspace list page, are read by a server render and handed to the
-// browser, which then does not ask again.
+import { frontend, serverRender, vue } from "./helpers/frontend-runtime.mjs";
 
 const { useI18nWorkspaces, useWorkspaceSummary } = await frontend(
   "composables/translation/useI18nWorkspaces.ts",
@@ -51,7 +53,7 @@ const listed = (workspaces) =>
 test("the blocks of a page read the workspace list once, on the server, and hand it over", async () => {
   const render = await serverRender(
     () => {
-      // The scope bar and the page's block, each with the list.
+      /** The scope bar and the page's block, each with the list. */
       const scope = useI18nWorkspaces();
       const block = useI18nWorkspaces();
       return () =>
@@ -85,7 +87,6 @@ test("a write reads the list again, and a key write's figures go into it", async
     `GET ${API}/workspaces`,
   ]);
   assert.match(render.html, /default:11,modules:900/);
-  // What the browser is handed is the list as patched.
   assert.match(JSON.stringify(render.payload.data), /"totalKeys":11/);
 });
 

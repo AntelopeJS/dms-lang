@@ -1,7 +1,7 @@
 import { FALLBACK_LOCALE, findWorkspace } from "./catalog";
 import { PROJECT_FILES } from "./constants";
 import { languageOf } from "./locale-codes";
-import { publicLocaleUrl, templateUrl } from "./public-url";
+import { addedLocaleUrl, templateUrl } from "./public-url";
 import type { WorkspaceKind } from "./workspaces";
 
 export const SNIPPET_KINDS = ["vue", "i18next", "fetch", "curl"] as const;
@@ -139,11 +139,11 @@ export function workspaceSnippet(
   origin: string,
 ): Snippet {
   const summary = findWorkspace(workspace);
-  const url = publicLocaleUrl(origin, summary);
-  if (summary.kind !== "added" || !url) {
-    const local = LOCAL_SNIPPETS[summary.kind as keyof typeof LOCAL_SNIPPETS];
+  if (summary.kind !== "added") {
+    const local = LOCAL_SNIPPETS[summary.kind];
     return { language: "javascript", code: local.join("\n") };
   }
+  const url = addedLocaleUrl(origin, summary.id);
   const build = SNIPPETS[kind];
   return build({
     url,

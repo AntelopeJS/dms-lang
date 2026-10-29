@@ -33,11 +33,11 @@ function onModulesChanged(): void {
  * the list of modules is read again whenever the DMS says it changed
  * (`FrontendModulesChanged`), and their files are listed again whenever one
  * of their locales folders changes, so a module registered late or a
- * language file added by hand shows up without a restart.
+ * language file added by hand shows up without a restart. It follows the
+ * DMS's changes before its first read, so a module registering in between is
+ * not missed.
  */
 export async function initializeLocaleRegistry(): Promise<void> {
-  // Registered before the first read: a module registering in between is
-  // not missed.
   FrontendModulesChanged.register(onModulesChanged);
   await refreshModules();
 }
@@ -53,12 +53,16 @@ function moduleStamp(module: FrontendModuleMetadata): string {
   return JSON.stringify([module.name, module.sourcePath, isOwn]);
 }
 
+/**
+ * Reads the list of frontend modules again, and lists their files again when
+ * it changed. When the DMS cannot answer, as it goes down or restarts, the
+ * modules known so far are kept.
+ */
 async function refreshModules(): Promise<void> {
   let next: FrontendModuleMetadata[];
   try {
     next = await GetFrontendModules();
   } catch {
-    // The DMS is going down or restarting: keep the modules known so far.
     return;
   }
   const stamp = next.map(moduleStamp).join("\n");

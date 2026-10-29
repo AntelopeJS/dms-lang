@@ -7,7 +7,12 @@ interface ErrorBody {
   code: string;
   message: string;
   current?: Record<string, string | null>;
-  [detail: string]: unknown;
+  id?: string;
+  locale?: string;
+  problems?: string[];
+  details?: string[];
+  /** Zod issues on a refused input, message issues on a refused text. */
+  issues?: unknown;
 }
 
 /** The status and JSON body of the HTTP error `run` throws. */
@@ -16,19 +21,19 @@ interface HttpError {
   body: ErrorBody;
 }
 
-function errorOf(run: () => unknown): HttpError {
+function errorOf(run: () => void): HttpError {
   try {
     run();
   } catch (error) {
     expect(error).to.be.instanceOf(HTTPResult);
-    const result = error as HTTPResult;
-    return { status: result.getStatus(), body: JSON.parse(result.getBody()) };
+    if (error instanceof HTTPResult)
+      return { status: error.getStatus(), body: JSON.parse(error.getBody()) };
   }
   throw new Error("expected an HTTP error");
 }
 
 export function expectError(
-  run: () => unknown,
+  run: () => void,
   status: number,
   code: string,
 ): ErrorBody {

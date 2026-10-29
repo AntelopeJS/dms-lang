@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { type LocaleFile, writeTargetOf } from "../utils/write-target";
 
-function file(path: string, data: Record<string, unknown>): LocaleFile {
+function file(path: string, data: LocaleFile["data"]): LocaleFile {
   return { path, data };
 }
 

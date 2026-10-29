@@ -14,6 +14,7 @@ import {
 import { findLocale } from "./locale-codes";
 import { assertMessageSyntax } from "./message-syntax";
 import { getValueAtPath, isMissing, type LocaleMessages } from "./tree";
+import { isString } from "./guards";
 
 /** Texts by locale: a string is written, `null` removes the value. */
 export type LocaleTexts = Record<string, string | null>;
@@ -122,7 +123,7 @@ function textOf(value: string | null): string | null {
 }
 
 /** The texts of a request on the locales of the store; an empty text is no text. */
-function parseTexts(store: KeyStore, values: LocaleTexts = {}): LocaleTexts {
+function parseTexts(store: KeyStore, values: LocaleTexts = {}) {
   const texts: LocaleTexts = {};
   for (const [code, value] of Object.entries(values))
     texts[storeLocale(store, code)] = textOf(value);
@@ -142,7 +143,7 @@ function currentText(
   path: string,
 ): string | null {
   const value = getValueAtPath(data, path);
-  return typeof value === "string" && !isMissing(value) ? value : null;
+  return isString(value) && !isMissing(value) ? value : null;
 }
 
 function assertExpected(
@@ -321,7 +322,10 @@ function assertOwnKey(store: KeyStore, segments: string[]): void {
   );
 }
 
-/** Moves a key in every locale; 409 when the target holds a key or a namespace. */
+/**
+ * Moves a key in every locale, within the file that defines it; 409 when the
+ * target holds a key or a namespace.
+ */
 export function renameKey(
   store: KeyStore,
   path: string,
@@ -339,7 +343,6 @@ export function renameKey(
   for (const locale of store.locales) {
     const value = getValueAtPath(store.messages[locale], source);
     if (value === undefined || isPlainObject(value)) continue;
-    // The key moves within the file that defines it.
     const data = store.load(locale, from);
     deleteAtPath(data, from);
     setAtPath(data, to, value);

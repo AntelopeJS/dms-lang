@@ -9,23 +9,24 @@ import {
   isValidKeyPath,
   keyPathConflict,
   isRowValueMissing,
-  languageCoverage,
   MESSAGE_ISSUE_LABELS,
   messageIssueText,
-  namespaceCoverage,
   namespaceOf,
   nextSiblingPath,
   placeholdersOf,
   replacePlaceholder,
   needsReview,
   scanMessage,
-  withRow,
 } from "../frontend-vue/app/utils/translations.ts";
+import { frontend } from "./helpers/frontend-runtime.mjs";
 import { hasMessageIssue } from "../dist/utils/message-check.js";
 import {
   canonicalLocale,
   isRightToLeft,
 } from "../frontend-vue/app/utils/languages.ts";
+
+const { languageCoverage, namespaceCoverage, withRow } =
+  await frontend("utils/coverage.ts");
 
 const flat = {
   defaultLocale: "en",

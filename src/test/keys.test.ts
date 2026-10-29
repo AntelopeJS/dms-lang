@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect } from "chai";
@@ -19,20 +19,13 @@ import {
   updateKey,
 } from "../utils/keys";
 import { canonicalLocale, normalizeLocaleCode } from "../utils/locale-codes";
-import { type MessageIssue, messageIssues } from "../utils/message-syntax";
+import { messageIssues } from "../utils/message-syntax";
 import { keyStoreOf, reviewStoreOf } from "../utils/key-stores";
 import { resolveFlat } from "../utils/resolve";
+import { readText } from "./helpers/files";
 import type { LocaleMessages } from "../utils/tree";
 import { addLocale, createWorkspace } from "../utils/workspaces";
 import { expectError } from "./errors";
-
-interface InvalidMessageBody {
-  message: string;
-  locale?: string;
-  problems?: string[];
-  details?: string[];
-  issues?: MessageIssue[];
-}
 
 function problemsOf(message: string): string[] {
   return messageIssues(message).map((issue) => issue.problem);
@@ -162,15 +155,12 @@ describe("[unit] an undone deletion puts the key back in place", () => {
       { en: "{n} items", fr: "{n} articles" },
       "cart.empty",
     );
-    expect(Object.keys(files.en.cart as object)).to.deep.equal([
-      "title",
-      "badge",
-      "empty",
-    ]);
-    expect(Object.keys(files.fr.cart as object)).to.deep.equal([
-      "badge",
-      "empty",
-    ]);
+    expect(JSON.stringify(files.en.cart)).to.equal(
+      JSON.stringify({ title: "Cart", badge: "{n} items", empty: "Empty" }),
+    );
+    expect(JSON.stringify(files.fr.cart)).to.equal(
+      JSON.stringify({ badge: "{n} articles", empty: "Vide" }),
+    );
   });
 
   it("puts a key back at its base rank in a language that lacks the sibling it followed", () => {
@@ -187,27 +177,25 @@ describe("[unit] an undone deletion puts the key back in place", () => {
       { en: "Empty", nl: "Leeg" },
       "cart.items",
     );
-    expect(Object.keys(files.en.cart as object)).to.deep.equal([
-      "title",
-      "empty",
-      "items",
-      "total",
-    ]);
-    expect(Object.keys(files.nl.cart as object)).to.deep.equal([
-      "title",
-      "empty",
-      "total",
-    ]);
+    expect(JSON.stringify(files.en.cart)).to.equal(
+      JSON.stringify({
+        title: "Cart",
+        empty: "Empty",
+        items: "Items",
+        total: "Total",
+      }),
+    );
+    expect(JSON.stringify(files.nl.cart)).to.equal(
+      JSON.stringify({ title: "Winkelwagen", empty: "Leeg", total: "Totaal" }),
+    );
   });
 
   it("appends a key whose sibling is gone and refuses a sibling from another namespace", () => {
     const files = storefront();
     createKey(memoryStore(files), "nav.about", { en: "About" }, "nav.gone");
-    expect(Object.keys(files.en.nav as object)).to.deep.equal([
-      "home",
-      "linked",
-      "about",
-    ]);
+    expect(JSON.stringify(files.en.nav)).to.equal(
+      JSON.stringify({ home: "Home", linked: "Linked", about: "About" }),
+    );
     expectError(
       () =>
         createKey(
@@ -367,7 +355,7 @@ describe("[unit] key writes validate their input", () => {
         updateKey(store, "nav.home", { fr: "Texte {company} pour {prénom}" }),
       400,
       "invalid_message",
-    ) as InvalidMessageBody;
+    );
     expect(body.problems).to.deep.equal(["invalid_token_in_placeholder"]);
     expect(body.details).to.deep.equal([
       "$dms_lang.errors.message_syntax.invalid_token_in_placeholder",
@@ -451,9 +439,7 @@ describe("[integration] review tracking and file layout", () => {
     markReviewed(reviewStoreOf(workspace), "home.title", ["fr"]);
     expect(outdatedOf("home.title")).to.equal(undefined);
     expect(
-      JSON.parse(
-        readFileSync(join(directory, "ws", workspace, "fr.json"), "utf-8"),
-      ),
+      JSON.parse(readText(join(directory, "ws", workspace, "fr.json"))),
     ).to.deep.equal({ home: { title: "Accueil" } });
     expectError(
       () => markReviewed(reviewStoreOf("default"), "home.title"),
@@ -466,11 +452,11 @@ describe("[integration] review tracking and file layout", () => {
     const crlf = join(directory, "crlf.json");
     writeFileSync(crlf, '{\r\n    "a": "1"\r\n}\r\n');
     writeJson(crlf, { a: "1", b: "2" });
-    expect(readFileSync(crlf, "utf-8")).to.equal(
+    expect(readText(crlf)).to.equal(
       '{\r\n    "a": "1",\r\n    "b": "2"\r\n}\r\n',
     );
     const fresh = join(directory, "fresh.json");
     writeJson(fresh, { a: "1" });
-    expect(readFileSync(fresh, "utf-8")).to.equal('{\n\t"a": "1"\n}\n');
+    expect(readText(fresh)).to.equal('{\n\t"a": "1"\n}\n');
   });
 });

@@ -172,12 +172,14 @@ export class LangWorkspaceController extends PageController(
     category: manageCategory,
     icon: "i-ph-gear-six",
     order: 1,
-    // Its list: the page opens it once the workspace it shows is deleted.
+    /** Its list: the page opens it once the workspace it shows is deleted. */
     parent: LangWorkspacesController,
   },
   DefaultLayout({
-    // The workspace the page shows: a tab on it leaves for the list once
-    // another deletes it.
+    /**
+     * The workspace the page shows: a tab on it leaves for the list once
+     * another deletes it.
+     */
     record: ({ query }) => {
       const summary = workspaceSummary(query?.workspace);
       return summary && { ...summary };

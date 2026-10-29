@@ -1,5 +1,6 @@
 import { baseCompile, NodeTypes } from "@intlify/message-compiler";
 import { isMissing } from "./tree";
+import { isNumberOrBoolean, isObject, isString } from "./guards";
 
 /** The variables a plural message may use without its base naming them. */
 const IMPLICIT_PLURAL_NAMES = ["count", "n"];
@@ -31,8 +32,7 @@ function isNode(value: unknown): value is AstNode {
 }
 
 function nameOf(node: AstNode): string | undefined {
-  if (node.type === NodeTypes.Named && typeof node.key === "string")
-    return node.key;
+  if (node.type === NodeTypes.Named && isString(node.key)) return node.key;
   if (node.type === NodeTypes.List) return String(node.index);
   return undefined;
 }
@@ -47,7 +47,7 @@ function collectNames(node: unknown, names: Set<string>): void {
   const name = nameOf(node);
   if (name !== undefined) names.add(name);
   for (const child of Object.values(node))
-    if (typeof child === "object") collectNames(child, names);
+    if (isObject(child) || child === null) collectNames(child, names);
 }
 
 function compile(message: string): CompiledMessage {
@@ -59,7 +59,7 @@ function compile(message: string): CompiledMessage {
   });
   const names = new Set<string>();
   collectNames(ast.body, names);
-  const body = ast.body as AstNode;
+  const body = ast.body;
   const forms =
     body.type === NodeTypes.Plural ? (body.cases?.length ?? 0) : SINGLE_FORM;
   return { compiles, names, forms };
@@ -91,9 +91,8 @@ function differsFromBase(
 }
 
 function textOf(value: unknown): string {
-  if (typeof value === "string") return value;
-  const isPrintable = typeof value === "number" || typeof value === "boolean";
-  return isPrintable ? String(value) : "";
+  if (isString(value)) return value;
+  return isNumberOrBoolean(value) ? String(value) : "";
 }
 
 function checkPair(base: string, value: string): boolean {
