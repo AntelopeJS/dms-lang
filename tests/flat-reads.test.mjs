@@ -6,7 +6,7 @@ import {
   frontend,
   serverRender,
   vue,
-} from "./frontend-runtime.mjs";
+} from "./helpers/frontend-runtime.mjs";
 
 // The translations of a workspace (the matrix, the queue) and the dialogs a
 // route serves are read with useApiData: the translations by a server

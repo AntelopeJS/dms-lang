@@ -46,7 +46,7 @@
     "frontend:dev": "cd playground && pnpm frontend:dev",
     "dev": "ajs project dev -w -p playground",
     "lint:fix": "oxlint --fix --max-warnings=1000000 && oxfmt . && pnpm --dir frontend-vue lint:fix",
-    "lint": "oxlint && pnpm --dir frontend-vue lint && antelopejs-check-interface-ranges",
+    "lint": "oxlint && pnpm --dir frontend-vue lint && node scripts/check-locales.mjs && node scripts/check-dms-versions.mjs && antelopejs-check-interface-ranges",
     "typecheck": "tsc --noEmit",
     "format": "oxfmt . && pnpm --dir frontend-vue format",
     "test": "[ -n \"$DMS_PREBUILT\" ] || pnpm run build && DMS_PREBUILT=1 ajs module test . && node --test tests/*.test.mjs",

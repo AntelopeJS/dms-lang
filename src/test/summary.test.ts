@@ -43,6 +43,7 @@ import { keyStoreOf } from "../utils/key-stores";
 import { createKey } from "../utils/keys";
 import { addLocale, createWorkspace } from "../utils/workspaces";
 import { expectError } from "./errors";
+import { filled, requestHandler } from "./helpers/routes";
 
 const WORKSPACE = "storefront";
 const ORIGIN = "http://127.0.0.1:5021";
@@ -235,11 +236,18 @@ function describeHeaderActions(): void {
     expect(await shown(OPEN_MATRIX_BUTTON)).to.equal(true);
     expect(await shown(DOWNLOAD_LANGUAGE_BUTTON, "en-GB")).to.equal(true);
     expect(await shown(DOWNLOAD_LANGUAGE_BUTTON, "de")).to.equal(false);
-    expect(DOWNLOAD_LANGUAGE_BUTTON.target).to.deep.equal({
-      type: "download",
-      url: "/api/lang/translations/export?workspace={{query.workspace}}&locale={{query.locale}}",
-      filename: "{{query.locale}}.json",
-    });
+  });
+
+  it("downloads the language of the URL from the export route, as its own file", async () => {
+    const { target } = DOWNLOAD_LANGUAGE_BUTTON;
+    if (target.type !== "download") expect.fail("a download button");
+    const query = { workspace: WORKSPACE, locale: "it-it" };
+    expect(filled(target.filename ?? "", query)).to.equal("it-it.json");
+    const downloaded = await requestHandler(
+      "get",
+      new URL(filled(target.url, query), ORIGIN),
+    );
+    expect(downloaded).to.deep.equal(exportLanguage(WORKSPACE, "it-it"));
   });
 
   it("points the header links at the workspace of the URL", () => {

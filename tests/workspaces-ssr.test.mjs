@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { frontend, serverRender, vue } from "./frontend-runtime.mjs";
+import { frontend, serverRender, vue } from "./helpers/frontend-runtime.mjs";
 
 // The workspace list every page's scope bar shows, and the figures of the
 // workspace list page, are read by a server render and handed to the

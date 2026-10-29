@@ -1,10 +1,4 @@
-import {
-  mkdtempSync,
-  mkdirSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect } from "chai";
@@ -18,6 +12,7 @@ import {
   loadMessages,
 } from "../utils/registry";
 import { resolveFlat } from "../utils/resolve";
+import { readJson } from "./helpers/files";
 
 /**
  * Well under the 2 s the registry used to poll the frontend modules at: a
@@ -147,10 +142,6 @@ describe("[integration] registered locale sources", () => {
   });
 });
 
-function readFile(path: string): unknown {
-  return JSON.parse(readFileSync(path, "utf-8"));
-}
-
 describe("[integration] project files split by domain or registered late", () => {
   let directory: string;
 
@@ -179,10 +170,10 @@ describe("[integration] project files split by domain or registered late", () =>
     await initializeLocaleRegistry();
     updateKey(ownKeyStore(), "splitCrm.title", { nl: "Klanten" });
     createKey(ownKeyStore(), "splitCrm.subtitle", { nl: "Pijplijn" });
-    expect(readFile(crm)).to.deep.equal({
+    expect(readJson(crm)).to.deep.equal({
       splitCrm: { title: "Klanten", subtitle: "Pijplijn" },
     });
-    expect(readFile(team)).to.deep.equal({ splitTeam: { title: "Team" } });
+    expect(readJson(team)).to.deep.equal({ splitTeam: { title: "Team" } });
   });
 
   it("follows a frontend module registered after the registry started", async function () {

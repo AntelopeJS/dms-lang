@@ -1,10 +1,4 @@
-import {
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runInNewContext } from "node:vm";
@@ -30,6 +24,7 @@ import { listLanguages } from "../utils/languages";
 import { keyStoreOf } from "../utils/key-stores";
 import { createKey, updateKey } from "../utils/keys";
 import { resolveFlat } from "../utils/resolve";
+import { readText } from "./helpers/files";
 import {
   addLocale,
   createWorkspace,
@@ -177,10 +172,7 @@ describe("[integration] workspace data model", () => {
       (entry) => entry.key === "home.title",
     );
     expect(fixed?.outdated).to.equal(undefined);
-    const files = readFileSync(
-      join(directory, "ws", WORKSPACE, "fr.json"),
-      "utf-8",
-    );
+    const files = readText(join(directory, "ws", WORKSPACE, "fr.json"));
     expect(JSON.parse(files)).to.deep.equal({
       home: { title: "Page d'accueil" },
     });
@@ -366,7 +358,7 @@ function describeManifestWrites(directoryOf: () => string): void {
       500,
       "server_error",
     );
-    expect(readFileSync(manifest, "utf-8")).to.equal("{ broken");
+    expect(readText(manifest)).to.equal("{ broken");
   });
 }
 

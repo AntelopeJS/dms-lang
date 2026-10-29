@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { frontend, serverRender, vue } from "./frontend-runtime.mjs";
+import { frontend, serverRender, vue } from "./helpers/frontend-runtime.mjs";
 
 // The matrix's columns are the workspace's languages, base first: a server
 // render shows them as the browser's first render will, so the page hydrates
