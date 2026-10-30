@@ -2,7 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { basename } from "node:path";
 import { markWritten } from "./cache";
 import { check, type ErrorReason, fail } from "./errors";
-import { isNumberOrBoolean, isString } from "./guards";
+import { isNumberOrBoolean, isObject, isString } from "./guards";
 import type { WorkspaceManifest } from "./workspaces";
 
 const NEW_SEGMENT_RE = /^[\w-]{1,128}$/;
@@ -129,12 +129,6 @@ export function writeJson(
   markWritten(path);
 }
 
-export function isPlainObject(
-  value: unknown,
-): value is Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-
 /** The prototypes of an object literal and of an object `JSON.parse` returns. */
 const LITERAL_PROTOTYPES = new Set<unknown>([Object.prototype, null]);
 
@@ -147,7 +141,7 @@ export function isJsonValue(value: unknown): value is JsonValue {
     let children: unknown[];
     if (Array.isArray(node)) children = node;
     else if (
-      isPlainObject(node) &&
+      isObject(node) &&
       LITERAL_PROTOTYPES.has(Object.getPrototypeOf(node))
     )
       children = Object.values(node);
