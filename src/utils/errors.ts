@@ -88,7 +88,9 @@ export function errorMessage(reason: ErrorReason): string {
 }
 
 export function errorStatus(code: ErrorCode): number {
-  return ERROR_STATUS[code];
+  return Object.hasOwn(ERROR_STATUS, code)
+    ? ERROR_STATUS[code]
+    : ERROR_STATUS.server_error;
 }
 
 export function errorBody(

@@ -203,7 +203,9 @@ function summarizeRows(context: FlatContext, rows: FlatRow[]): FlatResult {
     localeProgress,
     localeMissing,
     totalKeys: rows.length,
-    baseMissing: localeMissing[context.defaultLocale] ?? 0,
+    baseMissing: Object.hasOwn(localeMissing, context.defaultLocale)
+      ? localeMissing[context.defaultLocale]
+      : 0,
     incompleteKeys: rows.filter((row) =>
       targets.some((locale) => isRowMissing(row, locale)),
     ).length,

@@ -1,6 +1,6 @@
 import { baseCompile, NodeTypes } from "@intlify/message-compiler";
 import { isMissing, type TranslationValue } from "./tree";
-import { isNumberOrBoolean, isString } from "./guards";
+import { isNumberOrBoolean, isObject, isString } from "./guards";
 
 /** The variables a plural message may use without its base naming them. */
 const IMPLICIT_PLURAL_NAMES = ["count", "n"];
@@ -28,7 +28,12 @@ interface AstNode {
 const verdicts = new Map<string, boolean>();
 
 function isNode(value: unknown): value is AstNode {
-  return typeof value === "object" && value !== null;
+  return (
+    isObject(value) &&
+    (!("type" in value) || Number.isInteger(value.type)) &&
+    (!("index" in value) || Number.isInteger(value.index)) &&
+    (!("cases" in value) || Array.isArray(value.cases))
+  );
 }
 
 function nameOf(node: AstNode): string | undefined {

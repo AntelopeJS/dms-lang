@@ -223,9 +223,12 @@ export function setAtPath(
 
 /** Moves the property `name` of an object right before its property `before`. */
 function moveBefore(node: JsonObject, name: string, before: string): void {
-  const entries = Object.entries(node).filter(([entry]) => entry !== name);
+  const own = Object.entries(node);
+  const moved = own.find(([entry]) => entry === name);
+  if (moved === undefined) return;
+  const entries = own.filter(([entry]) => entry !== name);
   const index = entries.findIndex(([entry]) => entry === before);
-  entries.splice(index, 0, [name, node[name]]);
+  entries.splice(index, 0, moved);
   for (const entry of Object.keys(node)) Reflect.deleteProperty(node, entry);
   for (const [entry, value] of entries) defineEntry(node, entry, value);
 }
