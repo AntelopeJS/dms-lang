@@ -7,17 +7,17 @@
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { frontend, serverRender, vue } from "./helpers/frontend-runtime.mjs";
+import { serverRender, vue } from "./helpers/frontend-runtime.mjs";
 
 Object.assign(
   globalThis,
-  await frontend("composables/translation/useI18nWorkspaces.ts"),
-  await frontend("composables/translation/useLangLinks.ts"),
-  await frontend("build/composables/useMatrixFilters.ts"),
+  await import("../frontend-vue/app/composables/translation/useI18nWorkspaces.ts"),
+  await import("../frontend-vue/app/composables/translation/useLangLinks.ts"),
+  await import("../frontend-vue/app/build/composables/useMatrixFilters.ts"),
 );
 Object.assign(
   globalThis,
-  await frontend("composables/translation/useWorkspaceRoute.ts"),
+  await import("../frontend-vue/app/composables/translation/useWorkspaceRoute.ts"),
 );
 Object.assign(globalThis, {
   useUserRealtime: () => ({ sessionId: vue.ref("own-tab") }),
@@ -25,12 +25,14 @@ Object.assign(globalThis, {
 });
 Object.assign(
   globalThis,
-  await frontend("composables/translation/useWorkspaceFlat.ts"),
+  await import("../frontend-vue/app/composables/translation/useWorkspaceFlat.ts"),
 );
-const { useMatrixView } = await frontend("build/composables/useMatrixView.ts");
+const { useMatrixView } =
+  await import("../frontend-vue/app/build/composables/useMatrixView.ts");
 
 const API = "/api/lang/translations";
 
+/** @param {import("./helpers/frontend-runtime.mjs").Read} read */
 function respond({ url }) {
   if (url === `${API}/workspaces`)
     return {
@@ -53,7 +55,7 @@ function respond({ url }) {
   return {};
 }
 
-test("a server render shows the workspace's languages as the matrix columns", async () => {
+void test("a server render shows the workspace's languages as the matrix columns", async () => {
   const render = await serverRender(
     () => {
       useWorkspaceFlatSync();

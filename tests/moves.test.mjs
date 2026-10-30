@@ -7,6 +7,7 @@ Object.assign(globalThis, translations);
 const { useCellMoves } =
   await import("../frontend-vue/app/build/composables/useCellMoves.ts");
 
+/** @param {unknown} value */
 function ref(value) {
   return { value };
 }
@@ -17,6 +18,7 @@ const rows = [
   { key: "b.three", values: { en: "Three" } },
 ];
 
+/** @param {{ pending?: string[] }} [options] */
 function movesOf({ pending = [] } = {}) {
   const view = {
     renderedRows: ref(rows),
@@ -36,7 +38,7 @@ function movesOf({ pending = [] } = {}) {
   });
 }
 
-test("Tab walks the target languages, then the next row", () => {
+void test("Tab walks the target languages, then the next row", () => {
   const moves = movesOf();
   assert.deepEqual(moves.targetOf({ key: "a.one", code: "fr" }, "next"), {
     key: "a.one",
@@ -52,14 +54,14 @@ test("Tab walks the target languages, then the next row", () => {
   });
 });
 
-test("Tab and Enter on the last cell have no cell to go to", () => {
+void test("Tab and Enter on the last cell have no cell to go to", () => {
   const moves = movesOf();
   assert.equal(moves.targetOf({ key: "b.three", code: "de" }, "next"), null);
   assert.equal(moves.targetOf({ key: "b.three", code: "fr" }, "down"), null);
   assert.equal(moves.targetOf({ key: "a.one", code: "fr" }, "stay"), null);
 });
 
-test("N goes to the next empty cell, skipping texts being saved", () => {
+void test("N goes to the next empty cell, skipping texts being saved", () => {
   const moves = movesOf({ pending: ["a.one:de"] });
   assert.deepEqual(moves.nextMissing(null, 1), { key: "a.two", code: "fr" });
   assert.deepEqual(moves.nextMissing({ key: "a.two", code: "de" }, 1), {

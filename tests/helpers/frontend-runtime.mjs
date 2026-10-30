@@ -15,14 +15,16 @@
  * compiles it. The application's auto-imports the composables call (Vue's
  * API, the renderer's and the DMS layers') are globals.
  */
-import { createRequire, registerHooks } from "node:module";
+import { registerHooks } from "node:module";
 import { readFileSync, realpathSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import ts from "typescript";
 
-const require = createRequire(import.meta.url);
-const ts = require("typescript");
-
-/** Their own location, where pnpm puts what they import. */
+/**
+ * Their own location, where pnpm puts what they import.
+ *
+ * @param {string} path
+ */
 const installed = (path) =>
   pathToFileURL(
     realpathSync(
@@ -32,11 +34,7 @@ const installed = (path) =>
     ),
   ).href;
 const RENDERER = installed("dms-frontend/templates/vue/frontend-module.ts");
-const USE_API_DATA = installed(
-  "dms/frontend-vue/layers/dms-core/app/composables/auth/useApiData.ts",
-);
-const sfc = createRequire(fileURLToPath(RENDERER))("vue/compiler-sfc");
-sfc.registerTS(() => ts);
+/** @type {{ [specifier: string]: string }} */
 const BROWSER_ONLY = {
   "@inertiajs/vue3":
     "const history = () => globalThis.__INERTIA_HISTORY__; export const Link = {}; export const router = { visit: (url, options) => history().go('visit', url, options), push: (options) => history().go('push', options.url, options), replace: (options) => history().go('replace', options.url, options), on: () => () => {} }; export const usePage = () => history().page;",
@@ -44,7 +42,11 @@ const BROWSER_ONLY = {
     "export function useI18n() { throw new Error('vue-i18n is not available in these tests') }",
 };
 
-/** The script of a single-file component, its template inlined, in TypeScript. */
+/**
+ * The script of a single-file component, its template inlined, in TypeScript.
+ *
+ * @param {string} path
+ */
 function compileComponent(path) {
   const { descriptor } = sfc.parse(readFileSync(path, "utf8"), {
     filename: path,
@@ -59,7 +61,7 @@ registerHooks({
   resolve(specifier, context, next) {
     if (specifier === "#dms/frontend-module")
       return { url: RENDERER, shortCircuit: true };
-    if (specifier in BROWSER_ONLY)
+    if (Object.hasOwn(BROWSER_ONLY, specifier))
       return {
         url: `data:text/javascript,${encodeURIComponent(BROWSER_ONLY[specifier])}`,
         shortCircuit: true,
@@ -102,14 +104,32 @@ registerHooks({
 });
 
 const vue = await import("vue");
+const sfc = await import("vue/compiler-sfc");
+sfc.registerTS(() => ts);
+
+/** @typedef {{ [name: string]: string }} Query The query of a backend read: names and their text. */
+/** @typedef {{ url: string, method: string, query: Query }} Read */
+/** @typedef {(read: Read) => unknown} Respond */
+/** @typedef {{ onFinish?: () => void }} VisitOptions */
+/** @typedef {{ url: string | undefined }} Page */
+/** @typedef {{ kind: string, url?: string | undefined }} Visit */
+
+/** @type {Page} */
+const initialPage = { url: undefined };
 
 /**
  * The browser's history as Inertia keeps it: the page's URL, and each visit
  * made, by kind (`push`, `replace`, or a server `visit`), in order.
  */
 export const history = {
-  page: vue.reactive({ url: undefined }),
+  page: vue.reactive(initialPage),
+  /** @type {Visit[]} */
   visits: [],
+  /**
+   * @param {string} kind
+   * @param {string | undefined} url
+   * @param {VisitOptions} options
+   */
   go(kind, url, options) {
     history.visits.push({ kind, url });
     history.page.url = url;
@@ -118,10 +138,14 @@ export const history = {
 };
 globalThis.__INERTIA_HISTORY__ = history;
 const { renderToString } = await import("vue/server-renderer");
-const engine = await import(RENDERER);
-const { useApiData } = await import(USE_API_DATA);
+const engine =
+  await import("../../node_modules/@antelopejs/dms-frontend/templates/vue/frontend-module.ts");
+const { useApiData } =
+  await import("../../node_modules/@antelopejs/dms/frontend-vue/layers/dms-core/app/composables/auth/useApiData.ts");
 
+/** @type {(Read & { response: unknown })[]} */
 const reads = [];
+/** @type {Respond} */
 let backend = () => ({});
 
 for (const [name, value] of Object.entries(vue))
@@ -131,7 +155,12 @@ Object.assign(globalThis, {
   useDmsAsyncData: engine.useDmsAsyncData,
   useApiData,
   useAuthFetch: () => ({
+    /**
+     * @param {string} url
+     * @param {{ method?: string, query?: Query }} [options]
+     */
     async $authFetch(url, options = {}) {
+      /** @type {Read} */
       const read = {
         url,
         method: (options.method ?? "GET").toUpperCase(),
@@ -144,18 +173,13 @@ Object.assign(globalThis, {
   }),
 });
 
-/** Imports a module of the frontend's sources. */
-export const frontend = (path) =>
-  import(
-    pathToFileURL(
-      fileURLToPath(new URL(`../../frontend-vue/app/${path}`, import.meta.url)),
-    ).href
-  );
-
 /**
  * The requests the payload carries the responses of. The renderer keys a
  * request by a digest the page does not reveal, so a request is matched by
  * its response.
+ *
+ * @param {ReturnType<typeof engine.serializeDmsPayload>} payload
+ * @param {{ request: string, response: unknown }[]} answered
  */
 function transferredRequests(payload, answered) {
   const carried = new Set(
@@ -172,6 +196,9 @@ function transferredRequests(payload, answered) {
  * Renders on a server, for the page `url`, a component whose setup is
  * `setup` and whose HTML is what `setup` returns, answering each backend
  * request with `respond`.
+ *
+ * @param {() => import("vue").RenderFunction | Promise<import("vue").RenderFunction>} setup
+ * @param {{ url?: string, respond?: Respond }} [options]
  */
 export async function serverRender(setup, { url = "/", respond } = {}) {
   backend = respond ?? (() => ({}));
@@ -204,6 +231,10 @@ export async function serverRender(setup, { url = "/", respond } = {}) {
  * server render before it, on the page `url`, answering each backend request
  * with `respond`.
  * `reads` lists the requests made so far, with their query.
+ *
+ * @template Result
+ * @param {() => Result} setup
+ * @param {{ respond?: Respond, url?: string }} [options]
  */
 export function browserRun(setup, { respond, url } = {}) {
   backend = respond ?? (() => ({}));

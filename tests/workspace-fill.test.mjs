@@ -6,25 +6,25 @@
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { frontend, serverRender, vue } from "./helpers/frontend-runtime.mjs";
+import { serverRender, vue } from "./helpers/frontend-runtime.mjs";
 
 Object.assign(
   globalThis,
-  await frontend("composables/translation/useI18nWorkspaces.ts"),
-  await frontend("composables/translation/useLangLinks.ts"),
+  await import("../frontend-vue/app/composables/translation/useI18nWorkspaces.ts"),
+  await import("../frontend-vue/app/composables/translation/useLangLinks.ts"),
   { usePermissions: () => ({ hasPermission: () => true }) },
 );
 Object.assign(
   globalThis,
-  await frontend("composables/translation/useWorkspaceRoute.ts"),
-  await frontend("composables/translation/useWorkspaceContext.ts"),
+  await import("../frontend-vue/app/composables/translation/useWorkspaceRoute.ts"),
+  await import("../frontend-vue/app/composables/translation/useWorkspaceContext.ts"),
 );
-const { useWorkspaceFill } = await frontend(
-  "composables/translation/useWorkspaceFill.ts",
-);
+const { useWorkspaceFill } =
+  await import("../frontend-vue/app/composables/translation/useWorkspaceFill.ts");
 
 const API = "/api/lang/translations";
 
+/** @param {import("./helpers/frontend-runtime.mjs").Read} read */
 function respond({ url }) {
   if (url === `${API}/workspaces`)
     return {
@@ -40,6 +40,8 @@ function respond({ url }) {
  * Renders the page `url` on a server, its setup awaiting the workspace list
  * as a component's `<script setup>` compiles an `await`: the setup goes on in
  * the component once the list is in.
+ *
+ * @param {string} url
  */
 async function renderPage(url) {
   return serverRender(
@@ -57,12 +59,12 @@ async function renderPage(url) {
   );
 }
 
-test("a server render redirects a page without a workspace to one", async () => {
+void test("a server render redirects a page without a workspace to one", async () => {
   const render = await renderPage("/modules/lang/overview");
   assert.equal(render.redirect, "/modules/lang/overview?workspace=default");
 });
 
-test("a page naming its workspace renders where it is", async () => {
+void test("a page naming its workspace renders where it is", async () => {
   const render = await renderPage("/modules/lang/overview?workspace=default");
   assert.equal(render.redirect, undefined);
 });
