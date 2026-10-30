@@ -1,11 +1,17 @@
 import * as z from "zod";
 import { errorMessage } from "../utils/errors";
 import { BACKUP_FORMAT, BACKUP_VERSION } from "../utils/export";
+import { isJsonValue, type JsonValue } from "../utils/json";
 import { WORKSPACE_TYPES } from "../utils/workspaces";
 
 /** Longest workspace description. */
 const DESCRIPTION_MAX_LENGTH = 500;
 const NO_TYPE = "";
+
+/** The texts of an imported language: whatever `JSON.parse` returns, checked key by key on the way in. */
+const jsonValue = z.custom<JsonValue>(isJsonValue, {
+  message: errorMessage("invalid_value"),
+});
 
 const id = z.string().trim().min(1);
 const code = z.string({ message: errorMessage("invalid_locale") }).min(1);
@@ -43,7 +49,7 @@ export const workspaceSchema = {
   remove: z.object({ id }),
   import: z.object({
     id,
-    messages: z.record(z.unknown(), {
+    messages: z.record(jsonValue, {
       message: errorMessage("invalid_value"),
     }),
     locales: z.array(localeEntry).optional(),

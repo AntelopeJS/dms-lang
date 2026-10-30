@@ -3,8 +3,8 @@ import { check, fail } from "./errors";
 import type { ImportInput } from "../validation/workspace.schema";
 import {
   isJsonObject,
-  isPlainObject,
   type JsonObject,
+  type JsonValue,
   leafPrefixOf,
   nodeKindAt,
   validateKeyPath,
@@ -91,7 +91,7 @@ function childLocation(at: TreeLocation, key: string): TreeLocation {
  * vue-i18n compiles, an empty text left out (and the namespace it empties).
  */
 function cleanTree(
-  node: unknown,
+  node: JsonValue,
   at: TreeLocation,
 ): string | JsonObject | undefined {
   if (isString(node)) {
@@ -99,7 +99,7 @@ function cleanTree(
     assertMessageSyntax(at.locale, node);
     return node;
   }
-  check(isPlainObject(node), "invalid_value", {
+  check(isJsonObject(node), "invalid_value", {
     locale: at.locale,
     path: at.segments.join("."),
   });
@@ -112,7 +112,7 @@ function cleanTree(
   return entries.length > 0 ? Object.fromEntries(entries) : undefined;
 }
 
-function cleanMessages(locale: string, tree: unknown): JsonObject {
+function cleanMessages(locale: string, tree: JsonValue): JsonObject {
   const cleaned = cleanTree(tree, { locale, segments: [] });
   return isJsonObject(cleaned) ? cleaned : {};
 }
