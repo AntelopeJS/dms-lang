@@ -1,4 +1,7 @@
 import { HTTPResult } from "@antelopejs/interface-api";
+import type { ZodIssue } from "zod";
+import type { LocaleTexts } from "./keys";
+import type { MessageIssue } from "./message-syntax";
 
 const BAD_REQUEST = 400;
 const FORBIDDEN = 403;
@@ -59,7 +62,17 @@ export type ErrorReason =
   | "newer_backup"
   | "not_configured";
 
-export type ErrorDetails = Record<string, unknown>;
+/** A value an error names for the client to act on it. */
+type ErrorDetail =
+  | string
+  | number
+  | undefined
+  | (string | undefined)[]
+  | LocaleTexts
+  | MessageIssue[]
+  | ZodIssue[];
+
+export type ErrorDetails = Record<string, ErrorDetail>;
 
 /** The JSON body of an error: an i18n message key, a stable code and what the client needs to act on it. */
 export interface ErrorBody extends ErrorDetails {

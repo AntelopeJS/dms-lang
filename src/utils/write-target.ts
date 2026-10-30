@@ -1,28 +1,30 @@
 import { basename } from "node:path";
-import { isPlainObject, nodeKindAt } from "./json";
+import {
+  isJsonObject,
+  type JsonObject,
+  type JsonValue,
+  nodeKindAt,
+} from "./json";
 
 /** A project file of one locale, with what it holds. */
 export interface LocaleFile {
   path: string;
-  data: Record<string, unknown>;
+  data: JsonObject;
 }
 
 /** The fallback catalog, excluding domain files such as `app-crm-en-GB.json`. */
 const DEFAULT_FILE_RE = /^app-[a-z]{2}-[A-Z]{2}\.json$/;
 
 /** How many leading segments of a key are a namespace the file already holds. */
-function namespaceDepth(
-  data: Record<string, unknown>,
-  segments: string[],
-): number {
-  let node: unknown = data;
+function namespaceDepth(data: JsonObject, segments: string[]): number {
+  let node: JsonValue | undefined = data;
   let depth = 0;
   for (const segment of segments.slice(0, -1)) {
     node =
-      isPlainObject(node) && Object.hasOwn(node, segment)
+      isJsonObject(node) && Object.hasOwn(node, segment)
         ? node[segment]
         : undefined;
-    if (!isPlainObject(node)) break;
+    if (!isJsonObject(node)) break;
     depth++;
   }
   return depth;

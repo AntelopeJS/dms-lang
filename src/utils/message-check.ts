@@ -1,6 +1,6 @@
 import { baseCompile, NodeTypes } from "@intlify/message-compiler";
-import { isMissing } from "./tree";
-import { isNumberOrBoolean, isObject, isString } from "./guards";
+import { isMissing, type TranslationValue } from "./tree";
+import { isNumberOrBoolean, isString } from "./guards";
 
 /** The variables a plural message may use without its base naming them. */
 const IMPLICIT_PLURAL_NAMES = ["count", "n"];
@@ -38,16 +38,15 @@ function nameOf(node: AstNode): string | undefined {
 }
 
 /** The variables a message uses, linked keys included. */
-function collectNames(node: unknown, names: Set<string>): void {
+function collectNames(node: AstNode, names: Set<string>): void {
   if (Array.isArray(node)) {
-    for (const child of node) collectNames(child, names);
+    for (const child of node) if (isNode(child)) collectNames(child, names);
     return;
   }
-  if (!isNode(node)) return;
   const name = nameOf(node);
   if (name !== undefined) names.add(name);
   for (const child of Object.values(node))
-    if (isObject(child) || child === null) collectNames(child, names);
+    if (isNode(child)) collectNames(child, names);
 }
 
 function compile(message: string): CompiledMessage {
@@ -90,7 +89,7 @@ function differsFromBase(
   );
 }
 
-function textOf(value: unknown): string {
+function textOf(value: TranslationValue): string {
   if (isString(value)) return value;
   return isNumberOrBoolean(value) ? String(value) : "";
 }
@@ -110,7 +109,10 @@ function checkPair(base: string, value: string): boolean {
  * itself); an empty text has no issue, it is missing. The rule the frontend
  * applies to the text being typed (`checkMessage`).
  */
-export function hasMessageIssue(base: unknown, value: unknown): boolean {
+export function hasMessageIssue(
+  base: TranslationValue,
+  value: TranslationValue,
+): boolean {
   if (isMissing(value)) return false;
   const pair = `${textOf(base)}${PAIR_SEPARATOR}${textOf(value)}`;
   const known = verdicts.get(pair);

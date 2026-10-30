@@ -24,7 +24,7 @@ import { listLanguages } from "../utils/languages";
 import { keyStoreOf } from "../utils/key-stores";
 import { createKey, updateKey } from "../utils/keys";
 import { resolveFlat } from "../utils/resolve";
-import { type LocaleTree, readText } from "./helpers/files";
+import { jsonTrees, type LocaleTree, readText } from "./helpers/files";
 import {
   addLocale,
   createWorkspace,
@@ -286,10 +286,11 @@ function describePublicAccess(): void {
       defaultLocale: "en-GB",
       type: "website",
     });
-    const id = importWorkspace({ ...backup, id: "core-restored" });
+    const restorable = { ...backup, messages: jsonTrees(backup.messages) };
+    const id = importWorkspace({ ...restorable, id: "core-restored" });
     expect(backupWorkspace(id).messages).to.deep.equal(backup.messages);
     expectError(
-      () => importWorkspace({ ...backup, id }),
+      () => importWorkspace({ ...restorable, id }),
       409,
       "workspace_exists",
     );
