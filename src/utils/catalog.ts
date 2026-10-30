@@ -72,9 +72,7 @@ export function resolveWorkspaceId(workspace?: string): string {
  * The summary of a workspace, by any id {@link resolveWorkspaceId} accepts (an empty id is the
  * project files); `undefined` when it does not exist.
  */
-export function workspaceSummary(
-  workspace?: string,
-): WorkspaceSummary | undefined {
+function workspaceSummary(workspace?: string): WorkspaceSummary | undefined {
   const id = normalizeWorkspaceId(workspace) || DEFAULT_WORKSPACE;
   return listAllWorkspaces().find((entry) => entry.id === id);
 }
