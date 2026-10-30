@@ -231,12 +231,13 @@ function describeLanguages(): void {
     const { code } = workspaceSnippet(WORKSPACE, "fetch", API_BASE);
     /** The snippet as an app runs it, with the files of the workspace served. */
     const run = async (language: string) => {
-      const messages = await runInNewContext(
+      const messages: unknown = await runInNewContext(
         `(async () => { ${code}
 return messages; })()`,
         { fetch: served, navigator: { language } },
       );
-      return JSON.parse(JSON.stringify(messages));
+      const plain: unknown = JSON.parse(JSON.stringify(messages));
+      return plain;
     };
     expect(await run("fr-BE")).to.deep.equal({
       home: { title: "Page d'accueil", cta: "Acheter" },
