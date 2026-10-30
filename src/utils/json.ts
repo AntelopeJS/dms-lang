@@ -56,20 +56,22 @@ export function validateNewKeyPath(path: string): string[] {
   return segments;
 }
 
-export function readJson(path: string): JsonObject {
-  try {
-    return JSON.parse(readFileSync(path, "utf-8")) as JsonObject;
-  } catch {
-    return {};
-  }
-}
-
 function parseOrUndefined(text: string): JsonValue | undefined {
   try {
     const parsed: unknown = JSON.parse(text);
     return isJsonValue(parsed) ? parsed : undefined;
   } catch {
     return undefined;
+  }
+}
+
+/** A JSON file read for display: empty when it is missing, is not JSON, or holds anything but an object. */
+export function readJson(path: string): JsonObject {
+  try {
+    const parsed = parseOrUndefined(readFileSync(path, "utf-8"));
+    return isJsonObject(parsed) ? parsed : {};
+  } catch {
+    return {};
   }
 }
 
