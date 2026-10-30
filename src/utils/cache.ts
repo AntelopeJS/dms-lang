@@ -1,14 +1,13 @@
 import { statSync } from "node:fs";
 
-interface CacheEntry {
+interface CacheEntry<T> {
   stamp: string;
-  value: unknown;
+  value: T;
 }
 
 const MISSING_FILE = "-";
 const STAMP_SEPARATOR = "|";
 
-const entries = new Map<string, CacheEntry>();
 const writes = new Map<string, number>();
 
 /**
@@ -37,14 +36,22 @@ export function filesStamp(paths: string[]): string {
 }
 
 /**
- * The value cached under `key` while `stamp` (see {@link filesStamp}) is
+ * A cache of values of one type: `memo(key, stamp, compute)` answers the
+ * value cached under `key` while `stamp` (see {@link filesStamp}) is
  * unchanged; computed and cached otherwise. The value is shared: callers
  * must not change it.
  */
-export function memoize<T>(key: string, stamp: string, compute: () => T): T {
-  const entry = entries.get(key);
-  if (entry?.stamp === stamp) return entry.value as T;
-  const value = compute();
-  entries.set(key, { stamp, value });
-  return value;
+export function createMemo<T>(): (
+  key: string,
+  stamp: string,
+  compute: () => T,
+) => T {
+  const entries = new Map<string, CacheEntry<T>>();
+  return (key, stamp, compute) => {
+    const entry = entries.get(key);
+    if (entry?.stamp === stamp) return entry.value;
+    const value = compute();
+    entries.set(key, { stamp, value });
+    return value;
+  };
 }

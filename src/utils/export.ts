@@ -2,7 +2,9 @@ import { findWorkspace } from "./catalog";
 import { check, fail } from "./errors";
 import type { ImportInput } from "../validation/workspace.schema";
 import {
+  isJsonObject,
   isPlainObject,
+  type JsonObject,
   leafPrefixOf,
   nodeKindAt,
   validateKeyPath,
@@ -10,7 +12,7 @@ import {
 import { assertMessageSyntax } from "./message-syntax";
 import { findLocale } from "./locale-codes";
 import { loadMessages } from "./registry";
-import { leafPaths, type LocaleMessages } from "./tree";
+import { leafPaths, type LocaleMessages, type LocaleTrees } from "./tree";
 import {
   loadWorkspaceMessages,
   type WorkspaceDetails,
@@ -34,14 +36,13 @@ export interface WorkspaceBackup extends WorkspaceDetails {
   messages: LocaleMessages;
 }
 
-const EXPORTERS: Record<WorkspaceKind, (workspace: string) => LocaleMessages> =
-  {
-    default: () => loadMessages("own"),
-    modules: () => loadMessages("external"),
-    added: (workspace) => loadWorkspaceMessages(workspace),
-  };
+const EXPORTERS: Record<WorkspaceKind, (workspace: string) => LocaleTrees> = {
+  default: () => loadMessages("own"),
+  modules: () => loadMessages("external"),
+  added: (workspace) => loadWorkspaceMessages(workspace),
+};
 
-export function exportWorkspace(workspace: string): LocaleMessages {
+export function exportWorkspace(workspace: string): LocaleTrees {
   return EXPORTERS[workspaceKind(workspace)](workspace);
 }
 
@@ -89,7 +90,10 @@ function childLocation(at: TreeLocation, key: string): TreeLocation {
  * The texts of a backup as `PUT /key` would write them: each one a message
  * vue-i18n compiles, an empty text left out (and the namespace it empties).
  */
-function cleanTree(node: unknown, at: TreeLocation): unknown {
+function cleanTree(
+  node: unknown,
+  at: TreeLocation,
+): string | JsonObject | undefined {
   if (isString(node)) {
     if (node.trim() === "") return undefined;
     assertMessageSyntax(at.locale, node);
@@ -99,19 +103,22 @@ function cleanTree(node: unknown, at: TreeLocation): unknown {
     locale: at.locale,
     path: at.segments.join("."),
   });
-  const entries = Object.entries(node)
-    .map(([key, child]) => [key, cleanTree(child, childLocation(at, key))])
-    .filter(([, child]) => child !== undefined);
+  const entries = Object.entries(node).flatMap(
+    ([key, child]): [string, string | JsonObject][] => {
+      const cleaned = cleanTree(child, childLocation(at, key));
+      return cleaned === undefined ? [] : [[key, cleaned]];
+    },
+  );
   return entries.length > 0 ? Object.fromEntries(entries) : undefined;
 }
 
-function cleanMessages(locale: string, tree: unknown): Record<string, unknown> {
+function cleanMessages(locale: string, tree: unknown): JsonObject {
   const cleaned = cleanTree(tree, { locale, segments: [] });
-  return isPlainObject(cleaned) ? cleaned : {};
+  return isJsonObject(cleaned) ? cleaned : {};
 }
 
 /** A key of one language that is a namespace, or under a key, in another: what `PUT /key` refuses. */
-function clashOf(messages: LocaleMessages, path: string): string | undefined {
+function clashOf(messages: LocaleTrees, path: string): string | undefined {
   const segments = path.split(".");
   return Object.values(messages)
     .map((data) =>
@@ -122,7 +129,7 @@ function clashOf(messages: LocaleMessages, path: string): string | undefined {
     .find((clash) => clash !== undefined);
 }
 
-function assertNoClash(messages: LocaleMessages): void {
+function assertNoClash(messages: LocaleTrees): void {
   for (const [locale, data] of Object.entries(messages)) {
     for (const path of leafPaths(data)) {
       const clash = clashOf(messages, path);
@@ -159,8 +166,8 @@ function importedLocales(backup: ImportInput): WorkspaceLocale[] {
 function importedMessages(
   messages: ImportInput["messages"],
   locales: WorkspaceLocale[],
-): LocaleMessages {
-  const result: LocaleMessages = {};
+): LocaleTrees {
+  const result: LocaleTrees = {};
   for (const [code, tree] of Object.entries(messages)) {
     const locale = findLocale(
       locales.map((entry) => entry.code),

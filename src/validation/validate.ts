@@ -11,12 +11,11 @@ function firstMessage(error: ZodError): string {
 }
 
 /**
- * The body of a refused input, in the DMS format: the first issue's
+ * The body of an input zod refused, in the DMS format: the first issue's
  * `$dms_lang.errors.*` key (a generic one when zod worded it), the stable
  * `invalid_body` code and the zod `issues` the DMS `useFieldErrors` reads.
  */
-function refusal(error: unknown) {
-  if (!(error instanceof ZodError)) return errorBody(INVALID_BODY);
+function refusal(error: ZodError) {
   return {
     ...errorBody(INVALID_BODY, { issues: error.issues }),
     message: firstMessage(error),
@@ -31,7 +30,8 @@ export function validate<Output, Input>(
   return assertValidation(
     input,
     (value) => schema.parse(value),
-    refusal,
+    (error) =>
+      error instanceof ZodError ? refusal(error) : errorBody(INVALID_BODY),
     errorStatus(INVALID_BODY),
   );
 }

@@ -2,7 +2,9 @@ import { check, fail } from "./errors";
 import {
   deleteAtPath,
   insertAtPath,
-  isPlainObject,
+  isJsonObject,
+  type JsonObject,
+  type JsonValue,
   leafPrefixOf,
   namesFrom,
   type NodeKind,
@@ -13,7 +15,7 @@ import {
 } from "./json";
 import { findLocale } from "./locale-codes";
 import { assertMessageSyntax } from "./message-syntax";
-import { getValueAtPath, isMissing, type LocaleMessages } from "./tree";
+import { getValueAtPath, isMissing, type LocaleTrees } from "./tree";
 import { isString } from "./guards";
 
 /** Texts by locale: a string is written, `null` removes the value. */
@@ -23,7 +25,7 @@ export interface KeyChange {
   path: string;
   newPath?: string;
   texts?: LocaleTexts;
-  messages: LocaleMessages;
+  messages: LocaleTrees;
 }
 
 /** Where the keys of a workspace live and how a write reaches them. */
@@ -31,39 +33,39 @@ export interface KeyStore {
   locales: string[];
   baseLocale: string;
   /** What the workspace holds per locale. */
-  messages: LocaleMessages;
+  messages: LocaleTrees;
   /** Read-only keys that count as existing (the modules under the project files). */
-  reference: LocaleMessages;
+  reference: LocaleTrees;
   /**
    * The file of a locale the key at `segments` is written to; a store split
    * in several files per locale picks the one that key belongs in.
    */
-  load(locale: string, segments: string[]): Record<string, unknown>;
+  load(locale: string, segments: string[]): JsonObject;
   /** Writes back what {@link KeyStore.load} returned for the same locale and key. */
-  save(locale: string, data: Record<string, unknown>, segments: string[]): void;
+  save(locale: string, data: JsonObject, segments: string[]): void;
   track?(change: KeyChange): void;
 }
 
-function layersOf(messages: LocaleMessages): Record<string, unknown>[] {
+function layersOf(messages: LocaleTrees): JsonObject[] {
   return Object.values(messages);
 }
 
-function kindsAt(messages: LocaleMessages, segments: string[]): NodeKind[] {
+function kindsAt(messages: LocaleTrees, segments: string[]): NodeKind[] {
   return layersOf(messages).map((data) => nodeKindAt(data, segments));
 }
 
-function hasLeaf(messages: LocaleMessages, segments: string[]): boolean {
+function hasLeaf(messages: LocaleTrees, segments: string[]): boolean {
   return kindsAt(messages, segments).includes("leaf");
 }
 
-function hasBranch(messages: LocaleMessages, segments: string[]): boolean {
+function hasBranch(messages: LocaleTrees, segments: string[]): boolean {
   return kindsAt(messages, segments).includes("branch");
 }
 
-function namespaceSize(messages: LocaleMessages, path: string): number {
+function namespaceSize(messages: LocaleTrees, path: string): number {
   const keys = new Set<string>();
-  const collect = (node: unknown, prefix: string): void => {
-    if (!isPlainObject(node)) {
+  const collect = (node: JsonValue, prefix: string): void => {
+    if (!isJsonObject(node)) {
       keys.add(prefix);
       return;
     }
@@ -77,7 +79,7 @@ function namespaceSize(messages: LocaleMessages, path: string): number {
 }
 
 function leafPrefix(
-  messages: LocaleMessages,
+  messages: LocaleTrees,
   segments: string[],
 ): string | undefined {
   return layersOf(messages)
@@ -87,8 +89,8 @@ function leafPrefix(
 
 /** 409 unless a key can be written at `segments` without overwriting a key or a namespace. */
 function assertFreePath(
-  messages: LocaleMessages,
-  reference: LocaleMessages,
+  messages: LocaleTrees,
+  reference: LocaleTrees,
   segments: string[],
 ): void {
   const path = segments.join(".");
@@ -103,9 +105,9 @@ function assertFreePath(
   check(prefix === undefined, "key_conflict", { path, conflicts: [prefix] });
 }
 
-function prefixed(messages: LocaleMessages, tag: string): LocaleMessages {
+function prefixed(messages: LocaleTrees, tag: string): LocaleTrees {
   return Object.fromEntries(
-    Object.entries(messages).map(([locale, data]) => [
+    Object.entries(messages).map(([locale, data]): [string, JsonObject] => [
       `${tag}:${locale}`,
       data,
     ]),
@@ -139,7 +141,7 @@ function validateTexts(store: KeyStore, values: LocaleTexts): LocaleTexts {
 }
 
 function currentText(
-  data: Record<string, unknown> | undefined,
+  data: JsonObject | undefined,
   path: string,
 ): string | null {
   const value = getValueAtPath(data, path);
@@ -163,7 +165,7 @@ function assertExpected(
   fail("conflict", { path, current });
 }
 
-function countTexts(messages: LocaleMessages, path: string): number {
+function countTexts(messages: LocaleTrees, path: string): number {
   return layersOf(messages).filter((data) => currentText(data, path) !== null)
     .length;
 }
@@ -211,10 +213,10 @@ function siblingNames(
 }
 
 function applyInMemory(
-  messages: LocaleMessages,
+  messages: LocaleTrees,
   segments: string[],
   texts: LocaleTexts,
-): LocaleMessages {
+): LocaleTrees {
   const next = structuredClone(messages);
   for (const [locale, text] of Object.entries(texts)) {
     next[locale] ??= {};
@@ -342,7 +344,7 @@ export function renameKey(
   assertFreePath(remaining, store.reference, to);
   for (const locale of store.locales) {
     const value = getValueAtPath(store.messages[locale], source);
-    if (value === undefined || isPlainObject(value)) continue;
+    if (value === undefined || isJsonObject(value)) continue;
     const data = store.load(locale, from);
     deleteAtPath(data, from);
     setAtPath(data, to, value);

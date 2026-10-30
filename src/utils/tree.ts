@@ -1,4 +1,4 @@
-import { isPlainObject } from "./json";
+import { isJsonObject, type JsonObject, type JsonValue } from "./json";
 import { isObject, isString } from "./guards";
 
 export type TranslationValue = string | number | boolean | null | undefined;
@@ -7,20 +7,17 @@ export interface LocaleMessages {
   [locale: string]: Record<string, unknown>;
 }
 
-export function deepMerge(
-  target: Record<string, unknown>,
-  source: Record<string, unknown>,
-): Record<string, unknown> {
-  const result: Record<string, unknown> = Object.assign(
-    Object.create(null),
-    target,
-  );
+/** The language files of a workspace, merged per locale. */
+export type LocaleTrees = Record<string, JsonObject>;
+
+export function deepMerge(target: JsonObject, source: JsonObject): JsonObject {
+  const result: JsonObject = { __proto__: null, ...target };
 
   for (const key of Object.keys(source)) {
     const value = source[key];
-    if (isPlainObject(value)) {
+    if (isJsonObject(value)) {
       const current = result[key];
-      result[key] = deepMerge(isPlainObject(current) ? current : {}, value);
+      result[key] = deepMerge(isJsonObject(current) ? current : {}, value);
     } else {
       result[key] = value;
     }
@@ -29,18 +26,24 @@ export function deepMerge(
   return result;
 }
 
+/** The own property `key` of an object or an array (an index or `length`), as `node[key]` reads it. */
+function ownMember(node: JsonObject | JsonValue[], key: string): JsonValue {
+  if (!Array.isArray(node)) return node[key];
+  return key === "length" ? node.length : node[Number(key)];
+}
+
 export function getValueAtPath(
-  obj: Record<string, unknown> | undefined,
+  obj: JsonObject | undefined,
   path: string,
-): unknown {
+): JsonValue | undefined {
   if (!obj || !path) return undefined;
 
   const keys = path.split(".");
-  let current: unknown = obj;
+  let current: JsonValue | undefined = obj;
 
   for (const key of keys) {
     if (isObject(current) && Object.hasOwn(current, key)) {
-      current = (current as Record<string, unknown>)[key];
+      current = ownMember(current, key);
     } else {
       return undefined;
     }
@@ -50,14 +53,14 @@ export function getValueAtPath(
 }
 
 /** A value with no text: absent, null, empty or made of spaces only. */
-export function isMissing(value: unknown): boolean {
+export function isMissing(value: JsonValue | undefined): boolean {
   if (value === undefined || value === null) return true;
   return isString(value) && value.trim() === "";
 }
 
 /** The keys of every locale merged: a key exists as soon as one language file holds it. */
-export function unionKeys(messages: LocaleMessages): Record<string, unknown> {
-  let union: Record<string, unknown> = {};
+export function unionKeys(messages: LocaleTrees): JsonObject {
+  let union: JsonObject = {};
   for (const localeMessages of Object.values(messages)) {
     union = deepMerge(union, localeMessages);
   }
@@ -65,12 +68,9 @@ export function unionKeys(messages: LocaleMessages): Record<string, unknown> {
 }
 
 /** The leaf paths of a key tree, in file order; empty namespaces hold no key. */
-export function leafPaths(
-  keys: Record<string, unknown>,
-  prefix = "",
-): string[] {
+export function leafPaths(keys: JsonObject, prefix = ""): string[] {
   return Object.entries(keys).flatMap(([key, value]) => {
     const path = prefix ? `${prefix}.${key}` : key;
-    return isPlainObject(value) ? leafPaths(value, path) : [path];
+    return isJsonObject(value) ? leafPaths(value, path) : [path];
   });
 }

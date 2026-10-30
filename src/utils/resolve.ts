@@ -1,6 +1,7 @@
-import { filesStamp, memoize } from "./cache";
+import { createMemo, filesStamp } from "./cache";
 import { modulesBaseLocale, projectBaseLocale } from "./catalog";
 import { coveragePercent } from "./coverage";
+import type { JsonObject } from "./json";
 import { hasMessageIssue } from "./message-check";
 import { getLocaleCodes, loadMessages, registryStamp } from "./registry";
 import { outdatedLocales } from "./review";
@@ -9,7 +10,7 @@ import {
   getValueAtPath,
   isMissing,
   leafPaths,
-  type LocaleMessages,
+  type LocaleTrees,
   type TranslationValue,
   unionKeys,
 } from "./tree";
@@ -21,6 +22,8 @@ import {
   workspaceFiles,
   workspaceKind,
 } from "./workspaces";
+
+const memoizeFlat = createMemo<FlatResult>();
 
 export interface FlatRow {
   key: string;
@@ -51,14 +54,14 @@ export interface FlatResult extends FlatCounts {
 interface FlatContext {
   defaultLocale: string;
   locales: string[];
-  presence: LocaleMessages;
-  inherited?: LocaleMessages;
-  overrides?: LocaleMessages;
+  presence: LocaleTrees;
+  inherited?: LocaleTrees;
+  overrides?: LocaleTrees;
   sources?: TranslationSources;
 }
 
 /** The keys of a workspace: the union of its language files, the base language first. */
-function keysOf(context: FlatContext): Record<string, unknown> {
+function keysOf(context: FlatContext): JsonObject {
   const { [context.defaultLocale]: base, ...others } = context.presence;
   return deepMerge(base ?? {}, unionKeys(others));
 }
@@ -102,11 +105,7 @@ function contextOf(workspace: string): FlatContext {
   return FLAT_CONTEXTS[workspaceKind(workspace)](workspace);
 }
 
-function valuesAtPath(
-  messages: LocaleMessages,
-  locales: string[],
-  path: string,
-) {
+function valuesAtPath(messages: LocaleTrees, locales: string[], path: string) {
   const values: Record<string, TranslationValue> = {};
   for (const locale of locales) {
     const value = getValueAtPath(messages[locale], path);
@@ -233,7 +232,7 @@ function computeFlat(workspace: string): FlatResult {
  */
 export function resolveFlat(workspace: string): FlatResult {
   const stamp = WORKSPACE_STAMPS[workspaceKind(workspace)](workspace);
-  return memoize(`flat:${workspace}`, stamp, () => computeFlat(workspace));
+  return memoizeFlat(`flat:${workspace}`, stamp, () => computeFlat(workspace));
 }
 
 /** The figures of a workspace a write changes. */

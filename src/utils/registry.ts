@@ -3,10 +3,10 @@ import {
   GetFrontendModules,
   type FrontendModuleMetadata,
 } from "@antelopejs/interface-dms/page";
-import { filesStamp, memoize } from "./cache";
+import { createMemo, filesStamp } from "./cache";
 import { discoverLocaleRegistry, localeDirectories } from "./locale-discovery";
 import { readJson } from "./json";
-import { deepMerge, type LocaleMessages } from "./tree";
+import { deepMerge, type LocaleTrees } from "./tree";
 import { writeTargetOf } from "./write-target";
 
 export type OriginFilter = "own" | "external";
@@ -23,6 +23,7 @@ let modulesStamp = "";
 let directories: string[] = [];
 let directoriesStamp = "";
 let registry: I18nRegistry = {};
+const memoizeMessages = createMemo<LocaleTrees>();
 
 function onModulesChanged(): void {
   void refreshModules();
@@ -92,14 +93,14 @@ export function registryStamp(): string {
 }
 
 /** The messages of one origin, merged per language; refreshed when files or modules change. */
-export function loadMessages(origin: OriginFilter): LocaleMessages {
-  return memoize(`messages:${origin}`, registryStamp(), () =>
+export function loadMessages(origin: OriginFilter): LocaleTrees {
+  return memoizeMessages(`messages:${origin}`, registryStamp(), () =>
     readMessages(origin),
   );
 }
 
-function readMessages(origin: OriginFilter): LocaleMessages {
-  const localeMessages: LocaleMessages = {};
+function readMessages(origin: OriginFilter): LocaleTrees {
+  const localeMessages: LocaleTrees = {};
   for (const [localeCode, entries] of Object.entries(currentRegistry())) {
     const files = entries.filter((e) => e.origin === origin);
     if (files.length === 0) continue;

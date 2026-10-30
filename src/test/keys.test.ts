@@ -23,7 +23,7 @@ import { messageIssues } from "../utils/message-syntax";
 import { keyStoreOf, reviewStoreOf } from "../utils/key-stores";
 import { resolveFlat } from "../utils/resolve";
 import { readText } from "./helpers/files";
-import type { LocaleMessages } from "../utils/tree";
+import type { LocaleTrees } from "../utils/tree";
 import { addLocale, createWorkspace } from "../utils/workspaces";
 import { expectError } from "./errors";
 
@@ -33,8 +33,8 @@ function problemsOf(message: string): string[] {
 
 /** An in-memory key store: `files` is what the writes produce. */
 function memoryStore(
-  files: LocaleMessages,
-  reference: LocaleMessages = {},
+  files: LocaleTrees,
+  reference: LocaleTrees = {},
 ): KeyStore {
   return {
     locales: Object.keys(files),
@@ -48,7 +48,7 @@ function memoryStore(
   };
 }
 
-function storefront(): LocaleMessages {
+function storefront(): LocaleTrees {
   return {
     en: {
       nav: { home: "Home", linked: "Linked" },
@@ -143,7 +143,7 @@ describe("[unit] key writes keep the data whole", () => {
 
 describe("[unit] an undone deletion puts the key back in place", () => {
   it("puts a key back before the sibling it followed, in every language that has it", () => {
-    const files: LocaleMessages = {
+    const files: LocaleTrees = {
       en: { cart: { title: "Cart", badge: "{n} items", empty: "Empty" } },
       fr: { cart: { empty: "Vide" } },
     };
@@ -164,7 +164,7 @@ describe("[unit] an undone deletion puts the key back in place", () => {
   });
 
   it("puts a key back at its base rank in a language that lacks the sibling it followed", () => {
-    const files: LocaleMessages = {
+    const files: LocaleTrees = {
       en: {
         cart: { title: "Cart", empty: "Empty", items: "Items", total: "Total" },
       },
@@ -221,7 +221,7 @@ describe("[unit] key updates never lose a text", () => {
   });
 
   it("overrides only the languages given and falls back to the module for the others", () => {
-    const files: LocaleMessages = { en: {}, fr: {} };
+    const files: LocaleTrees = { en: {}, fr: {} };
     const store = memoryStore(files, {
       en: { banner: "Coming soon" },
       fr: { banner: "Bientôt" },
@@ -233,7 +233,7 @@ describe("[unit] key updates never lose a text", () => {
   });
 
   it("removes an override so the module text shows again", () => {
-    const files: LocaleMessages = {
+    const files: LocaleTrees = {
       en: { banner: "Mine" },
       fr: { banner: "La mienne" },
     };
