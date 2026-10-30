@@ -1,8 +1,14 @@
 {
+  "pack": "0.2.17",
   "rules": {
-    "anti-slop/no-unknown-parameters": 13,
+    "antelopejs/no-inherited-key-lookup": 6,
+    "antelopejs/no-presence-only-type-guard": 3,
+    "anti-slop/no-unknown-parameters": 1,
     "anti-slop/no-unsafe-dictionary-type": 3,
-    "anti-slop/require-safety-comment-for-type-assertion": 5
+    "anti-slop/require-safety-comment-for-type-assertion": 5,
+    "typescript/no-unsafe-argument": 35,
+    "typescript/no-unsafe-assignment": 188,
+    "typescript/no-unsafe-return": 71
   },
   "oversizeFiles": {}
 }

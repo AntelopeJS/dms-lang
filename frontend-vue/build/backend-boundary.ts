@@ -51,8 +51,8 @@ function backendRoot(directory: string): string | null {
 /**
  * The real path of a resolved module id when it lies under the `src`
  * directory of the backend package, or `undefined`. The package that owns the
- * file decides, not a path, so the answer is the same in the repository and
- * in the build workspace. Virtual ids and ids that are not files are ignored.
+ * file decides, not a path, so the answer is the same in the repository and in
+ * the build workspace. Virtual ids and ids that are not files are ignored.
  */
 function backendSourceFile(id: string): string | undefined {
   const path = id.replace(QUERY_OR_HASH, '')
@@ -75,13 +75,16 @@ function backendSourceFile(id: string): string | undefined {
 }
 
 /**
- * Fails the build and the dev server when a module of the frontend resolves
- * to a file under the `src` of `@antelopejs/dms-lang`: the browser reaches
- * the backend only through its HTTP interface. It checks what the whole
- * resolution chain returns, an id marked external included, so an alias is
- * seen through and a symlink the resolver returns is followed to its real
- * path, and it runs before the other plugins (`enforce: "pre"`). Vite builds
- * workers with their own plugin list, so the plugin adds itself there too.
+ * Fails the build and the dev server when a module of the frontend resolves to
+ * a file under the `src` of the backend package: the browser reaches the
+ * backend only through its HTTP interface. It checks what the whole resolution
+ * chain returns, an id marked external included, so an alias is seen through
+ * and a symlink the resolver returns is followed to its real path, and it runs
+ * before the other plugins (`enforce: "pre"`). Vite builds workers with their
+ * own plugin list, so the plugin adds itself there too.
+ *
+ * antelopejs-sync writes this file from `@antelopejs/tooling-configs` and
+ * restores it on every run: change the plugin in the pack, not here.
  */
 export function backendBoundary(): VitePlugin {
   return {
@@ -93,7 +96,7 @@ export function backendBoundary(): VitePlugin {
 /** The check alone, as a worker build runs it. */
 function boundaryCheck(): VitePlugin {
   return {
-    name: 'dms-lang:backend-boundary',
+    name: `${BACKEND_PACKAGE}:backend-boundary`,
     enforce: 'pre',
     async resolveId(source, importer, options) {
       const resolved = await this.resolve(source, importer, {
