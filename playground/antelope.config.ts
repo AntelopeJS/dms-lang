@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { defineConfig } from "@antelopejs/interface-core/config";
 
 export default defineConfig({

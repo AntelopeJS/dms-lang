@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { boundedCache } from "../frontend-vue/app/utils/boundedCache.ts";
 
-test("a bounded cache drops its oldest entry past its limit", () => {
+void test("a bounded cache drops its oldest entry past its limit", () => {
   const cache = boundedCache(2);
   cache.set("a", 1);
   cache.set("b", 2);
@@ -12,7 +12,7 @@ test("a bounded cache drops its oldest entry past its limit", () => {
   assert.equal(cache.get("c"), 3);
 });
 
-test("setting an entry again makes it the newest", () => {
+void test("setting an entry again makes it the newest", () => {
   const cache = boundedCache(2);
   cache.set("a", 1);
   cache.set("b", 2);
@@ -22,7 +22,7 @@ test("setting an entry again makes it the newest", () => {
   assert.equal(cache.has("b"), false);
 });
 
-test("a cache keeps a null value apart from a missing one", () => {
+void test("a cache keeps a null value apart from a missing one", () => {
   const cache = boundedCache(2);
   cache.set("refused", null);
   assert.equal(cache.has("refused"), true);

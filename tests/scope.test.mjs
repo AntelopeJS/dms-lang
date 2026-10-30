@@ -1,15 +1,16 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { frontend } from "./helpers/frontend-runtime.mjs";
+import "./helpers/frontend-runtime.mjs";
 import { serverErrorCode } from "../frontend-vue/app/composables/translation/useMutationToast.ts";
 import {
   matchesWorkspace,
   sortWorkspaces,
 } from "../frontend-vue/app/utils/workspaces.ts";
 
-const { coveragePercent } = await frontend("utils/coverage.ts");
+const { coveragePercent } =
+  await import("../frontend-vue/app/utils/coverage.ts");
 
-test("coverage never rounds a gap up to 100", () => {
+void test("coverage never rounds a gap up to 100", () => {
   assert.equal(coveragePercent(200, 201), 99);
   assert.equal(coveragePercent(201, 201), 100);
   assert.equal(coveragePercent(2, 3), 66);
@@ -19,18 +20,22 @@ test("coverage never rounds a gap up to 100", () => {
   assert.equal(coveragePercent(29, 100), 29);
 });
 
-test("error codes are recognised", () => {
+void test("error codes are recognised", () => {
   assert.equal(serverErrorCode({ data: { code: "key_exists" } }), "key_exists");
   assert.equal(serverErrorCode({ data: "text" }), "");
 });
 
-test("workspaces are found by name, description or label and sorted", () => {
+void test("workspaces are found by name, description or label and sorted", () => {
   const list = [
     { id: "default", coverage: 80 },
     { id: "modules", coverage: 100 },
     { id: "storefront", description: "Shop texts", coverage: 40 },
     { id: "app-mobile", description: "iOS and Android", coverage: 40 },
   ];
+  /**
+   * @param {string} search
+   * @param {string[]} [labels]
+   */
   const found = (search, labels) =>
     list
       .filter((workspace) => matchesWorkspace(workspace, search, labels))
@@ -45,6 +50,7 @@ test("workspaces are found by name, description or label and sorted", () => {
     found(""),
     list.map((w) => w.id),
   );
+  /** @param {import("../frontend-vue/app/utils/workspaces.ts").WorkspaceSort} sort */
   const ids = (sort) => sortWorkspaces(list, sort).map((w) => w.id);
   assert.deepEqual(ids("kind"), [
     "default",

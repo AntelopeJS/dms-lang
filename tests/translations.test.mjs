@@ -18,7 +18,7 @@ import {
   needsReview,
   scanMessage,
 } from "../frontend-vue/app/utils/translations.ts";
-import { frontend } from "./helpers/frontend-runtime.mjs";
+import "./helpers/frontend-runtime.mjs";
 import { hasMessageIssue } from "../dist/utils/message-check.js";
 import {
   canonicalLocale,
@@ -26,7 +26,7 @@ import {
 } from "../frontend-vue/app/utils/languages.ts";
 
 const { languageCoverage, namespaceCoverage, withRow } =
-  await frontend("utils/coverage.ts");
+  await import("../frontend-vue/app/utils/coverage.ts");
 
 const flat = {
   defaultLocale: "en",
@@ -47,7 +47,7 @@ const flat = {
   totalKeys: 3,
 };
 
-test("placeholders are read from the text and compared with the base", () => {
+void test("placeholders are read from the text and compared with the base", () => {
   assert.deepEqual(placeholdersOf("Pay {amount} now, {amount} {user_name}"), [
     "amount",
     "user_name",
@@ -55,7 +55,7 @@ test("placeholders are read from the text and compared with the base", () => {
   assert.equal(formatTokens(["amount", "name"]), "{amount} {name}");
 });
 
-test("a text needs review when the server flags an issue or an older base", () => {
+void test("a text needs review when the server flags an issue or an older base", () => {
   const row = {
     key: "emails.intro",
     values: { en: "Hi {name}", fr: "Bonjour", it: "Ciao {name}" },
@@ -68,7 +68,7 @@ test("a text needs review when the server flags an issue or an older base", () =
   assert.equal(needsReview({ key: "a", values: {} }, "fr"), false);
 });
 
-test("coverage is counted per language and per namespace", () => {
+void test("coverage is counted per language and per namespace", () => {
   const coverage = languageCoverage(flat, (code) => code.toUpperCase());
   assert.deepEqual(
     coverage.map(({ code, isBase, coverage: percent, missing }) => ({
@@ -100,7 +100,7 @@ test("coverage is counted per language and per namespace", () => {
   });
 });
 
-test("a written row is put in place without touching the other rows", () => {
+void test("a written row is put in place without touching the other rows", () => {
   const written = { key: "checkout.cta", values: { it: "Paga {amount}" } };
   const next = withRow(flat, "checkout.cta", written);
   assert.equal(next.rows[0], written);
@@ -115,14 +115,14 @@ test("a written row is put in place without touching the other rows", () => {
   assert.equal(withRow(flat, "emails.intro", undefined).rows.length, 2);
 });
 
-test("language codes are canonicalised and right-to-left scripts detected", () => {
+void test("language codes are canonicalised and right-to-left scripts detected", () => {
   assert.equal(canonicalLocale(" pt-br "), "pt-BR");
   assert.equal(canonicalLocale("not a code"), null);
   assert.equal(isRightToLeft("ar-SA"), true);
   assert.equal(isRightToLeft("fr"), false);
 });
 
-test("a value a module gives a project key is not missing", () => {
+void test("a value a module gives a project key is not missing", () => {
   const row = {
     key: "menu.home",
     values: { fr: undefined },
@@ -139,7 +139,7 @@ const issueSummary = (base, value) =>
     return summary;
   });
 
-test("variables a translation drops or invents are reported", () => {
+void test("variables a translation drops or invents are reported", () => {
   assert.deepEqual(issueSummary("Hello {name}", "Bonjour {nmae}"), [
     { kind: "missing", tokens: ["name"], count: 1 },
     { kind: "extra", tokens: ["nmae"], count: 1 },
@@ -154,7 +154,7 @@ test("variables a translation drops or invents are reported", () => {
   assert.deepEqual(issueSummary("Hi {name}", ""), []);
 });
 
-test("a variable name follows the vue-i18n rule the server applies", () => {
+void test("a variable name follows the vue-i18n rule the server applies", () => {
   const syntax = (value) => issueSummary("", value).map((issue) => issue.kind);
   for (const name of ["prénom", "user.name", "名前", "$amount", "1a", "a b"])
     assert.deepEqual(syntax(`Hi {${name}}`), ["invalidPlaceholder"], name);
@@ -177,7 +177,7 @@ test("a variable name follows the vue-i18n rule the server applies", () => {
   );
 });
 
-test("a translation keeps the number of plural forms of the base", () => {
+void test("a translation keeps the number of plural forms of the base", () => {
   assert.deepEqual(
     issueSummary("no items | one item | {count} items", "{count} articles"),
     [{ kind: "plural", tokens: [], count: 1, expected: 3 }],
@@ -191,7 +191,7 @@ test("a translation keeps the number of plural forms of the base", () => {
   );
 });
 
-test("syntax vue-i18n cannot compile is an error", () => {
+void test("syntax vue-i18n cannot compile is an error", () => {
   const syntax = (value) => issueSummary("", value).map((issue) => issue.kind);
   assert.deepEqual(syntax("Écrivez à contact@exemple.com"), ["bareAt"]);
   assert.deepEqual(syntax("Mail {email} @ ons"), ["bareAt"]);
@@ -210,7 +210,7 @@ test("syntax vue-i18n cannot compile is an error", () => {
   assert.equal(hasBlockingIssue(checkMessage("{a}", "b")), false);
 });
 
-test("spaces at the ends of a text the base does not have are a warning", () => {
+void test("spaces at the ends of a text the base does not have are a warning", () => {
   assert.deepEqual(issueSummary("Sales", "Ventas\n"), [
     { kind: "spaces", tokens: [], count: 1 },
   ]);
@@ -224,14 +224,14 @@ test("spaces at the ends of a text the base does not have are a warning", () => 
   assert.equal(hasBlockingIssue(checkMessage("Sales", "Ventas ")), false);
 });
 
-test("a text made of spaces only is no text", () => {
+void test("a text made of spaces only is no text", () => {
   assert.equal(isLocaleValueMissing("   "), true);
   assert.equal(isLocaleValueMissing("\n"), true);
   assert.equal(isLocaleValueMissing(" a "), false);
   assert.deepEqual(checkMessage("Sales", "   "), []);
 });
 
-test("a deleted key goes back before what followed it in its namespace", () => {
+void test("a deleted key goes back before what followed it in its namespace", () => {
   const keys = ["cart.title", "cart.badge", "cart.items.one", "nav.home"];
   assert.equal(nextSiblingPath(keys, "cart.title"), "cart.badge");
   assert.equal(nextSiblingPath(keys, "cart.badge"), "cart.items");
@@ -241,7 +241,7 @@ test("a deleted key goes back before what followed it in its namespace", () => {
   assert.equal(nextSiblingPath(["a", "b.c"], "a"), "b");
 });
 
-test("a message is split into parts that give the text back", () => {
+void test("a message is split into parts that give the text back", () => {
   const text = "x{'@'}y | {n} @:a.b }";
   const { parts } = scanMessage(text);
   assert.equal(parts.map((part) => part.raw).join(""), text);
@@ -253,7 +253,7 @@ test("a message is split into parts that give the text back", () => {
   );
 });
 
-test("bare characters are escaped and variables renamed", () => {
+void test("bare characters are escaped and variables renamed", () => {
   assert.equal(escapeMessage("a@b } {c"), "a{'@'}b {'}'} {'{'}c");
   assert.equal(escapeMessage("{name} @:ok"), "{name} @:ok");
   assert.equal(
@@ -262,8 +262,10 @@ test("bare characters are escaped and variables renamed", () => {
   );
 });
 
-test("each issue has a sentence with its tokens and count", () => {
+void test("each issue has a sentence with its tokens and count", () => {
+  /** @type {{ key: string, named: Record<string, unknown>, plural: number }[]} */
   const calls = [];
+  /** @type {import("../frontend-vue/app/utils/translations.ts").MessageTranslate} */
   const t = (key, named, plural) => {
     calls.push({ key, named, plural });
     return key;
@@ -281,7 +283,7 @@ test("each issue has a sentence with its tokens and count", () => {
   assert.ok(plural);
 });
 
-test("the server flags exactly the texts the editor finds an issue in", () => {
+void test("the server flags exactly the texts the editor finds an issue in", () => {
   const pairs = [
     ["", "mail@site"],
     ["mail@site", "mail"],
@@ -310,7 +312,7 @@ test("the server flags exactly the texts the editor finds an issue in", () => {
     );
 });
 
-test("a new key path may not overlap an existing key", () => {
+void test("a new key path may not overlap an existing key", () => {
   const keys = ["nav.home", "nav.linked", "checkout.title"];
   assert.deepEqual(keyPathConflict("nav.home", keys), {
     kind: "exists",
@@ -328,7 +330,7 @@ test("a new key path may not overlap an existing key", () => {
   assert.equal(keyPathConflict("navigation", keys), null);
 });
 
-test("a key path is dot-separated safe segments", () => {
+void test("a key path is dot-separated safe segments", () => {
   assert.equal(isValidKeyPath("checkout.coupon-code.invalid_1"), true);
   assert.equal(isValidKeyPath("checkout..title"), false);
   assert.equal(isValidKeyPath("has space"), false);
@@ -336,7 +338,7 @@ test("a key path is dot-separated safe segments", () => {
   assert.equal(isValidKeyPath("x".repeat(129)), false);
 });
 
-test("the vue-i18n compiler decides what does not compile", () => {
+void test("the vue-i18n compiler decides what does not compile", () => {
   const syntax = (value) => issueSummary("", value).map((issue) => issue.kind);
   assert.deepEqual(syntax("a | | b"), ["emptyPlural"]);
   assert.deepEqual(syntax("{'a\\q'}"), ["invalidEscape"]);

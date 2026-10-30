@@ -9,29 +9,80 @@ import { test } from "node:test";
 import { setTimeout as sleep } from "node:timers/promises";
 import {
   browserRun,
-  frontend,
   history,
   serverRender,
   vue,
 } from "./helpers/frontend-runtime.mjs";
 
 const ORIGIN = "http://frontend.local";
+/**
+ * @typedef {object} Header What the panel's body reports of the key it shows.
+ * @property {string} key
+ * @property {string} crumbs
+ * @property {number} missingCount
+ * @property {number} issueCount
+ * @property {string} placeholders
+ * @property {number} index
+ * @property {number} total
+ * @property {boolean} hasPrevious
+ * @property {boolean} hasNext
+ * @property {() => void} previous
+ * @property {() => void} next
+ */
+/**
+ * @typedef {object} DrawerOptions
+ * @property {string} title
+ * @property {string} containerId
+ * @property {string} sizeKey
+ * @property {object} component
+ * @property {object} rowHeader
+ * @property {{ onHeader: (shown: Header) => void }} componentOptions
+ */
+/**
+ * @typedef {object} DrawerPatch
+ * @property {{ navigation: { next: () => void, prev: () => void } }} rowHeader
+ */
+/**
+ * @typedef {object} Drawer
+ * @property {DrawerOptions} options
+ * @property {DrawerPatch[]} patches
+ * @property {Promise<void>} result
+ * @property {() => void} close
+ * @property {(patch: DrawerPatch) => number} patch
+ */
+
+/** @type {Drawer[]} */
 const drawers = [];
-/** The events the page listens to on the document or the window. */
+/**
+ * The events the page listens to on the document or the window.
+ *
+ * @type {string[]}
+ */
 const listened = [];
+/** @param {string} type */
 const listen = (type) => listened.push(type);
+/**
+ * @param {string} key
+ * @param {object} [params]
+ */
 const translate = (key, params) =>
   params === undefined ? key : `${key}${JSON.stringify(params)}`;
 
 /** The DMS drawer: each opening, with the patches it receives, closed on demand. */
 function useDrawer() {
   return {
+    /** @param {DrawerOptions} options */
     open(options) {
-      const drawer = { options, patches: [] };
-      drawer.result = new Promise((resolve) => {
-        drawer.close = resolve;
-      });
-      drawer.patch = (patch) => drawer.patches.push(patch);
+      /** @type {PromiseWithResolvers<void>} */
+      const { promise, resolve } = Promise.withResolvers();
+      /** @type {Drawer} */
+      const drawer = {
+        options,
+        patches: [],
+        result: promise,
+        close: resolve,
+        patch: (patch) => drawer.patches.push(patch),
+      };
       drawers.push(drawer);
       return drawer;
     },
@@ -48,7 +99,10 @@ Object.assign(globalThis, {
   useConfirm: () => ({ confirm: async () => true }),
   usePermissions: () => ({ hasPermission: () => true }),
   useUnsavedChanges: () => {},
-  useKeyboardPlatform: () => ({ keyLabel: (key) => key }),
+  useKeyboardPlatform: () => ({
+    /** @param {string} key */
+    keyLabel: (key) => key,
+  }),
   document: { visibilityState: "visible", addEventListener: listen },
   window: {
     history: { back: () => history.visits.push({ kind: "back" }) },
@@ -61,33 +115,36 @@ Object.assign(globalThis, {
     addEventListener: listen,
   },
 });
-for (const path of [
-  "utils/translations.ts",
-  "utils/keySaves.ts",
-  "utils/keySaveErrors.ts",
-  "composables/translation/useI18nWorkspaces.ts",
-  "composables/translation/useLangLinks.ts",
-  "composables/translation/useWorkspaceRoute.ts",
-  "composables/translation/useWorkspaceFlat.ts",
-  "composables/translation/useLocaleNames.ts",
-  "composables/translation/useMutationToast.ts",
-  "composables/translation/useWorkspaceContext.ts",
-  "composables/translation/useWorkspaceLabel.ts",
-  "composables/translation/useKeyActions.ts",
-])
-  Object.assign(globalThis, await frontend(path));
-
-const { useKeyPanel } = await frontend("build/composables/useKeyPanel.ts");
-const { default: KeyEditorDrawer } = await frontend(
-  "build/components/KeyEditorDrawer.vue",
+Object.assign(
+  globalThis,
+  await import("../frontend-vue/app/utils/translations.ts"),
+  await import("../frontend-vue/app/utils/keySaves.ts"),
+  await import("../frontend-vue/app/utils/keySaveErrors.ts"),
+  await import("../frontend-vue/app/composables/translation/useI18nWorkspaces.ts"),
+  await import("../frontend-vue/app/composables/translation/useLangLinks.ts"),
+  await import("../frontend-vue/app/composables/translation/useWorkspaceRoute.ts"),
+  await import("../frontend-vue/app/composables/translation/useWorkspaceFlat.ts"),
+  await import("../frontend-vue/app/composables/translation/useLocaleNames.ts"),
+  await import("../frontend-vue/app/composables/translation/useMutationToast.ts"),
+  await import("../frontend-vue/app/composables/translation/useWorkspaceContext.ts"),
+  await import("../frontend-vue/app/composables/translation/useWorkspaceLabel.ts"),
+  await import("../frontend-vue/app/composables/translation/useKeyActions.ts"),
 );
-const { default: KeyStatus } = await frontend("build/components/KeyStatus.vue");
-const { NAMESPACE_SEPARATOR } = await frontend("utils/translations.ts");
+
+const { useKeyPanel } =
+  await import("../frontend-vue/app/build/composables/useKeyPanel.ts");
+const { default: KeyEditorDrawer } =
+  await import("../frontend-vue/app/build/components/KeyEditorDrawer.vue");
+const { default: KeyStatus } =
+  await import("../frontend-vue/app/build/components/KeyStatus.vue");
+const { NAMESPACE_SEPARATOR } =
+  await import("../frontend-vue/app/utils/translations.ts");
 
 const API = "/api/lang/translations";
 const PAGE = "/modules/lang/translations?workspace=default";
 const KEYS = ["home.title", "home.cta", "footer.legal"];
 
+/** @param {import("./helpers/frontend-runtime.mjs").Read} read */
 function respond({ url }) {
   if (url === `${API}/workspaces`)
     return {
@@ -137,6 +194,7 @@ function openPanel() {
 }
 
 /** What the panel's body reports of the key it shows, as `KeyEditorDrawer` does. */
+/** @param {number} index */
 const header = (index) => ({
   key: "home.cta",
   crumbs: "home",
@@ -151,7 +209,7 @@ const header = (index) => ({
   next: () => {},
 });
 
-test("the key panel opens every key in one drawer, under one id, so the DMS keeps its width", async () => {
+void test("the key panel opens every key in one drawer, under one id, so the DMS keeps its width", async () => {
   const run = openPanel();
   await run.result.open({ key: "home.title" });
   drawers[0].close();
@@ -171,7 +229,7 @@ test("the key panel opens every key in one drawer, under one id, so the DMS keep
   );
 });
 
-test("closing the key panel replaces the URL instead of going Back, which renders the page anew", async () => {
+void test("closing the key panel replaces the URL instead of going Back, which renders the page anew", async () => {
   const run = openPanel();
   await run.result.open({ key: "home.cta" });
   assert.deepEqual(history.visits, [
@@ -184,7 +242,7 @@ test("closing the key panel replaces the URL instead of going Back, which render
   assert.equal(history.visits.length, 2);
 });
 
-test("the key panel's header is the DMS row header: the key in its look, then its place among the keys", async () => {
+void test("the key panel's header is the DMS row header: the key in its look, then its place among the keys", async () => {
   const run = openPanel();
   await run.result.open({ key: "home.cta" });
   const [drawer] = drawers;
@@ -228,7 +286,7 @@ test("the key panel's header is the DMS row header: the key in its look, then it
   assert.equal("positionLabel" in unplaced, false);
 });
 
-test("J and K are the DMS row header's, not the panel's own", async () => {
+void test("J and K are the DMS row header's, not the panel's own", async () => {
   listened.length = 0;
   const run = openPanel();
   await run.result.open({ key: "home.cta" });
@@ -243,6 +301,7 @@ test("J and K are the DMS row header's, not the panel's own", async () => {
 
 /** The server render of the panel's body showing `KEYS[1]`, and the headers it reported. */
 async function renderBody() {
+  /** @type {Header[]} */
   const headers = [];
   const render = await serverRender(
     () => {
@@ -256,7 +315,7 @@ async function renderBody() {
           startIndex: 1,
           editable: true,
           manageKeys: true,
-          onHeader: (shown) => headers.push(shown),
+          onHeader: (/** @type {Header} */ shown) => headers.push(shown),
         });
     },
     { url: `${PAGE}&key=home.cta`, respond },
@@ -264,7 +323,7 @@ async function renderBody() {
   return { html: render.html, headers };
 }
 
-test("every language field of the key panel is labelled by its name", async () => {
+void test("every language field of the key panel is labelled by its name", async () => {
   const { html } = await renderBody();
   const labels = [...html.matchAll(/<label for="([^"]+)"/g)].map((m) => m[1]);
   const fields = [...html.matchAll(/<UTextarea id="([^"]+)"/g)].map(
@@ -274,7 +333,7 @@ test("every language field of the key panel is labelled by its name", async () =
   assert.deepEqual(labels, fields);
 });
 
-test("the key panel's body hands the DMS row header the key's place among the keys", async () => {
+void test("the key panel's body hands the DMS row header the key's place among the keys", async () => {
   const { headers } = await renderBody();
   assert.ok(headers.length > 0);
   assert.deepEqual(
@@ -283,7 +342,7 @@ test("the key panel's body hands the DMS row header the key's place among the ke
   );
 });
 
-test("the key panel's footer is the DMS container footer, with the save button", async () => {
+void test("the key panel's footer is the DMS container footer, with the save button", async () => {
   const { html } = await renderBody();
   const footer = html.match(
     /<DmsContainerFooter data-key-panel-footer>(.*)<\/DmsContainerFooter>/s,
@@ -293,7 +352,7 @@ test("the key panel's footer is the DMS container footer, with the save button",
   assert.doesNotMatch(html, /dms-form-foot/);
 });
 
-test("the key panel lays out by the drawer's width, not the window's", async () => {
+void test("the key panel lays out by the drawer's width, not the window's", async () => {
   const { html } = await renderBody();
   const classes = [...html.matchAll(/class="([^"]*)"/g)].flatMap((m) =>
     m[1].split(/\s+/),

@@ -6,6 +6,13 @@ const knipConfig = antelopeKnipConfig({
    * pulls in the in-memory Mongo.
    */
   entry: ["src/test/harness.ts"],
+  ignore: [".amp/**"],
+  /**
+   * The frontend tests import Vue and Vite as the installed renderer
+   * resolves them (tests/helpers/frontend-runtime.mjs,
+   * tests/backend-boundary.test.mjs), not from the root.
+   */
+  ignoreDependencies: ["vue", "vite"],
 });
 
 /** `#dms-ui/*` is the DMS UI layer, aliased by the frontend build like `#dms/*`. */
@@ -13,15 +20,6 @@ knipConfig.ignoreUnresolved = [
   "#dms/frontend-module",
   "#dms/frontend-build",
   /^#dms-ui\//,
-];
-knipConfig.ignore = [...(knipConfig.ignore ?? []), ".amp/**"];
-/**
- * The frontend tests import Vue as the installed renderer resolves it
- * (tests/helpers/frontend-runtime.mjs), not from the root.
- */
-knipConfig.ignoreDependencies = [
-  ...(knipConfig.ignoreDependencies ?? []),
-  "vue",
 ];
 /**
  * The DMS loads the frontend without imports knip can follow: the components

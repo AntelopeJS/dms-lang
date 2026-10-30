@@ -1,0 +1,21 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "rootDir": "..",
+    "incremental": false,
+    "declaration": false,
+    "paths": {
+      "vue": ["../frontend-vue/node_modules/vue"],
+      "vue/*": ["../frontend-vue/node_modules/vue/*"],
+      "#dms/frontend-module": [
+        "../node_modules/@antelopejs/dms-frontend/templates/vue/frontend-module.ts"
+      ],
+      "vite": ["../node_modules/.pnpm/node_modules/vite/dist/node/index.d.ts"]
+    }
+  },
+  "include": ["./**/*.mjs", "./**/*.d.ts"]
+}

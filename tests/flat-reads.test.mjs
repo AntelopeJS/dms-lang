@@ -8,21 +8,21 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { setTimeout as sleep } from "node:timers/promises";
-import {
-  browserRun,
-  frontend,
-  serverRender,
-  vue,
-} from "./helpers/frontend-runtime.mjs";
+import { browserRun, serverRender, vue } from "./helpers/frontend-runtime.mjs";
 
-const workspacesModule = await frontend(
-  "composables/translation/useI18nWorkspaces.ts",
-);
+const workspacesModule =
+  await import("../frontend-vue/app/composables/translation/useI18nWorkspaces.ts");
 Object.assign(globalThis, workspacesModule);
 
+/** @typedef {(event: object) => void} RealtimeHandler */
+/** @type {{ handler: RealtimeHandler | undefined, session: import("vue").Ref<string> }} */
 const realtime = { handler: undefined, session: vue.ref("own-tab") };
 Object.assign(globalThis, {
   useUserRealtime: () => ({ sessionId: realtime.session }),
+  /**
+   * @param {string} _topic
+   * @param {RealtimeHandler} handler
+   */
   useRealtimeTopic: (_topic, handler) => {
     realtime.handler = handler;
   },
@@ -30,10 +30,11 @@ Object.assign(globalThis, {
 });
 
 const { useWorkspaceFlat, useWorkspaceFlatSync, useLangChanges } =
-  await frontend("composables/translation/useWorkspaceFlat.ts");
+  await import("../frontend-vue/app/composables/translation/useWorkspaceFlat.ts");
 
 const API = "/api/lang/translations";
 const REALTIME_DEBOUNCE_MS = 300;
+/** @param {number} totalKeys */
 const counts = (totalKeys) => ({
   localeProgress: {},
   localeMissing: {},
@@ -41,6 +42,10 @@ const counts = (totalKeys) => ({
   baseMissing: 0,
   incompleteKeys: 0,
 });
+/**
+ * @param {string} key
+ * @param {string} text
+ */
 const row = (key, text) => ({ key, values: { en: text } });
 const flat = {
   defaultLocale: "en",
@@ -49,6 +54,7 @@ const flat = {
   ...counts(2),
 };
 
+/** @param {import("./helpers/frontend-runtime.mjs").Read} read */
 function respond({ url, query }) {
   if (url === `${API}/workspaces`)
     return {
@@ -63,10 +69,11 @@ function respond({ url, query }) {
   return {};
 }
 
+/** @param {ReturnType<typeof useWorkspaceFlat>} translations */
 const keysOf = (translations) =>
   translations.flat.value.rows.map((entry) => entry.values.en).join(",");
 
-test("the matrix reads the translations on the server and hands them over", async () => {
+void test("the matrix reads the translations on the server and hands them over", async () => {
   const render = await serverRender(
     () => {
       const translations = useWorkspaceFlat();
@@ -83,7 +90,7 @@ test("the matrix reads the translations on the server and hands them over", asyn
   assert.match(render.html, /A,B/);
 });
 
-test("a block that only shows the translations reads none of them", async () => {
+void test("a block that only shows the translations reads none of them", async () => {
   const render = await serverRender(
     () => {
       const translations = useWorkspaceFlat();
@@ -95,7 +102,7 @@ test("a block that only shows the translations reads none of them", async () => 
   assert.match(render.html, /false/);
 });
 
-test("a key write's answer goes into the translations and the list's figures", async () => {
+void test("a key write's answer goes into the translations and the list's figures", async () => {
   const render = await serverRender(
     async () => {
       const translations = useWorkspaceFlat();
@@ -119,7 +126,7 @@ test("a key write's answer goes into the translations and the list's figures", a
   assert.match(JSON.stringify(render.payload.data), /"totalKeys":3/);
 });
 
-test("a realtime change reads just the rows it names, and skips the tab's own echo", async () => {
+void test("a realtime change reads just the rows it names, and skips the tab's own echo", async () => {
   const run = browserRun(
     () => {
       const translations = useWorkspaceFlat();
