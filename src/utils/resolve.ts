@@ -1,7 +1,7 @@
 import { createMemo, filesStamp } from "./cache";
 import { modulesBaseLocale, projectBaseLocale } from "./catalog";
 import { coveragePercent } from "./coverage";
-import type { JsonObject } from "./json";
+import { isJsonObject, type JsonObject } from "./json";
 import { hasMessageIssue } from "./message-check";
 import { getLocaleCodes, loadMessages, registryStamp } from "./registry";
 import { outdatedLocales } from "./review";
@@ -105,11 +105,20 @@ function contextOf(workspace: string): FlatContext {
   return FLAT_CONTEXTS[workspaceKind(workspace)](workspace);
 }
 
+/** The text a language file holds at a path; nothing where the file has a namespace or a list instead. */
+function textAtPath(
+  tree: JsonObject | undefined,
+  path: string,
+): TranslationValue {
+  const value = getValueAtPath(tree, path);
+  return Array.isArray(value) || isJsonObject(value) ? undefined : value;
+}
+
 function valuesAtPath(messages: LocaleTrees, locales: string[], path: string) {
   const values: Record<string, TranslationValue> = {};
   for (const locale of locales) {
-    const value = getValueAtPath(messages[locale], path);
-    values[locale] = isMissing(value) ? undefined : (value as TranslationValue);
+    const text = textAtPath(messages[locale], path);
+    values[locale] = isMissing(text) ? undefined : text;
   }
   return values;
 }
