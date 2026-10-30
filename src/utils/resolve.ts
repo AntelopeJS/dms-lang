@@ -10,7 +10,7 @@ import {
   getValueAtPath,
   isMissing,
   leafPaths,
-  type LocaleTrees,
+  type LocaleMessages,
   type TranslationValue,
   unionKeys,
 } from "./tree";
@@ -54,9 +54,9 @@ export interface FlatResult extends FlatCounts {
 interface FlatContext {
   defaultLocale: string;
   locales: string[];
-  presence: LocaleTrees;
-  inherited?: LocaleTrees;
-  overrides?: LocaleTrees;
+  presence: LocaleMessages;
+  inherited?: LocaleMessages;
+  overrides?: LocaleMessages;
   sources?: TranslationSources;
 }
 
@@ -105,7 +105,11 @@ function contextOf(workspace: string): FlatContext {
   return FLAT_CONTEXTS[workspaceKind(workspace)](workspace);
 }
 
-function valuesAtPath(messages: LocaleTrees, locales: string[], path: string) {
+function valuesAtPath(
+  messages: LocaleMessages,
+  locales: string[],
+  path: string,
+) {
   const values: Record<string, TranslationValue> = {};
   for (const locale of locales) {
     const value = getValueAtPath(messages[locale], path);
