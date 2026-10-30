@@ -2,5 +2,18 @@
   "rules": {},
   "tsExpectError": 0,
   "tsIgnore": 0,
-  "safety": 0
+  "safety": 0,
+  "config": {
+    "@typescript-eslint/no-explicit-any for frontend-vue/**/*.{js,mjs,cjs,ts,vue}": 1,
+    "no-redeclare for frontend-vue/**/*.{js,mjs,cjs,ts,vue}": 1,
+    "no-undef for frontend-vue/**/*.{js,mjs,cjs,ts,vue}": 1,
+    "no-unused-vars for frontend-vue/**/*.{js,mjs,cjs,ts,vue}": 1,
+    "vue/attributes-order for frontend-vue/**/*.{js,mjs,cjs,ts,vue}": 1,
+    "vue/html-indent for frontend-vue/**/*.{js,mjs,cjs,ts,vue}": 1,
+    "vue/html-self-closing for frontend-vue/**/*.{js,mjs,cjs,ts,vue}": 1,
+    "vue/max-attributes-per-line for frontend-vue/**/*.{js,mjs,cjs,ts,vue}": 1,
+    "vue/multi-word-component-names for frontend-vue/**/*.{js,mjs,cjs,ts,vue}": 1,
+    "vue/require-default-prop for frontend-vue/**/*.{js,mjs,cjs,ts,vue}": 1,
+    "vue/singleline-html-element-content-newline for frontend-vue/**/*.{js,mjs,cjs,ts,vue}": 1
+  }
 }
