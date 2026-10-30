@@ -3,7 +3,7 @@
   "rules": {
     "anti-slop/no-unknown-parameters": 1,
     "anti-slop/no-unsafe-dictionary-type": 3,
-    "anti-slop/require-safety-comment-for-type-assertion": 5
+    "anti-slop/require-safety-comment-for-type-assertion": 4
   },
   "oversizeFiles": {}
 }
