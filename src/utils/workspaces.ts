@@ -17,7 +17,7 @@ import {
   languageOf,
   normalizeLocaleCode,
 } from "./locale-codes";
-import type { LocaleTrees } from "./tree";
+import type { LocaleMessages } from "./tree";
 import { isObject, isString } from "./guards";
 
 export interface WorkspaceLocale {
@@ -252,7 +252,7 @@ function localeFile(dir: string, code: string): string {
   return resolve(dir, `${code}${JSON_EXTENSION}`);
 }
 
-function readMessagesAt(dir: string, codes: string[]): LocaleTrees {
+function readMessagesAt(dir: string, codes: string[]): LocaleMessages {
   return Object.fromEntries(
     codes.map((code): [string, JsonObject] => [
       code,
@@ -265,7 +265,7 @@ function codesOf(manifest: WorkspaceManifest): string[] {
   return manifest.locales.map((locale) => locale.code);
 }
 
-export function loadWorkspaceMessages(id: string): LocaleTrees {
+export function loadWorkspaceMessages(id: string): LocaleMessages {
   const dir = workspaceDir(id);
   return readMessagesAt(dir, codesOf(readManifestAt(dir)));
 }
@@ -281,7 +281,7 @@ export function workspaceFiles(id: string): string[] {
 
 export interface ServedLocale {
   code: string;
-  messages: Record<string, unknown>;
+  messages: JsonObject;
 }
 
 /**
@@ -336,7 +336,7 @@ export function validateLocaleEntry(locale: WorkspaceLocale): WorkspaceLocale {
 export interface WorkspaceSeed extends DetailsInput {
   defaultLocale: string;
   locales: WorkspaceLocale[];
-  messages: LocaleTrees;
+  messages: LocaleMessages;
 }
 
 /** Writes a new workspace folder from validated content. */

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { KeyChange, KeyStore } from "./keys";
-import { getValueAtPath, isMissing, type LocaleTrees } from "./tree";
+import { getValueAtPath, isMissing, type LocaleMessages } from "./tree";
 import {
   type TranslationSources,
   updateManifest,
@@ -16,7 +16,7 @@ function fingerprint(text: string): string {
 }
 
 function baseText(
-  messages: LocaleTrees,
+  messages: LocaleMessages,
   base: string,
   path: string,
 ): string | undefined {
@@ -67,7 +67,7 @@ export function trackSources(store: KeyStore, workspace: string): KeyStore {
 /** The locales of a key whose translation was written for another base text than the current one. */
 export function outdatedLocales(
   sources: TranslationSources | undefined,
-  messages: LocaleTrees,
+  messages: LocaleMessages,
   base: string,
   path: string,
 ): string[] {
