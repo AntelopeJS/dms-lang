@@ -23,5 +23,6 @@
     "useDefineForClassFields": true,
     "rootDir": "src"
   },
-  "include": ["./src/**/*.ts"]
+  "include": ["./src/**/*.ts"],
+  "references": [{ "path": "./tsconfig.config.json" }]
 }
