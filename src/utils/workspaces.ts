@@ -9,7 +9,14 @@ import {
 import { resolve, sep } from "node:path";
 import { getTranslationConfig } from "./config";
 import { check, fail } from "./errors";
-import { type JsonObject, readJson, readJsonForWrite, writeJson } from "./json";
+import {
+  isJsonObject,
+  type JsonObject,
+  type JsonValue,
+  readJson,
+  readJsonForWrite,
+  writeJson,
+} from "./json";
 import type { KeyStore } from "./keys";
 import {
   findLocale,
@@ -17,8 +24,8 @@ import {
   languageOf,
   normalizeLocaleCode,
 } from "./locale-codes";
-import type { LocaleTrees } from "./tree";
-import { isObject, isString } from "./guards";
+import type { LocaleMessages } from "./tree";
+import { isString } from "./guards";
 
 export interface WorkspaceLocale {
   code: string;
@@ -163,7 +170,12 @@ function localeCodesOf(dir: string): string[] {
     .filter((code) => LOCALE_CODE_RE.test(code));
 }
 
-function storedDetails(stored: Partial<WorkspaceManifest>): WorkspaceDetails {
+interface StoredDetails {
+  description?: JsonValue;
+  type?: JsonValue;
+}
+
+function storedDetails(stored: StoredDetails): WorkspaceDetails {
   const details: WorkspaceDetails = {};
   if (isString(stored.description) && stored.description !== "")
     details.description = stored.description;
@@ -173,18 +185,52 @@ function storedDetails(stored: Partial<WorkspaceManifest>): WorkspaceDetails {
 
 type JsonReader = typeof readJson;
 
+/** A stored language entry, kept as it is when its code, name and flag are texts. */
+function storedLocale(entry: JsonValue): WorkspaceLocale | undefined {
+  if (!isJsonObject(entry)) return undefined;
+  const { code, name, flag } = entry;
+  const isText = (field: JsonValue | undefined) =>
+    field === undefined || isString(field);
+  if (!isString(code) || !isText(name) || !isText(flag)) return undefined;
+  return { ...entry, code };
+}
+
+function storedHashes(table: JsonObject): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(table).filter((entry): entry is [string, string] =>
+      isString(entry[1]),
+    ),
+  );
+}
+
+/** The base-text hashes a stored manifest holds, per locale then key; values that are not texts are left out. */
+function storedSources(sources: JsonObject): TranslationSources {
+  return Object.fromEntries(
+    Object.entries(sources).flatMap(
+      ([locale, table]): [string, Record<string, string>][] =>
+        isJsonObject(table) ? [[locale, storedHashes(table)]] : [],
+    ),
+  );
+}
+
 function readManifestAt(
   dir: string,
   read: JsonReader = readJson,
 ): WorkspaceManifest {
-  const stored = read(manifestPath(dir)) as Partial<WorkspaceManifest>;
+  const stored = read(manifestPath(dir));
   const storedLocales = Array.isArray(stored.locales) ? stored.locales : [];
-  const byCode = new Map(storedLocales.map((locale) => [locale.code, locale]));
+  const byCode = new Map(
+    storedLocales.flatMap((entry): [string, WorkspaceLocale][] => {
+      const locale = storedLocale(entry);
+      return locale === undefined ? [] : [[locale.code, locale]];
+    }),
+  );
   const locales = localeCodesOf(dir).map(
     (code) => byCode.get(code) ?? { code },
   );
   const defaultLocale =
-    stored.defaultLocale && locales.some((l) => l.code === stored.defaultLocale)
+    isString(stored.defaultLocale) &&
+    locales.some((l) => l.code === stored.defaultLocale)
       ? stored.defaultLocale
       : (locales[0]?.code ?? "");
   const manifest: WorkspaceManifest = {
@@ -192,7 +238,8 @@ function readManifestAt(
     locales,
     ...storedDetails(stored),
   };
-  if (isObject(stored.sources)) manifest.sources = stored.sources;
+  if (isJsonObject(stored.sources))
+    manifest.sources = storedSources(stored.sources);
   return manifest;
 }
 
@@ -252,7 +299,7 @@ function localeFile(dir: string, code: string): string {
   return resolve(dir, `${code}${JSON_EXTENSION}`);
 }
 
-function readMessagesAt(dir: string, codes: string[]): LocaleTrees {
+function readMessagesAt(dir: string, codes: string[]): LocaleMessages {
   return Object.fromEntries(
     codes.map((code): [string, JsonObject] => [
       code,
@@ -265,7 +312,7 @@ function codesOf(manifest: WorkspaceManifest): string[] {
   return manifest.locales.map((locale) => locale.code);
 }
 
-export function loadWorkspaceMessages(id: string): LocaleTrees {
+export function loadWorkspaceMessages(id: string): LocaleMessages {
   const dir = workspaceDir(id);
   return readMessagesAt(dir, codesOf(readManifestAt(dir)));
 }
@@ -281,7 +328,7 @@ export function workspaceFiles(id: string): string[] {
 
 export interface ServedLocale {
   code: string;
-  messages: Record<string, unknown>;
+  messages: JsonObject;
 }
 
 /**
@@ -336,7 +383,7 @@ export function validateLocaleEntry(locale: WorkspaceLocale): WorkspaceLocale {
 export interface WorkspaceSeed extends DetailsInput {
   defaultLocale: string;
   locales: WorkspaceLocale[];
-  messages: LocaleTrees;
+  messages: LocaleMessages;
 }
 
 /** Writes a new workspace folder from validated content. */
