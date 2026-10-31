@@ -12,7 +12,7 @@ import {
 import { assertMessageSyntax } from "./message-syntax";
 import { findLocale } from "./locale-codes";
 import { loadMessages } from "./registry";
-import { leafPaths, type LocaleMessages, type LocaleTrees } from "./tree";
+import { leafPaths, type LocaleMessages } from "./tree";
 import {
   loadWorkspaceMessages,
   type WorkspaceDetails,
@@ -36,21 +36,19 @@ export interface WorkspaceBackup extends WorkspaceDetails {
   messages: LocaleMessages;
 }
 
-const EXPORTERS: Record<WorkspaceKind, (workspace: string) => LocaleTrees> = {
-  default: () => loadMessages("own"),
-  modules: () => loadMessages("external"),
-  added: (workspace) => loadWorkspaceMessages(workspace),
-};
+const EXPORTERS: Record<WorkspaceKind, (workspace: string) => LocaleMessages> =
+  {
+    default: () => loadMessages("own"),
+    modules: () => loadMessages("external"),
+    added: (workspace) => loadWorkspaceMessages(workspace),
+  };
 
-export function exportWorkspace(workspace: string): LocaleTrees {
+export function exportWorkspace(workspace: string): LocaleMessages {
   return EXPORTERS[workspaceKind(workspace)](workspace);
 }
 
 /** The texts of one language of a workspace, as its language file holds them; 404 when it has no such language. */
-export function exportLanguage(
-  workspace: string,
-  code: string,
-): Record<string, unknown> {
+export function exportLanguage(workspace: string, code: string): JsonObject {
   const messages = exportWorkspace(workspace);
   const found = findLocale(Object.keys(messages), code);
   if (found === undefined) fail("unknown_locale", { locale: code });
@@ -118,7 +116,7 @@ function cleanMessages(locale: string, tree: JsonValue): JsonObject {
 }
 
 /** A key of one language that is a namespace, or under a key, in another: what `PUT /key` refuses. */
-function clashOf(messages: LocaleTrees, path: string): string | undefined {
+function clashOf(messages: LocaleMessages, path: string): string | undefined {
   const segments = path.split(".");
   return Object.values(messages)
     .map((data) =>
@@ -129,7 +127,7 @@ function clashOf(messages: LocaleTrees, path: string): string | undefined {
     .find((clash) => clash !== undefined);
 }
 
-function assertNoClash(messages: LocaleTrees): void {
+function assertNoClash(messages: LocaleMessages): void {
   for (const [locale, data] of Object.entries(messages)) {
     for (const path of leafPaths(data)) {
       const clash = clashOf(messages, path);
@@ -166,8 +164,8 @@ function importedLocales(backup: ImportInput): WorkspaceLocale[] {
 function importedMessages(
   messages: ImportInput["messages"],
   locales: WorkspaceLocale[],
-): LocaleTrees {
-  const result: LocaleTrees = {};
+): LocaleMessages {
+  const result: LocaleMessages = {};
   for (const [code, tree] of Object.entries(messages)) {
     const locale = findLocale(
       locales.map((entry) => entry.code),
