@@ -32,7 +32,7 @@ ajs project modules add @antelopejs/dms-lang
 
 The module starts read-only. Allow writes on the process that edits translations:
 
-```ts
+```ts fragment
 // antelope.config.ts
 "dms-lang": {
   source: { type: "package", package: "@antelopejs/dms-lang", version: "^0.2.0" },
@@ -57,13 +57,7 @@ Restart the backend, then the frontend, and open **Modules › Translations** (`
 
 <!-- antelopejs-docs-compat:end -->
 
-| Package | Version |
-| --- | --- |
-| `@antelopejs/dms` | `>=0.11.0 <1.0.0` |
-| `@antelopejs/interface-dms` | `>=0.9.0 <1.0.0` |
-| `@antelopejs/dms-frontend` (renderer) | `>=0.9.1 <0.10.0` |
-
-On DMS 0.8, use `@antelopejs/dms-lang` 0.1.
+The module also needs a DMS backend in a release that implements the `@antelopejs/interface-dms` range above, and the `@antelopejs/dms-frontend` renderer in the range its frontend module declares in `engines["@antelopejs/dms-frontend"]` of `frontend-vue/package.json`; the `ajs dms` CLI refuses to build it with a renderer outside that range.
 
 ## Documentation
 
