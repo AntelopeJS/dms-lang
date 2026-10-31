@@ -4,4 +4,4 @@ packages:
   - playground
 overrides:
   "@antelopejs/interface-api": "file:.campaign/tgz/antelopejs-interface-api-5c92367.tgz"
-  "@antelopejs/tooling-configs": "file:.campaign/tgz/antelopejs-tooling-configs-bd83299.tgz"
+  "@antelopejs/tooling-configs": "file:.campaign/tgz/antelopejs-tooling-configs-a423d41.tgz"
