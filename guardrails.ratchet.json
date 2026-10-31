@@ -2,7 +2,7 @@
   "pack": "0.2.17",
   "rules": {
     "anti-slop/no-unknown-parameters": 1,
-    "anti-slop/require-safety-comment-for-type-assertion": 4
+    "anti-slop/require-safety-comment-for-type-assertion": 3
   },
   "oversizeFiles": {}
 }
