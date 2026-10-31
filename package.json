@@ -68,7 +68,7 @@
     "suppressions:update": "antelopejs-suppressions --update"
   },
   "dependencies": {
-    "@antelopejs/interface-api": ">=0.0.15 <1.0.0",
+    "@antelopejs/interface-api": "file:.campaign/tgz/antelopejs-interface-api-70e7935.tgz",
     "@antelopejs/interface-api-util": ">=0.1.3 <1.0.0",
     "@antelopejs/interface-core": ">=0.2.4 <1.0.0",
     "@antelopejs/interface-dms": ">=0.9.0 <1.0.0",
@@ -98,6 +98,11 @@
     "typescript": "^6.0.3"
   },
   "packageManager": "pnpm@10.2.0",
+  "pnpm": {
+    "overrides": {
+      "@antelopejs/interface-api": "file:.campaign/tgz/antelopejs-interface-api-70e7935.tgz"
+    }
+  },
   "antelopeJs": {
     "baseUrl": "dist",
     "implements": [],

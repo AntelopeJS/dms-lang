@@ -2,3 +2,5 @@ packages:
   - .
   - frontend-vue
   - playground
+overrides:
+  "@antelopejs/interface-api": "file:.campaign/tgz/antelopejs-interface-api-70e7935.tgz"
