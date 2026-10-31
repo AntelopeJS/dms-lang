@@ -4,13 +4,12 @@ import { join } from "node:path";
 import { runInNewContext } from "node:vm";
 import { expect } from "chai";
 import { GetMetadata } from "@antelopejs/interface-core";
-import type { DefaultLayoutOptions } from "@antelopejs/interface-dms/base";
 import { PageMetadata } from "@antelopejs/interface-dms/page";
 import { LangWorkspaceController } from "../pages/workspace";
 import { manageLanguagesAction } from "../pages/actions";
 import { languagesTable } from "../pages/languages-table";
 import { workspaceKpis } from "../utils/blocks";
-import { resolveWorkspaceId } from "../utils/catalog";
+import { resolveWorkspaceId, workspaceRecord } from "../utils/catalog";
 import { coveragePercent } from "../utils/coverage";
 import {
   getTranslationConfig,
@@ -367,9 +366,12 @@ function describeManifestWrites(directoryOf: () => string): void {
 describe("[integration] the workspace page's record", () => {
   it("reads the workspace of its URL as the workspace page's record", async () => {
     const metadata = GetMetadata(LangWorkspaceController, PageMetadata);
-    const options = metadata.layout?.options as DefaultLayoutOptions;
+    expect(metadata.layout?.options).to.have.property(
+      "record",
+      workspaceRecord,
+    );
     const record = (workspace?: string) =>
-      options.record?.({
+      workspaceRecord({
         tenantId: "",
         user: undefined,
         query: workspace ? { workspace } : {},
