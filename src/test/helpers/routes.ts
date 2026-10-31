@@ -42,6 +42,7 @@ export async function requestHandler(method: string, url: URL) {
   const proto: unknown = handler.proto;
   if (!isObject(proto)) throw new Error(`no controller at ${url.pathname}`);
   const receiver: unknown = Object.create(proto);
+  if (!isObject(receiver)) throw new Error(`no receiver at ${url.pathname}`);
   const parameters = await Promise.all(
     handler.parameters.map((parameter) =>
       computeParameter(context, parameter, receiver),
