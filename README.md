@@ -48,12 +48,12 @@ Restart the backend, then the frontend, and open **Modules › Translations** (`
 
 <!-- antelopejs-docs-compat:start -->
 
-| Package                          | Supported                                                 | Tested with                                               |
-| -------------------------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| `@antelopejs/interface-api`      | `file:.campaign/tgz/antelopejs-interface-api-5c92367.tgz` | `file:.campaign/tgz/antelopejs-interface-api-5c92367.tgz` |
-| `@antelopejs/interface-api-util` | `>=0.1.3 <1.0.0`                                          | `0.1.3`                                                   |
-| `@antelopejs/interface-core`     | `>=0.2.4 <1.0.0`                                          | `0.2.6`                                                   |
-| `@antelopejs/interface-dms`      | `>=0.9.0 <1.0.0`                                          | `0.9.0`                                                   |
+| Package                          | Supported                                                      | Tested with                                                    |
+| -------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------- |
+| `@antelopejs/interface-api`      | `file:.campaign/tgz/antelopejs-interface-api-f206be7.tgz`      | `file:.campaign/tgz/antelopejs-interface-api-f206be7.tgz`      |
+| `@antelopejs/interface-api-util` | `file:.campaign/tgz/antelopejs-interface-api-util-cc740f8.tgz` | `file:.campaign/tgz/antelopejs-interface-api-util-cc740f8.tgz` |
+| `@antelopejs/interface-core`     | `>=0.2.4 <1.0.0`                                               | `0.2.6`                                                        |
+| `@antelopejs/interface-dms`      | `file:.campaign/tgz/antelopejs-interface-dms-50e3adc.tgz`      | `file:.campaign/tgz/antelopejs-interface-dms-50e3adc.tgz`      |
 
 <!-- antelopejs-docs-compat:end -->
 
