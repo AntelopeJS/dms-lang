@@ -1,7 +1,7 @@
 # dms-lang v2 redesign: grill session
 
-Self-answered design review of the dms-lang migration to `@antelopejs/dms` 0.6 /
-`@antelopejs/interface-dms` 0.4 / `@antelopejs/dms-frontend` 0.5 and of the v2
+Self-answered design review of the dms-lang migration to `dms` 0.6 /
+`interface-dms` 0.4 / `dms-frontend` 0.5 and of the v2
 design (`dms-design-mockup/modules/lang`). Every question was asked against the
 code, the mockup, the UX review (`modules/lang/review.html`, findings L-01 to
 L-14) and the DMS migration guide (`docs/02.building/13.migration-0-3-to-0-4.md`
@@ -10,11 +10,11 @@ in AntelopeJS/dms). Each answer is the recommendation that was taken.
 ## 1. Dependencies and platform
 
 **Q1.1 Which versions does the module move to?**
-`@antelopejs/interface-dms` `>=0.4.0 <1.0.0`, `@antelopejs/dms` `>=0.6.0 <0.7.0`
-(dev, test harness, playground), `@antelopejs/dms-frontend` 0.5.0 (dev) with the
-frontend `engines` range `>=0.5.0 <0.6.0`, `@antelopejs/core` 1.13.5. The test
-harness and playground also move to `@antelopejs/mongodb` 1.4.2 (required by
-the DMS 0.6), `@antelopejs/api` 1.3.3 and `@antelopejs/file-storage-local` 0.1.6.
+`interface-dms` from 0.4.0, `dms` in the 0.6 line
+(dev, test harness, playground), `dms-frontend` 0.5.0 (dev) with the
+frontend `engines` range in the 0.5 line, `core` 1.13.5. The test
+harness and playground also move to `mongodb` 1.4.2 (required by
+the DMS 0.6), `api` 1.3.3 and `file-storage-local` 0.1.6.
 
 **Q1.2 The migration guide writes the interface range as `<0.5.0`; why `<1.0.0`?**
 `antelopejs-check-interface-ranges` (run by `pnpm lint`) refuses any interface
@@ -299,9 +299,9 @@ A source change reloads fine; only the config restart is affected.
 ## 10. Update to DMS 0.7.1
 
 **Q10.1 Which versions?**
-`@antelopejs/dms` `>=0.7.1 <0.8.0` (0.7.0 required an unreleased interface
-and does not start), `@antelopejs/interface-dms` `>=0.5.0 <1.0.0`,
-`@antelopejs/dms-frontend` 0.5.1, `@antelopejs/core` 1.14.0.
+`dms` in the 0.7 line, from 0.7.1 (0.7.0 required an unreleased interface
+and does not start), `interface-dms` from 0.5.0,
+`dms-frontend` 0.5.1, `core` 1.14.0.
 
 **Q10.2 What breaks?**
 Nothing the module uses: permissions now need their ancestors (#172), which
