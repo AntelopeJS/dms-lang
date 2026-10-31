@@ -1,3 +1,4 @@
+import type { PageRecordLoader } from "@antelopejs/interface-dms/base/layouts";
 import { getTranslationConfig } from "./config";
 import { fail } from "./errors";
 import { getLocaleCodes, type OriginFilter } from "./registry";
@@ -71,12 +72,19 @@ export function resolveWorkspaceId(workspace?: string): string {
  * The summary of a workspace, by any id {@link resolveWorkspaceId} accepts (an empty id is the
  * project files); `undefined` when it does not exist.
  */
-export function workspaceSummary(
-  workspace?: string,
-): WorkspaceSummary | undefined {
+function workspaceSummary(workspace?: string): WorkspaceSummary | undefined {
   const id = normalizeWorkspaceId(workspace) || DEFAULT_WORKSPACE;
   return listAllWorkspaces().find((entry) => entry.id === id);
 }
+
+/**
+ * The workspace the workspace page shows, named by the `workspace` of its URL: a
+ * tab on it leaves for the list once another deletes it.
+ */
+export const workspaceRecord: PageRecordLoader = ({ query }) => {
+  const summary = workspaceSummary(query?.workspace);
+  return summary && { ...summary };
+};
 
 /** The summary of an existing workspace, by any id {@link resolveWorkspaceId} accepts; 404 otherwise. */
 export function findWorkspace(workspace?: string): WorkspaceSummary {
