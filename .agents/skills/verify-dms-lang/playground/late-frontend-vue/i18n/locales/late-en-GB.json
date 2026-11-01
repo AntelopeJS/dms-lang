@@ -1,0 +1,8 @@
+{
+  "late": {
+    "hello": "Hello from a late module"
+  },
+  "shop": {
+    "title": "Late shop"
+  }
+}

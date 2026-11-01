@@ -1,6 +1,7 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { guarded, lang, list, pick, projectLocalesDir, readJsonFile, resetProjectFiles } from "../lang.mjs";
+import { projectFileJourneys } from "./parts/frontend-modules.mjs";
 
 /** @typedef {import("../lang.mjs").Ctx} Ctx */
 
@@ -233,4 +234,5 @@ export const journeys = guarded([
       await ctx.verify("the scope bar names the project files", [tab.shows(/workspace\s*project files/i)]);
     },
   },
+  ...projectFileJourneys,
 ]);

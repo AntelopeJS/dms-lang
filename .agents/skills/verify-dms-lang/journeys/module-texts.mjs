@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import { guarded, lang, list, pick, projectLocalesDir, readJsonFile, resetProjectFiles } from "../lang.mjs";
+import { lateModuleJourneys } from "./parts/frontend-modules.mjs";
 
 /** @typedef {import("../lang.mjs").Ctx} Ctx */
 
@@ -78,4 +79,5 @@ export const journeys = guarded([
       await ctx.verify("a key only a module defines cannot be deleted from the project files", [ctx.equal("status", locked.status, 404)]);
     },
   },
+  ...lateModuleJourneys,
 ]);

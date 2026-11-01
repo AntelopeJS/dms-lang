@@ -88,7 +88,8 @@ export async function raw(ctx, label, request) {
   const origin = request.origin === "web" ? ctx.state.webUrl : ctx.state.apiUrl;
   const method = request.method ?? "GET";
   const headers = request.headers ?? {};
-  writeFileSync(join(folder, "request.json"), `${JSON.stringify({ method, url: `${origin}${request.path}`, headers }, null, 2)}\n`);
+  const recorded = headers.cookie === undefined ? headers : { ...headers, cookie: "the dashboard session" };
+  writeFileSync(join(folder, "request.json"), `${JSON.stringify({ method, url: `${origin}${request.path}`, headers: recorded }, null, 2)}\n`);
   const response = await fetch(`${origin}${request.path}`, { method, headers, redirect: "manual" });
   const text = await response.text();
   /** @type {Record<string, string>} */
@@ -215,6 +216,65 @@ export function resetProjectFiles(ctx) {
  */
 export function projectLocalesDir(ctx) {
   return join(ctx.state.runPlayground ?? "", "frontend-vue", "i18n", "locales");
+}
+
+/**
+ * Signs the administrator in on the dashboard's origin the way the hydrated sign-in form does, and returns the
+ * session cookies, so a journey reads a page as the frontend server renders it, before any script runs.
+ *
+ * @param {Ctx} ctx The journey
+ * @returns {Promise<string>} The `cookie` header of the session
+ */
+export async function dashboardSession(ctx) {
+  const folder = ctx.step("sign in on the dashboard origin");
+  const credentials = ctx.state.accounts?.admin;
+  const url = `${ctx.state.webUrl}/auth/login`;
+  writeFileSync(join(folder, "request.json"), `${JSON.stringify({ method: "POST", url, email: credentials?.email }, null, 2)}\n`);
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json", origin: ctx.state.webUrl },
+    body: JSON.stringify({ email: credentials?.email, password: credentials?.password }),
+  });
+  const cookies = response.headers.getSetCookie().map((cookie) => cookie.split(";")[0] ?? "");
+  const names = cookies.map((cookie) => cookie.split("=")[0]);
+  writeFileSync(join(folder, "response.json"), `${JSON.stringify({ status: response.status, cookies: names }, null, 2)}\n`);
+  ctx.record(folder, [{ name: "the dashboard opens a session", pass: response.ok && names.some((name) => name?.startsWith("dms_session")), detail: `${response.status} ${names.join(", ")}` }], { critical: true });
+  return cookies.join("; ");
+}
+
+/**
+ * The page props the frontend server rendered into a page, read from the HTML it sent.
+ *
+ * @param {string} html The page
+ * @returns {string | undefined} The URL the page says it is at
+ */
+export function renderedUrl(html) {
+  const match = /"url":"((?:[^"\\]|\\.)*)","version"/.exec(html);
+  return match?.[1]?.replaceAll("\\/", "/");
+}
+
+/**
+ * Asks the playground's app module, while the backend runs, to register frontend modules again
+ * (`playground/index.cjs`), and waits until `accept` sees the change through the API.
+ *
+ * @param {Ctx} ctx The journey
+ * @param {"app-unflagged" | "app-flagged" | "late-installed" | "late-app-layer"} wanted The registration
+ * @param {() => Promise<Answer>} read One read of the API
+ * @param {(answer: Answer) => boolean} accept Whether the answer shows the new registration
+ * @returns {Promise<Answer>} The last answer
+ */
+export function reregister(ctx, wanted, read, accept) {
+  writeFileSync(join(ctx.state.home, "verify-frontend-modules.txt"), `${wanted}\n`);
+  return eventually(read, accept, 20_000);
+}
+
+/**
+ * Removes the registrations file, so a later write of it is a change the playground sees.
+ *
+ * @param {Ctx} ctx The journey
+ */
+export function forgetRegistrations(ctx) {
+  rmSync(join(ctx.state.home, "verify-frontend-modules.txt"), { force: true });
 }
 
 /**
