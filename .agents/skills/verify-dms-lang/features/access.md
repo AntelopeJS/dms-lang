@@ -9,6 +9,7 @@ covers:
   - src/routes/translations.ts
   - src/utils/body.ts
   - src/utils/errors.ts
+  - src/utils/zod-json.ts
   - src/utils/constants.ts
   - src/index.ts
 docs:
