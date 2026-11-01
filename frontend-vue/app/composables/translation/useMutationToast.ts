@@ -26,15 +26,18 @@ export function serverErrorCode(error: unknown): string {
 export const useMutationToast = () => {
   const { t } = useI18n()
   const toast = useToast()
+  const consumeRefusal = useReadOnlyRefusal()
   const translate = (key: string, params: Record<string, unknown>) =>
     t(key, params)
 
   /** The server's message, translated; the generic server error otherwise. */
   function errorMessage(error: unknown): string {
+    if (consumeRefusal(error)) return ''
     return resolveApiMessage(translate, resolveApiErrorMessage(error))
   }
 
   function reportFailure(error: unknown, options: MutationToastOptions = {}) {
+    if (consumeRefusal(error)) return
     const actions = options.retry
       ? [{ label: t('dms_lang.actions.retry'), onClick: options.retry }]
       : undefined
