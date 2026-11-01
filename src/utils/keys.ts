@@ -102,7 +102,7 @@ function assertFreePath(
     fail("key_conflict", { path, size, conflicts: [path] });
   }
   const prefix = leafPrefix(both, segments);
-  check(prefix === undefined, "key_conflict", { path, conflicts: [prefix] });
+  if (prefix !== undefined) fail("key_conflict", { path, conflicts: [prefix] });
 }
 
 function prefixed(messages: LocaleMessages, tag: string): LocaleMessages {
