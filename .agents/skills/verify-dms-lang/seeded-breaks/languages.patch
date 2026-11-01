@@ -1,0 +1,13 @@
+diff --git a/src/utils/languages.ts b/src/utils/languages.ts
+index c740035..cb5f774 100644
+--- a/src/utils/languages.ts
++++ b/src/utils/languages.ts
+@@ -155,7 +155,7 @@ function countsOf(flat: FlatResult, code: string): LanguageCounts {
+   const missing = flat.localeMissing[code] ?? 0;
+   return {
+     code,
+-    isBase: code === flat.defaultLocale,
++    isBase: false,
+     translated: total - missing,
+     total,
+     missing,

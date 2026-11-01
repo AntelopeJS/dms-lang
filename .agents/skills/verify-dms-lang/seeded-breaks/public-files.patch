@@ -1,0 +1,13 @@
+diff --git a/src/routes/publicLocales.ts b/src/routes/publicLocales.ts
+index 46937d5..4c1be5e 100644
+--- a/src/routes/publicLocales.ts
++++ b/src/routes/publicLocales.ts
+@@ -16,7 +16,7 @@ const JSON_SUFFIX_RE = /\.json$/i;
+ const ANY_ORIGIN = "*";
+ const ALLOWED_METHODS = "GET,HEAD,OPTIONS";
+ const PREFLIGHT_MAX_AGE = "86400";
+-const CACHE_POLICY = "no-cache";
++const CACHE_POLICY = "public, max-age=3600";
+ /** Runs before the CORS middleware of the api module (HIGHEST), so its origin list does not apply here. */
+ const BEFORE_API_CORS = HandlerPriority.HIGHEST - 1;
+ 

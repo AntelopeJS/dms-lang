@@ -1,0 +1,11 @@
+diff --git a/package.json b/package.json
+index 7745318..b8fa717 100644
+--- a/package.json
++++ b/package.json
+@@ -1,5 +1,5 @@
+ {
+-  "name": "@antelopejs/dms-lang",
++  "name": "@antelopejs/dms-lang-fork",
+   "version": "0.4.1",
+   "description": "Language and translation management for the AntelopeJS DMS: coverage overview, translation matrix, translation queue and public translation workspaces.",
+   "keywords": [

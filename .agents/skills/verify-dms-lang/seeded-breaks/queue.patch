@@ -1,0 +1,13 @@
+diff --git a/frontend-vue/app/utils/queuePass.ts b/frontend-vue/app/utils/queuePass.ts
+index 0c055e8..a93aaa4 100644
+--- a/frontend-vue/app/utils/queuePass.ts
++++ b/frontend-vue/app/utils/queuePass.ts
+@@ -100,7 +100,7 @@ export function advancePass(pass: QueuePass, isOpen: KeyIsOpen): QueueMove {
+   const [next] = pendingAfter(pass, pass.cursor, isOpen)
+   if (next !== undefined) {
+     const step = next < pass.cursor ? 'wrapped' : 'moved'
+-    return { pass: goToIndex(pass, next), step }
++    return { pass: goToIndex(pass, pass.cursor), step }
+   }
+   if (isPendingKey(pass, pass.order[pass.cursor], isOpen))
+     return { pass, step: 'last' }

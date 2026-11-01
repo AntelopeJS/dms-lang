@@ -29,6 +29,8 @@ knipConfig.ignoreUnresolved = [
  * when a file imports them by path.
  */
 knipConfig.workspaces = {
+  /** The verification skill is run by `dms-control`, never imported. */
+  ".": { ignore: [".agents/**"] },
   "frontend-vue": {
     entry: [
       "app/{components,build/components}/**/*.vue",

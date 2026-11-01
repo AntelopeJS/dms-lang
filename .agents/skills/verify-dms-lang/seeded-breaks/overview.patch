@@ -1,0 +1,13 @@
+diff --git a/src/utils/blocks.ts b/src/utils/blocks.ts
+index a629196..3d64da7 100644
+--- a/src/utils/blocks.ts
++++ b/src/utils/blocks.ts
+@@ -53,7 +53,7 @@ function amount(value: number): ComposedText {
+ 
+ function namespaceCount(flat: FlatResult): number {
+   return new Set(flat.rows.map((row) => row.key.split(NAMESPACE_SEPARATOR)[0]))
+-    .size;
++    .size + 1;
+ }
+ 
+ /** Nothing to translate reads neutral, not as a success. */

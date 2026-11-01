@@ -1,0 +1,13 @@
+diff --git a/src/utils/workspaces.ts b/src/utils/workspaces.ts
+index 8b3777f..f579395 100644
+--- a/src/utils/workspaces.ts
++++ b/src/utils/workspaces.ts
+@@ -80,7 +80,7 @@ export interface WorkspaceSummary extends WorkspaceDetails {
+ const MANIFEST_FILE = ".workspace.json";
+ const JSON_EXTENSION = ".json";
+ const WORKSPACE_ID_RE = /^[a-z0-9][\w-]{0,63}$/;
+-const RESERVED_IDS = new Set([DEFAULT_WORKSPACE, MODULES_WORKSPACE]);
++const RESERVED_IDS = new Set([DEFAULT_WORKSPACE]);
+ 
+ export function assertEditable(): void {
+   check(getTranslationConfig().editable, "read_only");

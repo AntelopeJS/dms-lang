@@ -1,0 +1,13 @@
+diff --git a/src/utils/keys.ts b/src/utils/keys.ts
+index f5930ee..bf27a0f 100644
+--- a/src/utils/keys.ts
++++ b/src/utils/keys.ts
+@@ -303,7 +303,7 @@ export function updateKey(
+   assertWritable(store, segments, texts);
+   const next = applyInMemory(store.messages, segments, texts);
+   check(
+-    countTexts(next, key) > 0 ||
++    true ||
+       hasLeaf(store.reference, segments) ||
+       countTexts(store.messages, key) === 0,
+     "last_value",
