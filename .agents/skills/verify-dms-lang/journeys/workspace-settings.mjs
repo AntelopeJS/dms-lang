@@ -1,4 +1,4 @@
-import { eventually, freshId, guarded, lang, list, pick, raw, readLocaleFile, recordRaw, seedWorkspace, workspaceFiles } from "../lang.mjs";
+import { clickUntil, eventually, freshId, guarded, lang, list, pick, raw, readLocaleFile, recordRaw, seedWorkspace, workspaceFiles } from "../lang.mjs";
 
 /** @typedef {import("../lang.mjs").Ctx} Ctx */
 
@@ -155,14 +155,14 @@ export const journeys = guarded([
       await tab.signIn("admin");
       await tab.goto(`/modules/lang/workspace?workspace=${id}`);
       const search = { role: "combobox", name: /^Search languages or type a code/ };
-      await tab.click({ role: "button", name: "Add language", exact: true });
+      await clickUntil(tab, { role: "button", name: "Add language", exact: true }, { role: "dialog" });
       await tab.fill(search, "Italiano");
       await ctx.verify("the search matches the native name", [tab.visible({ role: "option", name: /^Italiano Italian it$/ }), tab.visible({ role: "option", name: /^Deutsch/ }, { hidden: true })]);
       await tab.click({ role: "option", name: /^Italiano Italian it$/ });
       await tab.click({ role: "button", name: /^Add Italiano · it$/, within: { role: "dialog" } });
       const picked = await eventually(() => lang(ctx, "read the languages", "GET", `/workspace?workspace=${id}`), (answer) => list(answer.body, "locales").length === 2);
       await ctx.verify("Italian is added", [ctx.equal("locales", pick(picked.body, "locales"), [{ code: "en" }, { code: "it" }])]);
-      await tab.click({ role: "button", name: "Add language", exact: true });
+      await clickUntil(tab, { role: "button", name: "Add language", exact: true }, { role: "dialog" });
       await tab.fill(search, "tlh-Latn");
       await tab.click({ role: "option", name: /^tlh-Latn/ });
       await tab.click({ role: "button", name: /^Add .*tlh-Latn$/, within: { role: "dialog" } });
@@ -184,7 +184,7 @@ export const journeys = guarded([
       const tab = await ctx.tab("admin");
       await tab.signIn("admin");
       await tab.goto(`/modules/lang/workspace?workspace=${id}`);
-      await tab.click({ role: "button", name: "Rename…" });
+      await clickUntil(tab, { role: "button", name: "Rename…" }, { role: "dialog" });
       await ctx.verify("the dialog starts on the current name and cannot rename to it", [
         tab.visible({ role: "dialog", name: `Rename ${id}` }),
         tab.shows(/this is the current name/i),
@@ -214,7 +214,7 @@ export const journeys = guarded([
       const tab = await ctx.tab("admin");
       await tab.signIn("admin");
       await tab.goto(`/modules/lang/workspace?workspace=${id}`);
-      await tab.click({ role: "button", name: "Delete…" });
+      await clickUntil(tab, { role: "button", name: "Delete…" }, { role: "dialog" });
       await ctx.verify("the dialog counts the files and strings and offers a backup first", [
         tab.visible({ role: "dialog", name: `Delete ${id}?` }),
         tab.shows(/language files deleted from disk\s*2/i),

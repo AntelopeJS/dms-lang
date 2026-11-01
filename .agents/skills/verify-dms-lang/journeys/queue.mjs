@@ -1,4 +1,4 @@
-import { freshId, guarded, lang, pick, readLocaleFile, seedWorkspace } from "../lang.mjs";
+import { clickUntil, freshId, guarded, lang, pick, readLocaleFile, seedWorkspace } from "../lang.mjs";
 
 /** @typedef {import("../lang.mjs").Ctx} Ctx */
 
@@ -63,7 +63,7 @@ export const journeys = guarded([
       const tab = await ctx.tab("admin");
       await tab.signIn("admin");
       await tab.goto(`/modules/lang/language?workspace=${id}&locale=de`);
-      await tab.click({ role: "button", name: "More actions" });
+      await clickUntil(tab, { role: "button", name: "More actions" }, { role: "menu" });
       await tab.click({ role: "menuitem", name: "Remove language" });
       await ctx.verify("removal names the public file and asks for the code", [tab.visible({ role: "dialog", name: /^Remove Deutsch from/ }), tab.shows(new RegExp(`/i18n/${id}/de\\.json`))]);
       await tab.fill({ role: "textbox", name: "Type de to confirm" }, "d");
@@ -75,7 +75,7 @@ export const journeys = guarded([
       const removed = await lang(ctx, "read the workspace again", "GET", `/workspace?workspace=${id}`);
       await ctx.verify("the typed code removes German", [ctx.equal("locales", pick(removed.body, "locales"), [{ code: "en" }, { code: "fr" }])]);
       await tab.goto(`/modules/lang/language?workspace=${id}&locale=fr`);
-      await tab.click({ role: "button", name: "More actions" });
+      await clickUntil(tab, { role: "button", name: "More actions" }, { role: "menu" });
       await tab.click({ role: "menuitem", name: "Make base language" });
       await ctx.verify("the confirmation lists the keys French lacks", [tab.visible({ role: "dialog", name: "Make Français the base language?" }), tab.shows(/shop\.pay/), tab.shows(/auth\.logout/)]);
       await tab.click({ role: "button", name: "Make base language", within: { role: "dialog" } });

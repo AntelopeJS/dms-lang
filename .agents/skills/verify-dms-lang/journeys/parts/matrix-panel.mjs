@@ -1,4 +1,4 @@
-import { freshId, lang, pick, seedWorkspace } from "../../lang.mjs";
+import { fieldValue, freshId, lang, pick, seedWorkspace } from "../../lang.mjs";
 
 /** @typedef {import("../../lang.mjs").Ctx} Ctx */
 
@@ -38,7 +38,7 @@ export const panelJourneys = [
       await ctx.verify("the down arrow opens the next key", [tab.visible({ role: "heading", name: "shop.pay" })]);
       await tab.fill({ role: "textbox", name: "Français" }, "Payer ");
       await tab.press("j", { role: "textbox", name: "Français" });
-      await ctx.verify("J typed in a field is text, not a move", [tab.visible({ role: "heading", name: "shop.pay" }), ctx.equal("the field", await tab.value({ role: "textbox", name: "Français" }), "Payer j")]);
+      await ctx.verify("J typed in a field is text, not a move", [tab.visible({ role: "heading", name: "shop.pay" }), ctx.equal("the field", await fieldValue(tab, { role: "textbox", name: "Français" }), "Payer j")]);
     },
   },
   {
@@ -53,7 +53,7 @@ export const panelJourneys = [
       await tab.fill({ role: "textbox", name: "Français" }, "Payer ");
       await ctx.verify("the panel flags the missing placeholder and offers to insert it", [tab.visible({ role: "button", name: "Insert {price}" })]);
       await tab.click({ role: "button", name: "Insert {price}" });
-      await ctx.verify("the placeholder is in the field", [ctx.equal("the field", await tab.value({ role: "textbox", name: "Français" }), "Payer {price}")]);
+      await ctx.verify("the placeholder is in the field", [ctx.equal("the field", await fieldValue(tab, { role: "textbox", name: "Français" }), "Payer {price}")]);
       await tab.press("Tab", { role: "textbox", name: "Français" });
       const saved = await lang(ctx, "read the key", "GET", `/row?workspace=${id}&key=shop.pay`);
       await ctx.verify("leaving the field saved it", [ctx.holds("French text", String(pick(saved.body, "row", "values", "fr")).includes("{price}"), JSON.stringify(pick(saved.body, "row", "values")))]);
@@ -73,7 +73,7 @@ export const panelJourneys = [
       const kept = await lang(ctx, "read the key", "GET", `/row?workspace=${id}&key=shop.pay`);
       await ctx.verify("the panel stays open on the unsaved text and nothing is written", [
         tab.visible({ role: "dialog", name: "shop.pay" }),
-        ctx.equal("the field", await tab.value({ role: "textbox", name: "Français" }), "Payer {price"),
+        ctx.equal("the field", await fieldValue(tab, { role: "textbox", name: "Français" }), "Payer {price"),
         ctx.equal("values", pick(kept.body, "row", "values"), { en: "Pay {price}" }),
       ]);
       await tab.fill({ role: "textbox", name: "Français" }, "Payer {price}");

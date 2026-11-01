@@ -1,6 +1,6 @@
 import { chmodSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { freshId, lang, pick, resetProjectFiles, seedWorkspace, workspacesDir } from "../../lang.mjs";
+import { fieldValue, freshId, lang, pick, resetProjectFiles, seedWorkspace, workspacesDir } from "../../lang.mjs";
 
 /** @typedef {import("../../lang.mjs").Ctx} Ctx */
 
@@ -142,7 +142,7 @@ export const viewJourneys = [
       const open = await lang(ctx, "read the key while the cell is open", "GET", `/row?workspace=${id}&key=a.note`);
       await ctx.verify("Shift Enter breaks the line and keeps the cell open", [
         tab.visible(note),
-        ctx.equal("the cell's text", await tab.value(note), "Ligne un\n"),
+        ctx.equal("the cell's text", await fieldValue(tab, note), "Ligne un\n"),
         ctx.equal("nothing saved yet", pick(open.body, "row", "values"), { en: "Note" }),
       ]);
       await tab.press("Enter", note);

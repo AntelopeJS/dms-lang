@@ -219,6 +219,39 @@ export function projectLocalesDir(ctx) {
 }
 
 /**
+ * The value of a form field, or undefined when the field is not on the page, so a check on it fails instead of
+ * ending the journey without a failing check.
+ *
+ * @param {Tab} tab The tab
+ * @param {{ role: string, name: string | RegExp }} target The field
+ * @returns {Promise<string | undefined>} Its value
+ */
+export async function fieldValue(tab, target) {
+  try {
+    return String(await tab.value(target));
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Clicks until what the click opens shows. The pages render on the server and a click that lands before they
+ * hydrate does nothing, so the click is repeated, at most five times, while what it opens has not appeared.
+ *
+ * @param {Tab} tab The tab
+ * @param {{ role: string, name: string | RegExp, exact?: boolean }} target What to click
+ * @param {{ role: string, name?: string | RegExp }} opened What the click opens
+ * @returns {Promise<void>}
+ */
+export async function clickUntil(tab, target, opened) {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    await tab.click(target);
+    const shown = await tab.visible(opened, { timeoutMs: 3000 });
+    if (shown.pass) return;
+  }
+}
+
+/**
  * Signs the administrator in on the dashboard's origin the way the hydrated sign-in form does, and returns the
  * session cookies, so a journey reads a page as the frontend server renders it, before any script runs.
  *
