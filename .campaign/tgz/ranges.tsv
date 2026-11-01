@@ -31,3 +31,6 @@
 @antelopejs/interface-database-decorators	playground/package.json	dependencies	>=0.1.10 <1.0.0
 @antelopejs/interface-data-api	playground/package.json	dependencies	>=0.5.0 <1.0.0
 @antelopejs/interface-dms	playground/package.json	dependencies	>=0.9.0 <1.0.0
+@antelopejs/api	package.json	devDependencies	
+@antelopejs/api	package.json	pnpm.overrides	
+@antelopejs/api	pnpm-workspace.yaml	overrides	

@@ -14,6 +14,7 @@ overrides:
   '@antelopejs/interface-dms': file:.campaign/tgz/antelopejs-interface-dms-50e3adc.tgz
   '@antelopejs/dms': file:.campaign/tgz/antelopejs-dms-50e3adc.tgz
   '@antelopejs/dms>@antelopejs/interface-core': 0.2.6
+  '@antelopejs/api': file:.campaign/tgz/antelopejs-api-fb0bc81.tgz
 
 importers:
 
@@ -38,6 +39,9 @@ importers:
         specifier: ~3.24.2
         version: 3.24.4
     devDependencies:
+      '@antelopejs/api':
+        specifier: file:.campaign/tgz/antelopejs-api-fb0bc81.tgz
+        version: file:.campaign/tgz/antelopejs-api-fb0bc81.tgz(@antelopejs/core@1.17.1)
       '@antelopejs/core':
         specifier: 1.17.1
         version: 1.17.1
@@ -208,6 +212,15 @@ packages:
   '@alloc/quick-lru@5.3.0':
     resolution: {integrity: sha512-U4+70Pc5ZS9osnCBCE5Jha/ciHM+Yp+CNMNC/7HvYbNRk1Ldd+f7qO65W5qfhu/TCv+/ozljlXXe9Nj8419DMA==}
     engines: {node: '>=10'}
+
+  '@antelopejs/api@file:.campaign/tgz/antelopejs-api-fb0bc81.tgz':
+    resolution: {integrity: sha512-tJc19CFWlYKvbxDsut9zSifD0SGZjmsrfun9yHCcQrSuwkBtJqfMEChmr0jmkfOiTO/H0Y7XzL0qtj/wFJs/Kg==, tarball: file:.campaign/tgz/antelopejs-api-fb0bc81.tgz}
+    version: 1.6.0
+    peerDependencies:
+      '@antelopejs/core': '>=1.17.0 <2'
+    peerDependenciesMeta:
+      '@antelopejs/core':
+        optional: true
 
   '@antelopejs/core@1.17.1':
     resolution: {integrity: sha512-gul38oMJuiaLl5MEwinRbM6d08uPI2wqCmDDrI5V+VilcxJA025VF1l1CqNta3xQfszvRr/jt4RzOgUlhKJi/g==}
@@ -4828,6 +4841,18 @@ packages:
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
 
+  ws@8.22.1:
+    resolution: {integrity: sha512-oyL6OPYme/CmiFvNuGzeoxCJ4nOrZE2O1FwM9MWM1AsGri6nLXB2pg+lNA8aLeXMSav0J6eIVS1j6vUPzUtK9g==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
   wsl-utils@0.1.0:
     resolution: {integrity: sha512-h3Fbisa2nKGPxCpm89Hk33lBLsnaGBvctQopaBSOW/uIs6FTe1ATyAnKFJrzVs9vpGdsTe73WF3V4lIsk4Gacw==}
     engines: {node: '>=18'}
@@ -4921,6 +4946,19 @@ snapshots:
       thirty-two: 0.0.2
 
   '@alloc/quick-lru@5.3.0': {}
+
+  '@antelopejs/api@file:.campaign/tgz/antelopejs-api-fb0bc81.tgz(@antelopejs/core@1.17.1)':
+    dependencies:
+      '@antelopejs/interface-api': file:.campaign/tgz/antelopejs-interface-api-9b197e1.tgz(@antelopejs/interface-core@0.2.6)
+      '@antelopejs/interface-api-util': file:.campaign/tgz/antelopejs-interface-api-util-cc740f8.tgz(@antelopejs/interface-api@file:.campaign/tgz/antelopejs-interface-api-9b197e1.tgz(@antelopejs/interface-core@0.2.6))(@antelopejs/interface-core@0.2.6)
+      '@antelopejs/interface-core': 0.2.6
+      reflect-metadata: 0.2.2
+      ws: 8.22.1
+    optionalDependencies:
+      '@antelopejs/core': 1.17.1
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
 
   '@antelopejs/core@1.17.1':
     dependencies:
@@ -9491,6 +9529,8 @@ snapshots:
       strip-ansi: 7.2.0
 
   wrappy@1.0.2: {}
+
+  ws@8.22.1: {}
 
   wsl-utils@0.1.0:
     dependencies:
