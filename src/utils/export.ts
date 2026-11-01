@@ -131,11 +131,8 @@ function assertNoClash(messages: LocaleMessages): void {
   for (const [locale, data] of Object.entries(messages)) {
     for (const path of leafPaths(data)) {
       const clash = clashOf(messages, path);
-      check(clash === undefined, "key_conflict", {
-        path,
-        locale,
-        conflicts: [clash],
-      });
+      if (clash !== undefined)
+        fail("key_conflict", { path, locale, conflicts: [clash] });
     }
   }
 }

@@ -12,10 +12,10 @@ const PROBLEM_NAMES = new Map<number, string>(
 );
 
 /** One error vue-i18n finds in a message, where it starts. */
-export interface MessageIssue {
+export type MessageIssue = {
   problem: string;
   offset: number;
-}
+};
 
 /**
  * The errors the vue-i18n compiler finds in a message, the first of each
