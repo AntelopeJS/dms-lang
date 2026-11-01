@@ -155,6 +155,7 @@ $C doors .agents/skills/verify-dms-lang/seeded-doors/data.patch
 - Facts the journeys pin from the product that `docs/` does not state: files the module creates are tab-indented JSON with a final newline, an uppercase workspace name is folded to lowercase, a created workspace records the base text each translation was written for (`outdated` on a row until it is marked reviewed). No journey requests a regional code without its own file (`fr-BE.json`): the docs and the backend disagree on it (dms-lang#85).
 - Where the dashboard and the docs name a control differently, a journey accepts both names, so neither is pinned: the matrix's language filter (docs "Missing in", dashboard "Translate into", dms-lang#90) and its Incomplete tab (named Missing when one language is counted).
 - The playground's app module watches `verify-frontend-modules.txt` in the run's `HOME` while the backend runs: `app-unflagged` (or `app-flagged`) registers it again without (or with) `dmsI18nAppLayer`, `late-installed` or `late-app-layer` registers a second module (`playground/late-frontend-vue`, priority 0). A restarted backend starts from the shipped registration; the journeys remove the file when they end.
+- The same module subscribes to the `dms-lang.translations` topic with `SubscribeMessage` and appends each message it hears to `verify-realtime-heard.jsonl` in the run's `HOME`, which `realtime/a-subscriber-hears-the-topic-by-its-name` reads.
 - `matrix/cell-line-break-and-failed-save` makes the workspace's `fr.json` read-only to fail a save, and makes it writable again before it goes on.
 - `project-files/pages-arrive-rendered-by-the-server` signs in with `POST /auth/login` on the dashboard origin and reads pages with plain requests, so it sees what the frontend server sends before any script runs. Its evidence keeps the cookie names, never their values.
 
@@ -168,8 +169,6 @@ List these under `notVerified` in the judgement of every verdict; no journey rea
 - a member who is not the owner, and so another user seeing a change (needs the invitation flow);
 - a frontend module removed while Lang runs (only taking an AntelopeJS module down removes one);
 - `workspacesDir` itself (the verification playground pins it to the run's `HOME`);
-- the key panel closed by the browser's Back (dms-control's tab has no history navigation, and Alt+Left does not reach headless Chromium);
-- the key panel's width kept on this device (the drawer's width is an attribute the ARIA snapshot leaves out);
 - the "Saving…" and "Saved" flash of a cell (it lasts 1.8 s, less than a step's capture under load); Not saved and Retry are driven;
 - what Copy puts on the clipboard (the journeys check the button, not the clipboard);
 - the language filter's "any language" with a column hidden: the docs say whatever columns are shown, the dashboard counts only the shown columns (issue draft `dms-lang-matrix-every-language-follows-the-columns`);

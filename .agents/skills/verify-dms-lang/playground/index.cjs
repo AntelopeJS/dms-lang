@@ -1,6 +1,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { AddFrontendModule } = require("@antelopejs/interface-dms/page");
+const { SubscribeMessage } = require("@antelopejs/interface-dms/realtime");
 
 const RENDERER = { name: "vue", version: "3" };
 
@@ -11,6 +12,12 @@ const RENDERER = { name: "vue", version: "3" };
  * start. A restarted backend starts from the shipped registration whatever the file holds.
  */
 const REGISTRATIONS = path.join(process.env.HOME ?? ".", "verify-frontend-modules.txt");
+
+/** The topic the docs tell a module of its own to subscribe to. */
+const TRANSLATIONS_TOPIC = "dms-lang.translations";
+
+/** One JSON line per message the backend hears on {@link TRANSLATIONS_TOPIC}, as a third-party subscriber would. */
+const HEARD = path.join(process.env.HOME ?? ".", "verify-realtime-heard.jsonl");
 
 /**
  * @param {boolean} appLayer Whether the project's module is flagged as the writable application layer
@@ -57,6 +64,9 @@ function applyRegistrations() {
 /** Registers the project's own frontend module, flagged as the writable application layer. */
 async function construct() {
   await registerApp(true);
+  SubscribeMessage(TRANSLATIONS_TOPIC, (message) => {
+    fs.appendFile(HEARD, `${JSON.stringify({ topic: message.topic, type: message.type, payload: message.payload })}\n`, () => undefined);
+  });
 }
 
 async function start() {

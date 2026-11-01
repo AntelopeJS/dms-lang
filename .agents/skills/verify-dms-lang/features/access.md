@@ -25,8 +25,8 @@ The Lang pages and the HTTP API under `/api/lang/translations` are reserved to t
 ## Sub-features
 
 - `anonymous-callers-are-refused`: error path: a visitor gets 401 on reads, backups and writes, the public files stay open, and nothing a visitor sent changed the workspace.
-- `read-only-without-editable`: with `editable` off, every write (create, rename, delete, import, add or remove a language, make a base, create, update, rename or delete a key, change the description and type, drop an override, mark a key reviewed) answers 403 `read_only`, reads and the public files keep working and nothing is written.
-- `read-only-by-default`: a module configured without `editable` lists `editable: false` and refuses a create with 403 `read_only`, as the configuration page says.
+- `read-only-without-editable`: with `editable` off, every write (create, rename, delete, import, add or remove a language, make a base, create, update, rename or delete a key, change the description and type, drop an override, mark a key reviewed) answers 403 `read_only`, reads and the public files keep working and nothing is written. The matrix shows the texts without editors (no editing button on a filled or an empty cell, no editing-shortcut legend), and dropping an override that exists in the project files leaves it there.
+- `read-only-by-default`: a module configured without `editable` lists `editable: false` and refuses a create with 403 `read_only`, as the configuration page says. The pages of a read-only server are checked in `read-only-without-editable`.
 - `permissions-follow-the-page-tree`: `GET /workspaces` names the permission ids of the writes (`modules.lang.translate.translations.scoped.matrix.edit`, `.keys`, `modules.lang.manage.workspaces.list.create`, ...).
 
 ## How to get to it (user POV)

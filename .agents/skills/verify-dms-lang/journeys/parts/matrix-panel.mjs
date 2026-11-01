@@ -1,4 +1,4 @@
-import { fieldValue, freshId, lang, pick, seedWorkspace } from "../../lang.mjs";
+import { clickUntil, fieldValue, freshId, lang, pick, seedWorkspace } from "../../lang.mjs";
 
 /** @typedef {import("../../lang.mjs").Ctx} Ctx */
 
@@ -13,6 +13,21 @@ async function panelWorkspace(ctx) {
     keys: { "shop.title": { en: "Shop", fr: "Boutique" }, "shop.pay": { en: "Pay {price}" }, "auth.login": { en: "Hello", fr: "Salut" } },
   });
   return id;
+}
+
+const GRIP = { role: "separator", name: "Resize the drawer" };
+const BACK_ATTEMPTS = 3;
+
+/**
+ * @param {import("../../lang.mjs").Tab} tab The tab with the key panel open
+ * @returns {Promise<string>} The panel's width, from its resize grip, or "unavailable" when the grip is not on the page
+ */
+async function panelWidth(tab) {
+  try {
+    return String(await tab.locator(GRIP).first().getAttribute("aria-valuenow", { timeout: 15_000 }));
+  } catch {
+    return "unavailable";
+  }
 }
 
 /** The key panel: moving between keys, inserting a placeholder, and the saves that keep it open. */
@@ -90,6 +105,58 @@ export const panelJourneys = [
       await ctx.verify("clearing the base text asks for a confirmation and clears nothing before it", [
         tab.shows(/Clear the base text of shop\.title\?/),
         ctx.equal("values", pick(base.body, "row", "values"), { en: "Shop", fr: "Boutique" }),
+      ]);
+    },
+  },
+  {
+    id: "back-closes-the-panel",
+    title: "the browser's Back closes the key panel opened from the matrix and stays on the matrix",
+    entryPoint: "/modules/lang/translations > Open shop.title in the panel > Back",
+    async run(/** @type {Ctx} */ ctx) {
+      const id = await panelWorkspace(ctx);
+      const tab = await ctx.tab("admin");
+      await tab.signIn("admin");
+      const OPEN = { role: "button", name: "Open shop.title in the panel" };
+      const HEADING = { role: "heading", name: "shop.title" };
+      for (let attempt = 1; attempt <= BACK_ATTEMPTS; attempt += 1) {
+        await tab.goto(`/modules/lang/translations?workspace=${id}`);
+        await tab.visible(OPEN);
+        await clickUntil(tab, OPEN, HEADING);
+        const opened = [await tab.visible(HEADING), ctx.holds("the key is in the URL", tab.page.url().includes("key=shop.title"), tab.page.url())];
+        await tab.page.goBack();
+        const closed = [
+          await tab.at(/^\/modules\/lang\/translations$/),
+          await tab.visible(OPEN),
+          await tab.visible(HEADING, { hidden: true }),
+          ctx.holds("the key is gone from the URL", !tab.page.url().includes("key="), tab.page.url()),
+        ];
+        if (attempt === BACK_ATTEMPTS || [...opened, ...closed].every((check) => check.pass)) {
+          await ctx.verify("the panel opens with the key in the URL", opened);
+          await ctx.verify("Back closes the panel and stays on the matrix", closed);
+          return;
+        }
+      }
+    },
+  },
+  {
+    id: "width-is-kept-on-this-device",
+    title: "the key panel resized with the arrow keys on its grip opens again at that width after a reload",
+    entryPoint: "/modules/lang/translations?key= > Resize the drawer > ArrowLeft, reload",
+    async run(/** @type {Ctx} */ ctx) {
+      const id = await panelWorkspace(ctx);
+      const tab = await ctx.tab("admin");
+      await tab.signIn("admin");
+      await tab.goto(`/modules/lang/translations?workspace=${id}&key=shop.pay`);
+      await ctx.verify("the panel is open with its grip", [tab.visible({ role: "heading", name: "shop.pay" }), tab.visible(GRIP)]);
+      const before = await panelWidth(tab);
+      for (let press = 0; press < 6; press += 1) await tab.press("ArrowLeft", GRIP);
+      const resized = await panelWidth(tab);
+      await tab.reload();
+      await ctx.verify("the panel reopens", [tab.visible({ role: "heading", name: "shop.pay" }), tab.visible(GRIP)]);
+      const after = await panelWidth(tab);
+      await ctx.verify("the arrow keys changed the width and the reload kept it", [
+        ctx.holds("the width changed", resized !== "unavailable" && resized !== before, `before ${before}, after the arrow keys ${resized}`),
+        ctx.equal("the width after the reload", after, resized),
       ]);
     },
   },

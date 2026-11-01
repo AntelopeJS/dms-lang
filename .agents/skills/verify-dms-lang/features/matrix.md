@@ -49,6 +49,9 @@ Every key of the workspace as a row, every language as a column, with inline edi
 - `key-panel-inserts-a-token-and-saves-on-leave`: Insert {price} puts the missing placeholder in the field, and leaving the field saves it without Save.
 - `key-panel-stays-open-on-a-failed-save`: Close with an unclosed brace keeps the panel open on the text and writes nothing; once valid, Close saves and closes; clearing the base text asks `Clear the base text of shop.title?` and clears nothing before it.
 
+- `back-closes-the-panel`: with the key panel opened from the matrix, the browser's Back (`tab.page.goBack()`) closes it, drops `key=` and stays on the matrix. A run whose Back leaves the matrix is tried again from a fresh matrix, up to three times; a Back that never closes the panel fails every time.
+- `width-is-kept-on-this-device`: the panel's grip (`separator "Resize the drawer"`) is resized with six presses of ArrowLeft, its width is read from `aria-valuenow`, and the reload opens the panel at the same width.
+
 ## How to get to it (user POV)
 
 - Modules > Translations > Translate > Translation matrix.

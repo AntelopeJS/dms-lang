@@ -1,6 +1,17 @@
-import { freshId, guarded, lang, list, pick, raw, recordRaw, seedWorkspace, toRow, workspaceFiles } from "../lang.mjs";
+import { join } from "node:path";
+import { freshId, guarded, lang, list, pick, projectLocalesDir, raw, readJsonFile, recordRaw, resetProjectFiles, seedWorkspace, toRow, workspaceFiles } from "../lang.mjs";
 
 /** @typedef {import("../lang.mjs").Ctx} Ctx */
+
+const OVERRIDDEN_KEY = "dms.button.save_changes";
+
+/**
+ * @param {Ctx} ctx The journey
+ * @returns {unknown} The French text the project files define for the module key, if any
+ */
+function projectOverride(ctx) {
+  return pick(readJsonFile(join(projectLocalesDir(ctx), "app-fr-FR.json")), "dms", "button", "save_changes");
+}
 
 /** Who may read and write the translations: the platform owner, only where `editable` is on. */
 export const journeys = guarded([
@@ -39,7 +50,10 @@ export const journeys = guarded([
     entryPoint: "the module option editable: false",
     async run(/** @type {Ctx} */ ctx) {
       const id = freshId(ctx, "shop");
-      await seedWorkspace(ctx, id, { locales: ["en", "fr"], keys: { "a.b": { en: "Hello", fr: "Bonjour" } } });
+      await seedWorkspace(ctx, id, { locales: ["en", "fr"], keys: { "a.b": { en: "Hello", fr: "Bonjour" }, "a.e": { en: "Only English" } } });
+      resetProjectFiles(ctx);
+      const overridden = await lang(ctx, "override a module text in the project files", "PUT", "/key", { workspace: "default", path: OVERRIDDEN_KEY, values: { fr: "Enregistrer mes changements" } });
+      await ctx.verify("the project files hold an override to drop", [ctx.status(overridden, 200), ctx.equal("French file", projectOverride(ctx), "Enregistrer mes changements")], { critical: true });
       const previous = ctx.state.extraEnv;
       ctx.state.extraEnv = { ...previous, DMS_LANG_EDITABLE: "false" };
       try {
@@ -52,7 +66,10 @@ export const journeys = guarded([
         await ctx.verify("the module reports itself read-only and still reads", [
           ctx.equal("editable", pick(listed.body, "editable"), false),
           ctx.equal("the modules workspace", workspaces.find((workspace) => workspace.id === "modules")?.editable, false),
-          ctx.equal("rows", pick(flat.body, "rows"), [{ key: "a.b", values: { en: "Hello", fr: "Bonjour" } }]),
+          ctx.equal("rows", pick(flat.body, "rows"), [
+            { key: "a.b", values: { en: "Hello", fr: "Bonjour" } },
+            { key: "a.e", values: { en: "Only English" } },
+          ]),
         ]);
         const writes = /** @type {[string, string, string, unknown][]} */ ([
           ["create a workspace", "POST", "/workspace", { id: freshId(ctx, "x"), locale: { code: "en" } }],
@@ -67,7 +84,7 @@ export const journeys = guarded([
           ["rename a key", "POST", "/key/rename", { workspace: id, path: "a.b", newPath: "a.d" }],
           ["delete a key", "DELETE", "/key", { workspace: id, path: "a.b" }],
           ["change the description", "PATCH", "/workspace", { id, description: "Changed", type: "website" }],
-          ["drop an override", "DELETE", "/key/override", { workspace: "default", path: "dms.button.save_changes" }],
+          ["drop an override", "DELETE", "/key/override", { workspace: "default", path: OVERRIDDEN_KEY }],
           ["mark a key reviewed", "POST", "/key/reviewed", { workspace: id, path: "a.b", locales: ["fr"] }],
         ]);
         const tab = await ctx.tab("admin");
@@ -75,7 +92,12 @@ export const journeys = guarded([
         await tab.goto(`/modules/lang/translations?workspace=${id}`);
         await ctx.verify("the matrix tells the owner that editing is disabled and still shows the texts", [
           tab.shows(/Editing is disabled on this server/),
-          tab.shows(/Bonjour/),
+          tab.visible({ role: "gridcell", name: "Bonjour" }),
+        ]);
+        await ctx.verify("the matrix offers no editor: no cell opens for editing and the editing shortcuts are not listed", [
+          tab.visible({ role: "button", name: "Bonjour" }, { hidden: true }),
+          tab.visible({ role: "button", name: "Translate a.e into Français" }, { hidden: true }),
+          tab.shows(/Save, next row/, { not: true }),
         ]);
         for (const [label, method, path, body] of writes) {
           const answer = await lang(ctx, label, method, path, body);
@@ -87,16 +109,18 @@ export const journeys = guarded([
         await ctx.verify("nothing was written", [
           ctx.equal("files", workspaceFiles(ctx, id), [".workspace.json", "en.json", "fr.json"]),
           ctx.equal("description and type", [pick(details.body, "description"), pick(details.body, "type")], [undefined, undefined]),
+          ctx.equal("the override is still in the project files", projectOverride(ctx), "Enregistrer mes changements"),
         ]);
       } finally {
         ctx.state.extraEnv = previous;
         await ctx.restartBackend();
+        resetProjectFiles(ctx);
       }
     },
   },
   {
     id: "read-only-by-default",
-    title: "a module configured without editable starts read-only: every write answers 403 and the pages say editing is off",
+    title: "a module configured without editable starts read-only: it lists editable false and refuses a write with 403",
     entryPoint: "the module option editable, left out",
     async run(/** @type {Ctx} */ ctx) {
       const previous = ctx.state.extraEnv;
