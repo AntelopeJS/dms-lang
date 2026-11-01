@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { browserRun } from "./helpers/frontend-runtime.mjs";
+import { browserRun, vue } from "./helpers/frontend-runtime.mjs";
+
+const { renderToString } = await import("vue/server-renderer");
 
 const { useReadOnlyRefusal } =
   await import("../node_modules/@antelopejs/dms/frontend-vue/layers/dms-core/app/composables/useReadOnlyRefusal.ts");
@@ -8,6 +10,10 @@ const { useMutationToast } =
   await import("../frontend-vue/app/composables/translation/useMutationToast.ts");
 const { useI18nWorkspaces } =
   await import("../frontend-vue/app/composables/translation/useI18nWorkspaces.ts");
+/** @type {unknown} */
+const MatrixCell = (
+  await import("../frontend-vue/app/build/components/matrix/MatrixCell.vue")
+).default;
 const READ_ONLY = "Read-only demo, changes are not saved";
 
 /** @param {boolean} marked */
@@ -40,7 +46,7 @@ function setup(marked) {
       headers: marked ? { "x-dms-readonly": "1" } : {},
     }),
   };
-  return { notices, error };
+  return { notices, error, translate };
 }
 
 for (const marked of [true, false]) {
@@ -93,6 +99,35 @@ for (const marked of [true, false]) {
     assert.deepEqual(
       notices.map(({ title }) => title),
       [marked ? READ_ONLY : "Request refused"],
+    );
+  });
+
+  test(`matrix cells retain the draft without a marked=${marked} local notice`, async () => {
+    const { notices, error, translate } = setup(marked);
+    const failures = useMutationToast();
+    useReadOnlyRefusal()(error);
+    const message = failures.errorMessage(error);
+    assert.ok(MatrixCell instanceof Object);
+    const app = vue.createSSRApp(MatrixCell, {
+      value: "Bonjour",
+      baseValue: "Hello",
+      isBase: false,
+      editable: true,
+      isEditing: false,
+      state: "error",
+      rowKey: "greeting",
+      languageName: "French",
+      code: "fr",
+      failure: { draft: "Salut", message, isConflict: false },
+    });
+    app.config.globalProperties.$t = translate;
+    app.config.warnHandler = () => {};
+    const html = await renderToString(app);
+    assert.equal(html.includes("dms_lang.matrix.not_saved"), !marked);
+    assert.match(html, /Salut/);
+    assert.deepEqual(
+      notices.map(({ title }) => title),
+      marked ? [READ_ONLY] : [],
     );
   });
 }
