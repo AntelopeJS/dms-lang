@@ -12,10 +12,11 @@ overrides:
   '@antelopejs/interface-database-decorators': file:.campaign/tgz/antelopejs-interface-database-decorators-e79a62b.tgz
   '@antelopejs/interface-data-api': file:.campaign/tgz/antelopejs-interface-data-api-d8a868f.tgz
   '@antelopejs/interface-dms': file:.campaign/tgz/antelopejs-interface-dms-0cfaaa3.tgz
-  '@antelopejs/dms': file:.campaign/tgz/antelopejs-dms-0cfaaa3.tgz
+  '@antelopejs/dms': file:.campaign/tgz/antelopejs-dms-80e4dc1.tgz
   '@antelopejs/dms>@antelopejs/interface-core': 0.2.6
   '@antelopejs/api': file:.campaign/tgz/antelopejs-api-6afe3e2.tgz
   '@antelopejs/api>@antelopejs/interface-core': 0.2.6
+  '@antelopejs/dms-frontend': file:.campaign/tgz/antelopejs-dms-frontend-ee4e931.tgz
 
 importers:
 
@@ -47,11 +48,11 @@ importers:
         specifier: 1.17.1
         version: 1.17.1
       '@antelopejs/dms':
-        specifier: file:.campaign/tgz/antelopejs-dms-0cfaaa3.tgz
-        version: file:.campaign/tgz/antelopejs-dms-0cfaaa3.tgz(@antelopejs/core@1.17.1)
+        specifier: file:.campaign/tgz/antelopejs-dms-80e4dc1.tgz
+        version: file:.campaign/tgz/antelopejs-dms-80e4dc1.tgz(@antelopejs/core@1.17.1)
       '@antelopejs/dms-frontend':
-        specifier: 0.9.1
-        version: 0.9.1(@antelopejs/core@1.17.1)
+        specifier: file:.campaign/tgz/antelopejs-dms-frontend-ee4e931.tgz
+        version: file:.campaign/tgz/antelopejs-dms-frontend-ee4e931.tgz(@antelopejs/core@1.17.1)
       '@antelopejs/interface-data-api':
         specifier: file:.campaign/tgz/antelopejs-interface-data-api-d8a868f.tgz
         version: file:.campaign/tgz/antelopejs-interface-data-api-d8a868f.tgz(@antelopejs/interface-api-util@file:.campaign/tgz/antelopejs-interface-api-util-cc740f8.tgz(@antelopejs/interface-api@file:.campaign/tgz/antelopejs-interface-api-f2a99b5.tgz(@antelopejs/interface-core@0.2.6))(@antelopejs/interface-core@0.2.6))(@antelopejs/interface-api@file:.campaign/tgz/antelopejs-interface-api-f2a99b5.tgz(@antelopejs/interface-core@0.2.6))(@antelopejs/interface-core@0.2.6)(@antelopejs/interface-database-decorators@file:.campaign/tgz/antelopejs-interface-database-decorators-e79a62b.tgz(@antelopejs/interface-api@file:.campaign/tgz/antelopejs-interface-api-f2a99b5.tgz(@antelopejs/interface-core@0.2.6))(@antelopejs/interface-core@0.2.6)(@antelopejs/interface-database@file:.campaign/tgz/antelopejs-interface-database-02e0360.tgz(@antelopejs/interface-core@0.2.6)))(@antelopejs/interface-database@file:.campaign/tgz/antelopejs-interface-database-02e0360.tgz(@antelopejs/interface-core@0.2.6))
@@ -126,8 +127,8 @@ importers:
         specifier: 1.17.1
         version: 1.17.1
       '@antelopejs/dms-frontend':
-        specifier: 0.9.1
-        version: 0.9.1(@antelopejs/core@1.17.1)
+        specifier: file:../.campaign/tgz/antelopejs-dms-frontend-ee4e931.tgz
+        version: file:.campaign/tgz/antelopejs-dms-frontend-ee4e931.tgz(@antelopejs/core@1.17.1)
       '@eslint/js':
         specifier: ^9
         version: 9.39.5
@@ -165,8 +166,8 @@ importers:
   playground:
     dependencies:
       '@antelopejs/dms':
-        specifier: file:../.campaign/tgz/antelopejs-dms-0cfaaa3.tgz
-        version: file:.campaign/tgz/antelopejs-dms-0cfaaa3.tgz(@antelopejs/core@1.17.1)
+        specifier: file:../.campaign/tgz/antelopejs-dms-80e4dc1.tgz
+        version: file:.campaign/tgz/antelopejs-dms-80e4dc1.tgz(@antelopejs/core@1.17.1)
       '@antelopejs/interface-api':
         specifier: file:../.campaign/tgz/antelopejs-interface-api-f2a99b5.tgz
         version: file:.campaign/tgz/antelopejs-interface-api-f2a99b5.tgz(@antelopejs/interface-core@0.2.6)
@@ -193,8 +194,8 @@ importers:
         specifier: 1.17.1
         version: 1.17.1
       '@antelopejs/dms-frontend':
-        specifier: 0.9.1
-        version: 0.9.1(@antelopejs/core@1.17.1)
+        specifier: file:../.campaign/tgz/antelopejs-dms-frontend-ee4e931.tgz
+        version: file:.campaign/tgz/antelopejs-dms-frontend-ee4e931.tgz(@antelopejs/core@1.17.1)
       '@types/node':
         specifier: ^22.14.1
         version: 22.20.2
@@ -228,15 +229,16 @@ packages:
     engines: {node: '>=20.19'}
     hasBin: true
 
-  '@antelopejs/dms-frontend@0.9.1':
-    resolution: {integrity: sha512-X0l/4uSCrRdO+7Y05918KJbaNatG6pI1iLzQ6xy/dkn7wNMY3aepFmkAT9ztu0YzFxYiKp2JCaBBX5C0xZDZHQ==}
+  '@antelopejs/dms-frontend@file:.campaign/tgz/antelopejs-dms-frontend-ee4e931.tgz':
+    resolution: {integrity: sha512-TvJ4NLCTodFHqXxjzTBBjro+VJ0dgjqXO2gTrkByFB01sz3sU6BzPC0Jvja4uMT9YXFpGV4ts3tElvb7zs0VGg==, tarball: file:.campaign/tgz/antelopejs-dms-frontend-ee4e931.tgz}
+    version: 0.10.0
     engines: {node: '>=20.19.0'}
     hasBin: true
     peerDependencies:
       '@antelopejs/core': '>=1.16.0 <2'
 
-  '@antelopejs/dms@file:.campaign/tgz/antelopejs-dms-0cfaaa3.tgz':
-    resolution: {integrity: sha512-3K46oOKWex6XRzNZxkygJ6r9uxXWFTyKIARChM07B51udMqp5EyCKC5U6b4ZAZwEEChiLnLsMi1hVQcC+s6paQ==, tarball: file:.campaign/tgz/antelopejs-dms-0cfaaa3.tgz}
+  '@antelopejs/dms@file:.campaign/tgz/antelopejs-dms-80e4dc1.tgz':
+    resolution: {integrity: sha512-HQEL/vWPOeK2N9M53Mf26z6b6nUTgTH+e7uOrNIaYMUx8P/k8Q0U/aiBwO0M15VrejxFak23Fib0b35BfyeSrg==, tarball: file:.campaign/tgz/antelopejs-dms-80e4dc1.tgz}
     version: 0.14.0
     hasBin: true
     peerDependencies:
@@ -4976,7 +4978,7 @@ snapshots:
       semver: 7.8.5
       typescript: 5.9.3
 
-  '@antelopejs/dms-frontend@0.9.1(@antelopejs/core@1.17.1)':
+  '@antelopejs/dms-frontend@file:.campaign/tgz/antelopejs-dms-frontend-ee4e931.tgz(@antelopejs/core@1.17.1)':
     dependencies:
       '@antelopejs/core': 1.17.1
       '@intlify/message-compiler': 11.4.14
@@ -4991,7 +4993,7 @@ snapshots:
       '@oxc-parser/binding-linux-x64-gnu': 0.95.0
       '@oxc-parser/binding-win32-x64-msvc': 0.95.0
 
-  '@antelopejs/dms@file:.campaign/tgz/antelopejs-dms-0cfaaa3.tgz(@antelopejs/core@1.17.1)':
+  '@antelopejs/dms@file:.campaign/tgz/antelopejs-dms-80e4dc1.tgz(@antelopejs/core@1.17.1)':
     dependencies:
       2fa: 0.1.2
       '@antelopejs/interface-api': file:.campaign/tgz/antelopejs-interface-api-f2a99b5.tgz(@antelopejs/interface-core@0.2.6)
