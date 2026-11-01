@@ -1,5 +1,4 @@
-import { HTTPResult } from "@antelopejs/interface-api";
-import type { ZodIssue } from "zod";
+import { type HTTPBody, HTTPResult } from "@antelopejs/interface-api";
 import type { LocaleTexts } from "./keys";
 import type { MessageIssue } from "./message-syntax";
 
@@ -67,18 +66,18 @@ type ErrorDetail =
   | string
   | number
   | undefined
-  | (string | undefined)[]
+  | string[]
   | LocaleTexts
   | MessageIssue[]
-  | ZodIssue[];
+  | HTTPBody;
 
 export type ErrorDetails = Record<string, ErrorDetail>;
 
 /** The JSON body of an error: an i18n message key, a stable code and what the client needs to act on it. */
-export interface ErrorBody extends ErrorDetails {
+export type ErrorBody = ErrorDetails & {
   message: string;
   code: ErrorCode;
-}
+};
 
 const MESSAGE_PREFIX = "$dms_lang.errors";
 
