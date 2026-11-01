@@ -66,6 +66,9 @@ export const journeys = guarded([
           ["write a text", "PUT", "/key", { workspace: id, path: "a.b", values: { fr: "Salut" } }],
           ["rename a key", "POST", "/key/rename", { workspace: id, path: "a.b", newPath: "a.d" }],
           ["delete a key", "DELETE", "/key", { workspace: id, path: "a.b" }],
+          ["change the description", "PATCH", "/workspace", { id, description: "Changed", type: "website" }],
+          ["drop an override", "DELETE", "/key/override", { workspace: "default", path: "dms.button.save_changes" }],
+          ["mark a key reviewed", "POST", "/key/reviewed", { workspace: id, path: "a.b", locales: ["fr"] }],
         ]);
         const tab = await ctx.tab("admin");
         await tab.signIn("admin");
@@ -80,7 +83,11 @@ export const journeys = guarded([
         }
         const served = await raw(ctx, "read the public file", { path: `/i18n/${id}/fr.json` });
         recordRaw(ctx, served, [ctx.equal("the public file answers", served.json, { a: { b: "Bonjour" } })]);
-        await ctx.verify("nothing was written", [ctx.equal("files", workspaceFiles(ctx, id), [".workspace.json", "en.json", "fr.json"])]);
+        const details = await lang(ctx, "read the workspace", "GET", `/workspace?workspace=${id}`);
+        await ctx.verify("nothing was written", [
+          ctx.equal("files", workspaceFiles(ctx, id), [".workspace.json", "en.json", "fr.json"]),
+          ctx.equal("description and type", [pick(details.body, "description"), pick(details.body, "type")], [undefined, undefined]),
+        ]);
       } finally {
         ctx.state.extraEnv = previous;
         await ctx.restartBackend();

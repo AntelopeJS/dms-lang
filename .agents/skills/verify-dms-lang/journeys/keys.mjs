@@ -137,16 +137,25 @@ export const journeys = guarded([
   },
   {
     id: "mark-reviewed",
-    title: "a key of a created workspace can be marked reviewed; an unknown key is 404 and the project files refuse",
+    title: "a translation written for an older base text is to review until the key is marked reviewed; an unknown key is 404 and the project files refuse",
     entryPoint: "POST /api/lang/translations/key/reviewed",
     async run(/** @type {Ctx} */ ctx) {
       const id = freshId(ctx, "review");
       await seedWorkspace(ctx, id, { locales: ["en", "fr"], keys: { "a.b": { en: "Hi", fr: "Salut" } } });
+      const fresh = await lang(ctx, "read the key", "GET", `/row?workspace=${id}&key=a.b`);
+      await lang(ctx, "change the base text", "PUT", "/key", { workspace: id, path: "a.b", values: { en: "Hello" } });
+      const changed = await lang(ctx, "read the key after the base changed", "GET", `/row?workspace=${id}&key=a.b`);
+      await ctx.verify("the French text was written for the old base text", [
+        ctx.equal("before", pick(fresh.body, "row", "outdated"), undefined),
+        ctx.equal("after", pick(changed.body, "row", "outdated"), ["fr"]),
+      ]);
       const reviewed = await lang(ctx, "mark reviewed", "POST", "/key/reviewed", { workspace: id, path: "a.b", locales: ["fr"] });
+      const after = await lang(ctx, "read the key after the review", "GET", `/row?workspace=${id}&key=a.b`);
+      await ctx.verify("marking it reviewed clears the review state", [ctx.equal("outdated", pick(after.body, "row", "outdated"), undefined)]);
       const unknown = await lang(ctx, "mark an unknown key", "POST", "/key/reviewed", { workspace: id, path: "no.such" });
       const project = await lang(ctx, "mark a project key", "POST", "/key/reviewed", { workspace: "default", path: "shop.title" });
       await ctx.verify("reviewing leaves the texts and refuses what it cannot apply", [
-        ctx.equal("reviewed", [reviewed.status, pick(reviewed.body, "row", "values")], [200, { en: "Hi", fr: "Salut" }]),
+        ctx.equal("reviewed", [reviewed.status, pick(reviewed.body, "row", "values")], [200, { en: "Hello", fr: "Salut" }]),
         ctx.equal("unknown", [unknown.status, pick(unknown.body, "code")], [404, "key_not_found"]),
         ctx.equal("project files", [project.status, pick(project.body, "message")], [400, "$dms_lang.errors.review_added_only"]),
       ]);
