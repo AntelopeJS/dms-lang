@@ -43,11 +43,6 @@ function setup(data, status = 403) {
     }),
     useDmsState: () => presented,
     useApiErrorPresenter,
-    /** @param {unknown} t
-     * @param {string} message */
-    resolveApiMessage: (t, message) => translate(message),
-    resolveApiErrorMessage: () => "error.500.description",
-    resolveApiErrorTitle: () => "Request refused",
   });
   const response = new Response(JSON.stringify(data), {
     status,
