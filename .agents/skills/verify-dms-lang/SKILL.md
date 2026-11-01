@@ -151,7 +151,11 @@ $C doors .agents/skills/verify-dms-lang/seeded-doors/data.patch
 - Each journey restarts the backend on a fresh database; the created workspaces are files and stay in the run, so every journey creates its own ids.
 - The module store and `up` install package modules from the npm registry. A package published minutes earlier can answer 404 until the registry propagates it; run `up` again a few minutes later.
 - Writing a journey: a check (`tab.visible`, `tab.shows`, `tab.at`, `ctx.equal`…) only counts inside `ctx.verify` (or `ctx.record` for a raw request). `tab.at` compares the path, not the query. `tab.visible(target, { hidden: true })` passes when the element is absent. Headings are styled in capitals, so match their text without case. The helpers in `lang.mjs` read answers through `pick` and `list`, so a journey holds no `any`.
-- Facts the journeys pin from the product that `docs/` does not state: a regional code without its own file (`fr-BE`) is served its language, files the module creates are tab-indented JSON with a final newline, an uppercase workspace name is folded to lowercase.
+- Facts the journeys pin from the product that `docs/` does not state: files the module creates are tab-indented JSON with a final newline, an uppercase workspace name is folded to lowercase, a created workspace records the base text each translation was written for (`outdated` on a row until it is marked reviewed). No journey requests a regional code without its own file (`fr-BE.json`): the docs and the backend disagree on it (dms-lang#85).
+- Where the dashboard and the docs name a control differently, a journey accepts both names, so neither is pinned: the matrix's language filter (docs "Missing in", dashboard "Translate into", dms-lang#90) and its Incomplete tab (named Missing when one language is counted).
+- The playground's app module watches `verify-frontend-modules.txt` in the run's `HOME` while the backend runs: `app-unflagged` (or `app-flagged`) registers it again without (or with) `dmsI18nAppLayer`, `late-installed` or `late-app-layer` registers a second module (`playground/late-frontend-vue`, priority 0). A restarted backend starts from the shipped registration; the journeys remove the file when they end.
+- `matrix/cell-line-break-and-failed-save` makes the workspace's `fr.json` read-only to fail a save, and makes it writable again before it goes on.
+- `project-files/pages-arrive-rendered-by-the-server` signs in with `POST /auth/login` on the dashboard origin and reads pages with plain requests, so it sees what the frontend server sends before any script runs. Its evidence keeps the cookie names, never their values.
 
 ## Not driven
 
@@ -160,9 +164,16 @@ List these under `notVerified` in the judgement of every verdict; no journey rea
 - the Import file chooser, the backup and language downloads and the bytes of the CSV export (browser downloads);
 - "Show more" after 150 matrix rows (the list is virtualised);
 - the heatmap colours and the dark mode;
-- a member who is not the owner (needs the invitation flow);
-- a frontend module registered after Lang started;
-- `workspacesDir` itself (the verification playground pins it to the run's `HOME`).
+- a member who is not the owner, and so another user seeing a change (needs the invitation flow);
+- a frontend module removed while Lang runs (only taking an AntelopeJS module down removes one);
+- `workspacesDir` itself (the verification playground pins it to the run's `HOME`);
+- the key panel closed by the browser's Back (dms-control's tab has no history navigation, and Alt+Left does not reach headless Chromium);
+- the key panel's width kept on this device (the drawer's width is an attribute the ARIA snapshot leaves out);
+- the "Saving…" and "Saved" flash of a cell (it lasts 1.8 s, less than a step's capture under load); Not saved and Retry are driven;
+- what Copy puts on the clipboard (the journeys check the button, not the clipboard);
+- the language filter's "any language" with a column hidden: the docs say whatever columns are shown, the dashboard counts only the shown columns (issue draft `dms-lang-matrix-every-language-follows-the-columns`);
+- layout: the key panel's header cut at two lines, its footer on the drawer's bottom edge;
+- the repository's own playground (`pnpm dev`, `pnpm frontend:dev`) and `ajs project modules add`, which are the developer's commands, not the module's.
 
 A step whose check fails because the backend or the dashboard stopped answering, or because the sign-in form did not complete under load, ends the journey with a `NOT VERIFIED` error and no failing check, so `seeded` never counts it as a catch.
 

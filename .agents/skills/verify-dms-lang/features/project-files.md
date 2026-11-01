@@ -28,6 +28,9 @@ The Project files workspace (`default`) edits the `<name>-<xx-XX>.json` files of
 - `rename-stays-in-the-defining-file`: a key renamed into another namespace stays in the file that defined it.
 - `dropping-an-override-removes-only-the-winning-one`: dropping an override of a module key removes the newest project definition and the older one shows again.
 - `no-workspace-query-defaults-to-the-project-files`: a page opened without `?workspace=` by someone who never chose one shows the project files.
+- `pages-arrive-rendered-by-the-server`: the HTML the frontend server sends, read without a browser, holds the matrix rows with their texts and the queue's first missing key; without `?workspace=` the server sends the workspace of the `dms-lang-workspace` cookie, else the project files.
+- `reregistering-changes-the-origin`: the playground registers its module again without `dmsI18nAppLayer`: `shop.title` moves to the installed modules with no file change; flagged again, it is a project file again.
+- `lower-priority-app-layer-merges-first`: a second flagged module of priority 0, registered while the backend runs, adds `late.hello` to the project files, and the app module (priority 1) keeps `shop.title`.
 
 ## How to get to it (user POV)
 
