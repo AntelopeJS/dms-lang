@@ -23,6 +23,27 @@ async function overviewWorkspace(ctx) {
 /** The Overview: how translated is this workspace, and where are the gaps. */
 export const journeys = guarded([
   {
+    id: "use-in-your-app-and-the-heatmap-legend",
+    title: "Use in your app gives a created workspace's public GET URL and an example, and says where the project files live and that they are not public; the heatmap's legend gives the 90 and 60 thresholds",
+    entryPoint: "/modules/lang/overview > Use in your app",
+    async run(/** @type {Ctx} */ ctx) {
+      const id = await overviewWorkspace(ctx);
+      const tab = await ctx.tab("admin");
+      await tab.signIn("admin");
+      await tab.goto(`/modules/lang/overview?workspace=${id}`);
+      await ctx.verify("a created workspace's card gives its public URL and an example", [
+        tab.shows(new RegExp(`Use in your app[\\s\\S]*GET\\s*\\S+/i18n/${id}/\\{locale\\}\\.json[\\s\\S]*Example\\s*\\S+/i18n/${id}/en\\.json`, "i")),
+        tab.shows(/≥ 90%\s*60–89%\s*< 60%/),
+      ]);
+      await tab.goto("/modules/lang/overview?workspace=default");
+      await ctx.verify("the project files' card says where the keys live and that they are not public", [
+        tab.shows(/Where these keys live\s*frontend-vue\/i18n\/locales\/\*-xx-XX\.json/i),
+        tab.shows(/not served at a public URL/),
+        tab.shows(/\/i18n\/default\//, { not: true }),
+      ]);
+    },
+  },
+  {
     id: "kpis-and-coverage-by-namespace",
     title: "the Overview counts languages, keys, missing translations and the average coverage, and the heatmap links each gap to the matrix",
     entryPoint: "/modules/lang/overview",

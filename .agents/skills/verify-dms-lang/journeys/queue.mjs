@@ -37,6 +37,8 @@ export const journeys = guarded([
         tab.visible({ role: "textbox", name: "Bye" }),
         tab.visible({ role: "button", name: "shop.pay" }),
         tab.visible({ role: "radio", name: "Missing 2" }),
+        tab.shows(/Up next\s*shop\.pay\s*Pay \{price\}/i),
+        tab.shows(/Up next\s*auth\.logout/i, { not: true }),
       ]);
       await tab.fill({ role: "textbox", name: "Bye" }, "Au revoir");
       await tab.click({ role: "button", name: /Save & next/ });
@@ -50,6 +52,35 @@ export const journeys = guarded([
         ctx.equal("French file", fr, { shop: { title: "Boutique", pay: "Payer {price}" }, auth: { login: "Salut {nom}", logout: "Au revoir" } }),
         ctx.equal("the row", pick(row.body, "row", "values"), { en: "Bye", fr: "Au revoir" }),
       ]);
+    },
+  },
+  {
+    id: "overflow-menu-makes-base-or-removes",
+    title: "the queue's overflow menu makes the language the base after listing the keys it lacks, and removes it only once its code is typed",
+    entryPoint: "/modules/lang/language > More actions",
+    async run(/** @type {Ctx} */ ctx) {
+      const id = await queueWorkspace(ctx);
+      const tab = await ctx.tab("admin");
+      await tab.signIn("admin");
+      await tab.goto(`/modules/lang/language?workspace=${id}&locale=de`);
+      await tab.click({ role: "button", name: "More actions" });
+      await tab.click({ role: "menuitem", name: "Remove language" });
+      await ctx.verify("removal names the public file and asks for the code", [tab.visible({ role: "dialog", name: /^Remove Deutsch from/ }), tab.shows(new RegExp(`/i18n/${id}/de\\.json`))]);
+      await tab.fill({ role: "textbox", name: "Type de to confirm" }, "d");
+      await tab.click({ role: "button", name: "Remove language" });
+      const kept = await lang(ctx, "read the workspace", "GET", `/workspace?workspace=${id}`);
+      await ctx.verify("a wrong code removes nothing", [ctx.equal("locales", pick(kept.body, "locales"), [{ code: "de" }, { code: "en" }, { code: "fr" }])]);
+      await tab.fill({ role: "textbox", name: "Type de to confirm" }, "de");
+      await tab.click({ role: "button", name: "Remove language" });
+      const removed = await lang(ctx, "read the workspace again", "GET", `/workspace?workspace=${id}`);
+      await ctx.verify("the typed code removes German", [ctx.equal("locales", pick(removed.body, "locales"), [{ code: "en" }, { code: "fr" }])]);
+      await tab.goto(`/modules/lang/language?workspace=${id}&locale=fr`);
+      await tab.click({ role: "button", name: "More actions" });
+      await tab.click({ role: "menuitem", name: "Make base language" });
+      await ctx.verify("the confirmation lists the keys French lacks", [tab.visible({ role: "dialog", name: "Make Français the base language?" }), tab.shows(/shop\.pay/), tab.shows(/auth\.logout/)]);
+      await tab.click({ role: "button", name: "Make base language", within: { role: "dialog" } });
+      const based = await lang(ctx, "read the new base", "GET", `/workspace?workspace=${id}`);
+      await ctx.verify("French is the base", [ctx.equal("base", pick(based.body, "defaultLocale"), "fr")]);
     },
   },
   {

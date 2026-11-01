@@ -33,6 +33,8 @@ export const journeys = guarded([
         tab.visible({ role: "heading", name: "Project files" }),
         tab.visible({ role: "heading", name: "Installed modules" }),
         tab.shows(/served publicly as json for your apps/i),
+        tab.shows(new RegExp(`${id}[\\s\\S]{0,60}Website[\\s\\S]{0,60}Texts of the partner portal[\\s\\S]*?GET\\s*\\S+/i18n/${id}/\\{locale\\}\\.json`)),
+        tab.visible({ role: "button", name: "Copy", exact: true }),
       ]);
     },
   },
@@ -96,7 +98,6 @@ export const journeys = guarded([
       await ctx.verify("the endpoint card gives the URL, an example and the fallback rule", [
         tab.shows(new RegExp(`/i18n/${id}/\\{locale\\}\\.json`)),
         tab.shows(new RegExp(`/i18n/${id}/en\\.json`)),
-        tab.shows(/a regional code without its own file \(fr-be\) is served its language \(fr\); an unknown language answers 404/i),
         tab.shows(/public, no sign-in\. saved changes are served on the next request/i),
         tab.visible({ role: "tab", name: "vue-i18n" }),
         tab.visible({ role: "tab", name: "i18next" }),
@@ -112,6 +113,64 @@ export const journeys = guarded([
         const snippet = await lang(ctx, `read the ${kind} snippet`, "GET", `/snippet?workspace=${id}&kind=${kind}`);
         await ctx.verify(`the ${kind} snippet carries the workspace URL`, [ctx.status(snippet, 200), ctx.holds("URL", String(pick(snippet.body, "code")).includes(`/i18n/${id}/`), String(pick(snippet.body, "code")).slice(0, 120))]);
       }
+      const vue = String(pick((await lang(ctx, "read the vue-i18n setup", "GET", `/snippet?workspace=${id}&kind=vue`)).body, "code"));
+      const next = String(pick((await lang(ctx, "read the i18next setup", "GET", `/snippet?workspace=${id}&kind=i18next`)).body, "code"));
+      await ctx.verify("the setups load the base language, the language and the region variant", [
+        ctx.holds("vue-i18n loads the base, the language and the region", /\[base, locale\.split\("-"\)\[0\], locale\]/.test(vue) && /const base = "en"/.test(vue), vue.slice(0, 600)),
+        ctx.holds("vue-i18n falls back to the base", /fallbackLocale: base/.test(vue), vue.slice(0, 600)),
+        ctx.holds("i18next falls back from the region to the language, then to the base", /fallbackLng: "en"/.test(next) && /nonExplicitSupportedLngs: true/.test(next), next.slice(0, 600)),
+      ]);
+    },
+  },
+  {
+    id: "cards-show-the-figures",
+    title: "each card gives its languages, keys, coverage and missing count (overrides for the project files) with a chip per language; Switch makes a workspace current and Settings opens its settings",
+    entryPoint: "/modules/lang/workspaces cards",
+    async run(/** @type {Ctx} */ ctx) {
+      const id = freshId(ctx, "cards");
+      await seedWorkspace(ctx, id, { locales: ["en", "fr"], keys: { "a.one": { en: "One", fr: "Un" }, "a.two": { en: "Two" } } });
+      const tab = await ctx.tab("admin");
+      await tab.signIn("admin");
+      await tab.goto(`/modules/lang/workspaces?workspace=${id}`);
+      await ctx.verify("the cards give their figures", [
+        tab.shows(new RegExp(`${id}[\\s\\S]{0,160}Languages\\s*2\\s*Keys\\s*2\\s*Coverage\\s*50%\\s*Missing\\s*1\\s*en\\s*en\\s*base\\s*fr\\s*fr\\s*50%`, "i")),
+        tab.shows(/Project files[\s\S]{0,200}Languages\s*2\s*Keys\s*\d+\s*Coverage\s*\d+%\s*Overrides\s*0/i),
+        tab.shows(/Installed modules\s*Read-only[\s\S]{0,300}Overridden\s*\d+/i),
+      ]);
+      await tab.click({ role: "link", name: "Settings", exact: true, nth: 0 });
+      await ctx.verify("Settings opens the settings of that workspace", [tab.at(/^\/modules\/lang\/workspace$/), tab.shows(/workspace\s*project files/i)]);
+      await tab.goto(`/modules/lang/workspaces?workspace=${id}`);
+      await tab.press("Enter", { role: "button", name: "Switch", exact: true, nth: 0 });
+      await ctx.verify("Switch on the project files card (pressed: a long URL pushes it out of the card) makes them current", [tab.at(/^\/modules\/lang\/overview$/), tab.shows(/workspace\s*project files/i)]);
+    },
+  },
+  {
+    id: "add-language-picker",
+    title: "Add language opens a searchable picker of native language names, and any BCP 47 code typed in the search can be added",
+    entryPoint: "/modules/lang/workspace > Add language",
+    async run(/** @type {Ctx} */ ctx) {
+      const id = freshId(ctx, "picker");
+      await seedWorkspace(ctx, id, { locales: ["en"] });
+      const tab = await ctx.tab("admin");
+      await tab.signIn("admin");
+      await tab.goto(`/modules/lang/workspace?workspace=${id}`);
+      const search = { role: "combobox", name: /^Search languages or type a code/ };
+      await tab.click({ role: "button", name: "Add language", exact: true });
+      await tab.fill(search, "Italiano");
+      await ctx.verify("the search matches the native name", [tab.visible({ role: "option", name: /^Italiano Italian it$/ }), tab.visible({ role: "option", name: /^Deutsch/ }, { hidden: true })]);
+      await tab.click({ role: "option", name: /^Italiano Italian it$/ });
+      await tab.click({ role: "button", name: /^Add Italiano · it$/, within: { role: "dialog" } });
+      const picked = await eventually(() => lang(ctx, "read the languages", "GET", `/workspace?workspace=${id}`), (answer) => list(answer.body, "locales").length === 2);
+      await ctx.verify("Italian is added", [ctx.equal("locales", pick(picked.body, "locales"), [{ code: "en" }, { code: "it" }])]);
+      await tab.click({ role: "button", name: "Add language", exact: true });
+      await tab.fill(search, "tlh-Latn");
+      await tab.click({ role: "option", name: /^tlh-Latn/ });
+      await tab.click({ role: "button", name: /^Add .*tlh-Latn$/, within: { role: "dialog" } });
+      const typed = await eventually(() => lang(ctx, "read the languages again", "GET", `/workspace?workspace=${id}`), (answer) => list(answer.body, "locales").length === 3);
+      await ctx.verify("a code the list does not know is added as typed", [
+        ctx.equal("locales", pick(typed.body, "locales"), [{ code: "en" }, { code: "it" }, { code: "tlh-Latn" }]),
+        ctx.equal("files", workspaceFiles(ctx, id), [".workspace.json", "en.json", "it.json", "tlh-Latn.json"]),
+      ]);
     },
   },
   {
@@ -131,8 +190,12 @@ export const journeys = guarded([
         tab.shows(/this is the current name/i),
         tab.enabled({ role: "button", name: "Rename workspace" }, { disabled: true }),
       ]);
+      const taken = freshId(ctx, "taken");
+      await seedWorkspace(ctx, taken, { locales: ["en"] });
+      await tab.fill({ role: "textbox", name: "Workspace name" }, taken);
+      await ctx.verify("a taken name is told live and cannot be used", [tab.shows(new RegExp(`A workspace named ${taken} already exists`)), tab.enabled({ role: "button", name: "Rename workspace" }, { disabled: true })]);
       await tab.fill({ role: "textbox", name: "Workspace name" }, target);
-      await tab.shows(new RegExp(`After\\s*.*/i18n/${target}/`, "i"));
+      await ctx.verify("a free name is told available and previewed", [tab.shows(new RegExp(`${target} is available`)), tab.shows(new RegExp(`After\\s*\\S*/i18n/${target}/`, "i"))]);
       await tab.click({ role: "button", name: "Rename workspace" });
       const oldUrl = await raw(ctx, "read the old URL", { path: `/i18n/${id}/fr.json` });
       const newUrl = await raw(ctx, "read the new URL", { path: `/i18n/${target}/fr.json` });
