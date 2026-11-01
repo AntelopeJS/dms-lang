@@ -4,7 +4,7 @@
 
 | Package                                     | Supported                                                                    | Tested with                                                               |
 | ------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `@antelopejs/dms`                           | `>=0.11.0 <1.0.0`                                                            | `file:.campaign/tgz/antelopejs-dms-e0787e6.tgz`                           |
+| `@antelopejs/dms`                           | `>=0.11.0 <1.0.0`                                                            | `file:.campaign/tgz/antelopejs-dms-883e20d.tgz`                           |
 | `@antelopejs/interface-api`                 | `file:../.campaign/tgz/antelopejs-interface-api-f206be7.tgz`                 | `file:.campaign/tgz/antelopejs-interface-api-f206be7.tgz`                 |
 | `@antelopejs/interface-api-util`            | `file:../.campaign/tgz/antelopejs-interface-api-util-cc740f8.tgz`            | `file:.campaign/tgz/antelopejs-interface-api-util-cc740f8.tgz`            |
 | `@antelopejs/interface-core`                | `>=0.2.4 <1.0.0`                                                             | `0.2.6`                                                                   |
