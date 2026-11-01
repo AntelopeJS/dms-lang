@@ -50,7 +50,7 @@ Restart the backend, then the frontend, and open **Modules › Translations** (`
 
 | Package                          | Supported                                                      | Tested with                                                    |
 | -------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------- |
-| `@antelopejs/interface-api`      | `file:.campaign/tgz/antelopejs-interface-api-1e31ee0.tgz`      | `file:.campaign/tgz/antelopejs-interface-api-1e31ee0.tgz`      |
+| `@antelopejs/interface-api`      | `file:.campaign/tgz/antelopejs-interface-api-f2a99b5.tgz`      | `file:.campaign/tgz/antelopejs-interface-api-f2a99b5.tgz`      |
 | `@antelopejs/interface-api-util` | `file:.campaign/tgz/antelopejs-interface-api-util-cc740f8.tgz` | `file:.campaign/tgz/antelopejs-interface-api-util-cc740f8.tgz` |
 | `@antelopejs/interface-core`     | `>=0.2.4 <1.0.0`                                               | `0.2.6`                                                        |
 | `@antelopejs/interface-dms`      | `file:.campaign/tgz/antelopejs-interface-dms-0cfaaa3.tgz`      | `file:.campaign/tgz/antelopejs-interface-dms-0cfaaa3.tgz`      |
