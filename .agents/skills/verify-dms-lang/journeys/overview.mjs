@@ -144,7 +144,7 @@ export const journeys = guarded([
     entryPoint: "the command palette",
     async run(/** @type {Ctx} */ ctx) {
       const id = freshId(ctx, "palette");
-      await seedWorkspace(ctx, id, { locales: ["en", "fr"], keys: { "a.one": { en: "One" } } });
+      await seedWorkspace(ctx, id, { locales: ["en", "fr"], keys: { "a.one": { en: "One" }, "a.two": { en: "Two", fr: "Deux" } } });
       const tab = await ctx.tab("admin");
       await tab.signIn("admin");
       await tab.goto(`/modules/lang/overview?workspace=${id}`);
@@ -159,6 +159,14 @@ export const journeys = guarded([
       await ctx.verify("Add a translation key opens the dialog", [tab.visible({ role: "dialog", name: "Add key" })]);
       await tab.goto(`/modules/lang/overview?workspace=${id}&action=add-language`);
       await ctx.verify("the add-language deep link opens the language picker on arrival", [tab.visible({ role: "dialog", name: /Add a language to/ })]);
+      await tab.goto(`/modules/lang/overview?workspace=${id}`);
+      await tab.press("Control+k");
+      await tab.click({ role: "option", name: "Translate missing keys" });
+      await ctx.verify("Translate missing keys opens the matrix on the incomplete keys only", [
+        tab.at(/\/modules\/lang\/translations$/),
+        tab.visible({ role: "button", name: "Open a.one in the panel" }),
+        tab.visible({ role: "button", name: "Open a.two in the panel" }, { hidden: true }),
+      ]);
     },
   },
 ]);
