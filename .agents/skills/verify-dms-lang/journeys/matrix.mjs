@@ -1,4 +1,6 @@
 import { join } from "node:path";
+import { panelJourneys } from "./parts/matrix-panel.mjs";
+import { incompleteTab, viewJourneys } from "./parts/matrix-view.mjs";
 import { freshId, guarded, lang, pick, projectLocalesDir, readJsonFile, readLocaleFile, resetProjectFiles, seedWorkspace, workspaceFiles } from "../lang.mjs";
 
 /** @typedef {import("../lang.mjs").Ctx} Ctx */
@@ -63,13 +65,13 @@ export const journeys = guarded([
       await tab.goto(`/modules/lang/translations?workspace=${id}`);
       await ctx.verify("the tabs count the keys", [
         tab.visible({ role: "radio", name: "All 3" }),
-        tab.visible({ role: "radio", name: "Missing 1" }),
+        tab.visible({ role: "radio", name: incompleteTab(1) }),
         tab.visible({ role: "radio", name: "Complete 2" }),
         tab.visible({ role: "radio", name: "Issues 1" }),
         tab.visible({ role: "button", name: "Open shop.title in the panel" }),
         tab.visible({ role: "button", name: "Open auth.login in the panel" }),
       ]);
-      await tab.click({ role: "radio", name: "Missing 1" });
+      await tab.click({ role: "radio", name: incompleteTab(1) });
       await ctx.verify("Missing keeps the key French lacks", [
         tab.visible({ role: "button", name: "Open shop.pay in the panel" }),
         tab.visible({ role: "button", name: "Open shop.title in the panel" }, { hidden: true }),
@@ -167,7 +169,7 @@ export const journeys = guarded([
       await tab.signIn("admin");
       await tab.goto(`/modules/lang/translations?workspace=${id}&key=shop.title`);
       await tab.click({ role: "button", name: "Delete" });
-      await ctx.verify("the dialog names the key and the workspace", [tab.visible({ role: "dialog", name: "Delete shop.title?" }), tab.shows(/removed from every file of/)]);
+      await ctx.verify("the dialog names the key and the workspace", [tab.visible({ role: "dialog", name: "Delete shop.title?" }), tab.shows(/its 2 translations \(en, fr\) are removed from every file of/)]);
       await tab.click({ role: "button", name: "Delete key" });
       const gone = await lang(ctx, "read the key", "GET", `/row?workspace=${id}&key=shop.title`);
       await ctx.verify("the key is gone from both languages and the toast offers Undo", [
@@ -195,7 +197,7 @@ export const journeys = guarded([
         tab.visible({ role: "menuitem", name: "Everything · 3 keys, 2 languages" }),
       ]);
       await tab.press("Escape");
-      await tab.click({ role: "radio", name: "Missing 1" });
+      await tab.click({ role: "radio", name: incompleteTab(1) });
       await tab.click({ role: "button", name: "Export" });
       await ctx.verify("a filter narrows the view and not the whole workspace", [
         tab.visible({ role: "menuitem", name: "This view · 1 key, 2 languages" }),
@@ -227,6 +229,9 @@ export const journeys = guarded([
         ctx.equal("inherited", pick(row.body, "row", "inherited"), { en: "Save changes", fr: "Enregistrer les modifications" }),
         ctx.equal("file", pick(readJsonFile(join(projectLocalesDir(ctx), "app-fr-FR.json")), "dms", "button", "save_changes"), "Enregistrer mes changements"),
       ]);
+      await tab.goto("/modules/lang/translations?workspace=modules");
+      await tab.fill({ role: "textbox", name: "Search keys and text" }, "dms.button.save_changes");
+      await ctx.verify("back in the installed modules, the row carries the Overridden badge", [tab.visible({ role: "button", name: "Open dms.button.save_changes in the panel" }), tab.shows(/Overridden/)]);
       resetProjectFiles(ctx);
     },
   },
@@ -272,4 +277,6 @@ export const journeys = guarded([
       await ctx.verify("the key has its new path with both texts", [ctx.equal("new", pick(moved.body, "row", "values"), { en: "Pay {price}", fr: "Payer {price}" }), ctx.equal("old", pick(old.body, "row"), undefined)]);
     },
   },
+  ...viewJourneys,
+  ...panelJourneys,
 ]);

@@ -33,14 +33,21 @@ Every key of the workspace as a row, every language as a column, with inline edi
 ## Sub-features
 
 - `edit-a-cell-saves-and-moves-on`: a click edits a cell, Enter saves it and opens the next row's cell, Escape cancels without writing.
-- `status-tabs-search-and-namespace`: the tabs count All, Missing, Complete and Issues; each narrows the rows; the search matches texts as well as paths; `?filter=missing` opens the incomplete keys.
+- `status-tabs-search-and-namespace`: the tabs count All, Incomplete (named Missing when one language is counted), Complete and Issues; each narrows the rows; the search matches texts as well as paths; `?filter=missing` opens the incomplete keys.
 - `key-panel-edits-every-language`: the panel for `shop.pay` shows its position, its variables and one field per language, Save writes both, and `?key=` reopens it after a reload.
 - `add-key-dialog`: the dialog needs the path and a text, cannot be submitted empty, Add another keeps it open, and the keys land in the base file and in French.
-- `delete-key-offers-undo`: Delete asks first, removes the key from every language, and Undo restores it.
+- `delete-key-offers-undo`: Delete asks first, naming the translations it removes (`its 2 translations (en, fr)`), removes the key from every language, and Undo restores it.
 - `export-menu-counts-the-view`: Export lists "This view" and "Everything" with their key and language counts.
-- `override-a-module-key-from-the-matrix`: Installed modules > a key > Override opens it in the project files, where saving a French text writes the override.
-- `language-and-namespace-filters`: `missingIn=` keeps the rows missing in one language and `namespace=` restricts the rows to one namespace.
+- `override-a-module-key-from-the-matrix`: Installed modules > a key > Override opens it in the project files, where saving a French text writes the override, and the row then carries the Overridden badge in the installed modules.
+- `language-and-namespace-filters`: `missingIn=` (the toolbar's language filter) keeps the rows missing in one language and `namespace=` restricts the rows to one namespace.
 - `key-panel-renames-and-closing-saves`: closing the key panel saves the language that changed, and Rename gives the key its new path with both texts.
+- `sidebar-badge-counts-the-project-files`: the sidebar lists Overview, Translation matrix and Translation queue under Translate, Workspaces and Workspace settings under Manage; the breadcrumb's Translations opens `/modules/lang/overview`; the matrix's badge counts the project files' one gap while another workspace is open, and goes once it is translated.
+- `missing-in-and-the-language-columns`: each column header reads its missing count with a coverage meter; with every column shown the incomplete rows are those missing in any language; Languages hides German, and the language filter set to German still keeps the row German lacks.
+- `groups-collapse-and-stay-as-they-were`: a namespace group collapses and opens again, and closing the key panel leaves a collapsed group collapsed.
+- `cell-line-break-and-failed-save`: Shift Enter adds a line break without saving; a save the backend cannot write (the language file made read-only) says Not saved with Retry and keeps the text, and Retry saves it.
+- `key-panel-moves-between-keys`: the header reads `2 of 3 · shop`; J and K, and the Next and Previous arrows, open the next and previous key; J typed in a field is text.
+- `key-panel-inserts-a-token-and-saves-on-leave`: Insert {price} puts the missing placeholder in the field, and leaving the field saves it without Save.
+- `key-panel-stays-open-on-a-failed-save`: Close with an unclosed brace keeps the panel open on the text and writes nothing; once valid, Close saves and closes; clearing the base text asks `Clear the base text of shop.title?` and clears nothing before it.
 
 ## How to get to it (user POV)
 
