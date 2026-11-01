@@ -10,8 +10,8 @@
     "@antelopejs/dms-frontend": ">=0.9.1 <0.10.0"
   },
   "scripts": {
-    "build": "ajs dms build",
-    "dev": "ajs dms dev",
+    "build": "pnpm --dir ../playground exec ajs dms build",
+    "dev": "pnpm --dir ../playground frontend:dev",
     "prepare-frontend": "ajs dms prepare",
     "format": "prettier --write .",
     "lint": "eslint .",
