@@ -7,7 +7,8 @@ interface ErrorBody {
 }
 
 interface MutationToastOptions {
-  title?: string
+  fallbackKey?: string
+  params?: Record<string, string | number | boolean>
   retry?: () => void
 }
 
@@ -24,25 +25,21 @@ export function serverErrorCode(error: unknown): string {
  * `$dms_lang.errors.*` key the server answers, with a Retry action.
  */
 export const useMutationToast = () => {
-  const { t } = useI18n()
-  const toast = useToast()
-  const translate = (key: string, params: Record<string, unknown>) =>
-    t(key, params)
+  const { presentError, resolveError } = useApiErrorPresenter()
+  const fallbackKey = 'error.500.description'
 
   /** The server's message, translated; the generic server error otherwise. */
   function errorMessage(error: unknown): string {
-    return resolveApiMessage(translate, resolveApiErrorMessage(error))
+    return resolveError(error, { fallbackKey })?.message ?? ''
   }
 
   function reportFailure(error: unknown, options: MutationToastOptions = {}) {
     const actions = options.retry
-      ? [{ label: t('dms_lang.actions.retry'), onClick: options.retry }]
+      ? [{ labelKey: 'dms_lang.actions.retry', onSelect: options.retry }]
       : undefined
-    toast.add({
-      title: options.title ?? t(resolveApiErrorTitle(error)),
-      description: errorMessage(error),
-      color: 'error',
-      icon: 'i-ph-warning-circle',
+    presentError(error, {
+      fallbackKey: options.fallbackKey ?? fallbackKey,
+      params: options.params,
       actions,
     })
   }
