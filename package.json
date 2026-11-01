@@ -68,14 +68,14 @@
   "dependencies": {
     "@antelopejs/interface-api": "file:.campaign/tgz/antelopejs-interface-api-f2a99b5.tgz",
     "@antelopejs/interface-api-util": "file:.campaign/tgz/antelopejs-interface-api-util-639f38b.tgz",
-    "@antelopejs/interface-core": "file:.campaign/tgz/antelopejs-interface-core-52413a9.tgz",
+    "@antelopejs/interface-core": "file:.campaign/tgz/antelopejs-interface-core-f7df541.tgz",
     "@antelopejs/interface-dms": "file:.campaign/tgz/antelopejs-interface-dms-0cfaaa3.tgz",
     "@intlify/message-compiler": "^11.1.12",
     "zod": "~3.24.2"
   },
   "devDependencies": {
     "@antelopejs/api": "file:.campaign/tgz/antelopejs-api-6afe3e2.tgz",
-    "@antelopejs/core": "file:.campaign/tgz/antelopejs-core-d74e513.tgz",
+    "@antelopejs/core": "file:.campaign/tgz/antelopejs-core-184eb90.tgz",
     "@antelopejs/dms": ">=0.11.0 <1.0.0",
     "@antelopejs/dms-frontend": "file:.campaign/tgz/antelopejs-dms-frontend-ee4e931.tgz",
     "@antelopejs/interface-data-api": "file:.campaign/tgz/antelopejs-interface-data-api-d8a868f.tgz",
@@ -112,8 +112,8 @@
       "@antelopejs/dms": "file:.campaign/tgz/antelopejs-dms-80e4dc1.tgz",
       "@antelopejs/api": "file:.campaign/tgz/antelopejs-api-6afe3e2.tgz",
       "@antelopejs/dms-frontend": "file:.campaign/tgz/antelopejs-dms-frontend-ee4e931.tgz",
-      "@antelopejs/interface-core": "file:.campaign/tgz/antelopejs-interface-core-52413a9.tgz",
-      "@antelopejs/core": "file:.campaign/tgz/antelopejs-core-d74e513.tgz"
+      "@antelopejs/interface-core": "file:.campaign/tgz/antelopejs-interface-core-f7df541.tgz",
+      "@antelopejs/core": "file:.campaign/tgz/antelopejs-core-184eb90.tgz"
     }
   },
   "antelopeJs": {
