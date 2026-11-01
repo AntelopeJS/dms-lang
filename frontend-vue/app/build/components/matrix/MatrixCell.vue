@@ -347,7 +347,10 @@ function escapeDraft() {
       <PlaceholderText v-if="props.failure.draft" :text="props.failure.draft" />
       <span v-else class="text-dimmed italic">—</span>
     </button>
-    <p class="text-error flex items-start gap-1 text-xs">
+    <p
+      v-if="props.failure.message"
+      class="text-error flex items-start gap-1 text-xs"
+    >
       <UIcon name="i-ph-warning-circle" class="mt-0.5 size-3.5 shrink-0" />
       <span>
         {{ $t('dms_lang.matrix.not_saved') }} · {{ props.failure.message }}
