@@ -53,7 +53,7 @@ Restart the backend, then the frontend, and open **Modules › Translations** (`
 | `@antelopejs/interface-api`      | `file:.campaign/tgz/antelopejs-interface-api-f206be7.tgz`      | `file:.campaign/tgz/antelopejs-interface-api-f206be7.tgz`      |
 | `@antelopejs/interface-api-util` | `file:.campaign/tgz/antelopejs-interface-api-util-cc740f8.tgz` | `file:.campaign/tgz/antelopejs-interface-api-util-cc740f8.tgz` |
 | `@antelopejs/interface-core`     | `>=0.2.4 <1.0.0`                                               | `0.2.6`                                                        |
-| `@antelopejs/interface-dms`      | `file:.campaign/tgz/antelopejs-interface-dms-50e3adc.tgz`      | `file:.campaign/tgz/antelopejs-interface-dms-50e3adc.tgz`      |
+| `@antelopejs/interface-dms`      | `file:.campaign/tgz/antelopejs-interface-dms-e0787e6.tgz`      | `file:.campaign/tgz/antelopejs-interface-dms-e0787e6.tgz`      |
 
 <!-- antelopejs-docs-compat:end -->
 
