@@ -59,9 +59,9 @@ Restart the backend, then the frontend, and open **Modules › Translations** (`
 
 | Package | Version |
 | --- | --- |
-| `@antelopejs/dms` | `>=0.11.0 <1.0.0` |
+| `@antelopejs/dms` | `>=0.13.0 <1.0.0` |
 | `@antelopejs/interface-dms` | `>=0.9.0 <1.0.0` |
-| `@antelopejs/dms-frontend` (renderer) | `>=0.9.1 <0.10.0` |
+| `@antelopejs/dms-frontend` (renderer) | `>=0.9.2 <0.10.0` |
 
 On DMS 0.8, use `@antelopejs/dms-lang` 0.1.
 
