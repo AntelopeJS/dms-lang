@@ -31,11 +31,7 @@ export default defineConfig({
       config: {},
     },
     dms: {
-      source: {
-        type: "package",
-        package: "@antelopejs/dms",
-        version: ">=0.11.0 <1.0.0",
-      },
+      source: { type: "local", path: "node_modules/@antelopejs/dms" },
       config: {
         /**
          * No frontend server runs here: the dashboard URL is the API, whose
@@ -92,11 +88,7 @@ export default defineConfig({
       },
     },
     api: {
-      source: {
-        type: "package",
-        package: "@antelopejs/api",
-        version: "1.5.0",
-      },
+      source: { type: "local", path: "node_modules/@antelopejs/api" },
       config: {
         publicBaseUrl: `http://127.0.0.1:${API_PORT}`,
         servers: [{ protocol: "http", host: "127.0.0.1", port: API_PORT }],

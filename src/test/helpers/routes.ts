@@ -39,9 +39,9 @@ export async function requestHandler(method: string, url: URL) {
     routeParameters: {},
     response: new HTTPResult(),
   };
-  const proto: unknown = handler.proto;
-  if (!isObject(proto)) throw new Error(`no controller at ${url.pathname}`);
-  const receiver: unknown = Object.create(proto);
+  const prototype: unknown = handler.controller.prototype;
+  if (!isObject(prototype)) throw new Error(`no controller at ${url.pathname}`);
+  const receiver: unknown = Object.create(prototype);
   if (!isObject(receiver)) throw new Error(`no receiver at ${url.pathname}`);
   const parameters = await Promise.all(
     handler.parameters.map((parameter) =>
