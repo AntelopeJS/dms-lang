@@ -1,7 +1,9 @@
-import { assertValidation } from "@antelopejs/interface-api-util";
+import {
+  assertValidation,
+  zodIssuesJson,
+} from "@antelopejs/interface-api-util";
 import { ZodError, type ZodType, type ZodTypeDef } from "zod";
 import { errorBody, errorMessage, errorStatus } from "../utils/errors";
-import { zodIssuesJson } from "../utils/zod-json";
 
 const KEY_PREFIX = "$";
 const INVALID_BODY = "invalid_body";
