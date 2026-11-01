@@ -374,3 +374,5 @@ $RECYCLE.BIN/
 # pnpm store
 .pnpm-store
 /frontend-vue/.output/
+
+/.agents/skills/verify-dms-lang/playground/node_modules

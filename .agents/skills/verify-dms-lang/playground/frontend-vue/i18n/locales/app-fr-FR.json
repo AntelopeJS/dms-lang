@@ -1,0 +1,10 @@
+{
+  "shop": {
+    "title": "Boutique",
+    "pay": "Payer {price}",
+    "total": "Total {montant}"
+  },
+  "auth": {
+    "login": "Connexion"
+  }
+}

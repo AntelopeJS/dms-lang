@@ -1,0 +1,13 @@
+diff --git a/frontend-vue/app/build/components/matrix/MatrixCell.vue b/frontend-vue/app/build/components/matrix/MatrixCell.vue
+index 76bfdd3..2116d98 100644
+--- a/frontend-vue/app/build/components/matrix/MatrixCell.vue
++++ b/frontend-vue/app/build/components/matrix/MatrixCell.vue
+@@ -178,7 +178,7 @@ const KEY_HANDLERS: Record<string, KeyHandler> = {
+     const hasModifier = event.ctrlKey || event.metaKey
+     if (hasModifier && event.shiftKey) return openPanel
+     if (hasModifier) return () => commit('stay')
+-    return event.shiftKey ? undefined : () => commit('down')
++    return event.shiftKey ? undefined : () => commit('stay')
+   },
+ }
+ 
