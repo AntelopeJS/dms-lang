@@ -1,5 +1,52 @@
 # Changelog
 
+## v0.5.0
+
+[compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.4.1...v0.5.0)
+
+### 🚀 Enhancements
+
+- **frontend:** Enforce the backend boundary in production builds ([#60](https://github.com/AntelopeJS/dms-lang/pull/60))
+
+### 🩹 Fixes
+
+- **playground:** Declare the frontend, and run the layer's scripts from the playground ([#53](https://github.com/AntelopeJS/dms-lang/pull/53))
+- **frontend:** Use the core API error presenter ([#103](https://github.com/AntelopeJS/dms-lang/pull/103))
+
+### 💅 Refactors
+
+- Clean up the tests, comments, types and oversize files ([#59](https://github.com/AntelopeJS/dms-lang/pull/59))
+- Clear the residual ratchet findings ([#63](https://github.com/AntelopeJS/dms-lang/pull/63))
+- **amp:** Narrow the forwarded location header with a JSDoc type guard ([#66](https://github.com/AntelopeJS/dms-lang/pull/66))
+
+### 📖 Documentation
+
+- **changelog:** Breaking changes of dms-lang 0.4.1 ([#52](https://github.com/AntelopeJS/dms-lang/pull/52))
+- **readme:** Link the DMS in the opening line ([#83](https://github.com/AntelopeJS/dms-lang/pull/83))
+- **readme:** Use one Discord invite ([#81](https://github.com/AntelopeJS/dms-lang/pull/81))
+
+### 📦 Build
+
+- Adopt the AntelopeJS guardrail pack ([#54](https://github.com/AntelopeJS/dms-lang/pull/54))
+- **deps:** Bump @antelopejs/tooling-configs to 0.2.17 ([#67](https://github.com/AntelopeJS/dms-lang/pull/67))
+
+### 🏡 Chore
+
+- Configure Renovate with the shared preset ([#55](https://github.com/AntelopeJS/dms-lang/pull/55))
+
+### ✅ Tests
+
+- **skills:** Add eval cases for dms-lang skills ([#58](https://github.com/AntelopeJS/dms-lang/pull/58))
+
+### 🤖 CI
+
+- Cache the test harness modules and MongoDB binary ([#57](https://github.com/AntelopeJS/dms-lang/pull/57))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli ([@Upd4ting](http://github.com/Upd4ting))
+- Alessandro Aloisio ([@alessaloisio](http://github.com/alessaloisio))
+
 ## v0.4.1
 
 [compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.4.0...v0.4.1)

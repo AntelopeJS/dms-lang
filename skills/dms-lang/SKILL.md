@@ -28,7 +28,7 @@ ajs project modules add @antelopejs/dms-lang
 - Writes to the project files go to the file defining the key; a new key goes to the file holding its longest namespace, else to `app-<xx-XX>.json`, else to the last file of the language. A rename stays in the key's file.
 - Frontend modules registered or removed after Lang started (in their own `construct`/`start`) are picked up as soon as they register (the DMS fires `FrontendModulesChanged`), no restart; file edits show on the next read.
 - `config.workspacesDir` stores the created workspaces outside the module's install folder (default `i18n-workspaces/` inside it, wiped by a reinstall).
-- Lang 0.2 requires `@antelopejs/dms` >=0.9 (interface-dms 0.7, renderer `@antelopejs/dms-frontend` 0.6); Lang 0.1 is the DMS 0.8 line.
+- Lang 0.4.1 requires `@antelopejs/dms` >=0.11 (interface-dms 0.9, renderer `@antelopejs/dms-frontend` 0.9); Lang 0.4.0 is the DMS 0.10 line.
 
 ## Workspaces
 

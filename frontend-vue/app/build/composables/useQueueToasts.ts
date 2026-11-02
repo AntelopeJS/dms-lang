@@ -14,10 +14,13 @@ const STEP_TOASTS: Partial<Record<QueueStep, string>> = {
 }
 
 async function copyText({ t, toast }: ToastContext, value: string) {
-  try {
-    await navigator.clipboard.writeText(value)
+  const copied = await navigator.clipboard.writeText(value).then(
+    () => true,
+    () => false,
+  )
+  if (copied) {
     toast.add({ title: t('dms_lang.queue.copied'), color: 'success' })
-  } catch {
+  } else {
     toast.add({
       title: t('dms_lang.queue.copy_failed'),
       description: value,
@@ -68,7 +71,7 @@ function showStep({ t, toast }: ToastContext, step: QueueStep | undefined) {
 function warnBlocked({ t, toast }: ToastContext) {
   toast.add({
     title: t('dms_lang.queue.blocked'),
-    color: 'error',
+    color: 'warning',
     icon: 'i-ph-warning-circle',
   })
 }

@@ -1,4 +1,4 @@
-## Compatibility
+## Requirements
 
 <!-- antelopejs-docs-compat:start -->
 
