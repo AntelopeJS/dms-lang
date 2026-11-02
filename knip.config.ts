@@ -29,6 +29,8 @@ knipConfig.ignoreUnresolved = [
  * when a file imports them by path.
  */
 knipConfig.workspaces = {
+  /** The docs scenes are loaded by `antelopejs-capture`, never imported. */
+  ".": { entry: ["docs/captures.ts"] },
   "frontend-vue": {
     entry: [
       "app/{components,build/components}/**/*.vue",
