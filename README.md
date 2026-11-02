@@ -11,7 +11,7 @@ Language and translation management for the AntelopeJS DMS.
 
 </div>
 
-![The Lang overview: coverage KPIs, languages ranked by coverage and a namespace heatmap](./docs/images/overview.png)
+![The Lang overview of the customer-portal workspace: coverage figures, languages ranked by coverage and a namespace heatmap](./docs/images/captures/lang-overview.webp)
 
 ## What it does
 
