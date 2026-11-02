@@ -1,3 +1,7 @@
+# `playground`
+
+A DMS project that loads `@antelopejs/dms-lang` from the parent folder, with editing on and a writable app layer. From the repository root, `pnpm dev` starts its backend on port 5010 and `pnpm frontend:dev` starts its dashboard on port 3001. It reads MongoDB at `MONGO_URL`, or `mongodb://localhost:27017` when that is unset.
+
 ## Compatibility
 
 <!-- antelopejs-docs-compat:start -->

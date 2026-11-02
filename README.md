@@ -1,11 +1,11 @@
 <div align="center">
 
-# @antelopejs/dms-lang
+# `@antelopejs/dms-lang`
 
-<a href="https://www.npmjs.com/package/@antelopejs/dms-lang"><img alt="npm" src="https://img.shields.io/npm/v/@antelopejs/dms-lang?style=for-the-badge&labelColor=000000&color=000000"></a>
-<a href="./LICENSE"><img alt="License" src="https://img.shields.io/npm/l/@antelopejs/dms-lang?style=for-the-badge&labelColor=000000&color=000000"></a>
-<a href="https://discord.gg/sjK28QHrA7"><img alt="Discord" src="https://img.shields.io/badge/Discord-18181B?logo=discord&style=for-the-badge&color=000000"></a>
-<a href="https://dms.antelopejs.com/docs/modules/lang"><img alt="Documentation" src="https://img.shields.io/badge/Docs-18181B?style=for-the-badge&color=000000"></a>
+<a href="https://www.npmjs.com/package/@antelopejs/dms-lang"><img alt="npm" src="https://img.shields.io/npm/v/@antelopejs/dms-lang?style=for-the-badge&labelColor=000000&color=000000" data-illustration></a>
+<a href="./LICENSE"><img alt="License" src="https://img.shields.io/npm/l/@antelopejs/dms-lang?style=for-the-badge&labelColor=000000&color=000000" data-illustration></a>
+<a href="https://discord.gg/sjK28QHrA7"><img alt="Discord" src="https://img.shields.io/badge/Discord-18181B?logo=discord&style=for-the-badge&color=000000" data-illustration></a>
+<a href="https://dms.antelopejs.com/docs/modules/lang"><img alt="Documentation" src="https://img.shields.io/badge/Docs-18181B?style=for-the-badge&color=000000" data-illustration></a>
 
 Language and translation management for the AntelopeJS DMS.
 
@@ -30,19 +30,18 @@ ajs project modules add @antelopejs/dms-lang
 
 ## Quick start
 
-The module starts read-only. Allow writes on the process that edits translations:
+The command adds an `@antelopejs/dms-lang` entry to `antelope.config.ts`. The module starts read-only. To allow writes on the process that edits translations, set `editable: true` in that entry:
 
 ```ts fragment
-// antelope.config.ts
-"dms-lang": {
-  source: { type: "package", package: "@antelopejs/dms-lang", version: "^0.2.0" },
+"@antelopejs/dms-lang": {
+  source: { type: "package", package: "@antelopejs/dms-lang", version: "<latest>" },
   config: {
     editable: true,
   },
 },
 ```
 
-Restart the backend, then the frontend, and open **Modules › Translations** (`/modules/lang/overview`). To edit your own frontend module's locale files, register it with `options: { dmsI18nAppLayer: true }`: see [Installation](https://dms.antelopejs.com/docs/modules/lang/installation).
+Restart the backend, then the frontend, and open **Modules › Translations** (`/modules/lang/overview`). To edit your own frontend module's locale files, register it with `options: { dmsI18nAppLayer: true }`, as [Installation](https://dms.antelopejs.com/docs/modules/lang/installation) shows.
 
 ## Compatibility
 
@@ -57,7 +56,7 @@ Restart the backend, then the frontend, and open **Modules › Translations** (`
 
 <!-- antelopejs-docs-compat:end -->
 
-The module also needs a DMS backend in a release that implements the `@antelopejs/interface-dms` range above, and the `@antelopejs/dms-frontend` renderer in the range its frontend module declares in `engines["@antelopejs/dms-frontend"]` of `frontend-vue/package.json`; the `ajs dms` CLI refuses to build it with a renderer outside that range.
+The module also needs a DMS backend in a release that implements the `@antelopejs/interface-dms` range above. It needs the `@antelopejs/dms-frontend` renderer in the range that `engines["@antelopejs/dms-frontend"]` of `frontend-vue/package.json` declares. The `ajs dms` CLI refuses to build the module with a renderer outside that range.
 
 ## Documentation
 
@@ -72,7 +71,7 @@ The canonical guide lives in [`docs/`](./docs), including the [supported extensi
 
 ## Contributing
 
-Read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a pull request. The playground connects to MongoDB at `mongodb://localhost:27017`; set `MONGO_URL` to use another instance.
+Read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a pull request. The playground connects to MongoDB at `mongodb://localhost:27017`. To use another instance, set `MONGO_URL`.
 
 ```bash
 pnpm install
@@ -86,10 +85,11 @@ pnpm test
 <details>
 <summary>Repository notes</summary>
 
-- The backend registers `frontend-vue/dms.frontend.ts` through `AddFrontendModule` with the Vue 3 renderer, under the `DmsLang` component prefix: every component of `app/components` and `app/build/components` is registered under it, and the backend pages name them (`CustomComponent("DmsLangTranslationMatrix")`). `dms.frontend.build.ts` auto-imports `app/composables`, `app/utils` and `app/types`; `app/build/` is private and imported by path.
-- The pages read their data with the DMS's `useApiData`, which the server render hands to the browser with the page. The public language files (`/i18n/**`) are declared to the frontend server as a backend prefix without a session (`backendProxies`).
-- The module compiles against the published `@antelopejs/interface-dms`; `@antelopejs/dms` and `@antelopejs/dms-frontend` are development dependencies, needed by the tests and the playground.
-- `pnpm test:unit` checks locale discovery, the coverage, placeholder and message helpers, and renders the workspace composables on a server (`tests/frontend-runtime.mjs`). The backend tests (`src/test`) run with `pnpm test` only, since an interface refuses to load outside the AntelopeJS runtime. `pnpm test:frontend` compiles the module against the published DMS frontend with the renderer's source verifier.
+- The backend registers the `frontend-vue` module through `AddFrontendModule` with the `vue` renderer. `frontend-vue/dms.frontend.ts` registers every component of `app/components` and `app/build/components` under the `DmsLang` component prefix, and the backend pages name them, as in `CustomComponent("DmsLangTranslationMatrix")`.
+- `dms.frontend.build.ts` auto-imports `app/composables`, `app/utils` and `app/types`. The code in `app/build/` is private and imported by path.
+- The pages read their data with the DMS's `useApiData`, which the server render hands to the browser with the page. The module declares the public language files (`/i18n/**`) to the frontend server as a backend prefix without a session (`backendProxies`).
+- The module compiles against the published `@antelopejs/interface-dms`. `@antelopejs/dms` and `@antelopejs/dms-frontend` are development dependencies for the tests and the playground.
+- `pnpm test:unit` runs the locale discovery and write target suites of `src/test` and the `node:test` suites in `tests`. The other `src/test` suites run with `pnpm test` only, since an interface refuses to load outside the AntelopeJS runtime. `pnpm test:frontend` checks `frontend-vue` against the installed DMS frontend layer with `ajs dms verify-source`.
 
 </details>
 
