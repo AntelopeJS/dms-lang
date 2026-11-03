@@ -163,14 +163,14 @@ $C doors .agents/skills/verify-dms-lang/seeded-doors/data.patch
 
 List these under `notVerified` in the judgement of every verdict; no journey reaches them:
 
-- the language download of the queue (`Download fr.json`, a link to the API, not driven);
-- "Show more" after 150 matrix rows (the list is virtualised);
+- the matrix's 100-row batches (the list draws the next rows as the end scrolls into view, which no step scrolls to);
 - the heatmap colours and the dark mode;
 - a member who is not the owner, and so another user seeing a change (needs the invitation flow);
 - a frontend module removed while Lang runs (only taking an AntelopeJS module down removes one);
 - `workspacesDir` itself (the verification playground pins it to the run's `HOME`);
 - the "Saving…" and "Saved" flash of a cell (it lasts 1.8 s, less than a step's capture under load); Not saved and Retry are driven;
-- what Copy puts on the clipboard (the journeys check the button, not the clipboard);
+- the regional fallback of the public files (`fr-BE.json` served by `fr`, its `Content-Language`): the docs and the backend disagree (dms-lang#85), so no journey asserts either side;
+- the placeholder tokens' look and the "Missing" tab's name (the docs say Incomplete, the dashboard says Missing for one language; both names pass);
 - the language filter's "any language" with a column hidden: the docs say whatever columns are shown, the dashboard counts only the shown columns (issue draft `dms-lang-matrix-every-language-follows-the-columns`);
 - layout: the key panel's header cut at two lines, its footer on the drawer's bottom edge;
 - the repository's own playground (`pnpm dev`, `pnpm frontend:dev`) and `ajs project modules add`, which are the developer's commands, not the module's.

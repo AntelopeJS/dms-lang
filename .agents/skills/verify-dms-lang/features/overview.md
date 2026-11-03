@@ -35,6 +35,11 @@ How translated is this workspace: four figures, the languages least complete fir
 - `remove-a-language-asks-for-its-code`: the row menu lists the keys a new base lacks and can be cancelled; removing German needs its code typed and deletes `de.json`.
 - `complete-workspace-has-no-missing-action`: a complete workspace has 0 missing translations, 100% average coverage and no Translate N missing action; Translate opens the queue and Edit base texts the matrix.
 - `quick-actions-in-the-command-palette`: Ctrl K offers the four Lang actions, Add a translation key opens its dialog and the `action=add-language` deep link opens the picker.
+- `heatmap-shows-six-by-six-and-links-to-the-matrix`: The heatmap shows at most six namespaces and six languages and then offers See all in the matrix; a smaller workspace hides nothing.
+- `heatmap-cell-without-gaps-opens-the-namespace`: A heatmap cell of a complete language opens the matrix on its namespace without the missing filter.
+- `languages-rank-the-base-first-then-least-complete`: The languages table pins the base language on top and lists the others least complete first.
+- `add-language-belongs-to-created-editable-workspaces`: The Add language action and an Editable scope bar show on a workspace you created, not on the project files or the installed modules (Read-only).
+- `a-workspace-without-keys-shows-its-first-steps`: A workspace you created with no key yet shows its first steps in place of figures and a heatmap.
 
 ## How to get to it (user POV)
 

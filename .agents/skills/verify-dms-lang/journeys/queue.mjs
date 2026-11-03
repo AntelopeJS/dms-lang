@@ -1,3 +1,5 @@
+import { queueKeyJourneys } from "./parts/queue-keys.mjs";
+import { moreQueueJourneys } from "./parts/queue-more.mjs";
 import { clickUntil, freshId, guarded, lang, pick, readLocaleFile, seedWorkspace } from "../lang.mjs";
 
 /** @typedef {import("../lang.mjs").Ctx} Ctx */
@@ -158,4 +160,6 @@ export const journeys = guarded([
       await ctx.verify("the matrix opens on the keys French lacks", [tab.at(/^\/modules\/lang\/translations$/), tab.visible({ role: "button", name: "Open shop.pay in the panel" }), tab.visible({ role: "button", name: "Open shop.title in the panel" }, { hidden: true })]);
     },
   },
+  ...queueKeyJourneys,
+  ...moreQueueJourneys,
 ]);

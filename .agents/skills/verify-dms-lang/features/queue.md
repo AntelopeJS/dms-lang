@@ -24,6 +24,15 @@ One language, one key at a time, with the base text, the keys that come next and
 - `base-and-unknown-language`: the base language and an unknown `?locale=` each get their own message.
 - `escape-then-s-skips`: Escape then S skips, Escape then P goes back, and Open in matrix lists the keys French lacks.
 - `overflow-menu-makes-base-or-removes`: More actions > Remove language names the public file and removes German only once `de` is typed; Make base language lists the keys French lacks and makes French the base.
+- `ctrl-s-saves-and-stays`: Ctrl S saves the text and stays on the key.
+- `queue-deep-links`: A queue URL without a language asks for one, mode= picks the keys walked, key= starts on a key and namespace= scopes the queue.
+- `open-in-matrix-keeps-the-namespace`: Open in matrix filters on the keys the language lacks, in the namespace the queue is scoped to; on the base language it opens that namespace unfiltered.
+- `download-the-language-file`: Download <code>.json saves the messages of the language, and removing a language offers the same file first.
+- `a-draft-with-issues-needs-a-second-press`: A draft that uses a variable the base text lacks is saved on the second press, a broken one is not saved, and clearing a text asks first.
+- `drafts-survive-a-language-switch`: A text typed and not saved is still there after going to another language and back.
+- `skipped-keys-come-back-and-the-end-offers-more`: Skipped keys come back once the others are done, and a finished pass offers to review the issues.
+- `a-namespace-the-language-lacks-leaves-the-url`: A queue link naming a namespace that does not exist walks every key.
+- `the-queue-says-what-is-wrong-with-a-draft`: While a draft is typed the queue names each problem: a variable left out, one the base lacks, a space at an end, a lone @, an unclosed brace and another number of plural forms.
 
 ## How to get to it (user POV)
 

@@ -53,6 +53,22 @@ Every key of the workspace as a row, every language as a column, with inline edi
 
 - `back-closes-the-panel`: with the key panel opened from the matrix, the browser's Back (`tab.page.goBack()`) closes it, drops `key=` and stays on the matrix. A run whose Back leaves the matrix is tried again from a fresh matrix, up to three times; a Back that never closes the panel fails every time.
 - `width-is-kept-on-this-device`: the panel's grip (`separator "Resize the drawer"`) is resized with six presses of ArrowLeft, its width is read from `aria-valuenow`, and the reload opens the panel at the same width.
+- `cell-shortcuts`: In a cell Ctrl Enter saves and leaves it, Tab saves and edits the next cell, Shift Tab goes back, Ctrl Shift Enter opens the key panel with the typed text.
+- `n-and-shift-n-edit-missing-translations`: Outside a field N edits the next missing translation and Shift N the previous one.
+- `dragging-a-language-reorders-the-columns`: The Languages menu lists the columns with a drag handle each, and dragging a language moves its column.
+- `add-key-shows-three-languages`: Add key shows three languages, the base first, and Show n more languages opens the others.
+- `ctrl-enter-in-the-panel-saves-and-opens-the-next-key`: Ctrl Enter in a key panel field saves the texts and opens the next key.
+- `escape-saves-and-closes-the-panel`: Escape in the key panel saves the changed language and closes it.
+- `a-cell-saves-when-it-loses-focus`: A cell saves its text when it loses focus, and one that leaves out a placeholder offers Insert for it.
+- `matrix-deep-links-filter-and-search`: ?filter= keeps the complete, the issue or every key and ?q= searches the keys and the texts.
+- `issues-tab-holds-keys-with-no-base-text`: The Issues tab keeps a key whose base text is missing, next to the keys with a translation to review.
+- `overridden-key-offers-revert-to-the-module-text`: The panel of a key that overrides a module text offers Revert to module text in place of Delete, and hides Rename.
+- `override-from-the-row`: A row of the installed modules offers Override, which opens the key in the project files.
+- `finished-rows-stay-and-are-counted`: A row just translated stays in the Missing view, the footer counts what is left, and a banner counts the keys done and hides them.
+- `an-empty-matrix-says-why`: A workspace without keys offers to add one; a search that matches nothing offers to show every key.
+- `filters-a-workspace-cannot-have-are-dropped`: A link naming a language or a namespace the workspace lacks shows every key.
+- `arrow-keys-move-between-cells`: The arrow keys move the focus between the cells of the grid.
+- `a-cell-keeps-what-cannot-be-saved`: A text vue-i18n cannot compile stays Not saved in its cell and writes nothing; clearing the base text asks first.
 
 ## How to get to it (user POV)
 

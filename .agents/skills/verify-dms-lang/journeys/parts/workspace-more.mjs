@@ -1,0 +1,67 @@
+import { directionOf, namesInOrder } from "../../files.mjs";
+import { freshId, lang, list, seedWorkspace } from "../../lang.mjs";
+
+/** @typedef {import("../../lang.mjs").Ctx} Ctx */
+
+/** The Workspaces page's sort and search, the direction of a right-to-left language, and what a header action hides. */
+export const moreWorkspaceJourneys = [
+  {
+    id: "workspaces-sort-and-search-by-description-and-type",
+    title: "the sort menu orders the cards by name or least translated first, and the search matches the id, the description and the type",
+    entryPoint: "/modules/lang/workspaces",
+    async run(/** @type {Ctx} */ ctx) {
+      const before = await lang(ctx, "list the workspaces", "GET", "/workspaces");
+      for (const workspace of list(before.body, "workspaces")) {
+        if (workspace.kind === "added") await lang(ctx, `delete ${String(workspace.id)}`, "DELETE", "/workspace", { id: workspace.id });
+      }
+      const alpha = freshId(ctx, "zz-alpha").replace(/^zz-alpha/, "sa");
+      const beta = freshId(ctx, "zz-beta").replace(/^zz-beta/, "sb");
+      await seedWorkspace(ctx, alpha, { locales: ["en", "fr"], keys: { "a.one": { en: "One", fr: "Un" } } });
+      await seedWorkspace(ctx, beta, { locales: ["en", "fr"], keys: { "a.one": { en: "One" } } });
+      await lang(ctx, "describe the second", "PATCH", "/workspace", { id: beta, description: "Texts of the ferryboat app", type: "mobile" });
+      const tab = await ctx.tab("admin");
+      await tab.signIn("admin");
+      await tab.goto("/modules/lang/workspaces");
+      await tab.click({ role: "combobox", name: "Sort workspaces" });
+      await tab.click({ role: "option", name: "Name" });
+      await ctx.verify("by name the created workspaces follow their ids", [ctx.equal("order", await namesInOrder(tab, "heading", [alpha, beta]), `${alpha}|${beta}`)]);
+      await tab.click({ role: "combobox", name: "Sort workspaces" });
+      await tab.click({ role: "option", name: "Least translated first" });
+      await ctx.verify("least translated first puts the incomplete one before the complete one", [ctx.equal("order", await namesInOrder(tab, "heading", [alpha, beta]), `${beta}|${alpha}`)]);
+      await tab.fill({ role: "textbox", name: "Search by name or description" }, "ferryboat");
+      await ctx.verify("the search matches a description", [tab.visible({ role: "heading", name: beta }), tab.visible({ role: "heading", name: alpha }, { hidden: true })]);
+      await tab.fill({ role: "textbox", name: "Search by name or description" }, "mobile");
+      await ctx.verify("the search matches the type", [tab.visible({ role: "heading", name: beta }), tab.visible({ role: "heading", name: alpha }, { hidden: true })]);
+    },
+  },
+  {
+    id: "right-to-left-languages-are-written-right-to-left",
+    title: "the queue sets dir=rtl on the text of an Arabic translation and dir=ltr on an English one",
+    entryPoint: "/modules/lang/language?locale=ar",
+    async run(/** @type {Ctx} */ ctx) {
+      const id = freshId(ctx, "rtl");
+      await seedWorkspace(ctx, id, { locales: ["en", "ar", "fr"], keys: { "a.one": { en: "One" } } });
+      const tab = await ctx.tab("admin");
+      await tab.signIn("admin");
+      await tab.goto(`/modules/lang/language?workspace=${id}&locale=ar`);
+      await tab.visible({ role: "textbox", name: "One" });
+      await ctx.verify("the Arabic field is right to left", [ctx.equal("dir", await directionOf(tab, { role: "textbox", name: "One" }), "rtl")]);
+      await tab.goto(`/modules/lang/language?workspace=${id}&locale=fr`);
+      await tab.visible({ role: "textbox", name: "One" });
+      await ctx.verify("the French field is left to right", [ctx.equal("dir", await directionOf(tab, { role: "textbox", name: "One" }), "ltr")]);
+    },
+  },
+  {
+    id: "installed-modules-take-no-new-key",
+    title: "the matrix of the installed modules offers no Add key, and the matrix of the project files does",
+    entryPoint: "/modules/lang/translations",
+    async run(/** @type {Ctx} */ ctx) {
+      const tab = await ctx.tab("admin");
+      await tab.signIn("admin");
+      await tab.goto("/modules/lang/translations?workspace=modules");
+      await ctx.verify("the installed modules ship their keys: no Add key", [tab.shows(/Read-only/), tab.visible({ role: "link", name: "Add key" }, { hidden: true }), tab.visible({ role: "button", name: "Add key" }, { hidden: true })]);
+      await tab.goto("/modules/lang/translations?workspace=default");
+      await ctx.verify("the project files take keys", [tab.visible({ role: "link", name: "Add key" })]);
+    },
+  },
+];

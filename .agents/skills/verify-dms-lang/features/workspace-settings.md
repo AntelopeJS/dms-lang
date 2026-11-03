@@ -39,6 +39,18 @@ The Workspaces page lists every set of translation files as a card and creates n
 - `import-reads-a-single-language-file`: a file named `it.json` is read as Italian: the dialog offers Italiano as the base, and Import creates the workspace with that file's texts.
 - `fetch-snippet-loads-the-base-first`: the fetch setup merges the base, then the language, then the region, so the region wins.
 - `toolbar-appears-from-four-workspaces`: the journey deletes the created workspaces, then with three workspaces (the project files, the installed modules and one created) the Workspaces page has no search field or sort menu, and with a fourth it has both and the search narrows the cards.
+- `picker-marks-added-languages-and-finds-any-name`: The language picker lists a language already in the workspace apart and disabled, and finds a language by its name in the interface language too.
+- `card-buttons-switch-browse-and-open`: A card's button reads Switch, Browse on the installed modules and Open on the current workspace, and Browse opens the matrix.
+- `name-length-and-first-character`: A workspace name has at most 64 characters and starts with a letter or a digit; the dialog refuses the same names.
+- `import-refuses-files-that-are-no-workspace`: Import says a JSON that is neither a backup nor a JSON of languages is none, and a backup of a newer version asks to update the module; neither opens the dialog.
+- `import-reads-a-json-of-languages`: Import reads a JSON holding one object per language code, offers the file's languages and creates the workspace under the typed name.
+- `settings-page-explains-itself`: The settings page links to the overview, keeps the name read-only with its warning, lists the languages with their coverage, and shows the About card; the project files show where their texts live instead.
+- `copy-puts-the-url-and-the-setup-on-the-clipboard`: The Copy buttons of Use in your app put the public URL and the snippet on the clipboard.
+- `scope-menu-gets-a-filter-from-seven-workspaces`: The workspace menu of the scope bar gets a filter field from seven workspaces on, and describes each workspace by its kind and languages.
+- `switching-workspace-leaves-the-filters-behind`: Switching workspace from the scope bar keeps the page and drops the filters and the search of the workspace left.
+- `workspaces-sort-and-search-by-description-and-type`: The sort menu orders the cards by name or least translated first, and the search matches the id, the description and the type.
+- `right-to-left-languages-are-written-right-to-left`: The queue sets dir=rtl on the text of an Arabic translation and dir=ltr on an English one.
+- `installed-modules-take-no-new-key`: The matrix of the installed modules offers no Add key, and the matrix of the project files does.
 
 ## How to get to it (user POV)
 

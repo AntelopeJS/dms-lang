@@ -1,3 +1,4 @@
+import { limitJourneys } from "./parts/overview-limits.mjs";
 import { freshId, guarded, lang, list, pick, seedWorkspace, workspaceFiles } from "../lang.mjs";
 
 /** @typedef {import("../lang.mjs").Ctx} Ctx */
@@ -110,6 +111,12 @@ export const journeys = guarded([
         ctx.status(imported, 200),
         ctx.equal("French progress", pick(flat.body, "localeProgress", "fr"), 99),
         ctx.equal("German progress", pick(flat.body, "localeProgress", "de"), 100),
+      ]);
+      const tab = await ctx.tab("admin");
+      await tab.signIn("admin");
+      await tab.goto(`/modules/lang/overview?workspace=${id}`);
+      await ctx.verify("the Overview rounds the same way: French 99%", [
+        tab.visible({ role: "cell", name: "Français fr · 99% · 1 missing" }),
       ]);
     },
   },
@@ -239,4 +246,5 @@ export const journeys = guarded([
       ]);
     },
   },
+  ...limitJourneys,
 ]);

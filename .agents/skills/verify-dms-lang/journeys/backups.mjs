@@ -1,3 +1,4 @@
+import { readJourneys } from "./parts/api-reads.mjs";
 import { freshId, guarded, lang, list, pick, raw, recordRaw, seedWorkspace, toRow, workspaceFiles } from "../lang.mjs";
 
 /** @typedef {import("../lang.mjs").Ctx} Ctx */
@@ -128,4 +129,5 @@ export const journeys = guarded([
       await ctx.verify("a backup needs no format stamp, no details and no languages list", [ctx.status(minimal, 200), ctx.equal("defaultLocale", pick(minimal.body, "defaultLocale"), "en")]);
     },
   },
+  ...readJourneys,
 ]);

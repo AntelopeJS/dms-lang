@@ -20,6 +20,8 @@ Download backup saves every language of a workspace as one JSON file; Import cre
 - `backup-refusals`: error path: a taken name is 409, a reserved name, another format, a newer version, a non-string text, a message vue-i18n cannot compile and texts of an undeclared language are 400, and none of them creates a workspace.
 - `export-one-language-or-all`: `GET /export?locale=fr` is that language's tree, without `locale` every language, an unknown language is 404.
 - `empty-workspace-roundtrip`: a workspace without keys exports empty trees for every language, backs up, and restores with its languages; a backup with only an id and messages imports.
+- `read-routes-carry-what-the-docs-name`: Each read route gives what the extending page says it does: the workspaces with their public base and permission ids, the summary, the overview figures, the language progress, the About card, the endpoint and the languages table.
+- `errors-carry-a-message-key-and-a-code`: An unknown workspace answers 404 unknown_workspace with a $dms_lang.errors message key on every read route, the project files answer when ?workspace= is omitted, and the public 404 names the workspace and the locale.
 
 ## How to get to it (user POV)
 

@@ -27,6 +27,12 @@ export const inputJourneys = [
         tab.visible({ role: "option", name: /^Français French fr$/ }),
         tab.visible({ role: "option", name: /^french/i }, { hidden: true }),
       ]);
+      await tab.fill(SEARCH, "suisse");
+      await ctx.verify("a regional word finds the Swiss variants", [tab.visible({ role: "option", name: /fr-CH$/ }), tab.visible({ role: "option", name: /de-CH$/ }), tab.visible({ role: "option", name: /it-CH$/ })]);
+      await tab.fill(SEARCH, "brasil");
+      await ctx.verify("a word of a name finds Português (Brasil)", [tab.visible({ role: "option", name: /pt-BR$/ })]);
+      await tab.fill(SEARCH, "fra");
+      await ctx.verify("a three-letter code finds the two-letter language", [tab.visible({ role: "option", name: /^Français French fr$/ })]);
       await tab.fill(SEARCH, "fr_FR");
       await ctx.verify("fr_FR finds the code fr-FR", [tab.visible({ role: "option", name: /^Français \(France\) French \(France\) fr-FR$/ })]);
       await tab.click({ role: "option", name: /^Français \(France\) French \(France\) fr-FR$/ });
@@ -131,4 +137,27 @@ export const inputJourneys = [
       ]);
     },
   },
+  {
+    id: "picker-marks-added-languages-and-finds-any-name",
+    title: "the language picker lists a language already in the workspace apart and disabled, and finds a language by its name in the interface language too",
+    entryPoint: "/modules/lang/workspace > Add language",
+    async run(/** @type {Ctx} */ ctx) {
+      const id = freshId(ctx, "named");
+      await seedWorkspace(ctx, id, { locales: ["en", "pt-BR"] });
+      const tab = await ctx.tab("admin");
+      await tab.signIn("admin");
+      await tab.goto(`/modules/lang/workspace?workspace=${id}`);
+      await clickUntil(tab, { role: "button", name: "Add language", exact: true }, { role: "dialog" });
+      await tab.fill(SEARCH, "portugues");
+      await ctx.verify("the Portuguese variants are offered and the one added is marked and disabled", [
+        tab.visible({ role: "option", name: /^Português Portuguese pt$/ }),
+        tab.visible({ role: "option", name: /^Português \(Portugal\) Portuguese \(Portugal\) pt-PT$/ }),
+        tab.visible({ role: "option", name: /^Português \(Brasil\) pt-BR Added$/ }),
+        tab.enabled({ role: "option", name: /^Português \(Brasil\) pt-BR Added$/ }, { disabled: true }),
+      ]);
+      await tab.fill(SEARCH, "Royaume-Uni");
+      await ctx.verify("a name in another language of the interface finds the language", [tab.visible({ role: "option", name: /en-GB$/ })]);
+    },
+  },
 ];
+

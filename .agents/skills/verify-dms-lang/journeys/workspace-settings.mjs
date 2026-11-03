@@ -1,5 +1,7 @@
-import { chooseFile, downloadOf } from "../files.mjs";
+import { downloadOf } from "../files.mjs";
 import { inputJourneys } from "./parts/workspace-input.mjs";
+import { pageJourneys } from "./parts/workspace-pages.mjs";
+import { moreWorkspaceJourneys } from "./parts/workspace-more.mjs";
 import { clickUntil, eventually, freshId, guarded, lang, list, pick, raw, readLocaleFile, recordRaw, seedWorkspace, workspaceFiles } from "../lang.mjs";
 
 /** @typedef {import("../lang.mjs").Ctx} Ctx */
@@ -232,36 +234,6 @@ export const journeys = guarded([
     },
   },
   {
-    id: "import-reads-a-chosen-backup",
-    title: "Import opens the file chooser, reads the chosen backup file and creates the workspace under its name",
-    entryPoint: "/modules/lang/workspaces > Import…",
-    async run(/** @type {Ctx} */ ctx) {
-      const id = freshId(ctx, "chosen");
-      const backup = {
-        format: "dms-lang.workspace",
-        version: 1,
-        id,
-        defaultLocale: "en",
-        locales: [{ code: "en" }, { code: "fr" }],
-        messages: { en: { shop: { title: "Shop" } }, fr: { shop: { title: "Boutique" } } },
-      };
-      const tab = await ctx.tab("admin");
-      await tab.signIn("admin");
-      await tab.goto("/modules/lang/workspaces");
-      const chosen = await chooseFile(tab, { role: "button", name: "Import…" }, { name: `${id}.json`, mimeType: "application/json", buffer: Buffer.from(JSON.stringify(backup)) });
-      await ctx.verify("Import opens the file chooser and takes the file", [ctx.holds("file chooser", chosen, "no file chooser opened")]);
-      await ctx.verify("the dialog names the workspace it will create", [tab.visible({ role: "dialog", name: "Import a workspace" })]);
-      await tab.click({ role: "button", name: "Import workspace" });
-      const created = await eventually(() => lang(ctx, "read the imported workspace", "GET", `/workspace?workspace=${id}`), (answer) => answer.status === 200);
-      const french = readLocaleFile(ctx, id, "fr");
-      await ctx.verify("the workspace holds the file's languages and texts", [
-        ctx.status(created, 200),
-        ctx.equal("locales", list(created.body, "locales").map((locale) => locale.code), ["en", "fr"]),
-        ctx.equal("French file", french, { shop: { title: "Boutique" } }),
-      ]);
-    },
-  },
-  {
     id: "delete-needs-the-name-typed",
     title: "Delete lists what it removes and deletes only after the workspace name is typed",
     entryPoint: "/modules/lang/workspace > Danger zone > Delete…",
@@ -294,4 +266,6 @@ export const journeys = guarded([
     },
   },
   ...inputJourneys,
+  ...pageJourneys,
+  ...moreWorkspaceJourneys,
 ]);

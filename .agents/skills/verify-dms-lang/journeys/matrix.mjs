@@ -2,6 +2,9 @@ import { join } from "node:path";
 import { panelJourneys } from "./parts/matrix-panel.mjs";
 import { exportJourneys } from "./parts/matrix-export.mjs";
 import { foldingJourneys } from "./parts/matrix-folding.mjs";
+import { keyJourneys } from "./parts/matrix-keys.mjs";
+import { moreMatrixJourneys } from "./parts/matrix-more.mjs";
+import { panelKeyJourneys } from "./parts/matrix-panel-keys.mjs";
 import { incompleteTab, viewJourneys } from "./parts/matrix-view.mjs";
 import { freshId, guarded, lang, pick, projectLocalesDir, readJsonFile, readLocaleFile, resetProjectFiles, seedWorkspace, workspaceFiles } from "../lang.mjs";
 
@@ -281,6 +284,9 @@ export const journeys = guarded([
   },
   ...exportJourneys,
   ...foldingJourneys,
+  ...keyJourneys,
+  ...moreMatrixJourneys,
+  ...panelKeyJourneys,
   ...viewJourneys,
   ...panelJourneys,
 ]);
