@@ -148,8 +148,9 @@ async function updateDetails(
 ): Promise<boolean> {
   const { workspaces } = context
   return context.failures.tryMutate(
-    async () => workspaces.patchSummary(await workspaces.updateWorkspace(id, change)),
-    { title: context.t('dms_lang.workspace_details.save_failed') },
+    async () =>
+      workspaces.patchSummary(await workspaces.updateWorkspace(id, change)),
+    { fallbackKey: 'dms_lang.workspace_details.save_failed' },
   )
 }
 
@@ -158,10 +159,13 @@ async function downloadBackup(
   workspace: string,
 ): Promise<void> {
   try {
-    downloadJson(`${workspace}.json`, await context.workspaces.fetchBackup(workspace))
+    downloadJson(
+      `${workspace}.json`,
+      await context.workspaces.fetchBackup(workspace),
+    )
   } catch (error) {
     context.failures.reportFailure(error, {
-      title: context.t('dms_lang.errors.export_failed'),
+      fallbackKey: 'dms_lang.errors.export_failed',
     })
   }
 }

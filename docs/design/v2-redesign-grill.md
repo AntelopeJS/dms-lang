@@ -1,11 +1,17 @@
-# dms-lang v2 redesign: grill session
+---
+title: v2 redesign decision log
+description: The questions asked and the answers taken while moving the Lang module to its v2 design and to newer DMS releases.
+mode: explanation
+---
 
-Self-answered design review of the dms-lang migration to `dms` 0.6 /
+This page is a dated record of the v2 redesign. The module docs describe current behaviour, and they win where this record differs.
+
+Self-answered design review of the `dms-lang` migration to `dms` 0.6 /
 `interface-dms` 0.4 / `dms-frontend` 0.5 and of the v2
 design (`dms-design-mockup/modules/lang`). Every question was asked against the
 code, the mockup, the UX review (`modules/lang/review.html`, findings L-01 to
 L-14) and the DMS migration guide (`docs/02.building/13.migration-0-3-to-0-4.md`
-in AntelopeJS/dms). Each answer is the recommendation that was taken.
+in `AntelopeJS/dms`). Each answer is the recommendation that was taken.
 
 ## 1. Dependencies and platform
 
@@ -22,10 +28,10 @@ range that stops before the next major. The tooling is the gate CI runs, so it
 wins; the DMS itself declares `>=0.4.0 <0.5.0` because it is the implementer.
 
 **Q1.3 What breaks in the frontend layer?**
-- Nothing is auto-imported without a `dms.frontend.build.ts` (dms-frontend 0.4):
+- Nothing is auto-imported without a `dms.frontend.build.ts` (`dms-frontend` 0.4):
   the module adds one declaring `app/composables`, `app/utils` and `app/types`.
   The `app/composables/translation/` subfolder stays: the scan is recursive.
-- Components are prefixed by the module (dms-frontend 0.5): the module declares
+- Components are prefixed by the module (`dms-frontend` 0.5): the module declares
   `componentPrefix: "DmsLang"` and registers bare names. **DmsLang** rather than
   **Lang**: the backend names (`DmsLangOverview`, …) stay stable and the prefix
   is unlikely to collide with another module. Custom pages are no longer
@@ -143,7 +149,7 @@ Coverage / Name segmented control sorts it.
 
 **Q4.3 Namespace heatmap?**
 Computed in the browser from `GET /flat` (namespace = first key segment), five
-namespaces × the non-base languages, coloured ≥ 90 / 60–89 / < 60, each cell
+namespaces × the non-base languages, coloured ≥ 90 / 60 to 89 / < 60, each cell
 links to the matrix filtered on that namespace and language.
 
 **Q4.4 First run, loading, error, read-only?**
@@ -277,7 +283,7 @@ In the existing module:
 Seen while testing, outside this repository: when the playground's
 `antelope.config.ts` changes, `ajs project dev` restarts in-process and every
 module calling `RegisterModule` fails with `Module "lang" is already
-registered` (the module root registry of interface-dms survives the restart).
+registered` (the module root registry of `interface-dms` survives the restart).
 A source change reloads fine; only the config restart is affected.
 
 ## 9. Tests
