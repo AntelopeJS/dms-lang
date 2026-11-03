@@ -122,7 +122,10 @@
     "test": "src/test/harness.ts",
     "skills": [
       "./skills"
-    ]
+    ],
+    "docs": {
+      "standard": true
+    }
   },
   "dmsFrontend": "dist/frontend-module.js"
 }
