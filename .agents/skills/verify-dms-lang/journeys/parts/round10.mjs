@@ -45,7 +45,7 @@ export const roundTenNames = [
       const shared = freshId(ctx, "share");
       const alone = freshId(ctx, "alone");
       await seedWorkspace(ctx, shared, { locales: ["en", "fr", "fr-BE"], keys: { "a.b": { en: "x" } } });
-      await seedWorkspace(ctx, alone, { locales: ["en", "fr"], keys: { "a.b": { en: "x" } } });
+      await seedWorkspace(ctx, alone, { locales: ["en", "pt-BR"], keys: { "a.b": { en: "x" } } });
       const tab = await ctx.tab("admin");
       await tab.signIn("admin");
       await tab.goto(`/modules/lang/translations?workspace=${shared}`);
@@ -58,7 +58,7 @@ export const roundTenNames = [
       await tab.goto(`/modules/lang/language?workspace=${shared}&locale=fr-BE`);
       await ctx.verify("queue: the title names the region", [tab.shows(/Français \(Belgique\)/)]);
       await tab.goto(`/modules/lang/overview?workspace=${alone}`);
-      await ctx.verify("alone, French has no region", [tab.visible({ role: "link", name: /^a · Français: / }), tab.visible({ role: "link", name: /Belgique/ }, { hidden: true })]);
+      await ctx.verify("alone, Brazilian Portuguese is plain Português", [tab.visible({ role: "link", name: /^a · Português: / }), tab.visible({ role: "link", name: /Brasil/ }, { hidden: true })]);
     },
   },
 ];
