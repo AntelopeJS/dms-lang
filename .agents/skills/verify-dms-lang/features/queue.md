@@ -34,6 +34,7 @@ One language, one key at a time, with the base text, the keys that come next and
 - `a-namespace-the-language-lacks-leaves-the-url`: A queue link naming a namespace that does not exist walks every key.
 - `the-queue-says-what-is-wrong-with-a-draft`: While a draft is typed the queue names each problem: a variable left out, one the base lacks, a space at an end, a lone @, an unclosed brace and another number of plural forms.
 - `s-and-p-typed-in-the-field-are-text`: Typing s and p in the text field writes the letters and does not skip or go back.
+- `keys-of-a-namespace-come-in-key-order`: Within a namespace the queue walks the missing keys in key order: auth.login, then auth.logout.
 
 ## How to get to it (user POV)
 

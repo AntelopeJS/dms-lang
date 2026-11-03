@@ -1,3 +1,4 @@
+import { roundTenLimits } from "./parts/round10.mjs";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { PROJECT_FILES, freshId, guarded, lang, list, pick, projectLocalesDir, raw, readLocaleFile, recordRaw, seedWorkspace, workspaceFiles, workspacesDir } from "../lang.mjs";
@@ -213,4 +214,5 @@ export const journeys = guarded([
       await ctx.verify("a free name is announced as available", [tab.shows(/is available/i)]);
     },
   },
+  ...roundTenLimits,
 ]);

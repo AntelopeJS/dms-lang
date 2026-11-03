@@ -1,3 +1,4 @@
+import { roundTenNames } from "./parts/round10.mjs";
 import { roundNineLanguages } from "./parts/round9.mjs";
 import { freshId, guarded, lang, list, pick, raw, readLocaleFile, recordRaw, seedWorkspace, workspaceFiles } from "../lang.mjs";
 
@@ -104,4 +105,5 @@ export const journeys = guarded([
     },
   },
   ...roundNineLanguages,
+  ...roundTenNames,
 ]);

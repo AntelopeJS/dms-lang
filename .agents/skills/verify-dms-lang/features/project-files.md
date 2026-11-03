@@ -31,6 +31,7 @@ The Project files workspace (`default`) edits the `<name>-<xx-XX>.json` files of
 - `pages-arrive-rendered-by-the-server`: the HTML the frontend server sends, read without a browser, holds the matrix rows with their texts and the queue's first missing key; without `?workspace=` the server sends the workspace of the `dms-lang-workspace` cookie, else the project files.
 - `reregistering-changes-the-origin`: the playground registers its module again without `dmsI18nAppLayer`: `shop.title` moves to the installed modules with no file change; flagged again, it is a project file again.
 - `lower-priority-app-layer-merges-first`: a second flagged module of priority 0, registered while the backend runs, adds `late.hello` to the project files, and the app module (priority 1) keeps `shop.title`.
+- `a-namespace-tie-goes-to-the-last-file`: When two files hold the same depth of a key's namespace, a new key is written to the last of them in merge order.
 
 ## How to get to it (user POV)
 

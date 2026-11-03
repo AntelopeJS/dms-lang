@@ -26,6 +26,7 @@ A workspace holds one JSON file per language. People add a language by BCP 47 co
 - `remove-a-language`: the removal confirmation names the file and the public URL it removes; removing deletes the file and its public URL and keeps the others; the base language is 409 `base_locale`.
 - `make-a-language-the-base`: the base moves, `baseMissing` counts the keys the new base lacks and the missing count of the other languages follows.
 - `removing-an-empty-language-asks-for-no-code`: Removing a language that holds no text asks no code and offers no download; with a text it asks for the code and offers the file.
+- `language-names-carry-the-region-only-when-shared`: A language shows its region (Français (Belgique)) only when another language of the workspace shares it, in the matrix, the heatmap and the queue.
 
 ## How to get to it (user POV)
 

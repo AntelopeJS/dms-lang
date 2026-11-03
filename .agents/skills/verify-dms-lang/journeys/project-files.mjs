@@ -1,3 +1,4 @@
+import { roundTenProject } from "./parts/round10.mjs";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { guarded, lang, list, pick, projectLocalesDir, readJsonFile, resetProjectFiles } from "../lang.mjs";
@@ -235,4 +236,5 @@ export const journeys = guarded([
     },
   },
   ...projectFileJourneys,
+  ...roundTenProject,
 ]);

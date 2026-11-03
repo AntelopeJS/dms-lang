@@ -30,6 +30,9 @@ A workspace is one set of translation files. Besides the project files (`default
 - `stored-files-stay-readable`: Format containment: a folder written by hand in the stored layout (`en.json`, `fr.json`, `.workspace.json`, tab-indented) is listed, counted and served, the module writes back the same layout, and a language file it creates starts as `{}` and is tab-indented with a final newline.
 - `types-accepted`: the types dms, website, mobile and other are accepted and another is 400.
 - `dialog-checks-the-name-live`: the New workspace dialog names a taken workspace, gives the naming rule for a reserved or malformed name and announces a free one as available.
+- `base-confirm-lists-twenty-keys-and-shows-five`: Making a language the base lists at most 20 of the keys it lacks and shows 5 in the dialog with a count of the rest.
+- `description-is-at-most-500-characters`: A workspace description of 500 characters is accepted and one of 501 is refused.
+- `up-next-lists-four-keys`: The queue's Up next lists the next four keys.
 
 ## How to get to it (user POV)
 
