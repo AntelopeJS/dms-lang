@@ -1,4 +1,6 @@
-import { freshId, guarded, lang, list, pick, readLocaleFile, seedWorkspace } from "../lang.mjs";
+import { writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { eventually, freshId, guarded, lang, list, pick, readLocaleFile, seedWorkspace, workspacesDir } from "../lang.mjs";
 
 /** @typedef {import("../lang.mjs").Ctx} Ctx */
 
@@ -163,15 +165,18 @@ export const journeys = guarded([
   },
   {
     id: "spaces-only-text-is-missing",
-    title: "a text made of spaces only counts as no text: the language misses the key and its coverage drops",
-    entryPoint: "PUT /api/lang/translations/key, then GET /flat",
+    title: "a text made of spaces only, written in a language file, counts as no text: the language misses the key and its coverage drops",
+    entryPoint: "a language file edited by hand, then GET /flat",
     async run(/** @type {Ctx} */ ctx) {
       const id = freshId(ctx, "blank");
-      await seedWorkspace(ctx, id, { locales: ["en", "fr"], keys: { "a.one": { en: "One", fr: "Un" }, "a.two": { en: "Two", fr: "   " } } });
-      const flat = await lang(ctx, "read the progress", "GET", `/flat?workspace=${id}`);
-      await ctx.verify("French misses the key whose text is spaces", [
-        ctx.equal("missing", pick(flat.body, "localeMissing", "fr"), 1),
-        ctx.equal("progress", pick(flat.body, "localeProgress", "fr"), 50),
+      await seedWorkspace(ctx, id, { locales: ["en", "fr"], keys: { "a.one": { en: "One", fr: "Un" }, "a.two": { en: "Two", fr: "Deux" } } });
+      const before = await lang(ctx, "read the progress", "GET", `/flat?workspace=${id}`);
+      writeFileSync(join(workspacesDir(ctx, id), "fr.json"), `${JSON.stringify({ a: { one: "Un", two: "   " } }, null, "\t")}\n`);
+      const flat = await eventually(() => lang(ctx, "read the progress after the edit", "GET", `/flat?workspace=${id}`), (answer) => pick(answer.body, "localeMissing", "fr") !== 0);
+      await ctx.verify("French is complete, then misses the key whose text became spaces", [
+        ctx.equal("missing before", pick(before.body, "localeMissing", "fr"), 0),
+        ctx.equal("missing after", pick(flat.body, "localeMissing", "fr"), 1),
+        ctx.equal("progress after", pick(flat.body, "localeProgress", "fr"), 50),
       ]);
     },
   },
