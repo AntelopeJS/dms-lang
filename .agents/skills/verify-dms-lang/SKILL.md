@@ -163,8 +163,7 @@ $C doors .agents/skills/verify-dms-lang/seeded-doors/data.patch
 
 List these under `notVerified` in the judgement of every verdict; no journey reaches them:
 
-- the matrix's 100-row batches (the list draws the next rows as the end scrolls into view, which no step scrolls to);
-- the heatmap colours and the dark mode;
+- the dark mode (the heatmap's green, amber and red are driven through the classes of the cells);
 - a member who is not the owner, and so another user seeing a change (needs the invitation flow);
 - a frontend module removed while Lang runs (only taking an AntelopeJS module down removes one);
 - `workspacesDir` itself (the verification playground pins it to the run's `HOME`);

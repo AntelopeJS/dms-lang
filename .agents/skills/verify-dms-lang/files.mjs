@@ -216,3 +216,35 @@ export function currentUrl(tab) {
   return String(tab.page.url());
 }
 
+
+/**
+ * Whether a heatmap cell is drawn green, amber or red, read from the classes of its link.
+ *
+ * @param {Tab} tab The tab on the Overview
+ * @param {RegExp} name The accessible name of the cell's link
+ * @returns {Promise<string>} `success`, `warning`, `error` or `unknown`
+ */
+export async function heatTone(tab, name) {
+  const html = String(await tab.page.getByRole("link", { name }).first().evaluate((/** @type {Element} */ element) => element.className));
+  return /bg-success/.test(html) ? "success" : /bg-warning/.test(html) ? "warning" : /bg-error/.test(html) ? "error" : "unknown";
+}
+
+/**
+ * Scrolls the last row button of the matrix into view, so the next batch of rows is drawn.
+ *
+ * @param {Tab} tab The tab on the matrix
+ * @returns {Promise<number>} How many key buttons are drawn afterwards
+ */
+export async function scrollRows(tab) {
+  await tab.page.getByRole("button", { name: /^Open .+ in the panel$/ }).last().scrollIntoViewIfNeeded();
+  await tab.page.waitForTimeout(1200);
+  return drawnRows(tab);
+}
+
+/**
+ * @param {Tab} tab The tab
+ * @returns {Promise<number>} How many key buttons are drawn
+ */
+export async function drawnRows(tab) {
+  return Number(await tab.page.getByRole("button", { name: /^Open .+ in the panel$/ }).count());
+}

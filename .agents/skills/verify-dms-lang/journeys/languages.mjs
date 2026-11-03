@@ -1,3 +1,4 @@
+import { roundNineLanguages } from "./parts/round9.mjs";
 import { freshId, guarded, lang, list, pick, raw, readLocaleFile, recordRaw, seedWorkspace, workspaceFiles } from "../lang.mjs";
 
 /** @typedef {import("../lang.mjs").Ctx} Ctx */
@@ -102,4 +103,5 @@ export const journeys = guarded([
       await ctx.verify("an unknown language cannot become the base", [ctx.holds("refused", unknown.status !== null && unknown.status >= 400, String(unknown.status))]);
     },
   },
+  ...roundNineLanguages,
 ]);

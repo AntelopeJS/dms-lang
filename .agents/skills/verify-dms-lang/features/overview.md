@@ -40,6 +40,7 @@ How translated is this workspace: four figures, the languages least complete fir
 - `languages-rank-the-base-first-then-least-complete`: The languages table pins the base language on top and lists the others least complete first.
 - `add-language-belongs-to-created-editable-workspaces`: The Add language action and an Editable scope bar show on a workspace you created, not on the project files or the installed modules (Read-only).
 - `a-workspace-without-keys-shows-its-first-steps`: A workspace you created with no key yet shows its first steps in place of figures and a heatmap.
+- `heatmap-tones-switch-at-90-and-60`: A heatmap cell is green from 90%, amber from 60 to 89% and red below 60%.
 
 ## How to get to it (user POV)
 

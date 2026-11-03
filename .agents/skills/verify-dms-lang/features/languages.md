@@ -25,6 +25,7 @@ A workspace holds one JSON file per language. People add a language by BCP 47 co
 - `add-a-language`: `POST /locale` adds `fr`, `fr-BE` and `zh-Hant`, names the sibling of a regional variant, creates `<code>.json`, shows the native name and the coverage against the base; a duplicate is 409 `locale_exists`, a bad code 400 `invalid_locale`, an unknown workspace 404.
 - `remove-a-language`: the removal confirmation names the file and the public URL it removes; removing deletes the file and its public URL and keeps the others; the base language is 409 `base_locale`.
 - `make-a-language-the-base`: the base moves, `baseMissing` counts the keys the new base lacks and the missing count of the other languages follows.
+- `removing-an-empty-language-asks-for-no-code`: Removing a language that holds no text asks no code and offers no download; with a text it asks for the code and offers the file.
 
 ## How to get to it (user POV)
 

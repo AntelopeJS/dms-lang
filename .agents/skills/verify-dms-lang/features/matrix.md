@@ -69,6 +69,11 @@ Every key of the workspace as a row, every language as a column, with inline edi
 - `filters-a-workspace-cannot-have-are-dropped`: A link naming a language or a namespace the workspace lacks shows every key.
 - `arrow-keys-move-between-cells`: The arrow keys move the focus between the cells of the grid.
 - `a-cell-keeps-what-cannot-be-saved`: A text vue-i18n cannot compile stays Not saved in its cell and writes nothing; clearing the base text asks first.
+- `rows-are-drawn-in-batches-of-100`: One namespace of 250 keys draws 100 rows, then 200, then 250 as the end of the list scrolls into view.
+- `issues-tab-holds-a-base-text-that-does-not-compile`: A key whose base text does not compile is an issue of the base language and is listed under Issues; a valid base is not.
+- `overridden-badge-opens-the-override`: In the installed modules a click on the Overridden badge opens the override in the project files.
+- `the-tabs-are-named-incomplete-and-missing`: The status tab reads Incomplete over several languages and Missing when one language is counted.
+- `key-panel-closers-save-the-changed-language`: Closing the key panel with its X, with Escape or with a click outside saves the changed language first.
 
 ## How to get to it (user POV)
 

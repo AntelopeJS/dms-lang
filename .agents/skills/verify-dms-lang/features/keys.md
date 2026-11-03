@@ -34,6 +34,8 @@ A key is a dotted path; each language holds a text for it. People add, translate
 - `plural-forms-must-match-the-base`: another number of plural forms than the base (`one | many` against one or three forms) is an issue; the same number is not.
 - `plural-messages-may-use-count-and-n`: a plural translation may use `{count}` and `{n}` without the base naming them; in a plain text `{n}` is an issue, and so is any other name in a plural.
 - `texts-with-edge-values`: a plural, a quoted at sign, a text of two placeholders and a text of 1000 letters are stored as typed and count as missing in a language that lacks them.
+- `key-segments-are-at-most-128-characters`: A key path segment of 128 characters is accepted and one of 129 is refused as invalid_key_path.
+- `files-are-written-back-in-their-own-layout`: A language file with two-space indentation, CRLF lines and no final newline keeps that layout when a key is written.
 
 ## How to get to it (user POV)
 

@@ -1,3 +1,4 @@
+import { roundNineKeys } from "./parts/round9.mjs";
 import { issueRuleJourneys } from "./parts/issue-rules.mjs";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -200,4 +201,5 @@ export const journeys = guarded([
     },
   },
   ...issueRuleJourneys,
+  ...roundNineKeys,
 ]);
