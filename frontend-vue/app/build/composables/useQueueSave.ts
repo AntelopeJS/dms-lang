@@ -81,15 +81,20 @@ function onInvalid(
 }
 
 const SAVE_FAILURES: Record<KeySaveFailureKind, SaveFailureHandler> = {
-  conflict: (context, write) => context.toasts.warnConflict(write.row.key),
+  conflict: (context, write, outcome) =>
+    context.failures.reportFailure(outcome.error, {
+      fallbackKey: 'dms_lang.queue.conflict_description',
+      params: { key: write.row.key },
+    }),
   deleted: (context, write) => onDeleted(context, write.row),
   invalid: onInvalid,
   other: (context, write, outcome) =>
     context.failures.reportFailure(outcome.error, {
-      title: context.t('dms_lang.matrix.save_failed', {
+      fallbackKey: 'dms_lang.matrix.save_failed',
+      params: {
         key: write.row.key,
         code: context.session.locale.value,
-      }),
+      },
       retry: () => void send(context, write),
     }),
 }

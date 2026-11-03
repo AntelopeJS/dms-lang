@@ -118,7 +118,7 @@ function recordFailure(
   })
   context.states.setState(id, 'error')
   if (outcome.failure.kind === 'deleted') context.saves.dropRow(address)
-  if (isConflict) context.report.conflict(address, outcome.message)
+  if (isConflict) context.report.conflict(address, outcome.error)
   else context.report.failure(address, outcome.error)
 }
 
@@ -160,34 +160,30 @@ function useCellReports(
   retry: (address: CellAddress) => void,
   discard: (address: CellAddress) => void,
 ) {
-  const { t } = useI18n()
-  const toast = useToast()
+  const { presentError } = useApiErrorPresenter()
   const { reportFailure } = useMutationToast()
 
   return {
-    conflict(address: CellAddress, message: string) {
-      toast.add({
-        title: t('dms_lang.matrix.conflict', { ...address }),
-        description: message,
-        color: 'error',
-        icon: 'i-ph-warning-circle',
+    conflict(address: CellAddress, error: unknown) {
+      presentError(error, {
+        fallbackKey: 'dms_lang.matrix.conflict',
+        params: { ...address },
         actions: [
           {
-            label: t('dms_lang.matrix.discard'),
-            color: 'neutral',
-            variant: 'outline',
-            onClick: () => discard(address),
+            labelKey: 'dms_lang.matrix.discard',
+            onSelect: () => discard(address),
           },
           {
-            label: t('dms_lang.matrix.overwrite'),
-            onClick: () => retry(address),
+            labelKey: 'dms_lang.matrix.overwrite',
+            onSelect: () => retry(address),
           },
         ],
       })
     },
     failure(address: CellAddress, error: unknown, canRetry = true) {
       reportFailure(error, {
-        title: t('dms_lang.matrix.save_failed', { ...address }),
+        fallbackKey: 'dms_lang.matrix.save_failed',
+        params: { ...address },
         retry: canRetry ? () => retry(address) : undefined,
       })
     },

@@ -31,7 +31,10 @@ export default defineConfig({
       config: {},
     },
     dms: {
-      source: { type: "local", path: "node_modules/@antelopejs/dms" },
+      source: {
+        type: "local",
+        path: "playground/node_modules/@antelopejs/dms",
+      },
       config: {
         /**
          * No frontend server runs here: the dashboard URL is the API, whose

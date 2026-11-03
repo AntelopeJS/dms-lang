@@ -95,6 +95,10 @@ Object.assign(globalThis, {
   useRealtimeTopic: () => {},
   useI18n: () => ({ t: translate, locale: vue.ref("en") }),
   useToast: () => ({ add() {} }),
+  useApiErrorPresenter: () => ({
+    presentError() {},
+    resolveError: () => null,
+  }),
   useOverlay: () => ({ create: () => ({ open: () => ({ result: null }) }) }),
   useConfirm: () => ({ confirm: async () => true }),
   usePermissions: () => ({ hasPermission: () => true }),
