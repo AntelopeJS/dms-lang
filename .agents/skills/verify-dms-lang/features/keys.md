@@ -29,6 +29,7 @@ A key is a dotted path; each language holds a text for it. People add, translate
 - `update-conflict`: a save that expected an old text is 409 `conflict` with the current text.
 - `rename-and-delete-a-key`: a rename moves every language's text, a taken, identical or unknown path is refused, a delete removes the key from every language file.
 - `mark-reviewed`: after the base text of a key of a created workspace changes, its French text is to review (`outdated: ["fr"]` on the row); marking it reviewed clears that, an unknown key is 404 and the project files answer 400 `review_added_only`.
+- `spaces-only-text-is-missing`: a text of spaces only counts as no text, so the language misses the key and its coverage drops.
 - `texts-with-edge-values`: a plural, a quoted at sign, a text of two placeholders and a text of 1000 letters are stored as typed and count as missing in a language that lacks them.
 
 ## How to get to it (user POV)

@@ -162,6 +162,20 @@ export const journeys = guarded([
     },
   },
   {
+    id: "spaces-only-text-is-missing",
+    title: "a text made of spaces only counts as no text: the language misses the key and its coverage drops",
+    entryPoint: "PUT /api/lang/translations/key, then GET /flat",
+    async run(/** @type {Ctx} */ ctx) {
+      const id = freshId(ctx, "blank");
+      await seedWorkspace(ctx, id, { locales: ["en", "fr"], keys: { "a.one": { en: "One", fr: "Un" }, "a.two": { en: "Two", fr: "   " } } });
+      const flat = await lang(ctx, "read the progress", "GET", `/flat?workspace=${id}`);
+      await ctx.verify("French misses the key whose text is spaces", [
+        ctx.equal("missing", pick(flat.body, "localeMissing", "fr"), 1),
+        ctx.equal("progress", pick(flat.body, "localeProgress", "fr"), 50),
+      ]);
+    },
+  },
+  {
     id: "texts-with-edge-values",
     title: "texts with a plural, a quoted at sign, a placeholder at both ends and 1000 letters are stored as typed; a missing language is not an empty one",
     entryPoint: "PUT /api/lang/translations/key",

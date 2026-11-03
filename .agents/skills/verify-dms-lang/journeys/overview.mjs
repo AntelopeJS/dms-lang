@@ -114,6 +114,22 @@ export const journeys = guarded([
     },
   },
   {
+    id: "namespaces-rank-by-share-of-missing-texts",
+    title: "the heatmap lists the namespace with the largest share of missing texts first, not the one with the most missing texts",
+    entryPoint: "GET /api/lang/translations/namespaces",
+    async run(/** @type {Ctx} */ ctx) {
+      const id = freshId(ctx, "ranks");
+      /** @type {Record<string, Record<string, string>>} */
+      const keys = { "small.only": { en: "Only" } };
+      for (let n = 0; n < 10; n += 1) keys[`big.k${n}`] = n < 2 ? { en: `Text ${n}` } : { en: `Text ${n}`, fr: `Texte ${n}` };
+      await seedWorkspace(ctx, id, { locales: ["en", "fr"], keys });
+      const coverage = await lang(ctx, "read the namespaces", "GET", `/namespaces?workspace=${id}`);
+      await ctx.verify("small (1 of 1 missing) comes before big (2 of 10 missing)", [
+        ctx.equal("order", list(coverage.body, "namespaces").map((row) => row.namespace), ["small", "big"]),
+      ]);
+    },
+  },
+  {
     id: "header-action-targets-the-least-complete-language",
     title: "the primary action names the language with the most gaps and jumps to its missing keys",
     entryPoint: "/modules/lang/overview header",

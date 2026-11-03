@@ -34,6 +34,9 @@ The Workspaces page lists every set of translation files as a card and creates n
 - `delete-needs-the-name-typed`: Delete lists the files and strings it removes, offers a backup, ignores a wrong name and deletes on the right one.
 - `download-backup-saves-the-importable-file`: Download backup saves `<workspace>.json` (read through the download event), the backup with the format stamp, the id, the base language and every language's texts.
 - `import-reads-a-chosen-backup`: Import opens the file chooser, the chosen backup opens the Import a workspace dialog, and Import workspace creates the workspace with the file's languages and texts.
+- `language-search-rules`: the picker's search ignores accents (`francais` finds Français), reads `fr_FR` as the code `fr-FR` (and adds it as `fr-FR`), and takes `french` as a name, never as a code.
+- `i18next-lists-the-bare-language`: for `en` and `pt-BR` the i18next setup lists `supportedLngs` `["en", "pt", "pt-BR"]`.
+- `import-reads-a-single-language-file`: a file named `it.json` is read as Italian: the dialog offers Italiano as the base, and Import creates the workspace with that file's texts.
 
 ## How to get to it (user POV)
 

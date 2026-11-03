@@ -1,4 +1,5 @@
 import { chooseFile, downloadOf } from "../files.mjs";
+import { inputJourneys } from "./parts/workspace-input.mjs";
 import { clickUntil, eventually, freshId, guarded, lang, list, pick, raw, readLocaleFile, recordRaw, seedWorkspace, workspaceFiles } from "../lang.mjs";
 
 /** @typedef {import("../lang.mjs").Ctx} Ctx */
@@ -292,4 +293,5 @@ export const journeys = guarded([
       ]);
     },
   },
+  ...inputJourneys,
 ]);
