@@ -266,3 +266,48 @@ export async function footerGap(tab, dialog, button) {
     }, button),
   );
 }
+
+/**
+ * Whether a radio of the page is checked.
+ *
+ * @param {Tab} tab The tab
+ * @param {RegExp} name The radio's accessible name
+ * @returns {Promise<boolean>} Its state
+ */
+export async function radioChecked(tab, name) {
+  return (await tab.page.getByRole("radio", { name }).first().isChecked()) === true;
+}
+
+/**
+ * The accessible texts of the links of a name, in the order they show.
+ *
+ * @param {Tab} tab The tab
+ * @param {RegExp} name What the links are named
+ * @returns {Promise<string>} The link texts joined by `|`
+ */
+export async function linkTexts(tab, name) {
+  return String(await tab.page.getByRole("link", { name }).evaluateAll((/** @type {Element[]} */ els) => els.map((el) => (el.textContent ?? "").trim()).join("|")));
+}
+
+/**
+ * The leading lowercase word of the text of each button of a name, in the order they show.
+ *
+ * @param {Tab} tab The tab
+ * @param {RegExp} name What the buttons are named
+ * @returns {Promise<string>} The words joined by `|`
+ */
+export async function leadingNames(tab, name) {
+  return String(await tab.page.getByRole("button", { name }).evaluateAll((/** @type {Element[]} */ els) => els.map((el) => /^[a-z]+/.exec((el.textContent ?? "").trim())?.[0] ?? "").join("|")));
+}
+
+/**
+ * The aria-labels of the elements of a name, in the order they show.
+ *
+ * @param {Tab} tab The tab
+ * @param {string} role The role of the elements
+ * @param {RegExp} name What they are named
+ * @returns {Promise<string>} The labels joined by `|`
+ */
+export async function labelsOf(tab, role, name) {
+  return String(await tab.page.getByRole(role, { name }).evaluateAll((/** @type {Element[]} */ els) => els.map((el) => el.getAttribute("aria-label") ?? "").join("|")));
+}

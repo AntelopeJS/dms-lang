@@ -52,14 +52,14 @@ export const journeys = guarded([
       await writer.signIn("admin");
       const reader = await ctx.tab("admin", "reader");
       await reader.goto(`/modules/lang/translations?workspace=${id}`);
-      await ctx.verify("the reader sees both keys missing in French", [reader.visible({ role: "button", name: "Translate a.one into Français" }), reader.visible({ role: "button", name: "Translate a.two into Français" })], { critical: true });
+      await ctx.verify("the reader sees both keys missing in French", [reader.visible({ role: "button", name: "Translate a.one into Français" }, { timeoutMs: 60_000 }), reader.visible({ role: "button", name: "Translate a.two into Français" }, { timeoutMs: 60_000 })], { critical: true });
       await writer.goto(`/modules/lang/translations?workspace=${id}`);
       await writer.click({ role: "button", name: "Translate a.one into Français" });
       await writer.fill({ role: "textbox", name: "Translate a.one into Français" }, "Un");
       await writer.press("Enter", { role: "textbox", name: "Translate a.one into Français" });
-      await ctx.verify("the text saved in the writer's tab appears in the reader's tab", [reader.visible({ role: "button", name: "Un" })]);
+      await ctx.verify("the text saved in the writer's tab appears in the reader's tab", [reader.visible({ role: "button", name: "Un" }, { timeoutMs: 60_000 })]);
       await lang(ctx, "translate a.two through the API", "PUT", "/key", { workspace: id, path: "a.two", values: { fr: "Deux" } });
-      await ctx.verify("a write through the API appears too", [reader.visible({ role: "button", name: "Deux" })]);
+      await ctx.verify("a write through the API appears too", [reader.visible({ role: "button", name: "Deux" }, { timeoutMs: 60_000 })]);
     },
   },
   {

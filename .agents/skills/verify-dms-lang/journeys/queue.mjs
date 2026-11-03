@@ -1,3 +1,4 @@
+import { roundElevenQueue } from "./parts/round11.mjs";
 import { roundTenQueue } from "./parts/round10.mjs";
 import { roundNineQueue } from "./parts/round9.mjs";
 import { queueKeyJourneys } from "./parts/queue-keys.mjs";
@@ -166,4 +167,5 @@ export const journeys = guarded([
   ...moreQueueJourneys,
   ...roundNineQueue,
   ...roundTenQueue,
+  ...roundElevenQueue,
 ]);

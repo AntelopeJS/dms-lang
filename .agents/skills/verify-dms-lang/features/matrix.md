@@ -75,6 +75,11 @@ Every key of the workspace as a row, every language as a column, with inline edi
 - `the-tabs-are-named-incomplete-and-missing`: The status tab reads Incomplete over several languages and Missing when one language is counted.
 - `key-panel-closers-save-the-changed-language`: Closing the key panel with its X, with Escape or with a click outside saves the changed language first.
 - `key-panel-footer-stays-on-the-bottom-edge`: The footer of the key panel sits on the drawer's bottom edge whether the key has two languages or six.
+- `command-key-works-like-control-in-a-cell`: In a cell Command Enter saves and stays on the cell, and Command Shift Enter opens the key panel with the typed text.
+- `outdated-translations-are-issues`: A translation made from an older base text counts under Issues in the matrix and the queue, and goes to 0 once marked reviewed.
+- `translate-into-switches-to-missing`: Picking a language in Translate into switches the status tab to Missing, with the radio checked and filter=missing in the URL.
+- `module-texts-count-as-translated`: In the project files a key shown From a module is translated: it stays out of the incomplete count.
+- `counts-keep-the-regional-number-format`: 1,234 keys read 1,234 in the matrix footer, the key panel's place and the overview.
 
 ## How to get to it (user POV)
 

@@ -1,3 +1,4 @@
+import { roundElevenOrder } from "./parts/round11.mjs";
 import { roundTenLimits } from "./parts/round10.mjs";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -215,4 +216,5 @@ export const journeys = guarded([
     },
   },
   ...roundTenLimits,
+  ...roundElevenOrder,
 ]);

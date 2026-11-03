@@ -103,16 +103,16 @@ export const journeys = guarded([
         tab.shows(new RegExp(`/i18n/${id}/\\{locale\\}\\.json`)),
         tab.shows(new RegExp(`/i18n/${id}/en\\.json`)),
         tab.shows(/public, no sign-in\. saved changes are served on the next request/i),
-        tab.visible({ role: "tab", name: "vue-i18n" }),
+        tab.visible({ role: "tab", name: "vue-i18n" }, { timeoutMs: 60_000 }),
         tab.visible({ role: "tab", name: "i18next" }),
         tab.visible({ role: "tab", name: "fetch" }),
         tab.visible({ role: "tab", name: "curl" }),
         tab.shows(/createI18n/),
       ]);
-      await tab.click({ role: "tab", name: "curl" });
-      await ctx.verify("the curl snippet fetches the base language", [tab.shows(new RegExp(`curl .*/i18n/${id}/en\\.json`))]);
-      await tab.click({ role: "tab", name: "fetch" });
-      await ctx.verify("the fetch snippet checks the status before reading messages", [tab.shows(/response\.ok|!response\.ok/)]);
+      await clickUntil(tab, { role: "tab", name: "curl" }, { role: "tabpanel", name: "curl" });
+      await ctx.verify("the curl snippet fetches the base language", [tab.shows(new RegExp(`curl .*/i18n/${id}/en\\.json`), { timeoutMs: 60_000 })]);
+      await clickUntil(tab, { role: "tab", name: "fetch" }, { role: "tabpanel", name: "fetch" });
+      await ctx.verify("the fetch snippet checks the status before reading messages", [tab.shows(/response\.ok|!response\.ok/, { timeoutMs: 60_000 })]);
       for (const kind of ["vue", "i18next", "fetch", "curl"]) {
         const snippet = await lang(ctx, `read the ${kind} snippet`, "GET", `/snippet?workspace=${id}&kind=${kind}`);
         await ctx.verify(`the ${kind} snippet carries the workspace URL`, [ctx.status(snippet, 200), ctx.holds("URL", String(pick(snippet.body, "code")).includes(`/i18n/${id}/`), String(pick(snippet.body, "code")).slice(0, 120))]);

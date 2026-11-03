@@ -33,6 +33,7 @@ A workspace is one set of translation files. Besides the project files (`default
 - `base-confirm-lists-twenty-keys-and-shows-five`: Making a language the base lists at most 20 of the keys it lacks and shows 5 in the dialog with a count of the rest.
 - `description-is-at-most-500-characters`: A workspace description of 500 characters is accepted and one of 501 is refused.
 - `up-next-lists-four-keys`: The queue's Up next lists the next four keys.
+- `heatmap-and-queue-lists-are-least-complete-first`: The heatmap's language columns, the queue's namespace list and the Workspaces cards follow the order the docs name, and the heatmap leaves the base language out.
 
 ## How to get to it (user POV)
 

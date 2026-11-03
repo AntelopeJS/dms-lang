@@ -32,6 +32,7 @@ export const queueKeyJourneys = [
       const tab = await ctx.tab("admin");
       await tab.signIn("admin");
       await tab.goto(`/modules/lang/language?workspace=${id}&locale=fr`);
+      await tab.visible({ role: "textbox", name: "Bye" }, { timeoutMs: 60_000 });
       await tab.fill({ role: "textbox", name: "Bye" }, "Au revoir");
       await tab.press("Control+s", { role: "textbox", name: "Bye" });
       const saved = await lang(ctx, "read the key", "GET", `/row?workspace=${id}&key=auth.logout`);

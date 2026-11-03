@@ -1,3 +1,4 @@
+import { roundElevenOverview } from "./parts/round11.mjs";
 import { roundNineOverview } from "./parts/round9.mjs";
 import { limitJourneys } from "./parts/overview-limits.mjs";
 import { freshId, guarded, lang, list, pick, seedWorkspace, workspaceFiles } from "../lang.mjs";
@@ -249,4 +250,5 @@ export const journeys = guarded([
   },
   ...limitJourneys,
   ...roundNineOverview,
+  ...roundElevenOverview,
 ]);
