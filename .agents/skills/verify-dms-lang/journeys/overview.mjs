@@ -81,6 +81,39 @@ export const journeys = guarded([
     },
   },
   {
+    id: "one-missing-text-keeps-coverage-under-100",
+    title: "a language missing one text out of 201 reads 99% (rounded down), and a complete one reads 100%",
+    entryPoint: "POST /api/lang/translations/import, then GET /flat",
+    async run(/** @type {Ctx} */ ctx) {
+      const id = freshId(ctx, "coverage");
+      /** @type {Record<string, string>} */
+      const english = {};
+      /** @type {Record<string, string>} */
+      const french = {};
+      /** @type {Record<string, string>} */
+      const german = {};
+      for (let n = 0; n < 201; n += 1) {
+        english[`k${n}`] = `Text ${n}`;
+        german[`k${n}`] = `Text ${n}`;
+        if (n < 200) french[`k${n}`] = `Texte ${n}`;
+      }
+      const imported = await lang(ctx, "import 201 keys, French holding 200 and German all", "POST", "/import", {
+        format: "dms-lang.workspace",
+        version: 1,
+        id,
+        defaultLocale: "en",
+        locales: [{ code: "en" }, { code: "fr" }, { code: "de" }],
+        messages: { en: english, fr: french, de: german },
+      });
+      const flat = await lang(ctx, "read the progress of each language", "GET", `/flat?workspace=${id}`);
+      await ctx.verify("200 of 201 reads 99 and not 100; 201 of 201 reads 100", [
+        ctx.status(imported, 200),
+        ctx.equal("French progress", pick(flat.body, "localeProgress", "fr"), 99),
+        ctx.equal("German progress", pick(flat.body, "localeProgress", "de"), 100),
+      ]);
+    },
+  },
+  {
     id: "header-action-targets-the-least-complete-language",
     title: "the primary action names the language with the most gaps and jumps to its missing keys",
     entryPoint: "/modules/lang/overview header",

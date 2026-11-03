@@ -348,7 +348,8 @@ const SHOW_PASSWORD = { role: "button", name: "Show password" };
 const HIDE_PASSWORD = { role: "button", name: "Hide password" };
 const HYDRATION_ATTEMPTS = 20;
 const HYDRATION_POLL_MS = 1500;
-const SIGN_IN_TIMEOUT_MS = 60_000;
+const SIGN_IN_TIMEOUT_MS = 30_000;
+const SIGN_IN_ATTEMPTS = 3;
 
 /**
  * Waits until the sign-in form is interactive. The server renders it as a plain `<form method="post">` and the
@@ -383,12 +384,15 @@ async function signInHydrated(ctx, tab, account) {
     ctx.record(ctx.step(`${tab.label} signed in as ${account}`), [{ name: `${account} signs in and leaves /auth`, pass: false, detail: `no account ${account}` }], { critical: true });
     return;
   }
-  await tab.goto("/auth");
-  await waitForHydration(tab);
-  await tab.fill({ role: "textbox", name: "Email address" }, credentials.email);
-  await tab.fill({ role: "textbox", name: "Password", exact: true }, credentials.password);
-  await tab.click({ role: "button", name: "Login", exact: true });
-  const left = await tab.at(/^(?!\/auth)/, { timeoutMs: SIGN_IN_TIMEOUT_MS });
+  let left = { pass: false, detail: "no attempt" };
+  for (let attempt = 0; attempt < SIGN_IN_ATTEMPTS && left.pass !== true; attempt += 1) {
+    await tab.goto("/auth");
+    await waitForHydration(tab);
+    await tab.fill({ role: "textbox", name: "Email address" }, credentials.email);
+    await tab.fill({ role: "textbox", name: "Password", exact: true }, credentials.password);
+    await tab.click({ role: "button", name: "Login", exact: true });
+    left = await tab.at(/^(?!\/auth)/, { timeoutMs: SIGN_IN_TIMEOUT_MS });
+  }
   ctx.record(ctx.step(`${tab.label} signed in as ${account}`), [{ name: `${account} signs in and leaves /auth`, pass: left.pass === true, detail: String(left.detail) }], { critical: true });
 }
 

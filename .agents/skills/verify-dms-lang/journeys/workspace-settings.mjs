@@ -1,3 +1,4 @@
+import { chooseFile, downloadOf } from "../files.mjs";
 import { clickUntil, eventually, freshId, guarded, lang, list, pick, raw, readLocaleFile, recordRaw, seedWorkspace, workspaceFiles } from "../lang.mjs";
 
 /** @typedef {import("../lang.mjs").Ctx} Ctx */
@@ -202,6 +203,61 @@ export const journeys = guarded([
       recordRaw(ctx, oldUrl, [ctx.equal("the old URL answers 404", oldUrl.status, 404)]);
       recordRaw(ctx, newUrl, [ctx.equal("the new URL serves the texts", newUrl.json, { a: { b: "Salut" } })]);
       await ctx.verify("the files moved", [ctx.equal("old folder", workspaceFiles(ctx, id), []), ctx.equal("new folder", readLocaleFile(ctx, target, "fr"), { a: { b: "Salut" } })]);
+    },
+  },
+  {
+    id: "download-backup-saves-the-importable-file",
+    title: "Download backup saves <workspace>.json, the file Import reads, with every language",
+    entryPoint: "/modules/lang/workspace > Danger zone > Download backup",
+    async run(/** @type {Ctx} */ ctx) {
+      const id = freshId(ctx, "saved");
+      await seedWorkspace(ctx, id, { locales: ["en", "fr"], keys: { "shop.title": { en: "Shop", fr: "Boutique" }, "shop.pay": { en: "Pay {price}" } } });
+      const tab = await ctx.tab("admin");
+      await tab.signIn("admin");
+      await tab.goto(`/modules/lang/workspace?workspace=${id}`);
+      const file = await downloadOf(ctx, tab, { role: "button", name: "Download backup (.json)" });
+      /** @type {unknown} */
+      let saved = null;
+      try {
+        saved = JSON.parse(file?.text ?? "");
+      } catch {
+        saved = null;
+      }
+      await ctx.verify("the file is named after the workspace", [ctx.equal("file name", file?.name, `${id}.json`)]);
+      await ctx.verify("the file is the workspace backup with every language", [
+        ctx.equal("format and id", [pick(saved, "format"), pick(saved, "id"), pick(saved, "defaultLocale")], ["dms-lang.workspace", id, "en"]),
+        ctx.equal("messages", pick(saved, "messages"), { en: { shop: { title: "Shop", pay: "Pay {price}" } }, fr: { shop: { title: "Boutique" } } }),
+      ]);
+    },
+  },
+  {
+    id: "import-reads-a-chosen-backup",
+    title: "Import opens the file chooser, reads the chosen backup file and creates the workspace under its name",
+    entryPoint: "/modules/lang/workspaces > Import…",
+    async run(/** @type {Ctx} */ ctx) {
+      const id = freshId(ctx, "chosen");
+      const backup = {
+        format: "dms-lang.workspace",
+        version: 1,
+        id,
+        defaultLocale: "en",
+        locales: [{ code: "en" }, { code: "fr" }],
+        messages: { en: { shop: { title: "Shop" } }, fr: { shop: { title: "Boutique" } } },
+      };
+      const tab = await ctx.tab("admin");
+      await tab.signIn("admin");
+      await tab.goto("/modules/lang/workspaces");
+      const chosen = await chooseFile(tab, { role: "button", name: "Import…" }, { name: `${id}.json`, mimeType: "application/json", buffer: Buffer.from(JSON.stringify(backup)) });
+      await ctx.verify("Import opens the file chooser and takes the file", [ctx.holds("file chooser", chosen, "no file chooser opened")]);
+      await ctx.verify("the dialog names the workspace it will create", [tab.visible({ role: "dialog", name: "Import a workspace" })]);
+      await tab.click({ role: "button", name: "Import workspace" });
+      const created = await eventually(() => lang(ctx, "read the imported workspace", "GET", `/workspace?workspace=${id}`), (answer) => answer.status === 200);
+      const french = readLocaleFile(ctx, id, "fr");
+      await ctx.verify("the workspace holds the file's languages and texts", [
+        ctx.status(created, 200),
+        ctx.equal("locales", list(created.body, "locales").map((locale) => locale.code), ["en", "fr"]),
+        ctx.equal("French file", french, { shop: { title: "Boutique" } }),
+      ]);
     },
   },
   {

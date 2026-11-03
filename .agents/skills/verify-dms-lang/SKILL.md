@@ -163,7 +163,7 @@ $C doors .agents/skills/verify-dms-lang/seeded-doors/data.patch
 
 List these under `notVerified` in the judgement of every verdict; no journey reaches them:
 
-- the Import file chooser, the backup and language downloads and the bytes of the CSV export (browser downloads);
+- the language download of the queue (`Download fr.json`, a link to the API, not driven);
 - "Show more" after 150 matrix rows (the list is virtualised);
 - the heatmap colours and the dark mode;
 - a member who is not the owner, and so another user seeing a change (needs the invitation flow);
@@ -175,7 +175,9 @@ List these under `notVerified` in the judgement of every verdict; no journey rea
 - layout: the key panel's header cut at two lines, its footer on the drawer's bottom edge;
 - the repository's own playground (`pnpm dev`, `pnpm frontend:dev`) and `ajs project modules add`, which are the developer's commands, not the module's.
 
-A step whose check fails because the backend or the dashboard stopped answering, or because the sign-in form did not complete under load, ends the journey with a `NOT VERIFIED` error and no failing check, so `seeded` never counts it as a catch.
+The CSV export, Download backup and Import are driven through `tab.page`, Playwright's page of the tab: `downloadOf` (`lang.mjs`) reads the `download` event, and the `filechooser` event takes the file Import reads.
+
+A step whose check fails because the backend or the dashboard stopped answering, or because the sign-in form did not complete in three attempts of 30 s (`signInHydrated` loads the form again and retries before it gives up), ends the journey with a `NOT VERIFIED` error and no failing check, so `seeded` never counts it as a catch.
 
 ## Feature map
 

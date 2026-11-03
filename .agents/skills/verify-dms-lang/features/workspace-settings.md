@@ -32,6 +32,8 @@ The Workspaces page lists every set of translation files as a card and creates n
 - `add-language-picker`: Add language finds Italiano by its native name and adds `it`; `tlh-Latn`, a code the list does not know, is added as typed with its file.
 - `rename-from-the-danger-zone`: Rename tells a taken name and a free one live, shows the URL before and after, the public URL moves and the old one answers 404.
 - `delete-needs-the-name-typed`: Delete lists the files and strings it removes, offers a backup, ignores a wrong name and deletes on the right one.
+- `download-backup-saves-the-importable-file`: Download backup saves `<workspace>.json` (read through the download event), the backup with the format stamp, the id, the base language and every language's texts.
+- `import-reads-a-chosen-backup`: Import opens the file chooser, the chosen backup opens the Import a workspace dialog, and Import workspace creates the workspace with the file's languages and texts.
 
 ## How to get to it (user POV)
 
@@ -46,4 +48,4 @@ dms-control journey "$RUN" workspace-settings
 ## Gotchas
 
 - The journey file is `journeys/workspace-settings.mjs`; it holds the Workspaces page journeys as well.
-- The Import button opens a file chooser, which the journeys do not drive; the import route is driven by `backups`.
+- Download backup and Import are driven through `tab.page`: `downloadOf` reads the download event, and the `filechooser` event takes the file. The import route itself is also driven by `backups`.

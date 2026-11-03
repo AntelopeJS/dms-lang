@@ -60,7 +60,7 @@ export const journeys = guarded([
     entryPoint: "POST /api/lang/translations/workspace",
     async run(/** @type {Ctx} */ ctx) {
       const unique = freshId(ctx, "rules");
-      for (const bad of ["two words", "with/slash", "..", "émoji"]) {
+      for (const bad of ["two words", "with/slash", "..", "émoji", "x.x", "v1.2-beta"]) {
         const answer = await lang(ctx, `create "${bad}"`, "POST", "/workspace", { id: bad, locale: { code: "en" } });
         await ctx.verify(`"${bad}" is refused`, [ctx.status(answer, 400), ctx.equal("code", pick(answer.body, "code"), "invalid_workspace_id")]);
       }

@@ -29,6 +29,7 @@ How translated is this workspace: four figures, the languages least complete fir
 
 - `use-in-your-app-and-the-heatmap-legend`: a created workspace's Use in your app card gives its `GET` URL and an example; the project files' card names `frontend-vue/i18n/locales/*-xx-XX.json` and says they are not served at a public URL; the heatmap legend reads ≥ 90%, 60–89%, < 60%.
 - `kpis-and-coverage-by-namespace`: a workspace of three languages and four keys shows 3 languages, 4 keys in 2 namespaces, 4 missing translations across 2 languages and an average coverage of 50% without the base; each language row and each heatmap cell is labelled with its gaps; a heatmap cell opens the matrix on that namespace's missing keys.
+- `one-missing-text-keeps-coverage-under-100`: an import of 201 keys with French holding 200 reads French 99 (rounded down, so one missing text never reads 100) and a complete German 100.
 - `header-action-targets-the-least-complete-language`: the primary action reads "Translate 3 missing in Deutsch" and opens the matrix filtered on German's gaps.
 - `remove-a-language-asks-for-its-code`: the row menu lists the keys a new base lacks and can be cancelled; removing German needs its code typed and deletes `de.json`.
 - `complete-workspace-has-no-missing-action`: a complete workspace has 0 missing translations, 100% average coverage and no Translate N missing action; Translate opens the queue and Edit base texts the matrix.

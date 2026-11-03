@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import { panelJourneys } from "./parts/matrix-panel.mjs";
+import { exportJourneys } from "./parts/matrix-export.mjs";
 import { incompleteTab, viewJourneys } from "./parts/matrix-view.mjs";
 import { freshId, guarded, lang, pick, projectLocalesDir, readJsonFile, readLocaleFile, resetProjectFiles, seedWorkspace, workspaceFiles } from "../lang.mjs";
 
@@ -277,6 +278,7 @@ export const journeys = guarded([
       await ctx.verify("the key has its new path with both texts", [ctx.equal("new", pick(moved.body, "row", "values"), { en: "Pay {price}", fr: "Payer {price}" }), ctx.equal("old", pick(old.body, "row"), undefined)]);
     },
   },
+  ...exportJourneys,
   ...viewJourneys,
   ...panelJourneys,
 ]);

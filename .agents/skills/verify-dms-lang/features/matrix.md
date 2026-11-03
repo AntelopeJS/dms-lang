@@ -38,6 +38,7 @@ Every key of the workspace as a row, every language as a column, with inline edi
 - `add-key-dialog`: the dialog needs the path and a text, cannot be submitted empty, Add another keeps it open, and the keys land in the base file and in French.
 - `delete-key-offers-undo`: Delete asks first, naming the translations it removes (`its 2 translations (en, fr)`), removes the key from every language, and Undo restores it.
 - `export-menu-counts-the-view`: Export lists "This view" and "Everything" with their key and language counts.
+- `export-downloads-the-csv`: Export > Everything saves `<workspace>-all.csv` (read through Playwright's download event): a byte order mark, the header `key` then the base language then the others, CRLF lines, quotes doubled, cells that start with `=`, `+` or `-` kept as text with a leading apostrophe; This view saves `<workspace>-view-<languages>.csv`.
 - `override-a-module-key-from-the-matrix`: Installed modules > a key > Override opens it in the project files, where saving a French text writes the override, and the row then carries the Overridden badge in the installed modules.
 - `language-and-namespace-filters`: `missingIn=` (the toolbar's language filter) keeps the rows missing in one language and `namespace=` restricts the rows to one namespace.
 - `key-panel-renames-and-closing-saves`: closing the key panel saves the language that changed, and Rename gives the key its new path with both texts.
@@ -64,5 +65,5 @@ dms-control journey "$RUN" matrix
 
 ## Gotchas
 
-- The download of the CSV is built in the browser; the journeys check the menu entries and leave the file to the unit tests.
+- The CSV is built in the browser; `export-downloads-the-csv` reads it from the download event of `tab.page` (`downloadOf` in `lang.mjs`). The order of the columns after the base language is the dashboard's, not the docs', so the journey sorts them.
 - A cell that is saved and a Escape that cancels are told apart by what the API holds afterwards.
