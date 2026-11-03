@@ -1,3 +1,4 @@
+import { issueRuleJourneys } from "./parts/issue-rules.mjs";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { eventually, freshId, guarded, lang, list, pick, readLocaleFile, seedWorkspace, workspacesDir } from "../lang.mjs";
@@ -198,4 +199,5 @@ export const journeys = guarded([
       await ctx.verify("French has none of the four texts, which counts them as missing", [ctx.equal("missing", pick(flat.body, "localeMissing"), { en: 0, fr: 4 }), ctx.equal("file", readLocaleFile(ctx, id, "fr"), {})]);
     },
   },
+  ...issueRuleJourneys,
 ]);

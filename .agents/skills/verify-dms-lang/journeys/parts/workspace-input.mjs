@@ -81,4 +81,54 @@ export const inputJourneys = [
       ]);
     },
   },
+  {
+    id: "fetch-snippet-loads-the-base-first",
+    title: "the fetch setup loads the base, then the language, then the region, so the region wins over the base",
+    entryPoint: "GET /api/lang/translations/snippet?kind=fetch",
+    async run(/** @type {Ctx} */ ctx) {
+      const id = freshId(ctx, "fetched");
+      await seedWorkspace(ctx, id, { locales: ["en", "fr"] });
+      const answer = await lang(ctx, "read the fetch setup", "GET", `/snippet?workspace=${id}&kind=fetch`);
+      const code = String(pick(answer.body, "code"));
+      await ctx.verify("the files are merged base, language, region in that order", [
+        ctx.holds("order", code.includes('const codes = [...new Set([base, locale.split("-")[0], locale])];'), code.slice(0, 600)),
+        ctx.holds("later files override earlier ones", code.includes("files.reduce(merge, {})"), code.slice(-300)),
+      ]);
+    },
+  },
+  {
+    id: "toolbar-appears-from-four-workspaces",
+    title: "the Workspaces page shows a search field and a sort menu from four workspaces on, and the search narrows the cards",
+    entryPoint: "/modules/lang/workspaces",
+    async run(/** @type {Ctx} */ ctx) {
+      const before = await lang(ctx, "list the workspaces", "GET", "/workspaces");
+      for (const workspace of list(before.body, "workspaces")) {
+        if (workspace.kind === "added") await lang(ctx, `delete ${String(workspace.id)}`, "DELETE", "/workspace", { id: workspace.id });
+      }
+      const kept = list((await lang(ctx, "list what is left", "GET", "/workspaces")).body, "workspaces").length;
+      const first = freshId(ctx, "cards");
+      const second = freshId(ctx, "cards");
+      for (let n = kept; n < 2; n += 1) await lang(ctx, "fill up to two", "POST", "/workspace", { id: freshId(ctx, "pad"), locale: { code: "en" } });
+      await lang(ctx, "create the third workspace", "POST", "/workspace", { id: first, locale: { code: "en" } });
+      const tab = await ctx.tab("admin");
+      await tab.signIn("admin");
+      await tab.goto("/modules/lang/workspaces");
+      await ctx.verify("three workspaces: the cards, no search and no sort", [
+        tab.visible({ role: "heading", name: first }),
+        tab.visible({ role: "textbox", name: "Search by name or description" }, { hidden: true }),
+        tab.visible({ role: "combobox", name: "Sort workspaces" }, { hidden: true }),
+      ]);
+      await lang(ctx, "create the fourth workspace", "POST", "/workspace", { id: second, locale: { code: "en" } });
+      await tab.goto("/modules/lang/workspaces");
+      await ctx.verify("four workspaces: a search field and a sort menu", [
+        tab.visible({ role: "textbox", name: "Search by name or description" }),
+        tab.visible({ role: "combobox", name: "Sort workspaces" }),
+      ]);
+      await tab.fill({ role: "textbox", name: "Search by name or description" }, second);
+      await ctx.verify("the search narrows the cards to the match", [
+        tab.visible({ role: "heading", name: second }),
+        tab.visible({ role: "heading", name: first }, { hidden: true }),
+      ]);
+    },
+  },
 ];

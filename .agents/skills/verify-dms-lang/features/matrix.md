@@ -39,6 +39,7 @@ Every key of the workspace as a row, every language as a column, with inline edi
 - `delete-key-offers-undo`: Delete asks first, naming the translations it removes (`its 2 translations (en, fr)`), removes the key from every language, and Undo restores it.
 - `export-menu-counts-the-view`: Export lists "This view" and "Everything" with their key and language counts.
 - `export-downloads-the-csv`: Export > Everything saves `<workspace>-all.csv` (read through Playwright's download event): a byte order mark, the header `key` then the base language then the others, CRLF lines, quotes doubled, cells that start with `=`, `+` or `-` kept as text with a leading apostrophe; This view saves `<workspace>-view-<languages>.csv`.
+- `groups-start-collapsed-above-300-keys`: with 301 keys in two namespaces the groups start collapsed (and open on a click); with 300 the first group starts open.
 - `override-a-module-key-from-the-matrix`: Installed modules > a key > Override opens it in the project files, where saving a French text writes the override, and the row then carries the Overridden badge in the installed modules.
 - `language-and-namespace-filters`: `missingIn=` (the toolbar's language filter) keeps the rows missing in one language and `namespace=` restricts the rows to one namespace.
 - `key-panel-renames-and-closing-saves`: closing the key panel saves the language that changed, and Rename gives the key its new path with both texts.

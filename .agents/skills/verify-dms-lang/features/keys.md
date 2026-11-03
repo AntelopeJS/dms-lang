@@ -30,6 +30,9 @@ A key is a dotted path; each language holds a text for it. People add, translate
 - `rename-and-delete-a-key`: a rename moves every language's text, a taken, identical or unknown path is refused, a delete removes the key from every language file.
 - `mark-reviewed`: after the base text of a key of a created workspace changes, its French text is to review (`outdated: ["fr"]` on the row); marking it reviewed clears that, an unknown key is 404 and the project files answer 400 `review_added_only`.
 - `spaces-only-text-is-missing`: a text of spaces only in a language file edited by hand counts as no text, so the language misses the key and its coverage drops.
+- `edge-spaces-are-an-issue`: a translation with a leading or trailing space the base lacks is an issue of that language; a base with the same space does not make it one.
+- `plural-forms-must-match-the-base`: another number of plural forms than the base (`one | many` against one or three forms) is an issue; the same number is not.
+- `plural-messages-may-use-count-and-n`: a plural translation may use `{count}` and `{n}` without the base naming them; in a plain text `{n}` is an issue, and so is any other name in a plural.
 - `texts-with-edge-values`: a plural, a quoted at sign, a text of two placeholders and a text of 1000 letters are stored as typed and count as missing in a language that lacks them.
 
 ## How to get to it (user POV)

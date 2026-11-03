@@ -37,6 +37,8 @@ The Workspaces page lists every set of translation files as a card and creates n
 - `language-search-rules`: the picker's search ignores accents (`francais` finds Français), reads `fr_FR` as the code `fr-FR` (and adds it as `fr-FR`), and takes `french` as a name, never as a code.
 - `i18next-lists-the-bare-language`: for `en` and `pt-BR` the i18next setup lists `supportedLngs` `["en", "pt", "pt-BR"]`.
 - `import-reads-a-single-language-file`: a file named `it.json` is read as Italian: the dialog offers Italiano as the base, and Import creates the workspace with that file's texts.
+- `fetch-snippet-loads-the-base-first`: the fetch setup merges the base, then the language, then the region, so the region wins.
+- `toolbar-appears-from-four-workspaces`: the journey deletes the created workspaces, then with three workspaces (the project files, the installed modules and one created) the Workspaces page has no search field or sort menu, and with a fourth it has both and the search narrows the cards.
 
 ## How to get to it (user POV)
 
