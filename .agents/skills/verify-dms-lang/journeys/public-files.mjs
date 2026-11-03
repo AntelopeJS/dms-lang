@@ -1,3 +1,4 @@
+import { roundNinePublic } from "./parts/round9.mjs";
 import { freshId, guarded, lang, raw, recordRaw, seedWorkspace } from "../lang.mjs";
 
 /** @typedef {import("../lang.mjs").Ctx} Ctx */
@@ -108,4 +109,5 @@ export const journeys = guarded([
       ]);
     },
   },
+  ...roundNinePublic,
 ]);

@@ -1,4 +1,4 @@
-import { roundNineMatrix } from "./parts/round9.mjs";
+import { roundNineMatrix, roundNinePanel } from "./parts/round9.mjs";
 import { join } from "node:path";
 import { panelJourneys } from "./parts/matrix-panel.mjs";
 import { exportJourneys } from "./parts/matrix-export.mjs";
@@ -291,4 +291,5 @@ export const journeys = guarded([
   ...viewJourneys,
   ...panelJourneys,
   ...roundNineMatrix,
+  ...roundNinePanel,
 ]);

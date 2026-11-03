@@ -168,10 +168,9 @@ List these under `notVerified` in the judgement of every verdict; no journey rea
 - a frontend module removed while Lang runs (only taking an AntelopeJS module down removes one);
 - `workspacesDir` itself (the verification playground pins it to the run's `HOME`);
 - the "Saving…" and "Saved" flash of a cell (it lasts 1.8 s, less than a step's capture under load); Not saved and Retry are driven;
-- the regional fallback of the public files (`fr-BE.json` served by `fr`, its `Content-Language`): the docs and the backend disagree (dms-lang#85), so no journey asserts either side;
 - the placeholder tokens' look and the "Missing" tab's name (the docs say Incomplete, the dashboard says Missing for one language; both names pass);
 - the language filter's "any language" with a column hidden: the docs say whatever columns are shown, the dashboard counts only the shown columns (issue draft `dms-lang-matrix-every-language-follows-the-columns`);
-- layout: the key panel's header cut at two lines, its footer on the drawer's bottom edge;
+- layout: the key panel's header cut at two lines (the footer's place is checked by a bounding box);
 - the repository's own playground (`pnpm dev`, `pnpm frontend:dev`) and `ajs project modules add`, which are the developer's commands, not the module's.
 
 The CSV export, Download backup and Import are driven through `tab.page`, Playwright's page of the tab: `downloadOf` (`lang.mjs`) reads the `download` event, and the `filechooser` event takes the file Import reads.

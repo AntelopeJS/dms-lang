@@ -248,3 +248,21 @@ export async function scrollRows(tab) {
 export async function drawnRows(tab) {
   return Number(await tab.page.getByRole("button", { name: /^Open .+ in the panel$/ }).count());
 }
+
+/**
+ * How far the bottom of an element is from the bottom of a dialog, in pixels.
+ *
+ * @param {Tab} tab The tab
+ * @param {string} dialog The accessible name of the dialog
+ * @param {string} button The accessible name of a button in its footer
+ * @returns {Promise<number>} The gap, or -1 when a box is missing
+ */
+export async function footerGap(tab, dialog, button) {
+  return Number(
+    await tab.page.getByRole("dialog", { name: dialog }).evaluate((/** @type {Element} */ element, /** @type {string} */ label) => {
+      const foot = [...element.querySelectorAll("button")].find((candidate) => (candidate.textContent ?? "").trim() === label);
+      if (!foot) return -1;
+      return Math.round(element.getBoundingClientRect().bottom - foot.getBoundingClientRect().bottom);
+    }, button),
+  );
+}

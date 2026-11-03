@@ -1,5 +1,5 @@
-import { currentUrl, drawnRows, heatTone, scrollRows } from "../../files.mjs";
-import { clickUntil, fieldValue, freshId, lang, list, pick, seedWorkspace, workspacesDir } from "../../lang.mjs";
+import { currentUrl, drawnRows, footerGap, heatTone, scrollRows } from "../../files.mjs";
+import { clickUntil, fieldValue, freshId, lang, list, pick, raw, recordRaw, seedWorkspace, workspacesDir } from "../../lang.mjs";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -241,6 +241,44 @@ export const roundNineQueue = [
       await tab.fill({ role: "textbox", name: "Bye" }, "");
       await tab.page.getByRole("textbox", { name: "Bye" }).pressSequentially("sp");
       await ctx.verify("the letters are in the field of the same key", [ctx.equal("field", await fieldValue(tab, { role: "textbox", name: "Bye" }), "sp"), tab.visible({ role: "textbox", name: "Hi" }, { hidden: true })]);
+    },
+  },
+];
+
+export const roundNinePublic = [
+  {
+    id: "a-region-without-a-file-is-served-its-language",
+    title: "fr-BE.json is served the fr file with Content-Language fr when the workspace has no fr-BE",
+    entryPoint: "GET /i18n/<workspace>/fr-BE.json",
+    async run(/** @type {Ctx} */ ctx) {
+      const id = freshId(ctx, "region");
+      await seedWorkspace(ctx, id, { locales: ["en", "fr"], keys: { "a.b": { en: "x", fr: "y" } } });
+      const served = await raw(ctx, "read fr-BE", { path: `/i18n/${id}/fr-BE.json` });
+      recordRaw(ctx, served, [ctx.equal("status", served.status, 200), ctx.equal("body", served.json, { a: { b: "y" } }), ctx.equal("Content-Language", served.headers["content-language"], "fr")]);
+    },
+  },
+];
+
+export const roundNinePanel = [
+  {
+    id: "key-panel-footer-stays-on-the-bottom-edge",
+    title: "the footer of the key panel sits on the drawer's bottom edge whether the key has two languages or six",
+    entryPoint: "/modules/lang/translations?key=",
+    async run(/** @type {Ctx} */ ctx) {
+      const few = freshId(ctx, "foot");
+      const many = freshId(ctx, "feet");
+      await seedWorkspace(ctx, few, { locales: ["en", "fr"], keys: { "a.b": { en: "x" } } });
+      await seedWorkspace(ctx, many, { locales: ["en", "fr", "de", "es", "it", "pt"], keys: { "a.b": { en: "x" } } });
+      const tab = await ctx.tab("admin");
+      await tab.signIn("admin");
+      const gaps = [];
+      for (const id of [few, many]) {
+        await tab.goto(`/modules/lang/translations?workspace=${id}&key=a.b`);
+        await tab.visible({ role: "heading", name: "a.b" });
+        await tab.page.waitForTimeout(1500);
+        gaps.push(await footerGap(tab, "a.b", "Save"));
+      }
+      await ctx.verify("the Save button is within 40 px of the drawer's bottom in both", [ctx.holds("gaps", gaps.every((gap) => gap >= 0 && gap <= 40), gaps.join(", "))]);
     },
   },
 ];

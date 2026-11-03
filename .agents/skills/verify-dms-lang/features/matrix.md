@@ -74,6 +74,7 @@ Every key of the workspace as a row, every language as a column, with inline edi
 - `overridden-badge-opens-the-override`: In the installed modules a click on the Overridden badge opens the override in the project files.
 - `the-tabs-are-named-incomplete-and-missing`: The status tab reads Incomplete over several languages and Missing when one language is counted.
 - `key-panel-closers-save-the-changed-language`: Closing the key panel with its X, with Escape or with a click outside saves the changed language first.
+- `key-panel-footer-stays-on-the-bottom-edge`: The footer of the key panel sits on the drawer's bottom edge whether the key has two languages or six.
 
 ## How to get to it (user POV)
 

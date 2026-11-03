@@ -18,6 +18,7 @@ Every workspace a person creates is served as public JSON at `/i18n/<workspace>/
 - `unknown-workspace-or-locale-is-404`: error path: a missing workspace or language is 404, a language without texts yet is a 200 with an empty tree.
 - `private-workspaces-are-not-public`: the project files (`default`) and `modules` answer 404.
 - `workspace-ids-are-case-insensitive`: `/i18n/<ID in capitals>/fr.json` reads the same file.
+- `a-region-without-a-file-is-served-its-language`: Fr-BE.json is served the fr file with Content-Language fr when the workspace has no fr-BE.
 
 ## How to get to it (user POV)
 
