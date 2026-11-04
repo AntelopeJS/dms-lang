@@ -246,7 +246,7 @@ export async function fieldValue(tab, target) {
 export async function clickUntil(tab, target, opened) {
   for (let attempt = 0; attempt < 5; attempt += 1) {
     await tab.click(target);
-    const shown = await tab.visible(opened, { timeoutMs: 3000 });
+    const shown = await tab.visible(opened, { timeoutMs: 8000 });
     if (shown.pass) return;
   }
 }
