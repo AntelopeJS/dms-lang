@@ -77,7 +77,7 @@
     "@antelopejs/api": "file:.campaign/tgz/antelopejs-api-6afe3e2.tgz",
     "@antelopejs/core": "1.20.0",
     "@antelopejs/dms": ">=0.13.1 <1.0.0",
-    "@antelopejs/dms-frontend": "0.10.0",
+    "@antelopejs/dms-frontend": ">=0.10.0 <1.0.0",
     "@antelopejs/interface-data-api": "file:.campaign/tgz/antelopejs-interface-data-api-d8a868f.tgz",
     "@antelopejs/interface-database": ">=0.3.0 <1.0.0",
     "@antelopejs/interface-database-decorators": ">=0.2.0 <1.0.0",
