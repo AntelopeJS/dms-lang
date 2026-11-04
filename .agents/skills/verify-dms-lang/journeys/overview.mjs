@@ -1,3 +1,4 @@
+import { roundTwelveScope } from "./parts/round12.mjs";
 import { roundElevenOverview } from "./parts/round11.mjs";
 import { roundNineOverview } from "./parts/round9.mjs";
 import { limitJourneys } from "./parts/overview-limits.mjs";
@@ -251,4 +252,5 @@ export const journeys = guarded([
   ...limitJourneys,
   ...roundNineOverview,
   ...roundElevenOverview,
+  ...roundTwelveScope,
 ]);

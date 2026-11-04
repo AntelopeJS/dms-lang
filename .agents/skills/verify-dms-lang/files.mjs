@@ -323,3 +323,35 @@ export async function labelsOf(tab, role, name) {
 export async function textOf(tab, role, name) {
   return String(await tab.page.getByRole(role, { name }).first().evaluate((/** @type {Element} */ element) => element.textContent ?? ""));
 }
+
+/**
+ * The text of the workspace bar, found from its Switch workspace button: the smallest ancestor that holds the base language, so the language table of the page cannot answer for it.
+ *
+ * @param {Tab} tab The tab
+ * @returns {Promise<string>} The bar's text
+ */
+export async function scopeBarText(tab) {
+  return String(
+    await tab.page.getByRole("button", { name: "Switch workspace" }).first().evaluate((/** @type {Element} */ button) => {
+      let node = button.parentElement;
+      for (let level = 0; level < 5 && node; level += 1) {
+        if (/Base/.test(node.textContent ?? "")) return (node.textContent ?? "").replace(/\s+/g, " ");
+        node = node.parentElement;
+      }
+      return "";
+    }),
+  );
+}
+
+/** The user agent a macOS browser sends, which the DMS reads to bind Command to its shortcuts. */
+export const MAC_USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
+
+/**
+ * Makes the page read a macOS user agent from its first load on.
+ *
+ * @param {Tab} tab The tab, before it opens any page
+ * @returns {Promise<void>}
+ */
+export async function pretendToBeAMac(tab) {
+  await tab.page.addInitScript((/** @type {string} */ agent) => Object.defineProperty(Navigator.prototype, "userAgent", { get: () => agent }), MAC_USER_AGENT);
+}

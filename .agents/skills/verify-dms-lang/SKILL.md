@@ -163,7 +163,6 @@ $C doors .agents/skills/verify-dms-lang/seeded-doors/data.patch
 
 List these under `notVerified` in the judgement of every verdict; no journey reaches them:
 
-- the Command key in the queue and the key panel (the DMS shortcuts bind `meta` to Control outside macOS, so on Linux a Command press does nothing there; the matrix cell reads the Command key itself and is driven);
 - the dark mode (the heatmap's green, amber and red are driven through the classes of the cells);
 - a member who is not the owner, and so another user seeing a change (needs the invitation flow);
 - a frontend module removed while Lang runs (only taking an AntelopeJS module down removes one);

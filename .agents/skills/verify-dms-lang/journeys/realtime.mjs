@@ -31,6 +31,18 @@ async function messageFor(ctx, workspace, key) {
 }
 
 /**
+ * @param {Ctx} ctx The journey
+ * @param {string} workspace The workspace
+ * @param {string} key The key path a write changed
+ * @returns {Promise<Record<string, unknown> | undefined>} The newest message for that key that carries a session, once the subscriber heard it
+ */
+async function sessionMessageFor(ctx, workspace, key) {
+  const find = () => heard(ctx).filter((message) => pick(message, "payload", "workspace") === workspace && toKeys(message).includes(key) && pick(message, "payload", "session") !== undefined).at(-1);
+  await eventually(async () => ({ status: find() ? 200 : 204, body: undefined, error: null }), (answer) => answer.status === 200, 15_000);
+  return find();
+}
+
+/**
  * @param {Record<string, unknown>} message A message heard
  * @returns {unknown[]} The key paths its payload names
  */
@@ -78,6 +90,43 @@ export const journeys = guarded([
       await lang(ctx, "create a.two", "POST", "/key", { workspace: id, path: "a.two", values: { en: "Two" } });
       const created = await messageFor(ctx, id, "a.two");
       await ctx.verify("a created key is announced on it too", [ctx.holds("a message names a.two", created !== undefined, JSON.stringify(heard(ctx).slice(-3)))]);
+    },
+  },
+  {
+    id: "the-message-is-named-changed-and-carries-the-session",
+    title: "every write publishes a message of type changed whose payload carries the workspace, the keys and the realtime session of the writer: the tab's own, or the one an API caller sends",
+    entryPoint: "the dms-lang.translations realtime topic",
+    async run(/** @type {Ctx} */ ctx) {
+      const id = freshId(ctx, "session");
+      await seedWorkspace(ctx, id, { locales: ["en", "fr"], keys: { "a.one": { en: "One" }, "a.two": { en: "Two" } } });
+      const tab = await ctx.tab("admin");
+      await tab.signIn("admin");
+      await tab.goto(`/modules/lang/translations?workspace=${id}`);
+      await tab.visible({ role: "button", name: "Translate a.one into Français" }, { timeoutMs: 60_000 });
+      await tab.page.waitForTimeout(5000);
+      /** @type {string[]} */
+      const sessions = [];
+      tab.page.on("request", (request) => {
+        if (request.method() === "PUT" && request.url().includes("/translations/key")) sessions.push(String(request.headers()["x-realtime-session"]));
+      });
+      await tab.click({ role: "button", name: "Translate a.one into Français" });
+      await tab.fill({ role: "textbox", name: "Translate a.one into Français" }, "Un");
+      await tab.press("Enter", { role: "textbox", name: "Translate a.one into Français" });
+      const fromTab = await sessionMessageFor(ctx, id, "a.one");
+      const session = pick(fromTab, "payload", "session");
+      await ctx.verify("a write from the tab: type changed, workspace, keys and a session", [
+        ctx.holds("heard", fromTab !== undefined, JSON.stringify(heard(ctx).slice(-3))),
+        ctx.equal("type", pick(fromTab, "type"), "changed"),
+        ctx.equal("workspace", pick(fromTab, "payload", "workspace"), id),
+        ctx.equal("keys", pick(fromTab, "payload", "keys"), ["a.one"]),
+        ctx.holds("session", String(session).length > 0 && session !== undefined, `message ${String(session)}, request headers ${sessions.join(",")}`),
+      ]);
+      const sent = Number(await tab.page.evaluate(async (/** @type {{ workspace: string }} */ body) => {
+        const response = await fetch("/api/lang/translations/key", { method: "PUT", headers: { "content-type": "application/json", "x-realtime-session": "s1" }, body: JSON.stringify({ workspace: body.workspace, path: "a.two", values: { fr: "Deux" } }) });
+        return response.status;
+      }, { workspace: id }));
+      const fromApi = await sessionMessageFor(ctx, id, "a.two");
+      await ctx.verify("a write that sends x-realtime-session: s1 carries session s1", [ctx.equal("status", sent, 200), ctx.equal("session", pick(fromApi, "payload", "session"), "s1"), ctx.equal("type", pick(fromApi, "type"), "changed")]);
     },
   },
 ]);

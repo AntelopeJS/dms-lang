@@ -1,3 +1,4 @@
+import { roundTwelveSettings } from "./parts/round12.mjs";
 import { downloadOf } from "../files.mjs";
 import { inputJourneys } from "./parts/workspace-input.mjs";
 import { pageJourneys } from "./parts/workspace-pages.mjs";
@@ -268,4 +269,5 @@ export const journeys = guarded([
   ...inputJourneys,
   ...pageJourneys,
   ...moreWorkspaceJourneys,
+  ...roundTwelveSettings,
 ]);

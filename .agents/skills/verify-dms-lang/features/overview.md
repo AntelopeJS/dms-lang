@@ -43,6 +43,7 @@ How translated is this workspace: four figures, the languages least complete fir
 - `heatmap-tones-switch-at-90-and-60`: A heatmap cell is green from 90%, amber from 60 to 89% and red below 60%.
 - `the-base-language-is-left-out-of-the-figures`: The Missing translations card and Average coverage count only the languages other than the base, and the Keys card names the keys without a base text.
 - `language-tiles-carry-the-region-only-when-shared`: The overview's language rows read Français (Belgique) next to a sibling French and plain Français when fr-BE is alone.
+- `scope-bar-shows-the-base-language-on-every-page`: The workspace bar of the overview, the matrix and the queue reads its base language (Base EN en), counts and public URL.
 
 ## How to get to it (user POV)
 

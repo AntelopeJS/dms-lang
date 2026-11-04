@@ -36,6 +36,8 @@ One language, one key at a time, with the base text, the keys that come next and
 - `s-and-p-typed-in-the-field-are-text`: Typing s and p in the text field writes the letters and does not skip or go back.
 - `keys-of-a-namespace-come-in-key-order`: Within a namespace the queue walks the missing keys in key order: auth.login, then auth.logout.
 - `the-finished-pass-offers-the-least-complete-language`: When a language is done the queue offers the least complete other language first, and an unknown language lists them in that order.
+- `command-key-in-the-queue-on-a-mac`: With a macOS browser Command S saves the queue's text and stays on the key, and Command Enter saves it and moves on.
+- `command-enter-in-the-key-panel-on-a-mac`: With a macOS browser Command Enter in a key panel field saves the texts and opens the next key.
 
 ## How to get to it (user POV)
 

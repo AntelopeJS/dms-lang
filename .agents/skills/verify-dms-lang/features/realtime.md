@@ -14,6 +14,7 @@ Every write publishes on the `dms-lang.translations` topic. The Lang pages subsc
 - `another-tab-sees-an-edit`: with the matrix open in a second tab, a French text saved in the first tab and one written through the API each appear in the second tab without a reload.
 
 - `a-subscriber-hears-the-topic-by-its-name`: the playground's app module subscribes to `dms-lang.translations` with `SubscribeMessage`, as the docs invite a module to; a text saved and a key created through the API each reach it with the workspace and the key. A topic renamed on both sides of Lang leaves this subscriber deaf.
+- `the-message-is-named-changed-and-carries-the-session`: Every write publishes a message of type changed whose payload carries the workspace, the keys and the realtime session of the writer: the tab's own, or the one an API caller sends.
 
 ## How to get to it (user POV)
 
