@@ -1,4 +1,4 @@
-import { currentUrl, labelsOf, leadingNames, linkTexts, namesInOrder, radioChecked } from "../../files.mjs";
+import { currentUrl, labelsOf, leadingNames, linkTexts, namesInOrder, radioChecked, textOf } from "../../files.mjs";
 import { clickUntil, fieldValue, freshId, lang, list, pick, seedWorkspace } from "../../lang.mjs";
 
 /** @typedef {import("../../lang.mjs").Ctx} Ctx */
@@ -81,7 +81,7 @@ export const roundElevenMatrix = [
     entryPoint: "/modules/lang/translations?workspace=default",
     async run(/** @type {Ctx} */ ctx) {
       const flat = await lang(ctx, "read the project files", "GET", "/flat?workspace=default");
-      await lang(ctx, "override a module text in French only", "PUT", "/key", { workspace: "default", path: "dms.button.save_changes", values: { fr: "Enregistrer mes changements" } });
+      await lang(ctx, "override the English text of a module key and leave its French to the module", "PUT", "/key", { workspace: "default", path: "dms.button.save_changes", values: { en: "Save my changes" } });
       const after = await lang(ctx, "read them again", "GET", "/flat?workspace=default");
       const tab = await ctx.tab("admin");
       await tab.signIn("admin");
@@ -92,7 +92,7 @@ export const roundElevenMatrix = [
         tab.visible({ role: "radio", name: new RegExp(`^(Incomplete|Missing) ${incomplete}$`) }),
         tab.visible(open("dms.button.save_changes")),
       ]);
-      await lang(ctx, "drop the override", "DELETE", "/key/override", { workspace: "default", path: "dms.button.save_changes", locales: ["fr"] });
+      await lang(ctx, "drop the override", "DELETE", "/key/override", { workspace: "default", path: "dms.button.save_changes", locales: ["en"] });
     },
   },
   {
@@ -176,6 +176,16 @@ export const roundElevenOverview = [
       await ctx.verify("shared: the region is named in the row", [tab.visible({ role: "cell", name: /^Français \(Belgique\) fr-BE · / }), tab.visible({ role: "cell", name: /^Français fr · / })]);
       await tab.goto(`/modules/lang/overview?workspace=${alone}`);
       await ctx.verify("alone: plain Français", [tab.visible({ role: "cell", name: /^Français fr-BE · / }), tab.visible({ role: "cell", name: /Belgique/ }, { hidden: true })]);
+      await tab.goto(`/modules/lang/translations?workspace=${shared}`);
+      await tab.visible({ role: "gridcell", name: /^Français \(Belgique\)/ });
+      const sharedTile = await textOf(tab, "gridcell", /^Français \(Belgique\)/);
+      await tab.goto(`/modules/lang/translations?workspace=${alone}`);
+      await tab.visible({ role: "gridcell", name: /^Français/ });
+      const aloneTile = await textOf(tab, "gridcell", /^Français/);
+      await ctx.verify("the tile letters add the region when the language is shared (FR-BE) and not when alone (FR)", [
+        ctx.holds("shared tile", sharedTile.startsWith("FR-BE"), sharedTile.slice(0, 40)),
+        ctx.holds("lone tile", /^FR(?!-)/.test(aloneTile), aloneTile.slice(0, 40)),
+      ]);
     },
   },
 ];

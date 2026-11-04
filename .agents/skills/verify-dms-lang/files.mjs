@@ -311,3 +311,15 @@ export async function leadingNames(tab, name) {
 export async function labelsOf(tab, role, name) {
   return String(await tab.page.getByRole(role, { name }).evaluateAll((/** @type {Element[]} */ els) => els.map((el) => el.getAttribute("aria-label") ?? "").join("|")));
 }
+
+/**
+ * The full text of the first element of a role and name, including text hidden from the accessibility tree such as a language tile.
+ *
+ * @param {Tab} tab The tab
+ * @param {string} role The role
+ * @param {RegExp} name Its accessible name
+ * @returns {Promise<string>} Its text content
+ */
+export async function textOf(tab, role, name) {
+  return String(await tab.page.getByRole(role, { name }).first().evaluate((/** @type {Element} */ element) => element.textContent ?? ""));
+}
