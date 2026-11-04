@@ -5,10 +5,4 @@ packages:
 overrides:
   "@antelopejs/interface-api": "0.2.0"
   "@antelopejs/interface-api-util": "0.3.0"
-  "@antelopejs/interface-database": "0.3.0"
-  "@antelopejs/interface-database-decorators": "0.2.0"
-  "@antelopejs/interface-data-api": "file:.campaign/tgz/antelopejs-interface-data-api-d8a868f.tgz"
-  "@antelopejs/interface-dms": "file:.campaign/tgz/antelopejs-interface-dms-14e671d.tgz"
   "@antelopejs/api": "file:.campaign/tgz/antelopejs-api-6afe3e2.tgz"
-  "@antelopejs/interface-core": "0.4.0"
-  "@antelopejs/dms": "file:.campaign/tgz/antelopejs-dms-14e671d.tgz"
