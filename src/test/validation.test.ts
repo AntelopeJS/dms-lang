@@ -1,4 +1,5 @@
 import { expect } from "chai";
+import { HTTPResult } from "@antelopejs/interface-api";
 import { keySchema } from "../validation/key.schema";
 import { querySchema } from "../validation/query.schema";
 import { validate } from "../validation/validate";
@@ -31,6 +32,18 @@ describe("[unit] route inputs are validated at the entry", () => {
     );
     expect(body.message).to.equal("$dms_lang.errors.invalid_body");
     expect(body).to.have.deep.nested.property("issues[0].path", ["before"]);
+  });
+
+  it("answers zod's issues, a union's included, in the bytes the DMS reads", () => {
+    let body: string | undefined;
+    try {
+      validate(workspaceSchema.update, { id: "shop", type: 5 });
+    } catch (error) {
+      if (error instanceof HTTPResult) body = error.getBody();
+    }
+    expect(body).to.equal(
+      '{"issues":[{"code":"invalid_union","unionErrors":[{"issues":[{"expected":"\'dms\' | \'website\' | \'mobile\' | \'other\'","received":"number","code":"invalid_type","path":["type"],"message":"Expected \'dms\' | \'website\' | \'mobile\' | \'other\', received number"}],"name":"ZodError"},{"issues":[{"received":5,"code":"invalid_literal","expected":"","path":["type"],"message":"Invalid literal value, expected \\"\\""}],"name":"ZodError"}],"path":["type"],"message":"Invalid input"}],"message":"$dms_lang.errors.invalid_body","code":"invalid_body"}',
+    );
   });
 
   it("refuses an unknown snippet or page instead of looking it up", () => {

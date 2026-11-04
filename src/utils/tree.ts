@@ -3,12 +3,10 @@ import { isObject, isString } from "./guards";
 
 export type TranslationValue = string | number | boolean | null | undefined;
 
-export interface LocaleMessages {
-  [locale: string]: Record<string, unknown>;
-}
-
 /** The language files of a workspace, merged per locale. */
-export type LocaleTrees = Record<string, JsonObject>;
+export interface LocaleMessages {
+  [locale: string]: JsonObject;
+}
 
 export function deepMerge(target: JsonObject, source: JsonObject): JsonObject {
   const result: JsonObject = { __proto__: null, ...target };
@@ -59,7 +57,7 @@ export function isMissing(value: JsonValue | undefined): boolean {
 }
 
 /** The keys of every locale merged: a key exists as soon as one language file holds it. */
-export function unionKeys(messages: LocaleTrees): JsonObject {
+export function unionKeys(messages: LocaleMessages): JsonObject {
   let union: JsonObject = {};
   for (const localeMessages of Object.values(messages)) {
     union = deepMerge(union, localeMessages);

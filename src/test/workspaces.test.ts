@@ -4,13 +4,12 @@ import { join } from "node:path";
 import { runInNewContext } from "node:vm";
 import { expect } from "chai";
 import { GetMetadata } from "@antelopejs/interface-core";
-import type { DefaultLayoutOptions } from "@antelopejs/interface-dms/base";
 import { PageMetadata } from "@antelopejs/interface-dms/page";
 import { LangWorkspaceController } from "../pages/workspace";
 import { manageLanguagesAction } from "../pages/actions";
 import { languagesTable } from "../pages/languages-table";
 import { workspaceKpis } from "../utils/blocks";
-import { resolveWorkspaceId } from "../utils/catalog";
+import { resolveWorkspaceId, workspaceRecord } from "../utils/catalog";
 import { coveragePercent } from "../utils/coverage";
 import {
   getTranslationConfig,
@@ -231,12 +230,13 @@ function describeLanguages(): void {
     const { code } = workspaceSnippet(WORKSPACE, "fetch", API_BASE);
     /** The snippet as an app runs it, with the files of the workspace served. */
     const run = async (language: string) => {
-      const messages = await runInNewContext(
+      const messages: unknown = await runInNewContext(
         `(async () => { ${code}
 return messages; })()`,
         { fetch: served, navigator: { language } },
       );
-      return JSON.parse(JSON.stringify(messages));
+      const plain: unknown = JSON.parse(JSON.stringify(messages));
+      return plain;
     };
     expect(await run("fr-BE")).to.deep.equal({
       home: { title: "Page d'accueil", cta: "Acheter" },
@@ -309,7 +309,10 @@ function describePublicAccess(): void {
   it("imports a backup through the checks of a key write", () => {
     const imported = importWorkspace({
       id: "core-checked",
-      locales: [{ code: "EN", name: " English ", flag: 42 } as never],
+      locales: [
+        // @ts-expect-error a numeric flag is off-contract input (WorkspaceLocale.flag is a string); the import must drop it and keep the trimmed name
+        { code: "EN", name: " English ", flag: 42 },
+      ],
       messages: { en: { a: { b: "B", empty: " " }, gone: { x: "" } } },
     });
     const backup = backupWorkspace(imported);
@@ -366,9 +369,12 @@ function describeManifestWrites(directoryOf: () => string): void {
 describe("[integration] the workspace page's record", () => {
   it("reads the workspace of its URL as the workspace page's record", async () => {
     const metadata = GetMetadata(LangWorkspaceController, PageMetadata);
-    const options = metadata.layout?.options as DefaultLayoutOptions;
+    expect(metadata.layout?.options).to.have.property(
+      "record",
+      workspaceRecord,
+    );
     const record = (workspace?: string) =>
-      options.record?.({
+      workspaceRecord({
         tenantId: "",
         user: undefined,
         query: workspace ? { workspace } : {},

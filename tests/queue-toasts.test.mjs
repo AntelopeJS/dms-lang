@@ -20,7 +20,7 @@ function setup() {
 }
 
 for (const copied of [false, true]) {
-  test(`copying a deleted draft shows one outcome toast with copied=${copied}`, async () => {
+  void test(`copying a deleted draft shows one outcome toast with copied=${copied}`, async () => {
     const { notices, queue } = setup();
     const writes = [];
     Object.defineProperty(navigator, "clipboard", {
@@ -58,7 +58,7 @@ for (const copied of [false, true]) {
   });
 }
 
-test("blocked local validation shows a warning rather than a red error", () => {
+void test("blocked local validation shows a warning rather than a red error", () => {
   const { notices, queue } = setup();
   queue.warnBlocked();
   assert.deepEqual(notices, [

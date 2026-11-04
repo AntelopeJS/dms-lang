@@ -12,24 +12,52 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CompileErrorCodes } from "@intlify/message-compiler";
+import { z } from "zod";
 import {
   checkMessage,
   placeholdersOf,
 } from "../frontend-vue/app/utils/translations.ts";
 
 /** Whether a value is a string. */
-function isString(value: unknown): value is string {
+function isString(value: Leaf): value is string {
   return typeof value === "string";
 }
 
+type Leaf = string | number | boolean | null;
+type Container = Json[] | { [key: string]: Json };
+type Json = Leaf | Container;
+
+const LEAF = z.union([z.string(), z.number(), z.boolean(), z.null()]);
+const JSON_VALUE: z.ZodType<Json> = z.lazy(() =>
+  z.union([LEAF, z.array(JSON_VALUE), z.record(JSON_VALUE)]),
+);
+const LOCALE = z.union([z.array(JSON_VALUE), z.record(JSON_VALUE)]);
+
 /** Whether a value is an object, an array included, and not `null`. */
-function isObject(value: unknown): value is object {
+function isContainer(value: Json): value is Container {
   return typeof value === "object" && value !== null;
+}
+
+interface Source {
+  root: string;
+  extensions: string[];
+  skip: string[];
+}
+
+interface SourceFile {
+  path: string;
+  isBackend: boolean;
+  text: string;
+}
+
+interface Reference {
+  key: string;
+  canBeBranch: boolean;
 }
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const LOCALES = join(ROOT, "frontend-vue/i18n/locales");
-const SOURCES = [
+const SOURCES: Source[] = [
   { root: join(ROOT, "src"), extensions: [".ts"], skip: ["test"] },
   {
     root: join(ROOT, "frontend-vue/app"),
@@ -43,17 +71,23 @@ const QUOTED_KEY = /(['"])(dms_lang(?:\.\w+)+)\1/g;
 const CONST_STRING = /const\s+([A-Z][A-Z0-9_]*)\s*=\s*(["'`])([^"'`]*)\2/g;
 const CONST_TEMPLATE = /\$\{([A-Z][A-Z0-9_]*)\}/g;
 
-function flatten(messages, prefix = "", out = new Map()) {
+function flatten(
+  messages: Container,
+  prefix = "",
+  out = new Map<string, Leaf>(),
+): Map<string, Leaf> {
   for (const [name, value] of Object.entries(messages)) {
     const key = prefix ? `${prefix}.${name}` : name;
-    if (isObject(value)) flatten(value, key, out);
+    if (isContainer(value)) flatten(value, key, out);
     else out.set(key, value);
   }
   return out;
 }
 
-function readLocale(file) {
-  return flatten(JSON.parse(readFileSync(join(LOCALES, file), "utf8")));
+function readLocale(file: string): Map<string, Leaf> {
+  return flatten(
+    LOCALE.parse(JSON.parse(readFileSync(join(LOCALES, file), "utf8"))),
+  );
 }
 
 const SOURCE_FILE = "lang-en-GB.json";
@@ -82,7 +116,7 @@ const branches = new Set(
   ),
 );
 
-function filesOf({ root, extensions, skip }) {
+function filesOf({ root, extensions, skip }: Source): string[] {
   return readdirSync(root, { withFileTypes: true }).flatMap((entry) => {
     const path = join(root, entry.name);
     if (entry.isDirectory())
@@ -103,40 +137,41 @@ const files = SOURCES.flatMap((source) =>
   })),
 );
 
-function constantsOf(text) {
+function constantsOf(text: string): Record<string, string> {
   return Object.fromEntries(
     [...text.matchAll(CONST_STRING)].map((match) => [match[1], match[3]]),
   );
 }
 
 /** `${TEXTS}.kpis.keys` written out with the constants of the file, then the shared ones. */
-function resolveConstants(text, shared) {
+function resolveConstants(text: string, shared: Record<string, string>) {
   const constants = { ...shared, ...constantsOf(text) };
   let resolved = text;
   for (let pass = 0; pass < 3; pass += 1) {
-    resolved = resolved.replace(CONST_TEMPLATE, (all, name) =>
-      isString(constants[name]) && !constants[name].includes("${")
+    resolved = resolved.replace(CONST_TEMPLATE, (all: string, name: string) =>
+      Object.hasOwn(constants, name) && !constants[name].includes("${")
         ? constants[name]
         : all,
     );
     for (const [name, value] of Object.entries(constants))
-      constants[name] = value.replace(CONST_TEMPLATE, (all, inner) =>
-        inner in constants && !constants[inner].includes("${")
-          ? constants[inner]
-          : all,
+      constants[name] = value.replace(
+        CONST_TEMPLATE,
+        (all: string, inner: string) =>
+          Object.hasOwn(constants, inner) && !constants[inner].includes("${")
+            ? constants[inner]
+            : all,
       );
   }
   return { resolved, prefixes: new Set(Object.values(constants)) };
 }
 
-const sharedConstants = Object.assign(
-  {},
-  ...files
+const sharedConstants: Record<string, string> = Object.fromEntries(
+  files
     .filter((file) => file.isBackend)
-    .map((file) => constantsOf(file.text)),
+    .flatMap((file) => Object.entries(constantsOf(file.text))),
 );
 
-function backendReferences(file) {
+function backendReferences(file: SourceFile): Reference[] {
   const { resolved, prefixes } = resolveConstants(file.text, sharedConstants);
   return [...resolved.matchAll(KEY_REFERENCE)]
     .filter((match) => !match[2])
@@ -146,7 +181,7 @@ function backendReferences(file) {
     }));
 }
 
-function frontendReferences(file) {
+function frontendReferences(file: SourceFile): Reference[] {
   const calls = [...file.text.matchAll(TRANSLATE_CALL)].map((match) => ({
     key: match[2],
     canBeBranch: false,
@@ -186,7 +221,7 @@ function missingKeys() {
  * languages, and placeholders and paths are never translated.
  */
 function untranslatedSentences() {
-  const wordsOf = (value) =>
+  const wordsOf = (value: Leaf) =>
     String(value).replace(UNTRANSLATED_PART, " ").match(WORD) ?? [];
   return translations.flatMap(({ file, messages }) =>
     [...en]
@@ -203,7 +238,7 @@ function untranslatedSentences() {
 
 /** Every message is a vue-i18n message that compiles, without stray spaces. */
 function brokenMessages() {
-  const problemsOf = (value) =>
+  const problemsOf = (value: Leaf) =>
     isString(value)
       ? checkMessage("", value).map((issue) => issue.kind)
       : ["not a text"];
@@ -219,7 +254,8 @@ function brokenMessages() {
 
 /** Both languages use the same variables. */
 function differentVariables() {
-  const sorted = (value) => placeholdersOf(value).sort().join(",");
+  const sorted = (value: Leaf | undefined) =>
+    placeholdersOf(value).sort().join(",");
   return [...en]
     .filter(([key, value]) => sorted(value) !== sorted(fr.get(key)))
     .map(([key]) => `other variables in fr: ${key}`);

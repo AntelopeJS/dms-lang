@@ -53,7 +53,7 @@ function setup(data, status = 403) {
 }
 
 for (const coreFirst of [false, true]) {
-  test(`workspace creation shows one server warning with coreFirst=${coreFirst}`, async () => {
+  void test(`workspace creation shows one server warning with coreFirst=${coreFirst}`, async () => {
     const { notices, error } = setup({
       message: "error.read_only_demo",
       severity: "warning",
@@ -95,7 +95,7 @@ for (const coreFirst of [false, true]) {
   });
 }
 
-test("unknown server keys use the caller fallback and keep the retry action", () => {
+void test("unknown server keys use the caller fallback and keep the retry action", () => {
   const { notices, error } = setup({ message: "unknown.server.key" }, 503);
   let retried = false;
   const runtime = browserRun(() => {
@@ -121,7 +121,7 @@ test("unknown server keys use the caller fallback and keep the retry action", ()
   }
 });
 
-test("inline resolution translates the server key without consuming its toast", () => {
+void test("inline resolution translates the server key without consuming its toast", () => {
   const { notices, error } = setup({
     message: "error.read_only_demo",
     severity: "warning",

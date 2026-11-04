@@ -19,7 +19,7 @@ import {
   manageCategory,
 } from "./module";
 import { LangWorkspacesController } from "./workspaces";
-import { workspaceSummary } from "../utils/catalog";
+import { workspaceRecord } from "../utils/catalog";
 import { LANG_API, PERMISSION_TEXTS } from "../utils/constants";
 import { SNIPPET_KINDS } from "../utils/snippets";
 
@@ -176,14 +176,7 @@ export class LangWorkspaceController extends PageController(
     parent: LangWorkspacesController,
   },
   DefaultLayout({
-    /**
-     * The workspace the page shows: a tab on it leaves for the list once
-     * another deletes it.
-     */
-    record: ({ query }) => {
-      const summary = workspaceSummary(query?.workspace);
-      return summary && { ...summary };
-    },
+    record: workspaceRecord,
     headerActions: [OPEN_OVERVIEW_BUTTON],
   }),
 ) {

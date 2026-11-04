@@ -5,12 +5,18 @@
  * the mismatch only; exits 1 when there is one.
  */
 import { readFileSync } from "node:fs";
+import { z } from "zod";
 
+/** @param {string} path */
 const read = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
 const DMS_SOURCE =
   /package:\s*"@antelopejs\/dms",\s*version:\s*"(?<range>[^"]+)"/;
 
-const { devDependencies } = JSON.parse(read("../package.json"));
+const MANIFEST = z.object({
+  devDependencies: z.object({ "@antelopejs/dms": z.string().optional() }),
+});
+
+const { devDependencies } = MANIFEST.parse(JSON.parse(read("../package.json")));
 const required = devDependencies["@antelopejs/dms"];
 const loaded = DMS_SOURCE.exec(read("../playground/antelope.config.ts"))?.groups
   ?.range;

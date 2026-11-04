@@ -6,15 +6,15 @@ import {
   HTTPResult,
   type RequestContext,
 } from "@antelopejs/interface-api";
+import { isObject } from "../../utils/guards";
 
 /** `template` with its `{{query.name}}` tokens set to the page query's values, as the DMS fills an action target. */
 export function filled(
   template: string,
   query: Record<string, string>,
 ): string {
-  return template.replace(
-    /\{\{query\.(\w+)\}\}/g,
-    (_token, name: string) => query[name] ?? "",
+  return template.replace(/\{\{query\.(\w+)\}\}/g, (_token, name: string) =>
+    Object.hasOwn(query, name) ? query[name] : "",
   );
 }
 
@@ -39,11 +39,15 @@ export async function requestHandler(method: string, url: URL) {
     routeParameters: {},
     response: new HTTPResult(),
   };
-  const receiver = Object.create(handler.proto);
+  const prototype: unknown = handler.controller.prototype;
+  if (!isObject(prototype)) throw new Error(`no controller at ${url.pathname}`);
+  const receiver: unknown = Object.create(prototype);
+  if (!isObject(receiver)) throw new Error(`no receiver at ${url.pathname}`);
   const parameters = await Promise.all(
     handler.parameters.map((parameter) =>
       computeParameter(context, parameter, receiver),
     ),
   );
-  return handler.callback.apply(receiver, parameters);
+  const answer: unknown = handler.callback.apply(receiver, parameters);
+  return answer;
 }

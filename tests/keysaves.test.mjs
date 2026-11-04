@@ -4,14 +4,20 @@ import * as translations from "../frontend-vue/app/utils/translations.ts";
 import * as mutations from "../frontend-vue/app/composables/translation/useMutationToast.ts";
 
 Object.assign(globalThis, translations, mutations, {
+  /**
+   * @param {(key: string, params: object) => string} translate
+   * @param {string} message
+   */
   resolveApiMessage: (translate, message) =>
     message.startsWith("$") ? translate(message.slice(1), {}) : message,
 });
 
+/** @type {{ [key: string]: string }} */
 const TEXTS = {
   "dms_lang.errors.message_syntax.bare_at": "Write @ as {'@'}.",
 };
 
+/** @param {string} key */
 function translate(key) {
   return TEXTS[key] ?? key;
 }
@@ -28,11 +34,14 @@ const {
 const { keySaveFailure } =
   await import("../frontend-vue/app/utils/keySaveErrors.ts");
 
+/** @typedef {import("../frontend-vue/app/utils/keySaves.ts").ExpectedText} ExpectedText */
+
+/** @param {object} data */
 function refused(data) {
   return { status: 409, data };
 }
 
-test("savedText expects what the server compares: a text, else none", () => {
+void test("savedText expects what the server compares: a text, else none", () => {
   assert.equal(savedText("Save"), "Save");
   assert.equal(savedText(""), null);
   assert.equal(savedText(undefined), null);
@@ -41,13 +50,13 @@ test("savedText expects what the server compares: a text, else none", () => {
   assert.equal(savedText(true), null);
 });
 
-test("storedText stores a text made of spaces as no text", () => {
+void test("storedText stores a text made of spaces as no text", () => {
   assert.equal(storedText("  "), null);
   assert.equal(storedText(""), null);
   assert.equal(storedText(" Hi "), " Hi ");
 });
 
-test("save ids of a key share its prefix only", () => {
+void test("save ids of a key share its prefix only", () => {
   const id = saveIdOf("site", "a.b", "fr");
   assert.ok(id.startsWith(saveIdPrefix("site", "a.b")));
   assert.ok(
@@ -55,13 +64,13 @@ test("save ids of a key share its prefix only", () => {
   );
 });
 
-test("carriedExpected keeps a check while the earlier write landed", () => {
+void test("carriedExpected keeps a check while the earlier write landed", () => {
   const landed = { sent: "A", expected: "X", isLanded: true };
   assert.equal(carriedExpected("A", landed), "A");
   assert.equal(carriedExpected("A", undefined), "A");
 });
 
-test("carriedExpected never expects a text the server refused", () => {
+void test("carriedExpected never expects a text the server refused", () => {
   const failed = { sent: "A", expected: "X", isLanded: false };
   assert.equal(carriedExpected("A", failed), "X");
   assert.equal(carriedExpected(null, { ...failed, sent: null }), "X");
@@ -69,14 +78,14 @@ test("carriedExpected never expects a text the server refused", () => {
   assert.equal(carriedExpected(undefined, failed), undefined);
 });
 
-test("withEntry sets and removes one entry without touching the record", () => {
+void test("withEntry sets and removes one entry without touching the record", () => {
   const record = { a: 1 };
   assert.deepEqual(withEntry(record, "b", 2), { a: 1, b: 2 });
   assert.deepEqual(withEntry(record, "a", undefined), {});
   assert.deepEqual(record, { a: 1 });
 });
 
-test("keySaveFailure classifies a refused write by its code", () => {
+void test("keySaveFailure classifies a refused write by its code", () => {
   const conflict = keySaveFailure(
     refused({ code: "conflict", current: { fr: "Autre" } }),
     translate,
@@ -100,7 +109,7 @@ test("keySaveFailure classifies a refused write by its code", () => {
   assert.deepEqual(invalid.details, ["Write @ as {'@'}."]);
 });
 
-test("keySaveFailure needs the code: a bare 409 or a prototype name is other", () => {
+void test("keySaveFailure needs the code: a bare 409 or a prototype name is other", () => {
   assert.equal(
     keySaveFailure(refused({ current: { fr: "x" } }), translate).kind,
     "other",
@@ -113,16 +122,13 @@ test("keySaveFailure needs the code: a bare 409 or a prototype name is other", (
   assert.equal(keySaveFailure(undefined, translate).kind, "other");
 });
 
-function deferred() {
-  let resolve;
-  const promise = new Promise((done) => (resolve = done));
-  return { promise, resolve };
-}
-
-test("queueTexts runs the writes of a text in order", async () => {
+void test("queueTexts runs the writes of a text in order", async () => {
+  /** @type {Parameters<typeof queueTexts>[0]} */
   const links = new Map();
+  /** @type {string[]} */
   const order = [];
-  const first = deferred();
+  /** @type {PromiseWithResolvers<void>} */
+  const first = Promise.withResolvers();
   const one = queueTexts(
     links,
     [{ id: "fr", text: "A", expected: "X" }],
@@ -147,10 +153,13 @@ test("queueTexts runs the writes of a text in order", async () => {
   assert.deepEqual(order, ["A", "B"]);
 });
 
-test("queueTexts never expects a text whose write failed in flight", async () => {
+void test("queueTexts never expects a text whose write failed in flight", async () => {
+  /** @type {Parameters<typeof queueTexts>[0]} */
   const links = new Map();
+  /** @type {ExpectedText[][]} */
   const sent = [];
-  const send = (landed) => async (expected) => {
+  /** @param {boolean} landed */
+  const send = (landed) => async (/** @type {ExpectedText[]} */ expected) => {
     sent.push(expected);
     return landed;
   };
@@ -170,9 +179,12 @@ test("queueTexts never expects a text whose write failed in flight", async () =>
   assert.deepEqual(sent, [["X"], ["X"]]);
 });
 
-test("queueTexts waits on every text of a write", async () => {
+void test("queueTexts waits on every text of a write", async () => {
+  /** @type {Parameters<typeof queueTexts>[0]} */
   const links = new Map();
-  const de = deferred();
+  /** @type {PromiseWithResolvers<void>} */
+  const de = Promise.withResolvers();
+  /** @type {(string | ExpectedText[])[]} */
   const order = [];
   const single = queueTexts(
     links,

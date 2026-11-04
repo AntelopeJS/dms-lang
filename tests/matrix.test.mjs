@@ -29,7 +29,7 @@ const flat = {
   totalKeys: 3,
 };
 
-test("translationsCsv opens as written in spreadsheets", () => {
+void test("translationsCsv opens as written in spreadsheets", () => {
   const csv = translationsCsv(
     [{ key: "a.b", values: { en: '=SUM(A1) "x"', fr: "Schließen\nzu" } }],
     ["en", "fr"],
@@ -41,7 +41,7 @@ test("translationsCsv opens as written in spreadsheets", () => {
   );
 });
 
-test("translationsCsv keeps cells starting with + - @ as text", () => {
+void test("translationsCsv keeps cells starting with + - @ as text", () => {
   const csv = translationsCsv(
     [{ key: "k", values: { en: "+1", fr: "-2", de: "@me" } }],
     ["en", "fr", "de"],
@@ -49,7 +49,7 @@ test("translationsCsv keeps cells starting with + - @ as text", () => {
   assert.match(csv, /"'\+1","'-2","'@me"/);
 });
 
-test("exportFileName never gives a view the whole workspace's name", () => {
+void test("exportFileName never gives a view the whole workspace's name", () => {
   assert.equal(exportFileName("site"), "site-all.csv");
   assert.equal(exportFileName("site", ["en", "de"]), "site-view-en_de.csv");
   assert.notEqual(
@@ -58,14 +58,14 @@ test("exportFileName never gives a view the whole workspace's name", () => {
   );
 });
 
-test("targetLocales counts the language being translated, else the shown ones", () => {
+void test("targetLocales counts the language being translated, else the shown ones", () => {
   assert.deepEqual(targetLocales(flat, "fr", ["en", "de"]), ["fr"]);
   assert.deepEqual(targetLocales(flat, "", ["en", "fr"]), ["fr"]);
   assert.deepEqual(targetLocales(flat, "", ["en"]), ["de", "fr"]);
   assert.deepEqual(targetLocales(flat, "it", ["en", "de"]), ["de"]);
 });
 
-test("groupRows counts every key of a namespace", () => {
+void test("groupRows counts every key of a namespace", () => {
   const groups = groupRows(flat.rows, (row) => !row.values.de);
   assert.deepEqual(
     groups.map(({ namespace, keys, missing }) => ({
@@ -80,7 +80,7 @@ test("groupRows counts every key of a namespace", () => {
   );
 });
 
-test("parseFilter falls back to all", () => {
+void test("parseFilter falls back to all", () => {
   assert.equal(parseFilter("missing"), "missing");
   assert.equal(parseFilter("nope"), "all");
   assert.equal(parseFilter(undefined), "all");

@@ -6,13 +6,17 @@
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { frontend, serverRender, vue } from "./helpers/frontend-runtime.mjs";
+import { serverRender, vue } from "./helpers/frontend-runtime.mjs";
 
-const { useI18nWorkspaces, useWorkspaceSummary } = await frontend(
-  "composables/translation/useI18nWorkspaces.ts",
-);
+const { useI18nWorkspaces, useWorkspaceSummary } =
+  await import("../frontend-vue/app/composables/translation/useI18nWorkspaces.ts");
 
 const API = "/api/lang/translations";
+/**
+ * @param {string} id
+ * @param {string} kind
+ * @param {number} totalKeys
+ */
 const workspace = (id, kind, totalKeys) => ({
   id,
   kind,
@@ -23,6 +27,7 @@ const workspace = (id, kind, totalKeys) => ({
   baseMissing: 0,
 });
 
+/** @param {import("./helpers/frontend-runtime.mjs").Read} read */
 function respond({ url }) {
   switch (url) {
     case `${API}/workspaces`:
@@ -45,12 +50,13 @@ function respond({ url }) {
   }
 }
 
+/** @param {ReturnType<typeof useI18nWorkspaces>} workspaces */
 const listed = (workspaces) =>
   workspaces.workspaces.value
     .map((entry) => `${entry.id}:${entry.totalKeys}`)
     .join(",");
 
-test("the blocks of a page read the workspace list once, on the server, and hand it over", async () => {
+void test("the blocks of a page read the workspace list once, on the server, and hand it over", async () => {
   const render = await serverRender(
     () => {
       /** The scope bar and the page's block, each with the list. */
@@ -72,7 +78,7 @@ test("the blocks of a page read the workspace list once, on the server, and hand
   );
 });
 
-test("a write reads the list again, and a key write's figures go into it", async () => {
+void test("a write reads the list again, and a key write's figures go into it", async () => {
   const render = await serverRender(
     async () => {
       const workspaces = useI18nWorkspaces();
@@ -90,7 +96,7 @@ test("a write reads the list again, and a key write's figures go into it", async
   assert.match(JSON.stringify(render.payload.data), /"totalKeys":11/);
 });
 
-test("the workspace list page reads its figures on the server and hands them over", async () => {
+void test("the workspace list page reads its figures on the server and hands them over", async () => {
   const render = await serverRender(
     () => {
       const summary = useWorkspaceSummary();

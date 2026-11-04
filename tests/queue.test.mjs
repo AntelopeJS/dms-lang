@@ -31,33 +31,33 @@ function openOnly(...keys) {
   return (key) => open.has(key);
 }
 
-test("a pass starts on the key asked for, else on its first key", () => {
+void test("a pass starts on the key asked for, else on its first key", () => {
   assert.equal(currentKey(startPass(KEYS, "c", openAll)), "c");
   assert.equal(currentKey(startPass(KEYS, "zz", openAll)), "a");
   assert.equal(currentKey(startPass(KEYS, "", openAll)), "a");
 });
 
-test("a pass with nothing to do starts finished", () => {
+void test("a pass with nothing to do starts finished", () => {
   const pass = startPass(KEYS, "", openOnly());
   assert.equal(pass.isFinished, true);
   assert.equal(currentKey(pass), undefined);
   assert.equal(startPass([], "", openAll).isFinished, true);
 });
 
-test("advancing moves to the next key to do", () => {
+void test("advancing moves to the next key to do", () => {
   const { pass, step } = advancePass(startPass(KEYS, "a", openAll), openAll);
   assert.equal(step, "moved");
   assert.equal(currentKey(pass), "b");
   assert.deepEqual(pass.history, [0]);
 });
 
-test("advancing passes over keys no longer to do", () => {
+void test("advancing passes over keys no longer to do", () => {
   const isOpen = openOnly("a", "d");
   const { pass } = advancePass(startPass(KEYS, "a", isOpen), isOpen);
   assert.equal(currentKey(pass), "d");
 });
 
-test("a skipped key comes back once the others are done", () => {
+void test("a skipped key comes back once the others are done", () => {
   let pass = startPass(KEYS, "a", openAll);
   ({ pass } = skipCurrent(pass, openAll));
   assert.equal(pass.status.a, "skipped");
@@ -70,7 +70,7 @@ test("a skipped key comes back once the others are done", () => {
   assert.equal(pendingKeys(move.pass, openAll).join(), "a");
 });
 
-test("skipping the last key left stays on it", () => {
+void test("skipping the last key left stays on it", () => {
   let pass = startPass(KEYS, "a", openAll);
   for (const key of ["a", "b", "c"]) {
     ({ pass } = completeKey(pass, key, true, openAll));
@@ -81,7 +81,7 @@ test("skipping the last key left stays on it", () => {
   assert.equal(move.pass.status.d, "skipped");
 });
 
-test("saving the last key finishes the pass", () => {
+void test("saving the last key finishes the pass", () => {
   let pass = startPass(KEYS, "a", openAll);
   let step;
   for (const key of KEYS)
@@ -92,7 +92,7 @@ test("saving the last key finishes the pass", () => {
   assert.deepEqual(pendingKeys(pass, openAll), []);
 });
 
-test("saving in place marks the key done without moving", () => {
+void test("saving in place marks the key done without moving", () => {
   const pass = startPass(KEYS, "b", openAll);
   const change = completeKey(pass, "b", false, openAll);
   assert.equal(change.step, undefined);
@@ -100,7 +100,7 @@ test("saving in place marks the key done without moving", () => {
   assert.equal(change.pass.status.b, "done");
 });
 
-test("saving another key than the one shown does not move", () => {
+void test("saving another key than the one shown does not move", () => {
   const pass = startPass(KEYS, "a", openAll);
   const change = completeKey(pass, "c", true, openAll);
   assert.equal(change.step, undefined);
@@ -108,7 +108,7 @@ test("saving another key than the one shown does not move", () => {
   assert.deepEqual(pendingAfter(change.pass, 0, openAll), [1, 3]);
 });
 
-test("previous walks back through the keys shown, a finished pass included", () => {
+void test("previous walks back through the keys shown, a finished pass included", () => {
   let pass = startPass(KEYS, "a", openAll);
   for (const key of KEYS) ({ pass } = completeKey(pass, key, true, openAll));
   pass = previousKey(pass);
@@ -121,7 +121,7 @@ test("previous walks back through the keys shown, a finished pass included", () 
   assert.equal(previousKey(pass), pass, "nothing before the first key");
 });
 
-test("going to a key remembers the one left, not a finished pass", () => {
+void test("going to a key remembers the one left, not a finished pass", () => {
   let pass = goToIndex(startPass(KEYS, "a", openAll), 2);
   assert.equal(currentKey(pass), "c");
   assert.deepEqual(pass.history, [0]);
@@ -129,7 +129,7 @@ test("going to a key remembers the one left, not a finished pass", () => {
   assert.deepEqual(goToIndex(pass, 1).history, [0]);
 });
 
-test("the keys after one go round to the start, without it", () => {
+void test("the keys after one go round to the start, without it", () => {
   const pass = startPass(KEYS, "c", openAll);
   assert.deepEqual(pendingAfter(pass, 2, openAll), [3, 0, 1]);
   assert.deepEqual(
@@ -138,12 +138,12 @@ test("the keys after one go round to the start, without it", () => {
   );
 });
 
-test("draft ids keep keys holding the separator", () => {
+void test("draft ids keep keys holding the separator", () => {
   const id = { workspace: "web", locale: "fr", key: "a.b" };
   assert.deepEqual(parseDraftId(draftIdOf(id)), id);
 });
 
-test("a text back to the one it started on is no draft", () => {
+void test("a text back to the one it started on is no draft", () => {
   const id = draftIdOf({ workspace: "web", locale: "fr", key: "a" });
   const drafts = withDraft({}, id, { value: "Salut", start: null });
   assert.deepEqual(drafts[id], { value: "Salut", start: null });
@@ -154,7 +154,7 @@ test("a text back to the one it started on is no draft", () => {
   );
 });
 
-test("a save drops the draft only when it is still the text sent", () => {
+void test("a save drops the draft only when it is still the text sent", () => {
   const id = draftIdOf({ workspace: "web", locale: "fr", key: "a" });
   const sent = { typed: "Salut ", stored: "Salut " };
   const drafts = { [id]: { value: "Salut ", start: null } };
@@ -172,7 +172,7 @@ test("a save drops the draft only when it is still the text sent", () => {
   );
 });
 
-test("drafts group per workspace and language", () => {
+void test("drafts group per workspace and language", () => {
   const drafts = Object.fromEntries(
     [
       ["web", "fr", "a"],
@@ -191,7 +191,7 @@ test("drafts group per workspace and language", () => {
   ]);
 });
 
-test("orphan drafts are taken out with their text, the others kept", () => {
+void test("orphan drafts are taken out with their text, the others kept", () => {
   const kept = draftIdOf({ workspace: "web", locale: "fr", key: "a" });
   const gone = draftIdOf({ workspace: "old", locale: "fr", key: "a" });
   const drafts = {

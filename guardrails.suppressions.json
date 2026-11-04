@@ -1,6 +1,6 @@
 {
   "rules": {},
-  "tsExpectError": 0,
+  "tsExpectError": 1,
   "tsIgnore": 0,
   "safety": 0,
   "config": {
@@ -15,5 +15,6 @@
     "vue/multi-word-component-names for frontend-vue/**/*.{js,mjs,cjs,ts,vue}": 1,
     "vue/require-default-prop for frontend-vue/**/*.{js,mjs,cjs,ts,vue}": 1,
     "vue/singleline-html-element-content-newline for frontend-vue/**/*.{js,mjs,cjs,ts,vue}": 1
-  }
+  },
+  "agentFiles": true
 }

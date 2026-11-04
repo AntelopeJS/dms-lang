@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { queueViewOf } from "../frontend-vue/app/utils/queueView.ts";
 
-test("the queue waits for the workspace, not only its translations", () => {
+void test("the queue waits for the workspace, not only its translations", () => {
   assert.equal(
     queueViewOf({ isResolved: false, exists: true, isBase: false }),
     "loading",
@@ -10,7 +10,7 @@ test("the queue waits for the workspace, not only its translations", () => {
   );
 });
 
-test("a resolved workspace shows the queue, the base or an unknown language", () => {
+void test("a resolved workspace shows the queue, the base or an unknown language", () => {
   assert.equal(
     queueViewOf({ isResolved: true, exists: true, isBase: false }),
     "queue",

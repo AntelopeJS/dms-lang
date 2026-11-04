@@ -1,6 +1,7 @@
 import { assertValidation } from "@antelopejs/interface-api-util";
 import { ZodError, type ZodType, type ZodTypeDef } from "zod";
 import { errorBody, errorMessage, errorStatus } from "../utils/errors";
+import { zodIssuesJson } from "../utils/zod-json";
 
 const KEY_PREFIX = "$";
 const INVALID_BODY = "invalid_body";
@@ -17,7 +18,7 @@ function firstMessage(error: ZodError): string {
  */
 function refusal(error: ZodError) {
   return {
-    ...errorBody(INVALID_BODY, { issues: error.issues }),
+    ...errorBody(INVALID_BODY, { issues: zodIssuesJson(error.issues) }),
     message: firstMessage(error),
   };
 }

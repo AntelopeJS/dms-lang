@@ -59,27 +59,29 @@
     "prepare": "if git rev-parse --is-inside-work-tree >/dev/null 2>&1 && command -v lefthook >/dev/null 2>&1; then lefthook install; fi",
     "checks": "antelopejs-checks",
     "size": "antelopejs-check-size",
-    "ratchet": "antelopejs-ratchet",
     "sync": "antelopejs-sync",
-    "ratchet:update": "antelopejs-ratchet --update",
     "sync:check": "antelopejs-sync --check",
     "format:check": "oxfmt --check .",
     "suppressions": "antelopejs-suppressions",
     "suppressions:update": "antelopejs-suppressions --update"
   },
   "dependencies": {
-    "@antelopejs/interface-api": ">=0.0.15 <1.0.0",
-    "@antelopejs/interface-api-util": ">=0.1.3 <1.0.0",
-    "@antelopejs/interface-core": ">=0.2.4 <1.0.0",
-    "@antelopejs/interface-dms": ">=0.9.0 <1.0.0",
+    "@antelopejs/interface-api": ">=0.2.0 <1.0.0",
+    "@antelopejs/interface-api-util": ">=0.3.0 <1.0.0",
+    "@antelopejs/interface-core": ">=0.4.0 <1.0.0",
+    "@antelopejs/interface-dms": ">=0.12.0 <1.0.0",
     "@intlify/message-compiler": "^11.1.12",
     "zod": "~3.24.2"
   },
   "devDependencies": {
-    "@antelopejs/core": "1.17.1",
+    "@antelopejs/api": "^1.7.0",
+    "@antelopejs/core": "1.20.0",
     "@antelopejs/dms": ">=0.13.1 <1.0.0",
-    "@antelopejs/dms-frontend": "0.9.2",
-    "@antelopejs/tooling-configs": "^0.2.17",
+    "@antelopejs/dms-frontend": ">=0.10.0 <1.0.0",
+    "@antelopejs/interface-data-api": ">=0.6.0 <1.0.0",
+    "@antelopejs/interface-database": ">=0.3.0 <1.0.0",
+    "@antelopejs/interface-database-decorators": ">=0.2.0 <1.0.0",
+    "@antelopejs/tooling-configs": "^0.2.18",
     "@types/chai": "^5.2.3",
     "@types/mocha": "^10.0.10",
     "@types/node": "^24.0.0",
@@ -105,7 +107,10 @@
     "test": "src/test/harness.ts",
     "skills": [
       "./skills"
-    ]
+    ],
+    "docs": {
+      "standard": true
+    }
   },
   "dmsFrontend": "dist/frontend-module.js"
 }
