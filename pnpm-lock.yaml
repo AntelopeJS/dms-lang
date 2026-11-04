@@ -42,7 +42,7 @@ importers:
         specifier: '>=0.13.1 <1.0.0'
         version: 0.16.0(@antelopejs/core@1.20.0)
       '@antelopejs/dms-frontend':
-        specifier: 0.10.0
+        specifier: '>=0.10.0 <1.0.0'
         version: 0.10.0(@antelopejs/core@1.20.0)
       '@antelopejs/interface-data-api':
         specifier: '>=0.6.0 <1.0.0'
@@ -188,7 +188,7 @@ importers:
         specifier: 1.20.0
         version: 1.20.0
       '@antelopejs/dms-frontend':
-        specifier: 0.10.0
+        specifier: '>=0.10.0 <1.0.0'
         version: 0.10.0(@antelopejs/core@1.20.0)
       '@types/node':
         specifier: ^22.14.1
