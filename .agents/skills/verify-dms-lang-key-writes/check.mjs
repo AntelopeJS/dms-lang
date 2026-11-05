@@ -1,15 +1,24 @@
 #!/usr/bin/env node
 import { HTTPResult } from "@antelopejs/interface-api";
-import { isString } from "../../../dist/utils/guards.js";
-import { isJsonObject, nodeKindAt } from "../../../dist/utils/json.js";
-import { createKey, deleteKey, removeOverride, renameKey, updateKey } from "../../../dist/utils/keys.js";
-import { deepMerge, getValueAtPath, leafPaths } from "../../../dist/utils/tree.js";
-import { writeTargetOf } from "../../../dist/utils/write-target.js";
+import {
+  createKey,
+  deepMerge,
+  deleteKey,
+  getValueAtPath,
+  isJsonObject,
+  isString,
+  leafPaths,
+  nodeKindAt,
+  removeOverride,
+  renameKey,
+  updateKey,
+  writeTargetOf,
+} from "./product/index.mjs";
 import record from "./record.json" with { type: "json" };
 
 /**
- * @typedef {import("../../../dist/utils/json.js").JsonObject} JsonObject
- * @typedef {import("../../../dist/utils/keys.js").KeyStore} KeyStore
+ * @typedef {import("./product/index.mjs").JsonObject} JsonObject
+ * @typedef {import("./product/index.mjs").KeyStore} KeyStore
  * @typedef {{ path: string, data: JsonObject }} LocaleFile
  * @typedef {{ rule: string, describe: string, run: (store: KeyStore) => void, expect: (files: LocaleFile[]) => Map<string, string>, targets: (files: LocaleFile[]) => string[], before?: string, path: string }} Operation
  * @typedef {{ suffix: string, consistent: boolean }} Scope

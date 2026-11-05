@@ -4,7 +4,9 @@
     "rootDir": "../../..",
     "allowJs": true,
     "maxNodeModuleJsDepth": 5,
-    "types": ["node"],
+    "types": [
+      "node"
+    ],
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "allowImportingTsExtensions": true,
@@ -12,6 +14,14 @@
     "noEmit": true,
     "incremental": false
   },
-  "include": ["**/*.mjs", "**/*.cjs", "**/*.ts"],
-  "exclude": ["node_modules", "playground/node_modules"]
+  "include": [
+    "**/*.mjs",
+    "**/*.cjs",
+    "**/*.ts",
+    "**/*.mts"
+  ],
+  "exclude": [
+    "node_modules",
+    "playground/node_modules"
+  ]
 }

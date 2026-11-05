@@ -13,7 +13,7 @@ The project texts of a language live in several files (`app-fr-FR.json`, `app-cr
 
 ## How it checks
 
-`check.mjs` is a bounded exhaustive check on the real code, not a model: there is no verifier for TypeScript that runs on this code, so it calls the built `dist/utils/keys.js` (`createKey`, `updateKey`, `deleteKey`, `renameKey`, `removeOverride`) on every input inside the bound and compares the result with the promise. Its expectations are written from the docs with code of their own, not with the product's helpers.
+`check.mjs` is a bounded exhaustive check on the real code, not a model: there is no verifier for TypeScript that runs on this code, so it calls the built `dist/utils/keys.js` (`createKey`, `updateKey`, `deleteKey`, `renameKey`, `removeOverride`) on every input inside the bound and compares the result with the promise. Its expectations are written from the docs with code of their own, not with the product's helpers. It imports the product through `product/index.mjs`, which loads `dist/` at run time; `product/index.d.mts` types the same names from `src/`, so lint and typecheck work before a build.
 
 - **Files.** One language (`fr-FR`), one to two project files, each any shape over the names `a` and `b` two levels deep: a name absent, a text, an empty namespace, or a namespace of texts. `app-fr-FR.json` sits at every position or is absent; the other names (`app-blog`, `app-crm`, `app-shop`, `app-wiki`) sort in the enumerated order, so a counterexample reproduces in the product as printed.
 - **Module texts.** None, `a.a`, or `b`.
