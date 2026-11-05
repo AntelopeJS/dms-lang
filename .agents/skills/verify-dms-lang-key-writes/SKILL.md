@@ -43,7 +43,7 @@ node .agents/skills/verify-dms-lang-key-writes/check.mjs    # ~30 s
 
 It prints `HOLDS <rule>` or `VIOLATED <rule>` with the smallest counterexample, then the number of accepted operations it checked. It exits 0 when its rules are exactly those `record.json` lists, under `holds` or `violated`, and the violated ones are exactly the `violated` list, the known findings; it exits 1 otherwise and names the rule that changed. Dropping or adding a rule therefore shows in the diff of `record.json`.
 
-Inside a `verify-dms-lang` run, `pnpm exec dms-control formal "$RUN"` runs it when the diff touches a covered file or this folder, with its evidence under `$RUN/evidence/formal/key-writes/`. When the diff changes the covered code's behaviour, it also runs `base.mjs` in a worktree of the base: that builds the base's `src/` and runs this folder's current check on it, so a rule the base broke and HEAD no longer reports fails the verdict, and one HEAD fixed is listed as fixed.
+Inside a `verify-dms-lang` run, `pnpm exec dms-control formal "$RUN"` runs it when the diff touches a covered file or this folder, with its evidence under `$RUN/evidence/formal/key-writes/`. When the diff changes the covered code's behaviour, it also runs `base.mjs` in a worktree of the base: that builds the base's `src/` and runs the base's own copy of this check (this folder's, when the base has none), so a rule the base broke and HEAD no longer reports fails the verdict, and one HEAD fixed is listed as fixed.
 
 ## Prove it can fail
 

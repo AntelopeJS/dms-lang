@@ -36,7 +36,7 @@ function violationsWith(brk) {
       const applied = run("git", ["apply", join(SKILL, "seeded-breaks", `${brk}.patch`)], dir);
       if (applied.status !== 0) throw new Error(`${brk}.patch does not apply: ${applied.stderr}`);
     }
-    const check = prepareCheckout(dir);
+    const check = prepareCheckout(dir, true);
     const checked = run(process.execPath, [check], dirname(check));
     return new Map(
       [...checked.stdout.matchAll(/^VIOLATED (\S+)\n((?: {2}.*\n|[^HVc].*\n)*)/gm)].map((match) => [

@@ -22,17 +22,19 @@ export function run(program, args, cwd) {
 /**
  * Makes another checkout of the repository ready for this check: links this
  * checkout's `node_modules` when it has none, builds its `src/` to `dist/`,
- * and puts this skill's current files in it, so the same check runs on that
- * checkout's code.
+ * and, when `replace` is set or it has no copy of this skill, puts this
+ * skill's current files in it.
  *
  * @param {string} dir The other checkout's root
+ * @param {boolean} replace Whether to run this checkout's check rather than the other checkout's own
  * @returns {string} The path of the check in it
  */
-export function prepareCheckout(dir) {
+export function prepareCheckout(dir, replace) {
   if (!existsSync(join(dir, "node_modules"))) symlinkSync(join(REPO, "node_modules"), join(dir, "node_modules"));
   const built = run(join(REPO, "node_modules/.bin/tsc"), ["-p", "tsconfig.json"], dir);
   if (built.status !== 0) throw new Error(`${dir} does not build:\n${built.stdout}`);
   const skill = join(dir, relative(REPO, SKILL));
+  if (!replace && existsSync(join(skill, "check.mjs"))) return join(skill, "check.mjs");
   rmSync(skill, { recursive: true, force: true });
   cpSync(SKILL, skill, { recursive: true });
   return join(skill, "check.mjs");
