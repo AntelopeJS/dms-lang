@@ -37,6 +37,7 @@ jobs:
         src/test/harness.ts
         pnpm-lock.yaml
       renovate-sync: false
+      test-job: true
     permissions:
       contents: read
 

@@ -1,6 +1,6 @@
 ---
 name: verify-dms-lang
-description: "Drive the AntelopeJS dms-lang module (translation workspaces, the Lang dashboard pages, the public /i18n files) the way the platform owner does, inside a DMS with free ports, its own MongoDB database and a mail sink, and post a verdict with evidence. Use to prove a change to AntelopeJS/dms-lang works before merge, to verify a PR, or to check that a seeded break or a seeded one-way door is caught."
+description: "Drive the AntelopeJS dms-lang module (translation workspaces, the Lang dashboard pages, the public /i18n files) the way the platform owner does, inside a DMS with free ports, its own MongoDB database and a mail sink, and post a verdict with evidence. Use to prove a change to AntelopeJS/dms-lang works before merge, or to verify a PR."
 ---
 
 # Verify dms-lang
@@ -88,11 +88,11 @@ $C down "$RUN"
 ## Verdict rules
 
 1. **Run every feature whose `covers:` globs the diff touches, plus the smoke journey** (sign in, create a workspace, add French and a key, translate it, read it back from the public URL). `plan` prints that list as `run`.
-2. **Unmapped surface fails the verdict.** User-facing code is `src/**`, `frontend-vue/**`, `skills/**` and `package.json`, tests and tool configs excluded (`verify.config.ts`). A changed file there that no feature glob covers is an unmapped surface: the PR adds it to a feature with its journeys and its seeded break. `map` checks the whole tree.
+2. **Unmapped surface fails the verdict.** User-facing code is `src/**`, `frontend-vue/**`, `skills/**` and `package.json`, tests and tool configs excluded (`verify.config.ts`). A changed file there that no feature glob covers is an unmapped surface: the PR adds it to a feature with its journeys. `map` checks the whole tree.
 3. **Every registered journey of a feature in `run` must have run and passed.** A missing journey fails as "not run", so run whole features. Known findings stay as failing journeys (see the feature files' Gotchas): they fail a verdict only when the diff touches their feature.
 4. **Docs.** Each touched feature lists its `docs:` pages. Judge every page against what the journeys showed. A page that no longer matches fails the verdict.
 5. **Formal checks.** Run `$C formal "$RUN"`. `verify.config.ts` lists one check, `key-writes`, which proves for every set of up to two project files that each key write the API accepts lands in the file the docs name and leaves the dashboard showing what the docs promise. It runs when the diff touches a file it covers, and fails the verdict when a rule newly fails, a rule the base checks is dropped, or the check no longer matches its record. How to read its output is in [`../verify-dms-lang-key-writes/SKILL.md`](../verify-dms-lang-key-writes/SKILL.md).
-6. **One-way doors.** The section comes right after the result line and is mandatory; a verdict without it is void. It holds `None` with a reason, or one row per door: kind, location, what cannot be undone, containment. `$C doors` prints the `One-way-door:` line for the diff from the path rules in `verify.config.ts`. Every file they flag needs a row, or a `falsePositives` entry saying why it is not a door. A Data or Format door is contained only by one of that kind's `containments` journeys passing in this run: `workspaces/delete-removes-everything` for Data, `workspaces/stored-files-stay-readable` for Format. `plan` lists them as `containments` when the diff opens such a door; run the one you name (`$C journey "$RUN" <feature> <journey>`). The verdict reads its result from this run whether or not its feature is in `run`.
+6. **One-way doors.** The section comes right after the result line and is mandatory; a verdict without it is void. It holds `None` with a reason, or one row per door: kind, location, what cannot be undone, containment. `$C doors` prints the `One-way-door:` line for the diff from the path rules in `verify.config.ts`. Every file they flag needs a row, or a `falsePositives` entry saying why it is not a door.
 7. **Result.** FAIL if any of rules 1 to 6 fail. PASS+NOTES when something is not verified or needs the owner's attention. PASS otherwise.
 
 Write your judgement to `$RUN/evidence/judgement.json`:
@@ -111,7 +111,7 @@ Write your judgement to `$RUN/evidence/judgement.json`:
 }
 ```
 
-A door row is `{ "kind", "location", "irreversible", "containment", "containmentJourney" }`, where `kind` is a `doors` key of `verify.config.ts`. `verifier` is required.
+A door row is `{ "kind", "location", "irreversible", "containment" }`, where `kind` is a `doors` key of `verify.config.ts`. `verifier` is required.
 
 Then render and publish:
 
@@ -128,16 +128,7 @@ Post a verdict only from a thread that did not write the change, and name it in 
 
 ## Trust
 
-The skill is not Trusted yet. It becomes Trusted when it catches every seeded break and flags every seeded door, passes a shadow run of 10 consecutive agent PRs, and its last maintain pass is newer than the last change to the repository or its `@antelopejs` dependencies and at most 30 days old. The verdict header says `not trusted yet` until then.
-
-## Seeded breaks and doors
-
-```bash
-$C seeded smoke public-files workspaces
-$C doors .agents/skills/verify-dms-lang/seeded-doors/data.patch
-```
-
-`seeded-breaks/<feature>.patch` is one minimal product bug per feature. `seeded` builds an unpatched control worktree and a patched one with the config's `prepare` commands, runs `up`, the feature's journeys and `down` in each, and prints `CAUGHT` with the journeys that caught it, or `MISSED`. A break counts only when a journey that passes in the control fails one of its checks with the patch; journeys that fail without it, and failures with no failing check, do not count. It exits 0 only when every break is caught. `seeded-doors/<kind>.patch` holds one change per door kind, and `doors <patch>` must name its kind.
+The skill is not Trusted yet. It becomes Trusted when it passes a shadow run of 10 consecutive agent PRs, and its last maintain pass is newer than the last change to the repository or its `@antelopejs` dependencies and at most 30 days old. The verdict header says `not trusted yet` until then.
 
 ## Gotchas
 
@@ -175,7 +166,7 @@ List these under `notVerified` in the judgement of every verdict; no journey rea
 
 The CSV export, Download backup and Import are driven through `tab.page`, Playwright's page of the tab: `downloadOf` (`lang.mjs`) reads the `download` event, and the `filechooser` event takes the file Import reads.
 
-A step whose check fails because the backend or the dashboard stopped answering, or because the sign-in form did not complete in three attempts of 30 s (`signInHydrated` loads the form again and retries before it gives up), ends the journey with a `NOT VERIFIED` error and no failing check, so `seeded` never counts it as a catch.
+A step whose check fails because the backend or the dashboard stopped answering, or because the sign-in form did not complete in three attempts of 30 s (`signInHydrated` loads the form again and retries before it gives up), ends the journey with a `NOT VERIFIED` error and no failing check.
 
 ## Feature map
 
