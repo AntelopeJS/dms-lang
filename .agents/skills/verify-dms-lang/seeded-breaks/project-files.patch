@@ -1,0 +1,13 @@
+diff --git a/src/utils/write-target.ts b/src/utils/write-target.ts
+index 4c26536..26d6b1f 100644
+--- a/src/utils/write-target.ts
++++ b/src/utils/write-target.ts
+@@ -13,7 +13,7 @@ export interface LocaleFile {
+ }
+ 
+ /** The fallback catalog, excluding domain files such as `app-crm-en-GB.json`. */
+-const DEFAULT_FILE_RE = /^app-[a-z]{2}-[A-Z]{2}\.json$/;
++const DEFAULT_FILE_RE = /^app-.*\.json$/;
+ 
+ /** How many leading segments of a key are a namespace the file already holds. */
+ function namespaceDepth(data: JsonObject, segments: string[]): number {

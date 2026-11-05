@@ -1,0 +1,11 @@
+{
+  "shop": {
+    "title": "Shop",
+    "pay": "Pay {price}",
+    "cancel": "Cancel order",
+    "total": "Total {amount}"
+  },
+  "auth": {
+    "login": "Sign in"
+  }
+}

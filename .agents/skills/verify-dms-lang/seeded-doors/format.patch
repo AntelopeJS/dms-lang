@@ -1,0 +1,13 @@
+diff --git a/src/utils/json.ts b/src/utils/json.ts
+index 16dc62b..5c61b5a 100644
+--- a/src/utils/json.ts
++++ b/src/utils/json.ts
+@@ -96,7 +96,7 @@ interface JsonLayout {
+ }
+ 
+ const DEFAULT_LAYOUT: JsonLayout = {
+-  indent: "\t",
++  indent: "  ",
+   lineEnd: "\n",
+   hasFinalLineEnd: true,
+ };

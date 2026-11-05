@@ -1,0 +1,13 @@
+diff --git a/src/utils/constants.ts b/src/utils/constants.ts
+index c2c5b27..6c47c96 100644
+--- a/src/utils/constants.ts
++++ b/src/utils/constants.ts
+@@ -8,7 +8,7 @@ export const PERMISSION_TEXTS = `$${LANG_TEXTS}.permissions`;
+ export const LANG_API = "/api/lang/translations";
+ 
+ /** The public, anonymous route serving the language files of the added workspaces. */
+-export const PUBLIC_PATH = "/i18n";
++export const PUBLIC_PATH = "/translations-public";
+ 
+ /** The pages of the module in the dashboard. */
+ export const PAGES_URL = "/modules/lang";

@@ -29,8 +29,17 @@ knipConfig.ignoreUnresolved = [
  * when a file imports them by path.
  */
 knipConfig.workspaces = {
-  /** The docs scenes are loaded by `antelopejs-capture`, never imported. */
-  ".": { entry: ["docs/captures.ts"] },
+  /**
+   * The docs scenes are loaded by `antelopejs-capture` and the verification
+   * skills by `dms-control`; none is imported.
+   */
+  ".": {
+    entry: ["docs/captures.ts"],
+    ignore: [
+      ".agents/skills/verify-dms-lang/**",
+      ".agents/skills/verify-dms-lang-key-writes/**",
+    ],
+  },
   "frontend-vue": {
     entry: [
       "app/{components,build/components}/**/*.vue",

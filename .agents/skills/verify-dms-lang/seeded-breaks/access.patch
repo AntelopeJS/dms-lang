@@ -1,0 +1,12 @@
+diff --git a/src/routes/translations.ts b/src/routes/translations.ts
+index d411860..83f176d 100644
+--- a/src/routes/translations.ts
++++ b/src/routes/translations.ts
+@@ -98,7 +98,6 @@ interface Writer {
+ }
+ 
+ function editableWorkspace(workspace: string): string {
+-  assertEditable();
+   return resolveWorkspaceId(workspace);
+ }
+ 

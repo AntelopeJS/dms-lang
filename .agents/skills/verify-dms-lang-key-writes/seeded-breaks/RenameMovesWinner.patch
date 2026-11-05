@@ -1,0 +1,12 @@
+diff --git a/src/utils/keys.ts b/src/utils/keys.ts
+index 049b91d..1b2c049 100644
+--- a/src/utils/keys.ts
++++ b/src/utils/keys.ts
+@@ -346,7 +346,6 @@ export function renameKey(
+     const value = getValueAtPath(store.messages[locale], source);
+     if (value === undefined || isJsonObject(value)) continue;
+     const data = store.load(locale, from);
+-    deleteAtPath(data, from);
+     setAtPath(data, to, value);
+     store.save(locale, data, from);
+   }

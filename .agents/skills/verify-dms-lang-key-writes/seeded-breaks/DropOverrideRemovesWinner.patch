@@ -1,0 +1,13 @@
+diff --git a/src/utils/keys.ts b/src/utils/keys.ts
+index 049b91d..b18c2fa 100644
+--- a/src/utils/keys.ts
++++ b/src/utils/keys.ts
+@@ -384,7 +384,7 @@ export function removeOverride(
+   const segments = validateKeyPath(path);
+   check(hasLeaf(store.reference, segments), "not_an_override", { path });
+   for (const locale of targetLocales(store, locales)) {
+-    if (nodeKindAt(store.messages[locale], segments) !== "leaf") continue;
++    if (nodeKindAt(store.messages[locale], segments) === "leaf") continue;
+     const data = store.load(locale, segments);
+     deleteAtPath(data, segments);
+     store.save(locale, data, segments);

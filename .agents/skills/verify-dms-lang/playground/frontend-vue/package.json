@@ -1,0 +1,9 @@
+{
+  "name": "verify-app-frontend-vue",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "@antelopejs/dms-frontend": ">=0.9.1 <0.10.0"
+  }
+}

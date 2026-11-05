@@ -1,0 +1,13 @@
+diff --git a/src/utils/announce.ts b/src/utils/announce.ts
+index 041c40f..64350ca 100644
+--- a/src/utils/announce.ts
++++ b/src/utils/announce.ts
+@@ -50,7 +50,7 @@ export function announce(change: WorkspaceChange): void {
+   const payload: WorkspaceChangePayload = { workspace: change.workspace };
+   if (change.session) payload.session = change.session;
+   if (change.keys) payload.keys = change.keys;
+-  PublishMessage(LANG_REALTIME_TOPIC, REALTIME_CHANGE, {
++  PublishMessage(`${LANG_REALTIME_TOPIC}.off`, REALTIME_CHANGE, {
+     actorId: change.actor._id,
+     payload,
+   }).catch(() => undefined);

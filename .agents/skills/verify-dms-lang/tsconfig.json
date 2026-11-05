@@ -1,0 +1,17 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "../../..",
+    "allowJs": true,
+    "maxNodeModuleJsDepth": 5,
+    "types": ["node"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "allowImportingTsExtensions": true,
+    "composite": false,
+    "noEmit": true,
+    "incremental": false
+  },
+  "include": ["**/*.mjs", "**/*.cjs", "**/*.ts"],
+  "exclude": ["node_modules", "playground/node_modules"]
+}

@@ -1,0 +1,13 @@
+diff --git a/src/utils/workspaces.ts b/src/utils/workspaces.ts
+index 8b3777f..23ac9aa 100644
+--- a/src/utils/workspaces.ts
++++ b/src/utils/workspaces.ts
+@@ -435,7 +435,7 @@ export function renameWorkspace(id: string, newId: string): string {
+ }
+ 
+ export function deleteWorkspace(id: string): void {
+-  rmSync(workspaceDir(id), { recursive: true, force: true });
++  rmSync(resolve(workspaceDir(id), ".."), { recursive: true, force: true });
+ }
+ 
+ export interface AddedLocale {

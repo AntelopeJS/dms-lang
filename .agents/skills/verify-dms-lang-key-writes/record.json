@@ -1,0 +1,23 @@
+{
+  "holds": [
+    "StaysConsistent",
+    "UpdateShows",
+    "ClearRemovesWinner",
+    "CreateShows",
+    "DeleteRemovesWinner",
+    "DropOverrideRemovesWinner",
+    "WritesWhereDocsSay",
+    "CreatePlacedBefore",
+    "DeleteRemovesWinner.HandEdited",
+    "DropOverrideRemovesWinner.HandEdited",
+    "WritesWhereDocsSay.HandEdited",
+    "CreatePlacedBefore.HandEdited"
+  ],
+  "violated": {
+    "RenameMovesWinner": 969,
+    "UpdateShows.HandEdited": 180,
+    "ClearRemovesWinner.HandEdited": 108,
+    "CreateShows.HandEdited": 1440,
+    "RenameMovesWinner.HandEdited": 3171
+  }
+}

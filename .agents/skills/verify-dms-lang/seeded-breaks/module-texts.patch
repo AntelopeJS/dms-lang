@@ -1,0 +1,13 @@
+diff --git a/src/utils/summary.ts b/src/utils/summary.ts
+index 5b68dfc..0026609 100644
+--- a/src/utils/summary.ts
++++ b/src/utils/summary.ts
+@@ -34,7 +34,7 @@ export function countTranslated(flat: FlatResult): number {
+ }
+ 
+ function countOverrides(flat: FlatResult): number {
+-  return flat.rows.filter((row) => row.overridden === true).length;
++  return flat.rows.filter((row) => row.overridden !== true).length;
+ }
+ 
+ export function targetLocales(flat: FlatResult): string[] {

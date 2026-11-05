@@ -1,0 +1,13 @@
+diff --git a/src/utils/snippets.ts b/src/utils/snippets.ts
+index 99af0ae..833132b 100644
+--- a/src/utils/snippets.ts
++++ b/src/utils/snippets.ts
+@@ -112,7 +112,7 @@ const SNIPPETS: Record<SnippetKind, (input: SnippetInput) => Snippet> = {
+   }),
+   curl: ({ url, base }) => ({
+     language: "shell",
+-    code: `curl ${templateUrl(url, base)}`,
++    code: `curl ${templateUrl(url, `${base}-x`)}`,
+   }),
+ };
+ 

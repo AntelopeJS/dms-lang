@@ -1,0 +1,13 @@
+diff --git a/src/utils/export.ts b/src/utils/export.ts
+index da0f452..864a1d7 100644
+--- a/src/utils/export.ts
++++ b/src/utils/export.ts
+@@ -67,7 +67,7 @@ export function backupWorkspace(workspace: string): WorkspaceBackup {
+     locales,
+     description,
+     type,
+-    messages: exportWorkspace(id),
++    messages: {},
+   };
+ }
+ 

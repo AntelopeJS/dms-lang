@@ -1,0 +1,13 @@
+diff --git a/src/routes/publicLocales.ts b/src/routes/publicLocales.ts
+index 46937d5..743c96a 100644
+--- a/src/routes/publicLocales.ts
++++ b/src/routes/publicLocales.ts
+@@ -13,7 +13,7 @@ import { errorResult } from "../utils/errors";
+ import { readWorkspaceLocale } from "../utils/workspaces";
+ 
+ const JSON_SUFFIX_RE = /\.json$/i;
+-const ANY_ORIGIN = "*";
++const ANY_ORIGIN = "https://example.com";
+ const ALLOWED_METHODS = "GET,HEAD,OPTIONS";
+ const PREFLIGHT_MAX_AGE = "86400";
+ const CACHE_POLICY = "no-cache";

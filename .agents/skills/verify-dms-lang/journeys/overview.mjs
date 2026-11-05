@@ -1,0 +1,256 @@
+import { roundTwelveScope } from "./parts/round12.mjs";
+import { roundElevenOverview } from "./parts/round11.mjs";
+import { roundNineOverview } from "./parts/round9.mjs";
+import { limitJourneys } from "./parts/overview-limits.mjs";
+import { freshId, guarded, lang, list, pick, seedWorkspace, workspaceFiles } from "../lang.mjs";
+
+/** @typedef {import("../lang.mjs").Ctx} Ctx */
+
+/**
+ * @param {Ctx} ctx The journey
+ * @returns {Promise<string>} A workspace with English as base, French and German each missing two of four keys
+ */
+async function overviewWorkspace(ctx) {
+  const id = freshId(ctx, "overview");
+  await seedWorkspace(ctx, id, {
+    locales: ["en", "fr", "de"],
+    keys: {
+      "shop.title": { en: "Shop", fr: "Boutique", de: "Laden" },
+      "shop.pay": { en: "Pay {price}", de: "Zahle {price}" },
+      "auth.login": { en: "Hello {name}", fr: "Salut {name}" },
+      "auth.logout": { en: "Bye" },
+    },
+  });
+  return id;
+}
+
+/** The Overview: how translated is this workspace, and where are the gaps. */
+export const journeys = guarded([
+  {
+    id: "use-in-your-app-and-the-heatmap-legend",
+    title: "Use in your app gives a created workspace's public GET URL and an example, and says where the project files live and that they are not public; the heatmap's legend gives the 90 and 60 thresholds",
+    entryPoint: "/modules/lang/overview > Use in your app",
+    async run(/** @type {Ctx} */ ctx) {
+      const id = await overviewWorkspace(ctx);
+      const tab = await ctx.tab("admin");
+      await tab.signIn("admin");
+      await tab.goto(`/modules/lang/overview?workspace=${id}`);
+      await ctx.verify("a created workspace's card gives its public URL and an example", [
+        tab.shows(new RegExp(`Use in your app[\\s\\S]*GET\\s*\\S+/i18n/${id}/\\{locale\\}\\.json[\\s\\S]*Example\\s*\\S+/i18n/${id}/en\\.json`, "i")),
+        tab.shows(/≥ 90%\s*60–89%\s*< 60%/),
+      ]);
+      await tab.goto("/modules/lang/overview?workspace=default");
+      await ctx.verify("the project files' card says where the keys live and that they are not public", [
+        tab.shows(/Where these keys live\s*frontend-vue\/i18n\/locales\/\*-xx-XX\.json/i),
+        tab.shows(/not served at a public URL/),
+        tab.shows(/\/i18n\/default\//, { not: true }),
+      ]);
+    },
+  },
+  {
+    id: "kpis-and-coverage-by-namespace",
+    title: "the Overview counts languages, keys, missing translations and the average coverage, and the heatmap links each gap to the matrix",
+    entryPoint: "/modules/lang/overview",
+    async run(/** @type {Ctx} */ ctx) {
+      const id = await overviewWorkspace(ctx);
+      const tab = await ctx.tab("admin");
+      await tab.signIn("admin");
+      await tab.goto(`/modules/lang/overview?workspace=${id}`);
+      await ctx.verify("the scope bar and the four figures", [
+        tab.shows(/editable/i),
+        tab.shows(/3 languages/i),
+        tab.shows(/4 keys/i),
+        tab.shows(/base\s*en/i),
+        tab.shows(/served at .*\/i18n\/.*\/\{locale\}\.json/i),
+        tab.shows(/languages\s*3\s*1 base · 2 translated from it/i),
+        tab.shows(/translation keys\s*4\s*in 2 namespaces/i),
+        tab.shows(/missing translations\s*4\s*empty cells across 2 languages/i),
+        tab.shows(/average coverage\s*50%\s*excluding the base language/i),
+      ]);
+      await ctx.verify("the language rows tell the missing count and the heatmap labels each cell", [
+        tab.visible({ role: "cell", name: "English base en · 4 strings" }),
+        tab.visible({ role: "cell", name: "Deutsch de · 50% · 2 missing" }),
+        tab.visible({ role: "cell", name: "Français fr · 50% · 2 missing" }),
+        tab.visible({ role: "link", name: "auth · Deutsch: 2 keys missing out of 2" }),
+        tab.visible({ role: "link", name: "auth · Français: 1 key missing out of 2" }),
+        tab.visible({ role: "link", name: "shop · Deutsch: all translated (2)" }),
+        tab.visible({ role: "link", name: "shop · Français: 1 key missing out of 2" }),
+      ]);
+      await tab.click({ role: "link", name: "auth · Français: 1 key missing out of 2" });
+      await ctx.verify("a heatmap cell opens the matrix on that namespace's missing keys", [
+        tab.at(/^\/modules\/lang\/translations$/),
+        tab.visible({ role: "button", name: "Open auth.logout in the panel" }),
+        tab.visible({ role: "button", name: "Open shop.title in the panel" }, { hidden: true }),
+      ]);
+    },
+  },
+  {
+    id: "one-missing-text-keeps-coverage-under-100",
+    title: "a language missing one text out of 201 reads 99% (rounded down), and a complete one reads 100%",
+    entryPoint: "POST /api/lang/translations/import, then GET /flat",
+    async run(/** @type {Ctx} */ ctx) {
+      const id = freshId(ctx, "coverage");
+      /** @type {Record<string, string>} */
+      const english = {};
+      /** @type {Record<string, string>} */
+      const french = {};
+      /** @type {Record<string, string>} */
+      const german = {};
+      for (let n = 0; n < 201; n += 1) {
+        english[`k${n}`] = `Text ${n}`;
+        german[`k${n}`] = `Text ${n}`;
+        if (n < 200) french[`k${n}`] = `Texte ${n}`;
+      }
+      const imported = await lang(ctx, "import 201 keys, French holding 200 and German all", "POST", "/import", {
+        format: "dms-lang.workspace",
+        version: 1,
+        id,
+        defaultLocale: "en",
+        locales: [{ code: "en" }, { code: "fr" }, { code: "de" }],
+        messages: { en: english, fr: french, de: german },
+      });
+      const flat = await lang(ctx, "read the progress of each language", "GET", `/flat?workspace=${id}`);
+      await ctx.verify("200 of 201 reads 99 and not 100; 201 of 201 reads 100", [
+        ctx.status(imported, 200),
+        ctx.equal("French progress", pick(flat.body, "localeProgress", "fr"), 99),
+        ctx.equal("German progress", pick(flat.body, "localeProgress", "de"), 100),
+      ]);
+      const tab = await ctx.tab("admin");
+      await tab.signIn("admin");
+      await tab.goto(`/modules/lang/overview?workspace=${id}`);
+      await ctx.verify("the Overview rounds the same way: French 99%", [
+        tab.visible({ role: "cell", name: "Français fr · 99% · 1 missing" }),
+      ]);
+    },
+  },
+  {
+    id: "namespaces-rank-by-share-of-missing-texts",
+    title: "the heatmap lists the namespace with the largest share of missing texts first, not the one with the most missing texts",
+    entryPoint: "GET /api/lang/translations/namespaces",
+    async run(/** @type {Ctx} */ ctx) {
+      const id = freshId(ctx, "ranks");
+      /** @type {Record<string, Record<string, string>>} */
+      const keys = { "small.only": { en: "Only" } };
+      for (let n = 0; n < 10; n += 1) keys[`big.k${n}`] = n < 2 ? { en: `Text ${n}` } : { en: `Text ${n}`, fr: `Texte ${n}` };
+      await seedWorkspace(ctx, id, { locales: ["en", "fr"], keys });
+      const coverage = await lang(ctx, "read the namespaces", "GET", `/namespaces?workspace=${id}`);
+      await ctx.verify("small (1 of 1 missing) comes before big (2 of 10 missing)", [
+        ctx.equal("order", list(coverage.body, "namespaces").map((row) => row.namespace), ["small", "big"]),
+      ]);
+    },
+  },
+  {
+    id: "header-action-targets-the-least-complete-language",
+    title: "the primary action names the language with the most gaps and jumps to its missing keys",
+    entryPoint: "/modules/lang/overview header",
+    async run(/** @type {Ctx} */ ctx) {
+      const id = freshId(ctx, "overview");
+      await seedWorkspace(ctx, id, {
+        locales: ["en", "fr", "de"],
+        keys: { "a.one": { en: "One", fr: "Un" }, "a.two": { en: "Two", fr: "Deux" }, "a.three": { en: "Three" } },
+      });
+      const tab = await ctx.tab("admin");
+      await tab.signIn("admin");
+      await tab.goto(`/modules/lang/overview?workspace=${id}`);
+      await ctx.verify("the action counts the gaps of Deutsch, the least complete", [tab.visible({ role: "link", name: "Translate 3 missing in Deutsch" })]);
+      await tab.click({ role: "link", name: "Translate 3 missing in Deutsch" });
+      await ctx.verify("it opens the matrix on the keys German lacks", [tab.at(/^\/modules\/lang\/translations$/), tab.visible({ role: "button", name: "Open a.one in the panel" })]);
+    },
+  },
+  {
+    id: "remove-a-language-asks-for-its-code",
+    title: "the row menu makes a language the base after listing what lacks, and removes one only after its code is typed",
+    entryPoint: "/modules/lang/overview > Actions for <language>",
+    async run(/** @type {Ctx} */ ctx) {
+      const id = await overviewWorkspace(ctx);
+      const tab = await ctx.tab("admin");
+      await tab.signIn("admin");
+      await tab.goto(`/modules/lang/overview?workspace=${id}`);
+      await tab.click({ role: "button", name: "Actions for Français" });
+      await tab.click({ role: "menuitem", name: "Make Français the base language" });
+      await ctx.verify("the dialog lists the keys French lacks", [
+        tab.visible({ role: "dialog", name: "Make Français the base language?" }),
+        tab.shows(/2 keys have no text in Français/),
+        tab.shows(/shop\.pay/),
+        tab.shows(/auth\.logout/),
+      ]);
+      await tab.click({ role: "button", name: "Cancel" });
+      const unchanged = await lang(ctx, "read the base", "GET", `/workspace?workspace=${id}`);
+      await ctx.verify("cancelling changes nothing", [ctx.equal("base", pick(unchanged.body, "defaultLocale"), "en")]);
+      await tab.click({ role: "button", name: "Actions for Deutsch" });
+      await tab.click({ role: "menuitem", name: "Remove Deutsch" });
+      await ctx.verify("the removal dialog names the file and needs the code", [
+        tab.visible({ role: "dialog", name: /Remove Deutsch from/ }),
+        tab.shows(/de\.json is deleted/),
+      ]);
+      await tab.click({ role: "button", name: "Remove language" });
+      const untouched = await lang(ctx, "read the languages", "GET", `/workspace?workspace=${id}`);
+      await ctx.verify("without the code nothing is removed", [ctx.equal("languages", list(untouched.body, "locales").map((locale) => locale.code), ["de", "en", "fr"])]);
+      await tab.fill({ role: "textbox", name: "Type de to confirm" }, "de");
+      await tab.click({ role: "button", name: "Remove language" });
+      const after = await lang(ctx, "read the languages", "GET", `/workspace?workspace=${id}`);
+      await ctx.verify("German is removed with its file", [
+        ctx.equal("languages", list(after.body, "locales").map((locale) => locale.code), ["en", "fr"]),
+        ctx.equal("files", workspaceFiles(ctx, id), [".workspace.json", "en.json", "fr.json"]),
+      ]);
+    },
+  },
+  {
+    id: "complete-workspace-has-no-missing-action",
+    title: "a fully translated workspace has no Translate missing action, 0 missing translations and a Translate button that opens the queue",
+    entryPoint: "/modules/lang/overview of a complete workspace",
+    async run(/** @type {Ctx} */ ctx) {
+      const id = freshId(ctx, "complete");
+      await seedWorkspace(ctx, id, { locales: ["en", "fr"], keys: { "a.one": { en: "One", fr: "Un" } } });
+      const tab = await ctx.tab("admin");
+      await tab.signIn("admin");
+      await tab.goto(`/modules/lang/overview?workspace=${id}`);
+      await ctx.verify("no gap, so no action that names one", [
+        tab.shows(/missing translations\s*0/i),
+        tab.shows(/average coverage\s*100%/i),
+        tab.visible({ role: "link", name: /^Translate \d+ missing in/ }, { hidden: true }),
+        tab.visible({ role: "cell", name: "Français fr · complete" }),
+      ]);
+      await tab.click({ role: "button", name: "Translate" });
+      await ctx.verify("Translate opens the queue of that language", [tab.at(/^\/modules\/lang\/language$/), tab.shows(/français is fully translated/i)]);
+      await tab.goto(`/modules/lang/overview?workspace=${id}`);
+      await tab.click({ role: "button", name: "Edit base texts" });
+      await ctx.verify("Edit base texts opens the matrix", [tab.at(/^\/modules\/lang\/translations$/), tab.visible({ role: "button", name: "Open a.one in the panel" })]);
+    },
+  },
+  {
+    id: "quick-actions-in-the-command-palette",
+    title: "Ctrl K offers Translate missing keys, Add a translation key, Add a language and New translation workspace, and each opens its dialog or page",
+    entryPoint: "the command palette",
+    async run(/** @type {Ctx} */ ctx) {
+      const id = freshId(ctx, "palette");
+      await seedWorkspace(ctx, id, { locales: ["en", "fr"], keys: { "a.one": { en: "One" }, "a.two": { en: "Two", fr: "Deux" } } });
+      const tab = await ctx.tab("admin");
+      await tab.signIn("admin");
+      await tab.goto(`/modules/lang/overview?workspace=${id}`);
+      await tab.press("Control+k");
+      await ctx.verify("the four actions are offered", [
+        tab.visible({ role: "option", name: "Translate missing keys" }),
+        tab.visible({ role: "option", name: "Add a translation key" }),
+        tab.visible({ role: "option", name: "Add a language" }),
+        tab.visible({ role: "option", name: "New translation workspace" }),
+      ]);
+      await tab.click({ role: "option", name: "Add a translation key" });
+      await ctx.verify("Add a translation key opens the dialog", [tab.visible({ role: "dialog", name: "Add key" })]);
+      await tab.goto(`/modules/lang/overview?workspace=${id}&action=add-language`);
+      await ctx.verify("the add-language deep link opens the language picker on arrival", [tab.visible({ role: "dialog", name: /Add a language to/ })]);
+      await tab.goto(`/modules/lang/overview?workspace=${id}`);
+      await tab.press("Control+k");
+      await tab.click({ role: "option", name: "Translate missing keys" });
+      await ctx.verify("Translate missing keys opens the matrix on the incomplete keys only", [
+        tab.at(/\/modules\/lang\/translations$/),
+        tab.visible({ role: "button", name: "Open a.one in the panel" }),
+        tab.visible({ role: "button", name: "Open a.two in the panel" }, { hidden: true }),
+      ]);
+    },
+  },
+  ...limitJourneys,
+  ...roundNineOverview,
+  ...roundElevenOverview,
+  ...roundTwelveScope,
+]);
