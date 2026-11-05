@@ -1,64 +1,54 @@
 #!/usr/bin/env node
-import { spawnSync } from "node:child_process";
-import { cpSync, mkdtempSync, readdirSync, rmSync, symlinkSync } from "node:fs";
+import { mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, dirname, join, relative } from "node:path";
-import { fileURLToPath } from "node:url";
+import { basename, dirname, join } from "node:path";
+import { REPO, SKILL, prepareCheckout, run } from "./scratch.mjs";
 
-const here = dirname(fileURLToPath(import.meta.url));
-const repo = join(here, "../../..");
-const wanted = process.argv.slice(2);
-const patches = readdirSync(join(here, "seeded-breaks"))
+const all = readdirSync(join(SKILL, "seeded-breaks"))
   .filter((file) => file.endsWith(".patch"))
-  .filter((file) => wanted.length === 0 || wanted.includes(basename(file, ".patch")));
-
-/**
- * @param {string} program The program
- * @param {string[]} args Its arguments
- * @param {string} cwd Where it runs
- * @returns {import("node:child_process").SpawnSyncReturns<string>} The run
- */
-function run(program, args, cwd) {
-  return spawnSync(program, args, { cwd, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+  .map((file) => basename(file, ".patch"));
+const wanted = process.argv.slice(2);
+const unknown = wanted.filter((rule) => !all.includes(rule));
+if (unknown.length > 0) {
+  console.error(`no seeded break for ${unknown.join(", ")}; the breaks are ${all.join(", ")}`);
+  process.exit(1);
 }
+const rules = wanted.length === 0 ? all : wanted;
 
 /**
- * The rules the check reports violated on HEAD with a patch applied (none
- * for the control), each with its counterexample.
+ * The rules the check reports violated on HEAD with a seeded break applied
+ * (none for the control), each with its counterexample.
  *
- * @param {string | null} patch The patch file, or null for the control
+ * @param {string | null} rule The rule whose break to apply, or null for the control
  * @returns {Map<string, string>} The counterexample of each violated rule
  */
-function violationsWith(patch) {
-  const dir = mkdtempSync(join(tmpdir(), `key-writes-${patch ?? "control"}-`));
+function violationsWith(rule) {
+  const dir = mkdtempSync(join(tmpdir(), `key-writes-${rule ?? "control"}-`));
   try {
-    const added = run("git", ["worktree", "add", "--detach", dir, "HEAD"], repo);
+    const added = run("git", ["worktree", "add", "--detach", dir, "HEAD"], REPO);
     if (added.status !== 0) throw new Error(added.stderr);
-    if (patch !== null) {
-      const applied = run("git", ["apply", join(here, "seeded-breaks", patch)], dir);
-      if (applied.status !== 0) throw new Error(`${patch} does not apply: ${applied.stderr}`);
+    if (rule !== null) {
+      const applied = run("git", ["apply", join(SKILL, "seeded-breaks", `${rule}.patch`)], dir);
+      if (applied.status !== 0) throw new Error(`${rule}.patch does not apply: ${applied.stderr}`);
     }
-    symlinkSync(join(repo, "node_modules"), join(dir, "node_modules"));
-    const built = run(join(repo, "node_modules/.bin/tsc"), ["-p", "tsconfig.json"], dir);
-    if (built.status !== 0) throw new Error(`${patch ?? "HEAD"} does not build: ${built.stdout}`);
-    const skill = join(dir, relative(repo, here));
-    rmSync(skill, { recursive: true, force: true });
-    cpSync(here, skill, { recursive: true });
-    const checked = run(process.execPath, [join(skill, "check.mjs")], skill);
+    const check = prepareCheckout(dir);
+    const checked = run(process.execPath, [check], dirname(check));
     return new Map(
-      [...checked.stdout.matchAll(/^VIOLATED (\S+)\n((?: {2}.*\n|[^HVc].*\n)*)/gm)].map((match) => [match[1] ?? "", match[2] ?? ""]),
+      [...checked.stdout.matchAll(/^VIOLATED (\S+)\n((?: {2}.*\n|[^HVc].*\n)*)/gm)].map((match) => [
+        match[1] ?? "",
+        match[2] ?? "",
+      ]),
     );
   } finally {
-    run("git", ["worktree", "remove", "--force", dir], repo);
+    run("git", ["worktree", "remove", "--force", dir], REPO);
     rmSync(dir, { recursive: true, force: true });
   }
 }
 
 const control = violationsWith(null);
 let missed = 0;
-for (const patch of patches) {
-  const rule = basename(patch, ".patch");
-  const broken = violationsWith(patch);
+for (const rule of rules) {
+  const broken = violationsWith(rule);
   const hit = broken.get(rule);
   const caught = hit !== undefined && hit !== control.get(rule);
   if (!caught) missed++;

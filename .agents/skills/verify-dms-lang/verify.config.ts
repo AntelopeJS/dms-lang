@@ -1,3 +1,5 @@
+import { fileURLToPath } from "node:url";
+
 /** A kind of one-way door. */
 export type DoorKind = "data" | "format" | "contract" | "outbound" | "exposure" | "publish";
 
@@ -15,6 +17,7 @@ export interface FormalCheck {
   covers: string[];
   files: string[];
   command: string[];
+  baseCommand: string[];
   violation: RegExp;
   passing: RegExp;
 }
@@ -112,12 +115,18 @@ const config: VerifyConfig = {
         "src/utils/write-target.ts",
         "src/utils/json.ts",
         "src/utils/tree.ts",
+        "src/utils/guards.ts",
+        "src/utils/errors.ts",
+        "src/utils/message-syntax.ts",
+        "src/utils/locale-codes.ts",
+        "src/utils/cache.ts",
         "src/utils/own.ts",
         "src/utils/registry.ts",
         "src/utils/locale-discovery.ts",
       ],
       files: [".agents/skills/verify-dms-lang-key-writes/**"],
       command: ["node", ".agents/skills/verify-dms-lang-key-writes/check.mjs"],
+      baseCommand: ["node", fileURLToPath(new URL("../verify-dms-lang-key-writes/base.mjs", import.meta.url))],
       violation: /^VIOLATED (\S+)$/gm,
       passing: /^HOLDS (\S+)$/gm,
     },

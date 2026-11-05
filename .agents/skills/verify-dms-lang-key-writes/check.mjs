@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { HTTPResult } from "@antelopejs/interface-api";
 import { isString } from "../../../dist/utils/guards.js";
 import { isJsonObject, nodeKindAt, setAtPath } from "../../../dist/utils/json.js";
 import { createKey, deleteKey, removeOverride, renameKey, updateKey } from "../../../dist/utils/keys.js";
@@ -304,15 +305,16 @@ function difference(got, want) {
  * @param {LocaleFile[]} start The files
  * @param {JsonObject} reference The module texts
  * @param {Operation} op The operation
- * @returns {Breach | "refused" | "kept"} The rule it breaks and how, or whether the API refused it or it kept every promise
+ * @returns {Breach | "refused" | "kept"} The rule it breaks and how, or whether the API refused it with a 4xx or it kept every promise
  */
 function judge(scope, start, reference, op) {
   const files = copy(start);
   try {
     op.run(storeOver(files, reference));
   } catch (error) {
-    if (error instanceof Error && error.message.startsWith("writeTargetOf")) throw error;
-    return "refused";
+    if (error instanceof HTTPResult && error.getStatus() < 500) return "refused";
+    const what = error instanceof HTTPResult ? `answers ${error.getStatus()} ${error.getBody()}` : `throws ${String(error)}`;
+    return { rule: `${op.rule}${scope.suffix}`, why: `the API ${what}` };
   }
   const why = difference(texts(merged(files)), texts(op.expect(start)));
   if (why !== undefined) return { rule: `${op.rule}${scope.suffix}`, why };

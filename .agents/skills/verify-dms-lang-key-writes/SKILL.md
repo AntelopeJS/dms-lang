@@ -17,7 +17,7 @@ The project texts of a language live in several files (`app-fr-FR.json`, `app-cr
 
 - **Files.** One language (`fr-FR`), one to two project files, each any shape over the names `a` and `b` two levels deep: a name absent, a text, an empty namespace, or a namespace of texts. `app-fr-FR.json` sits at every position or is absent; the other names (`app-blog`, `app-crm`, `app-shop`, `app-wiki`) sort in the enumerated order, so a counterexample reproduces in the product as printed.
 - **Module texts.** None, `a.a`, or `b`.
-- **Operations.** Every operation on each of the 6 keys (`a`, `b`, `a.a`, …), renames to each other key. An operation the API refuses (a 4xx) is skipped; only accepted ones are judged.
+- **Operations.** Every operation on each of the 6 keys (`a`, `b`, `a.a`, …), renames to each other key. An operation the API refuses with a 4xx (`fail()` in `src/utils/errors.ts`) is skipped; any other throw, a 500 included, breaks the operation's rule.
 - **Store.** `storeOver` builds the key store as `ownKeyStore` in `src/utils/own.ts` does: messages merged as `readMessages` in `src/utils/registry.ts` merges them, `load` and `save` on the file `writeTargetOf` picks from the files as they are at that moment.
 
 **Scopes.** *Consistent* files hold no empty namespace and no key that one file holds as a text and another as a namespace; the API never makes either, it answers `key_conflict`. Rules without a suffix judge consistent files. Rules ending in `.HandEdited` judge every other layout, which only a hand edit makes.
@@ -43,7 +43,7 @@ node .agents/skills/verify-dms-lang-key-writes/check.mjs    # ~30 s
 
 It prints `HOLDS <rule>` or `VIOLATED <rule>` with the smallest counterexample, then the number of accepted operations it checked. It exits 0 when the violated rules are exactly those in `record.json`, the known findings, and 1 otherwise, naming the rule that changed. `KEY_WRITES_MAX_FILES=3` raises the bound to three files: about 25 minutes and 5.6 million accepted operations; at `1918ac4` it gave the same verdict for every rule as two files.
 
-Inside a `verify-dms-lang` run, `pnpm exec dms-control formal "$RUN"` runs it when the diff touches a covered file, with its evidence under `$RUN/evidence/formal/key-writes/`.
+Inside a `verify-dms-lang` run, `pnpm exec dms-control formal "$RUN"` runs it when the diff touches a covered file or this folder, with its evidence under `$RUN/evidence/formal/key-writes/`. When the diff changes the covered code's behaviour, it also runs `base.mjs` in a worktree of the base: that builds the base's `src/` and runs this folder's current check on it, so a rule the base broke and HEAD no longer reports fails the verdict, and one HEAD fixed is listed as fixed.
 
 ## Prove it can fail
 
@@ -51,7 +51,7 @@ Inside a `verify-dms-lang` run, `pnpm exec dms-control formal "$RUN"` runs it wh
 node .agents/skills/verify-dms-lang-key-writes/seeded.mjs [rule...]   # ~1 min per break
 ```
 
-`seeded-breaks/<rule>.patch` is one small bug in `src/` that breaks that rule. `seeded.mjs` applies each in a scratch worktree of HEAD, builds it, runs the check against it, and prints `CAUGHT <rule>` when that rule fails with a counterexample the unpatched HEAD does not give (a rule already in `record.json` is caught when its smallest counterexample changes), `MISSED` otherwise. It exits 0 only when every break is caught. Run it after you change `check.mjs`: a check that no longer catches its breaks proves nothing.
+`seeded-breaks/<rule>.patch` is one small bug in `src/` that breaks that rule. `seeded.mjs` applies each in a scratch worktree of HEAD, builds it, runs the check against it, and prints `CAUGHT <rule>` when that rule fails with a counterexample the unpatched HEAD does not give (a rule already in `record.json` is caught when its smallest counterexample changes), `MISSED` otherwise. It exits 0 only when every break is caught, and 1 for a rule name with no patch. `scratch.mjs` holds the worktree preparation that `seeded.mjs` and `base.mjs` share. Run it after you change `check.mjs`: a check that no longer catches its breaks proves nothing.
 
 ## Read a result
 
@@ -87,6 +87,7 @@ Synced at `1918ac4`: the check describes these files at that commit.
 | `src/utils/write-target.ts` | `writeTargetOf`, called as is |
 | `src/utils/json.ts` | `nodeKindAt`, `setAtPath`, `deleteAtPath`, called as is |
 | `src/utils/tree.ts` | `deepMerge`, `leafPaths`, `getValueAtPath`, called as is |
+| `src/utils/guards.ts`, `errors.ts`, `message-syntax.ts`, `locale-codes.ts`, `cache.ts` | imported by the files above, run as is |
 | `src/utils/own.ts` | `ownKeyStore`, mirrored by `storeOver` |
 | `src/utils/registry.ts` | `readMessages` and `getOwnWriteTarget`, mirrored by `merged` and `storeOver` |
 | `src/utils/locale-discovery.ts` | files merged in sorted name order, mirrored by `fileNames` |
