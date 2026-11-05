@@ -40,26 +40,34 @@ The project texts of a language live in several files (`app-fr-FR.json`, `app-cr
 
 ```bash
 pnpm run build                                              # the check loads dist/
-node .agents/skills/verify-dms-lang-key-writes/check.mjs    # ~15 s
+node .agents/skills/verify-dms-lang-key-writes/check.mjs    # 15 to 20 s
 ```
 
-It prints one line per rule with the smallest counterexample under it: `HOLDS`, `KNOWN` for a finding `record.json` lists under `violated`, or `VIOLATED` for one it does not. Then the number of accepted operations it checked. It exits 0 when its rules are exactly those `record.json` lists, under `holds` or `violated`, and the failing ones are exactly the `violated` list; it exits 1 otherwise and names the rule that changed. `KEY_WRITES_MAX_FILES=3` raises the bound to three files, about 15 to 25 minutes.
+It prints one line per rule: `HOLDS`; `KNOWN` for a finding `record.json` lists under `violated` with the same number of failing cases; or `VIOLATED`, with the smallest counterexample and its number of failing cases under it. Then the number of accepted operations it checked. `record.json` maps each known finding to its number of failing cases at the default bound, so a change that makes a known finding worse, or partly fixes it, prints `VIOLATED` and says which. It exits 0 when its rules are exactly those `record.json` lists, under `holds` or `violated`, and every failing one is `KNOWN`; it exits 1 otherwise and names the rule that changed. `KEY_WRITES_MAX_FILES=3` raises the bound to three files, about 15 minutes; at that bound counts are not compared, only which rules fail.
 
-Inside a `verify-dms-lang` run, `pnpm exec dms-control formal "$RUN"` runs it when the diff touches a covered file or this folder, with its evidence under `$RUN/evidence/formal/key-writes/`. The gate fails when the check exits 1 or prints a `VIOLATED` line; `KNOWN` lines pass. When the diff changes the covered code's behaviour or this folder, it also runs `base.mjs` in a worktree of the base: that builds the base's `src/`, runs the base's own copy of this check (this folder's, when the base has none), and adds a `VIOLATED` line for every rule the base checks that HEAD's `record.json` no longer lists, so dropping a rule, holding or known, fails the gate.
+Inside a `verify-dms-lang` run, `pnpm exec dms-control formal "$RUN"` runs it when the diff touches a covered file or this folder, with its evidence under `$RUN/evidence/formal/key-writes/`. The gate fails when the check exits 1 or prints a `VIOLATED` line; `KNOWN` lines pass, and its `result.json` lists them under `passing`. When the diff changes the covered code's behaviour or this folder, it also runs `base.mjs` in a worktree of the base: that builds the base's `src/`, runs the base's own copy of this check (this folder's, when the base has none), and adds a `VIOLATED` line for every rule the base checks that HEAD's `record.json` no longer lists, so dropping a rule, holding or known, fails the gate. A base that does not build prints `VIOLATED BaseChecked`, which fails the gate too; its error is in `base-stderr.txt`.
 
 ## Prove it can fail
 
 ```bash
-node .agents/skills/verify-dms-lang-key-writes/seeded.mjs [rule...]   # ~20 s per break
+node .agents/skills/verify-dms-lang-key-writes/seeded.mjs [rule...]   # ~25 s per break
 ```
 
-`seeded-breaks/<rule>.patch`, and `<rule>--<what it does>.patch` for more breaks of one rule, is one small bug in `src/` that breaks that rule. Five come from the review: `before` deleting a sibling, a write before a 409, a crash after a save, a new key landing in the first file, and `before` losing its anchor. `seeded.mjs` applies each in a scratch worktree of HEAD, builds it, runs the current check against it, and prints `CAUGHT <break>` when its rule fails with a counterexample the unpatched HEAD does not give (a known finding is caught when its smallest counterexample changes), `MISSED` otherwise. It exits 0 only when every break is caught, and 1 for a name with no patch. `scratch.mjs` holds the worktree preparation that `seeded.mjs` and `base.mjs` share. Run it after you change `check.mjs`: a check that no longer catches its breaks proves nothing.
+`seeded-breaks/<rule>.patch`, and `<rule>--<what it does>.patch` for more breaks of one rule, is one small bug in `src/` that breaks that rule. Five come from the review: `before` deleting a sibling, a write before a 409, a crash after a save, a new key landing in the first file, and `before` losing its anchor. `seeded.mjs` applies each in a scratch worktree of HEAD, builds it, runs the current check against it, and prints `CAUGHT <break>` when its rule prints `VIOLATED`, `MISSED` otherwise. It first runs the unpatched HEAD and stops when that prints any `VIOLATED` line. It exits 0 only when every break is caught, and 1 for a name with no patch. `scratch.mjs` holds the worktree preparation that `seeded.mjs` and `base.mjs` share. Run it after you change `check.mjs`: a check that no longer catches its breaks proves nothing.
 
 ## Read a result
 
 A `VIOLATED` line on a change is one of two things.
 
-- **A real bug.** Replay the counterexample in the product: in a `verify-dms-lang` run, write the printed files into `$RUN/root/.agents/skills/verify-dms-lang/playground/frontend-vue/i18n/locales/`, send the printed request with `dms-control api`, and read `GET /api/lang/translations/row?workspace=default&key=<key>` and the files. If they disagree with the promise, it is a bug in the change. Report it with the counterexample; do not weaken the rule.
+- **A real bug.** Replay the counterexample in the product: in a `verify-dms-lang` run, write the printed files into `$RUN/root/.agents/skills/verify-dms-lang/playground/frontend-vue/i18n/locales/` (move the shipped `app-*.json` aside and put them back after), send the printed request with `pnpm exec dms-control api "$RUN" <method> /api/lang/translations<route> --body '<json>'`, and read `GET /api/lang/translations/row?workspace=default&key=<key>` (its `row` field is absent when no text shows) and the files. If they disagree with the promise, it is a bug in the change. Report it with the counterexample; do not weaken the rule. The printed texts (`f0:b`) only name the file and key that hold them; any text replays the case.
+
+  | Printed request | Route and body |
+  |---|---|
+  | `POST /key <k> = "new"` | `POST /key` `{"workspace":"default","path":"<k>","values":{"fr":"new"}}`, plus `"before":"<sibling>"` |
+  | `PUT /key <k> = "new"` or `= ""` | `PUT /key` `{"workspace":"default","path":"<k>","values":{"fr":"new"}}` (or `""`) |
+  | `DELETE /key <k>` | `DELETE /key` `{"workspace":"default","path":"<k>"}` |
+  | `DELETE /key/override <k>` | `DELETE /key/override` `{"workspace":"default","path":"<k>"}` |
+  | `POST /key/rename <k> -> <n>` | `POST /key/rename` `{"workspace":"default","path":"<k>","newPath":"<n>"}` |
 - **A modelling error.** The product does what the docs say and the check's promise (`operations()`, `withoutWinner`, `newKeyFiles` in `check.mjs`) or store (`storeOver`) does not. Fix the check to match the docs or the code it mirrors, then run `seeded.mjs`.
 
 A `no longer fails` line means a known finding is fixed: move it from `violated` to `holds` in `record.json`.
@@ -68,7 +76,7 @@ A `no longer fails` line means a known finding is fixed: move it from `violated`
 
 Recorded in `record.json`; each was replayed in the product.
 
-- **`RenameMovesWinner`: a rename hides an older definition instead of leaving it visible.** `app-fr-FR.json` = `{"b": "older"}`, `app-shop-fr-FR.json` = `{"b": "newer"}`, the layered override the docs allow. Rename `b` to `b.a`: 200. The shop file now holds the namespace `b`, which hides the text `b` of `app-fr-FR.json`: the dashboard shows `b.a` = "newer" and no `b`, though the docs say an older definition keeps the source key visible. Delete `b.a` and `b` = "older" shows again. The API checks the new name against the merged catalog without the moved key (`renameKey` in `keys.ts`), not against the files the older definition stays in. Replayed on a `verify-dms-lang` run: `GET /row?key=layer` answered `null` after the rename and `{"fr":"older"}` after the delete.
+- **`RenameMovesWinner`: a rename hides an older definition instead of leaving it visible.** `app-fr-FR.json` = `{"b": "older"}`, `app-shop-fr-FR.json` = `{"b": "newer"}`, the layered override the docs allow. Rename `b` to `b.a`: 200. The shop file now holds the namespace `b`, which hides the text `b` of `app-fr-FR.json`: the dashboard shows `b.a` = "newer" and no `b`, though the docs say an older definition keeps the source key visible. Delete `b.a` and `b` = "older" shows again. The API checks the new name against the merged catalog without the moved key (`renameKey` in `keys.ts`), not against the files the older definition stays in. Replayed on a `verify-dms-lang` run, twice: after the rename, `GET /row?key=b` answers no `row`; after the delete, `{"fr":"older"}`.
 - **`UpdateShows`, `ClearRemovesWinner`, `CreateShows`, `RenameMovesWinner` `.HandEdited`: a hand-edited empty namespace hides a write.** An empty namespace counts as no key for the API's checks (`nodeKindAt` in `json.ts`) but still hides an earlier file's text in the merge (`deepMerge` in `tree.ts`): with `app-fr-FR.json` = `{}` and `app-shop-fr-FR.json` = `{"b": {}}`, `POST /key` `b` answers 200 and `b` does not show.
 
 ## Not covered

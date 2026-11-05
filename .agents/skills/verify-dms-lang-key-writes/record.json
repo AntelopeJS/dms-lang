@@ -13,11 +13,11 @@
     "WritesWhereDocsSay.HandEdited",
     "CreatePlacedBefore.HandEdited"
   ],
-  "violated": [
-    "RenameMovesWinner",
-    "UpdateShows.HandEdited",
-    "ClearRemovesWinner.HandEdited",
-    "CreateShows.HandEdited",
-    "RenameMovesWinner.HandEdited"
-  ]
+  "violated": {
+    "RenameMovesWinner": 969,
+    "UpdateShows.HandEdited": 180,
+    "ClearRemovesWinner.HandEdited": 108,
+    "CreateShows.HandEdited": 1440,
+    "RenameMovesWinner.HandEdited": 3171
+  }
 }

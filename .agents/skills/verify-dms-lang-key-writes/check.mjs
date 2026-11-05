@@ -19,7 +19,8 @@ import record from "./record.json" with { type: "json" };
 
 const LOCALE = "fr-FR";
 const KEYS = ["a", "b", "a.a", "a.b", "b.a", "b.b"];
-const MAX_FILES = Number(process.env.KEY_WRITES_MAX_FILES ?? 2);
+const RECORDED_BOUND = 2;
+const MAX_FILES = Number(process.env.KEY_WRITES_MAX_FILES ?? RECORDED_BOUND);
 const MODULE_TEXTS = [{}, { a: { a: "module:a.a" } }, { b: "module:b" }];
 const BEFORE_FALLBACK = ["app-blog", "app-crm"];
 const AFTER_FALLBACK = ["app-shop", "app-wiki"];
@@ -214,6 +215,7 @@ function withText(shown, path, text) {
  * @returns {Map<string, string>} The texts shown after the removal
  */
 function withoutWinner(files, path) {
+  if (!isString(getValueAtPath(merged(files), path))) return texts(merged(files));
   const next = copy(files);
   const segments = path.split(".");
   const winner = next.findLast((file) => nodeKindAt(file.data, segments) === "leaf");
@@ -440,7 +442,7 @@ function counterexample(layout, reference, op, why) {
 }
 
 const ops = operations();
-/** @type {Map<string, { size: number, text: string }>} */
+/** @type {Map<string, { size: number, text: string, count: number }>} */
 const found = new Map();
 let accepted = 0;
 for (const layout of layouts()) {
@@ -455,8 +457,10 @@ for (const layout of layouts()) {
       accepted++;
       if (breach === "kept") continue;
       const seen = found.get(breach.rule);
+      const count = (seen?.count ?? 0) + 1;
       if (seen === undefined || size < seen.size)
-        found.set(breach.rule, { size, text: counterexample(layout, reference, op, breach.why) });
+        found.set(breach.rule, { size, count, text: counterexample(layout, reference, op, breach.why) });
+      else seen.count = count;
     }
 }
 
@@ -466,8 +470,9 @@ const rules = [
     [...new Set([...ops.map((op) => op.rule), "WritesWhereDocsSay", "CreatePlacedBefore"])].map((rule) => `${rule}${scope.suffix}`),
   ),
 ];
-const recorded = new Set(record.violated);
-const listed = new Set([...record.holds, ...record.violated]);
+/** @type {Map<string, number>} */
+const recorded = new Map(Object.entries(record.violated));
+const listed = new Set([...record.holds, ...recorded.keys()]);
 let drift = false;
 for (const rule of listed)
   if (!rules.includes(rule)) {
@@ -481,11 +486,23 @@ for (const rule of rules)
   }
 for (const rule of rules) {
   const hit = found.get(rule);
-  const verdict = hit === undefined ? "HOLDS" : recorded.has(rule) ? "KNOWN" : "VIOLATED";
-  console.log(hit === undefined ? `HOLDS ${rule}` : `${verdict} ${rule}\n${hit.text}`);
-  if (recorded.has(rule) === (hit !== undefined)) continue;
+  const known = recorded.get(rule);
+  if (hit === undefined) {
+    console.log(`HOLDS ${rule}`);
+    if (known === undefined) continue;
+    drift = true;
+    console.error(`${rule} no longer fails, unlike record.json: move it to holds`);
+    continue;
+  }
+  const same = known !== undefined && (MAX_FILES !== RECORDED_BOUND || known === hit.count);
+  console.log(`${same ? "KNOWN" : "VIOLATED"} ${rule}\n${hit.text}\n  ${hit.count} failing cases`);
+  if (same) continue;
   drift = true;
-  console.error(`${rule} ${recorded.has(rule) ? "no longer fails" : "fails"}, unlike record.json`);
+  console.error(
+    known === undefined
+      ? `${rule} fails, unlike record.json`
+      : `${rule} has ${hit.count} failing cases, record.json has ${known}: a change made it ${hit.count > known ? "worse" : "better"}`,
+  );
 }
 console.log(`checked ${accepted} accepted operations on up to ${MAX_FILES} project files`);
 process.exitCode = drift ? 1 : 0;

@@ -21,7 +21,7 @@ if (unknown.length > 0) {
 const breaks = wanted.length === 0 ? all : all.filter((brk) => wanted.includes(brk) || wanted.includes(ruleOf(brk)));
 
 /**
- * The rules the check reports violated on HEAD with a seeded break applied
+ * The rules the check reports `VIOLATED` on HEAD with a seeded break applied
  * (none for the control), each with its counterexample.
  *
  * @param {string | null} brk The break to apply, or null for the control
@@ -39,7 +39,7 @@ function violationsWith(brk) {
     const check = prepareCheckout(dir, true);
     const checked = run(process.execPath, [check], dirname(check));
     return new Map(
-      [...checked.stdout.matchAll(/^(?:VIOLATED|KNOWN) (\S+)\n((?: {2}.*\n|[^HKVc].*\n)*)/gm)].map((match) => [
+      [...checked.stdout.matchAll(/^VIOLATED (\S+)\n((?: {2}.*\n)*)/gm)].map((match) => [
         match[1] ?? "",
         match[2] ?? "",
       ]),
@@ -51,12 +51,16 @@ function violationsWith(brk) {
 }
 
 const control = violationsWith(null);
+if (control.size > 0) {
+  console.error(`HEAD does not match record.json (${[...control.keys()].join(", ")}): run check.mjs and fix that first`);
+  process.exit(1);
+}
 let missed = 0;
 for (const brk of breaks) {
   const rule = ruleOf(brk);
   const broken = violationsWith(brk);
   const hit = broken.get(rule);
-  const caught = hit !== undefined && hit !== control.get(rule);
+  const caught = hit !== undefined;
   if (!caught) missed++;
   console.log(`${caught ? "CAUGHT" : "MISSED"} ${brk}${caught ? "" : ` (violated: ${[...broken.keys()].join(", ") || "nothing"})`}`);
 }
