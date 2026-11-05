@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { HTTPResult } from "@antelopejs/interface-api";
 import { isString } from "../../../dist/utils/guards.js";
-import { isJsonObject, nodeKindAt, setAtPath } from "../../../dist/utils/json.js";
+import { isJsonObject, nodeKindAt } from "../../../dist/utils/json.js";
 import { createKey, deleteKey, removeOverride, renameKey, updateKey } from "../../../dist/utils/keys.js";
 import { deepMerge, getValueAtPath, leafPaths } from "../../../dist/utils/tree.js";
 import { writeTargetOf } from "../../../dist/utils/write-target.js";
@@ -11,7 +11,7 @@ import record from "./record.json" with { type: "json" };
  * @typedef {import("../../../dist/utils/json.js").JsonObject} JsonObject
  * @typedef {import("../../../dist/utils/keys.js").KeyStore} KeyStore
  * @typedef {{ path: string, data: JsonObject }} LocaleFile
- * @typedef {{ rule: string, describe: string, run: (store: KeyStore) => void, expect: (files: LocaleFile[]) => JsonObject }} Operation
+ * @typedef {{ rule: string, describe: string, run: (store: KeyStore) => void, expect: (files: LocaleFile[]) => Map<string, string> }} Operation
  * @typedef {{ suffix: string, consistent: boolean }} Scope
  * @typedef {{ names: string[], contents: JsonObject[] }} Layout
  * @typedef {{ rule: string, why: string }} Breach
@@ -195,15 +195,13 @@ function storeOver(files, reference) {
 }
 
 /**
- * @param {JsonObject} view A catalog
+ * @param {Map<string, string>} shown Texts by key
  * @param {string} path A key
  * @param {string} text Its text
- * @returns {JsonObject} The catalog with the key set to the text
+ * @returns {Map<string, string>} The texts with the key showing the text, every other key as it was
  */
-function withText(view, path, text) {
-  const next = structuredClone(view);
-  setAtPath(next, path.split("."), text);
-  return next;
+function withText(shown, path, text) {
+  return new Map(shown).set(path, JSON.stringify(text));
 }
 
 /**
@@ -213,17 +211,26 @@ function withText(view, path, text) {
  *
  * @param {LocaleFile[]} files The files, in merge order
  * @param {string} path The key
- * @returns {JsonObject} The merged catalog after the removal
+ * @returns {Map<string, string>} The texts shown after the removal
  */
 function withoutWinner(files, path) {
   const next = copy(files);
   const segments = path.split(".");
   const winner = next.findLast((file) => nodeKindAt(file.data, segments) === "leaf");
   const name = segments.at(-1);
-  if (winner === undefined || name === undefined) return merged(next);
+  if (winner === undefined || name === undefined) return texts(merged(next));
   const parent = segments.length === 1 ? winner.data : getValueAtPath(winner.data, segments.slice(0, -1).join("."));
   if (isJsonObject(parent)) Reflect.deleteProperty(parent, name);
-  return merged(next);
+  return texts(merged(next));
+}
+
+/**
+ * @param {string} path A key
+ * @returns {string[]} The other keys of its namespace, which a new key can be placed before
+ */
+function siblingsOf(path) {
+  const parent = path.split(".").slice(0, -1).join(".");
+  return KEYS.filter((key) => key !== path && key.split(".").slice(0, -1).join(".") === parent);
 }
 
 /**
@@ -241,7 +248,7 @@ function operations() {
         rule: "UpdateShows",
         describe: `PUT /key ${path} = "new"`,
         run: (store) => updateKey(store, path, { [LOCALE]: "new" }),
-        expect: (files) => withText(merged(files), path, "new"),
+        expect: (files) => withText(texts(merged(files)), path, "new"),
       },
       {
         rule: "ClearRemovesWinner",
@@ -253,7 +260,7 @@ function operations() {
         rule: "CreateShows",
         describe: `POST /key ${path} = "new"`,
         run: (store) => createKey(store, path, { [LOCALE]: "new" }),
-        expect: (files) => withText(merged(files), path, "new"),
+        expect: (files) => withText(texts(merged(files)), path, "new"),
       },
       {
         rule: "DeleteRemovesWinner",
@@ -268,6 +275,13 @@ function operations() {
         expect: (files) => withoutWinner(files, path),
       },
     );
+    for (const before of siblingsOf(path))
+      ops.push({
+        rule: "CreateShows",
+        describe: `POST /key ${path} = "new" before ${before}`,
+        run: (store) => createKey(store, path, { [LOCALE]: "new" }, before),
+        expect: (files) => withText(texts(merged(files)), path, "new"),
+      });
     for (const to of KEYS.filter((key) => key !== path))
       ops.push({
         rule: "RenameMovesWinner",
@@ -277,7 +291,7 @@ function operations() {
         },
         expect: (files) => {
           const value = getValueAtPath(merged(files), path);
-          return isString(value) ? withText(withoutWinner(files, path), to, value) : merged(files);
+          return isString(value) ? withText(withoutWinner(files, path), to, value) : texts(merged(files));
         },
       });
   }
@@ -305,18 +319,20 @@ function difference(got, want) {
  * @param {LocaleFile[]} start The files
  * @param {JsonObject} reference The module texts
  * @param {Operation} op The operation
- * @returns {Breach | "refused" | "kept"} The rule it breaks and how, or whether the API refused it with a 4xx or it kept every promise
+ * @returns {Breach | "refused" | "kept"} The rule it breaks and how, whether the API refused it with a 4xx that left the files as they were, or whether it kept every promise
  */
 function judge(scope, start, reference, op) {
   const files = copy(start);
   try {
     op.run(storeOver(files, reference));
   } catch (error) {
-    if (error instanceof HTTPResult && error.getStatus() < 500) return "refused";
-    const what = error instanceof HTTPResult ? `answers ${error.getStatus()} ${error.getBody()}` : `throws ${String(error)}`;
-    return { rule: `${op.rule}${scope.suffix}`, why: `the API ${what}` };
+    const untouched = JSON.stringify(files) === JSON.stringify(start);
+    const status = error instanceof HTTPResult ? error.getStatus() : 500;
+    if (status < 500 && untouched) return "refused";
+    const what = error instanceof HTTPResult ? `answers ${status} ${error.getBody()}` : `throws ${String(error)}`;
+    return { rule: `${op.rule}${scope.suffix}`, why: `the API ${what}${untouched ? "" : " and changed the files"}` };
   }
-  const why = difference(texts(merged(files)), texts(op.expect(start)));
+  const why = difference(texts(merged(files)), op.expect(start));
   if (why !== undefined) return { rule: `${op.rule}${scope.suffix}`, why };
   if (!scope.consistent || consistent(files.map((file) => file.data))) return "kept";
   const after = files.map((file) => `${file.path} = ${JSON.stringify(file.data)}`).join(", ");
@@ -363,7 +379,18 @@ for (const layout of layouts()) {
 
 const rules = ["StaysConsistent", ...SCOPES.flatMap((scope) => [...new Set(ops.map((op) => `${op.rule}${scope.suffix}`))])];
 const recorded = new Set(record.violated);
+const listed = new Set([...record.holds, ...record.violated]);
 let drift = false;
+for (const rule of listed)
+  if (!rules.includes(rule)) {
+    drift = true;
+    console.error(`${rule} is in record.json but the check no longer has it`);
+  }
+for (const rule of rules)
+  if (!listed.has(rule)) {
+    drift = true;
+    console.error(`${rule} is missing from record.json`);
+  }
 for (const rule of rules) {
   const hit = found.get(rule);
   console.log(hit === undefined ? `HOLDS ${rule}` : `VIOLATED ${rule}\n${hit.text}`);

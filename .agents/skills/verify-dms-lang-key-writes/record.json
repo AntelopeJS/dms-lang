@@ -1,6 +1,14 @@
 {
-  "violated": [
+  "holds": [
     "StaysConsistent",
+    "UpdateShows",
+    "ClearRemovesWinner",
+    "CreateShows",
+    "DeleteRemovesWinner",
+    "DropOverrideRemovesWinner"
+  ],
+  "violated": [
+    "RenameMovesWinner",
     "UpdateShows.HandEdited",
     "ClearRemovesWinner.HandEdited",
     "CreateShows.HandEdited",
