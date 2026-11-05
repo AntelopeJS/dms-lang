@@ -28,7 +28,7 @@ RUN=$($C up --prepare)   # installs, builds, starts; prints the run folder
 - the backend runs `ajs project start -e docs` and the dashboard `ajs dms start -e docs -b <api>`; ready means `/api/onboarding/informations` and `/dms-preview` answer 200;
 - fresh secrets, `DMS_CLIENT_BASE_URL` set to the dashboard and the `docs` mail pointed at the sink.
 
-`--base <ref>` (default `origin/main`; pass `origin/campaign/integration` when the PR targets that branch) names the version the plan diffs against. No journey starts the base version, because the verification playground is new in the PR that adds it. `--runs <dir>` (or `DMS_CONTROL_RUNS`) moves the runs out of the temporary folder.
+`--base <ref>` (default `origin/main`) names the version the plan diffs against. No journey starts the base version, because the verification playground is new in the PR that adds it. `--runs <dir>` (or `DMS_CONTROL_RUNS`) moves the runs out of the temporary folder.
 
 ## Doctor
 

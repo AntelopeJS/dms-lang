@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.5.1
+
+[compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.5.0...v0.5.1)
+
+### 📖 Documentation
+
+- **github:** Send questions and ideas to Discord ([#107](https://github.com/AntelopeJS/dms-lang/pull/107))
+
+### 🏡 Chore
+
+- Land the cleanup campaign on main ([#116](https://github.com/AntelopeJS/dms-lang/pull/116))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli ([@Upd4ting](http://github.com/Upd4ting))
+
 ## v0.5.0
 
 [compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.4.1...v0.5.0)

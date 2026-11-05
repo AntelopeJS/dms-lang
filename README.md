@@ -47,12 +47,12 @@ Restart the backend, then the frontend, and open **Modules › Translations** (`
 
 <!-- antelopejs-docs-compat:start -->
 
-| Package                          | Supported                                                      | Tested with                                                    |
-| -------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------- |
-| `@antelopejs/interface-api`      | `file:.campaign/tgz/antelopejs-interface-api-f2a99b5.tgz`      | `file:.campaign/tgz/antelopejs-interface-api-f2a99b5.tgz`      |
-| `@antelopejs/interface-api-util` | `file:.campaign/tgz/antelopejs-interface-api-util-639f38b.tgz` | `file:.campaign/tgz/antelopejs-interface-api-util-639f38b.tgz` |
-| `@antelopejs/interface-core`     | `file:.campaign/tgz/antelopejs-interface-core-f7df541.tgz`     | `file:.campaign/tgz/antelopejs-interface-core-f7df541.tgz`     |
-| `@antelopejs/interface-dms`      | `file:.campaign/tgz/antelopejs-interface-dms-14e671d.tgz`      | `file:.campaign/tgz/antelopejs-interface-dms-14e671d.tgz`      |
+| Package                          | Supported         | Tested with |
+| -------------------------------- | ----------------- | ----------- |
+| `@antelopejs/interface-api`      | `>=0.2.0 <1.0.0`  | `0.2.0`     |
+| `@antelopejs/interface-api-util` | `>=0.3.0 <1.0.0`  | `0.3.0`     |
+| `@antelopejs/interface-core`     | `>=0.4.0 <1.0.0`  | `0.4.0`     |
+| `@antelopejs/interface-dms`      | `>=0.12.0 <1.0.0` | `0.12.0`    |
 
 <!-- antelopejs-docs-compat:end -->
 
