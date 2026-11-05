@@ -1,0 +1,11 @@
+{
+  "violated": [
+    "StaysConsistent",
+    "UpdateShows.HandEdited",
+    "ClearRemovesWinner.HandEdited",
+    "CreateShows.HandEdited",
+    "DeleteRemovesWinner.HandEdited",
+    "DropOverrideRemovesWinner.HandEdited",
+    "RenameMovesWinner.HandEdited"
+  ]
+}

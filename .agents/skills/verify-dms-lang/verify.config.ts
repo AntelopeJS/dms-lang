@@ -9,6 +9,16 @@ export interface DoorRule {
   why: string;
 }
 
+/** A formal check `dms-control formal` runs: the files it covers, its own files, its command, and how its output names a rule that fails or holds. */
+export interface FormalCheck {
+  name: string;
+  covers: string[];
+  files: string[];
+  command: string[];
+  violation: RegExp;
+  passing: RegExp;
+}
+
 /** The repo-owned layer of the verification skill, read by `dms-control`. */
 export interface VerifyConfig {
   playground: string;
@@ -18,7 +28,7 @@ export interface VerifyConfig {
   smoke: string;
   smokeJourney: string;
   doors: Record<DoorKind, DoorRule | null>;
-  formal: never[];
+  formal: FormalCheck[];
 }
 
 const SKILL = ".agents/skills/verify-dms-lang";
@@ -94,7 +104,24 @@ const config: VerifyConfig = {
       why: "the package name, its files and the release workflow claim @antelopejs/dms-lang in the npm registry",
     },
   },
-  formal: [],
+  formal: [
+    {
+      name: "key-writes",
+      covers: [
+        "src/utils/keys.ts",
+        "src/utils/write-target.ts",
+        "src/utils/json.ts",
+        "src/utils/tree.ts",
+        "src/utils/own.ts",
+        "src/utils/registry.ts",
+        "src/utils/locale-discovery.ts",
+      ],
+      files: [".agents/skills/verify-dms-lang-key-writes/**"],
+      command: ["node", ".agents/skills/verify-dms-lang-key-writes/check.mjs"],
+      violation: /^VIOLATED (\S+)$/gm,
+      passing: /^HOLDS (\S+)$/gm,
+    },
+  ],
 };
 
 export default config;

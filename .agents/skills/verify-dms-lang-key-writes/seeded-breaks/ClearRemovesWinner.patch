@@ -1,0 +1,13 @@
+diff --git a/src/utils/keys.ts b/src/utils/keys.ts
+index 049b91d..2d2223a 100644
+--- a/src/utils/keys.ts
++++ b/src/utils/keys.ts
+@@ -178,7 +178,7 @@ function applyTexts(
+ ): void {
+   for (const [locale, text] of Object.entries(texts)) {
+     const data = store.load(locale, segments);
+-    if (text === null) deleteAtPath(data, segments);
++    if (text === null) deleteAtPath(data, segments.slice(0, -1));
+     else insertAtPath(data, segments, text, before);
+     store.save(locale, data, segments);
+   }
