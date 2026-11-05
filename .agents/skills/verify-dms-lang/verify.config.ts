@@ -128,7 +128,7 @@ const config: VerifyConfig = {
       command: ["node", ".agents/skills/verify-dms-lang-key-writes/check.mjs"],
       baseCommand: ["node", fileURLToPath(new URL("../verify-dms-lang-key-writes/base.mjs", import.meta.url))],
       violation: /^VIOLATED (\S+)$/gm,
-      passing: /^HOLDS (\S+)$/gm,
+      passing: /^(?:HOLDS|KNOWN) (\S+)$/gm,
     },
   ],
 };

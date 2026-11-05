@@ -1,0 +1,13 @@
+diff --git a/src/utils/keys.ts b/src/utils/keys.ts
+index 049b91d..675a289 100644
+--- a/src/utils/keys.ts
++++ b/src/utils/keys.ts
+@@ -209,7 +209,7 @@ function siblingNames(
+   const files = [store.baseLocale, ...store.locales].map(
+     (locale) => store.messages[locale],
+   );
+-  return namesFrom(files, parent, sibling.at(-1) ?? "");
++  return namesFrom(files, parent, "");
+ }
+ 
+ function applyInMemory(

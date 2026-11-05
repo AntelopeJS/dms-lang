@@ -11,7 +11,7 @@ import record from "./record.json" with { type: "json" };
  * @typedef {import("../../../dist/utils/json.js").JsonObject} JsonObject
  * @typedef {import("../../../dist/utils/keys.js").KeyStore} KeyStore
  * @typedef {{ path: string, data: JsonObject }} LocaleFile
- * @typedef {{ rule: string, describe: string, run: (store: KeyStore) => void, expect: (files: LocaleFile[]) => Map<string, string> }} Operation
+ * @typedef {{ rule: string, describe: string, run: (store: KeyStore) => void, expect: (files: LocaleFile[]) => Map<string, string>, targets: (files: LocaleFile[]) => string[], before?: string, path: string }} Operation
  * @typedef {{ suffix: string, consistent: boolean }} Scope
  * @typedef {{ names: string[], contents: JsonObject[] }} Layout
  * @typedef {{ rule: string, why: string }} Breach
@@ -219,9 +219,48 @@ function withoutWinner(files, path) {
   const winner = next.findLast((file) => nodeKindAt(file.data, segments) === "leaf");
   const name = segments.at(-1);
   if (winner === undefined || name === undefined) return texts(merged(next));
-  const parent = segments.length === 1 ? winner.data : getValueAtPath(winner.data, segments.slice(0, -1).join("."));
-  if (isJsonObject(parent)) Reflect.deleteProperty(parent, name);
+  for (let depth = segments.length; depth > 0; depth--) {
+    const parent = depth === 1 ? winner.data : getValueAtPath(winner.data, segments.slice(0, depth - 1).join("."));
+    const child = segments[depth - 1] ?? name;
+    if (!isJsonObject(parent)) break;
+    const node = parent[child];
+    if (depth < segments.length && !(isJsonObject(node) && Object.keys(node).length === 0)) break;
+    Reflect.deleteProperty(parent, child);
+  }
   return texts(merged(next));
+}
+
+/**
+ * @param {LocaleFile[]} files The files, in merge order
+ * @param {string} path A key
+ * @returns {string[]} The file the docs say an edit of the key lands in: the one whose value shows, or where a new key lands when none defines it (a module key's first override)
+ */
+function definingFile(files, path) {
+  const winner = files.findLast((file) => nodeKindAt(file.data, path.split(".")) === "leaf");
+  return winner ? [winner.path] : newKeyFiles(files, path);
+}
+
+/**
+ * The files `docs/3.configuration.md` ("Project files") allows a new key to
+ * land in: the one that holds the longest part of its namespace (any of them
+ * on a tie, which the docs leave open), else the last `app-<xx-XX>.json`,
+ * else the last file.
+ *
+ * @param {LocaleFile[]} files The files, in merge order
+ * @param {string} path The new key
+ * @returns {string[]} The allowed files
+ */
+function newKeyFiles(files, path) {
+  const namespace = path.split(".").slice(0, -1);
+  const depthOf = (/** @type {JsonObject} */ data) => {
+    let depth = 0;
+    while (depth < namespace.length && isJsonObject(getValueAtPath(data, namespace.slice(0, depth + 1).join(".")))) depth++;
+    return depth;
+  };
+  const deepest = Math.max(0, ...files.map((file) => depthOf(file.data)));
+  if (deepest > 0) return files.filter((file) => depthOf(file.data) === deepest).map((file) => file.path);
+  const fallback = files.findLast((file) => file.path === `app-${LOCALE}.json`) ?? files.at(-1);
+  return fallback ? [fallback.path] : [];
 }
 
 /**
@@ -249,30 +288,40 @@ function operations() {
         describe: `PUT /key ${path} = "new"`,
         run: (store) => updateKey(store, path, { [LOCALE]: "new" }),
         expect: (files) => withText(texts(merged(files)), path, "new"),
+        targets: (files) => definingFile(files, path),
+        path,
       },
       {
         rule: "ClearRemovesWinner",
         describe: `PUT /key ${path} = ""`,
         run: (store) => updateKey(store, path, { [LOCALE]: null }),
         expect: (files) => withoutWinner(files, path),
+        targets: (files) => definingFile(files, path),
+        path,
       },
       {
         rule: "CreateShows",
         describe: `POST /key ${path} = "new"`,
         run: (store) => createKey(store, path, { [LOCALE]: "new" }),
         expect: (files) => withText(texts(merged(files)), path, "new"),
+        targets: (files) => newKeyFiles(files, path),
+        path,
       },
       {
         rule: "DeleteRemovesWinner",
         describe: `DELETE /key ${path}`,
         run: (store) => deleteKey(store, path),
         expect: (files) => withoutWinner(files, path),
+        targets: (files) => definingFile(files, path),
+        path,
       },
       {
         rule: "DropOverrideRemovesWinner",
         describe: `DELETE /key/override ${path}`,
         run: (store) => removeOverride(store, path),
         expect: (files) => withoutWinner(files, path),
+        targets: (files) => definingFile(files, path),
+        path,
       },
     );
     for (const before of siblingsOf(path))
@@ -281,6 +330,9 @@ function operations() {
         describe: `POST /key ${path} = "new" before ${before}`,
         run: (store) => createKey(store, path, { [LOCALE]: "new" }, before),
         expect: (files) => withText(texts(merged(files)), path, "new"),
+        targets: (files) => newKeyFiles(files, path),
+        before,
+        path,
       });
     for (const to of KEYS.filter((key) => key !== path))
       ops.push({
@@ -293,6 +345,8 @@ function operations() {
           const value = getValueAtPath(merged(files), path);
           return isString(value) ? withText(withoutWinner(files, path), to, value) : texts(merged(files));
         },
+        targets: (files) => definingFile(files, path),
+        path,
       });
   }
   return ops;
@@ -309,6 +363,28 @@ function difference(got, want) {
     if (shown !== value) return shown === undefined ? `${path} is gone, not ${value}` : `${path} shows ${shown}, not ${value}`;
   }
   for (const [path, value] of got) if (!want.has(path)) return `${path} still shows ${value}`;
+  return undefined;
+}
+
+/**
+ * Where a key created `before` a sibling landed, when a written file holds
+ * that sibling and the key is not right before it, as `createKey` promises.
+ *
+ * @param {LocaleFile[]} written The files the operation changed
+ * @param {string} path The new key
+ * @param {string} before The sibling it goes before
+ * @returns {string | undefined} The misplacement, undefined when it is in place
+ */
+function misplacement(written, path, before) {
+  const parentPath = path.split(".").slice(0, -1).join(".");
+  for (const file of written) {
+    const parent = parentPath === "" ? file.data : getValueAtPath(file.data, parentPath);
+    if (!isJsonObject(parent)) continue;
+    const names = Object.keys(parent);
+    const at = names.indexOf(path.split(".").at(-1) ?? "");
+    const anchor = names.indexOf(before.split(".").at(-1) ?? "");
+    if (at !== -1 && anchor !== -1 && at + 1 !== anchor) return `${file.path} lists ${names.join(", ")}, ${path} not right before ${before}`;
+  }
   return undefined;
 }
 
@@ -334,6 +410,13 @@ function judge(scope, start, reference, op) {
   }
   const why = difference(texts(merged(files)), op.expect(start));
   if (why !== undefined) return { rule: `${op.rule}${scope.suffix}`, why };
+  const allowed = op.targets(start);
+  const written = files.filter((file, index) => JSON.stringify(file.data) !== JSON.stringify(start[index]?.data));
+  const stray = written.find((file) => !allowed.includes(file.path));
+  if (stray !== undefined)
+    return { rule: `WritesWhereDocsSay${scope.suffix}`, why: `it wrote ${stray.path}, the docs name ${allowed.join(" or ") || "no file"}` };
+  const misplaced = op.before === undefined ? undefined : misplacement(written, op.path, op.before);
+  if (misplaced !== undefined) return { rule: `CreatePlacedBefore${scope.suffix}`, why: misplaced };
   if (!scope.consistent || consistent(files.map((file) => file.data))) return "kept";
   const after = files.map((file) => `${file.path} = ${JSON.stringify(file.data)}`).join(", ");
   return { rule: "StaysConsistent", why: `the files are no longer consistent: ${after}` };
@@ -377,7 +460,12 @@ for (const layout of layouts()) {
     }
 }
 
-const rules = ["StaysConsistent", ...SCOPES.flatMap((scope) => [...new Set(ops.map((op) => `${op.rule}${scope.suffix}`))])];
+const rules = [
+  "StaysConsistent",
+  ...SCOPES.flatMap((scope) =>
+    [...new Set([...ops.map((op) => op.rule), "WritesWhereDocsSay", "CreatePlacedBefore"])].map((rule) => `${rule}${scope.suffix}`),
+  ),
+];
 const recorded = new Set(record.violated);
 const listed = new Set([...record.holds, ...record.violated]);
 let drift = false;
@@ -393,7 +481,8 @@ for (const rule of rules)
   }
 for (const rule of rules) {
   const hit = found.get(rule);
-  console.log(hit === undefined ? `HOLDS ${rule}` : `VIOLATED ${rule}\n${hit.text}`);
+  const verdict = hit === undefined ? "HOLDS" : recorded.has(rule) ? "KNOWN" : "VIOLATED";
+  console.log(hit === undefined ? `HOLDS ${rule}` : `${verdict} ${rule}\n${hit.text}`);
   if (recorded.has(rule) === (hit !== undefined)) continue;
   drift = true;
   console.error(`${rule} ${recorded.has(rule) ? "no longer fails" : "fails"}, unlike record.json`);

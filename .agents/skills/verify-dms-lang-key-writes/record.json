@@ -5,15 +5,19 @@
     "ClearRemovesWinner",
     "CreateShows",
     "DeleteRemovesWinner",
-    "DropOverrideRemovesWinner"
+    "DropOverrideRemovesWinner",
+    "WritesWhereDocsSay",
+    "CreatePlacedBefore",
+    "DeleteRemovesWinner.HandEdited",
+    "DropOverrideRemovesWinner.HandEdited",
+    "WritesWhereDocsSay.HandEdited",
+    "CreatePlacedBefore.HandEdited"
   ],
   "violated": [
     "RenameMovesWinner",
     "UpdateShows.HandEdited",
     "ClearRemovesWinner.HandEdited",
     "CreateShows.HandEdited",
-    "DeleteRemovesWinner.HandEdited",
-    "DropOverrideRemovesWinner.HandEdited",
     "RenameMovesWinner.HandEdited"
   ]
 }

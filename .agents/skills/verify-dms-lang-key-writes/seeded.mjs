@@ -39,7 +39,7 @@ function violationsWith(brk) {
     const check = prepareCheckout(dir, true);
     const checked = run(process.execPath, [check], dirname(check));
     return new Map(
-      [...checked.stdout.matchAll(/^VIOLATED (\S+)\n((?: {2}.*\n|[^HVc].*\n)*)/gm)].map((match) => [
+      [...checked.stdout.matchAll(/^(?:VIOLATED|KNOWN) (\S+)\n((?: {2}.*\n|[^HKVc].*\n)*)/gm)].map((match) => [
         match[1] ?? "",
         match[2] ?? "",
       ]),
