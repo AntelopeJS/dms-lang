@@ -47,14 +47,6 @@ It prints one line per rule: `HOLDS`; `KNOWN` for a finding `record.json` lists 
 
 Inside a `verify-dms-lang` run, `pnpm exec dms-control formal "$RUN"` runs it when the diff touches a covered file or this folder, with its evidence under `$RUN/evidence/formal/key-writes/`. The gate fails when the check exits 1 or prints a `VIOLATED` line; `KNOWN` lines pass, and its `result.json` lists them under `passing`. When the diff changes the covered code's behaviour or this folder, it also runs `base.mjs` in a worktree of the base: that builds the base's `src/`, runs the base's own copy of this check (this folder's, when the base has none), and adds a `VIOLATED` line, under a name HEAD never reports, for each way HEAD's `record.json` could hide a regression: a rule the base checks that HEAD no longer lists (`<rule>`), a rule HEAD records with more failing cases than the base shows, a holding rule included (`RecordedRegression.<rule>`), and a base that does not build (`BaseChecked`, its error in `base-stderr.txt`). The gate fails each as absent at HEAD.
 
-## Prove it can fail
-
-```bash
-node .agents/skills/verify-dms-lang-key-writes/seeded.mjs [rule...]   # ~25 s per break
-```
-
-`seeded-breaks/<rule>.patch`, and `<rule>--<what it does>.patch` for more breaks of one rule, is one small bug in `src/` that breaks that rule. Five come from the review: `before` deleting a sibling, a write before a 409, a crash after a save, a new key landing in the first file, and `before` losing its anchor. `seeded.mjs` applies each in a scratch worktree of HEAD, builds it, runs the current check against it, and prints `CAUGHT <break>` when its rule prints `VIOLATED`, `MISSED` otherwise. It first runs the unpatched HEAD and stops when that prints any `VIOLATED` line. It exits 0 only when every break is caught, and 1 for a name with no patch. `scratch.mjs` holds the worktree preparation that `seeded.mjs` and `base.mjs` share. Run it after you change `check.mjs`: a check that no longer catches its breaks proves nothing.
-
 ## Read a result
 
 A `VIOLATED` line on a change is one of two things.
@@ -68,7 +60,7 @@ A `VIOLATED` line on a change is one of two things.
   | `DELETE /key <k>` | `DELETE /key` `{"workspace":"default","path":"<k>"}` |
   | `DELETE /key/override <k>` | `DELETE /key/override` `{"workspace":"default","path":"<k>"}` |
   | `POST /key/rename <k> -> <n>` | `POST /key/rename` `{"workspace":"default","path":"<k>","newPath":"<n>"}` |
-- **A modelling error.** The product does what the docs say and the check's promise (`operations()`, `withoutWinner`, `newKeyFiles` in `check.mjs`) or store (`storeOver`) does not. Fix the check to match the docs or the code it mirrors, then run `seeded.mjs`.
+- **A modelling error.** The product does what the docs say and the check's promise (`operations()`, `withoutWinner`, `newKeyFiles` in `check.mjs`) or store (`storeOver`) does not. Fix the check to match the docs or the code it mirrors.
 
 A `no longer fails` line means a known finding is fixed: move it from `violated` to `holds` in `record.json`.
 
