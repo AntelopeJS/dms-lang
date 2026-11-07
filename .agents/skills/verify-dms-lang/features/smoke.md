@@ -1,5 +1,6 @@
 ---
 covers:
+  - .agents/skills/verify-dms-lang/journeys/smoke.mjs
 docs:
   - docs/1.introduction.md
 ---

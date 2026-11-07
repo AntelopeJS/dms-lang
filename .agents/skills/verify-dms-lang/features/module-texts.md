@@ -3,6 +3,8 @@ covers:
   - src/utils/summary.ts
   - src/utils/coverage.ts
   - src/pages/module.ts
+  - .agents/skills/verify-dms-lang/journeys/module-texts.mjs
+  - .agents/skills/verify-dms-lang/journeys/parts/frontend-modules.mjs
 docs:
   - docs/4.usage/2.translation-matrix.md
   - docs/6.faq.md

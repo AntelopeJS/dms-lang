@@ -17,6 +17,9 @@ covers:
   - frontend-vue/app/composables/translation/useI18nWorkspaces.ts
   - frontend-vue/app/composables/translation/useMutationToast.ts
   - frontend-vue/app/types/lang.ts
+  - .agents/skills/verify-dms-lang/journeys/overview.mjs
+  - .agents/skills/verify-dms-lang/journeys/parts/overview-limits.mjs
+  - .agents/skills/verify-dms-lang/journeys/parts/round12.mjs
 docs:
   - docs/4.usage/1.overview.md
 ---

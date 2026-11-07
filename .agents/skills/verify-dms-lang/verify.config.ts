@@ -27,6 +27,10 @@ export interface VerifyConfig {
   prepare: string[][];
   userFacing: string[];
   notUserFacing: string[];
+  /** Files every feature depends on, and files that code or journeys of four or more features import, explicitly or through the frontend's auto-imports: a change to one runs every feature. */
+  shared: string[];
+  /** Files under `shared` that no journey depends on. */
+  notShared: string[];
   smoke: string;
   smokeJourney: string;
   doors: Record<DoorKind, DoorRule | null>;
@@ -50,6 +54,62 @@ const config: VerifyConfig = {
     "frontend-vue/eslint.config.mjs",
     "frontend-vue/.vscode/**",
   ],
+  shared: [
+    "**/package.json",
+    "pnpm-lock.yaml",
+    "pnpm-workspace.yaml",
+    "tsconfig.json",
+    "**/.npmrc",
+    "src/index.ts",
+    "src/frontend-module.ts",
+    "src/pages/index.ts",
+    "src/routes/index.ts",
+    "src/routes/translations.ts",
+    "src/pages/header-actions.ts",
+    "src/pages/module.ts",
+    "src/pages/workspace-guard.ts",
+    "src/utils/catalog.ts",
+    "src/utils/config.ts",
+    "src/utils/constants.ts",
+    "src/utils/coverage.ts",
+    "src/utils/errors.ts",
+    "src/utils/guards.ts",
+    "src/utils/json.ts",
+    "src/utils/keys.ts",
+    "src/utils/locale-codes.ts",
+    "src/utils/registry.ts",
+    "src/utils/resolve.ts",
+    "src/utils/snippets.ts",
+    "src/utils/summary.ts",
+    "src/utils/tree.ts",
+    "src/utils/workspaces.ts",
+    "frontend-vue/dms.frontend.ts",
+    "frontend-vue/dms.frontend.build.ts",
+    "frontend-vue/i18n/locales/**",
+    "frontend-vue/app/composables/translation/useI18nWorkspaces.ts",
+    "frontend-vue/app/composables/translation/useLangFormat.ts",
+    "frontend-vue/app/composables/translation/useLangLinks.ts",
+    "frontend-vue/app/composables/translation/useLanguageActions.ts",
+    "frontend-vue/app/composables/translation/useLocaleNames.ts",
+    "frontend-vue/app/composables/translation/useMutationToast.ts",
+    "frontend-vue/app/composables/translation/useWorkspaceContext.ts",
+    "frontend-vue/app/composables/translation/useWorkspaceFlat.ts",
+    "frontend-vue/app/composables/translation/useWorkspaceLabel.ts",
+    "frontend-vue/app/composables/translation/useWorkspaceRoute.ts",
+    "frontend-vue/app/types/lang.ts",
+    "frontend-vue/app/utils/coverage.ts",
+    "frontend-vue/app/utils/languages.ts",
+    "frontend-vue/app/utils/translations.ts",
+    "frontend-vue/app/build/components/LocaleTile.vue",
+    `${SKILL}/verify.config.ts`,
+    `${SKILL}/lang.mjs`,
+    `${SKILL}/files.mjs`,
+    `${SKILL}/journeys/parts/round9.mjs`,
+    `${SKILL}/journeys/parts/round10.mjs`,
+    `${SKILL}/journeys/parts/round11.mjs`,
+    `${SKILL}/playground/**`,
+  ],
+  notShared: [".agents/skills/verify-dms-lang-key-writes/**"],
   smoke: "smoke",
   smokeJourney: "onboard, sign in, publish one translated message, read it back from the public URL",
   doors: {

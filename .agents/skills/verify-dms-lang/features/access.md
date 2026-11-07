@@ -12,6 +12,7 @@ covers:
   - src/utils/zod-json.ts
   - src/utils/constants.ts
   - src/index.ts
+  - .agents/skills/verify-dms-lang/journeys/access.mjs
 docs:
   - docs/1.introduction.md
   - docs/3.configuration.md
