@@ -13,6 +13,11 @@ covers:
   - frontend-vue/app/composables/translation/useWorkspaceActions.ts
   - frontend-vue/app/composables/translation/useWorkspaceNameCheck.ts
   - frontend-vue/app/utils/download.ts
+  - .agents/skills/verify-dms-lang/journeys/workspace-settings.mjs
+  - .agents/skills/verify-dms-lang/journeys/parts/round12.mjs
+  - .agents/skills/verify-dms-lang/journeys/parts/workspace-input.mjs
+  - .agents/skills/verify-dms-lang/journeys/parts/workspace-more.mjs
+  - .agents/skills/verify-dms-lang/journeys/parts/workspace-pages.mjs
 docs:
   - docs/4.usage/4.workspaces.md
   - docs/4.usage/5.workspace-settings.md

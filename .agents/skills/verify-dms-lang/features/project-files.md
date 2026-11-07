@@ -8,6 +8,8 @@ covers:
   - src/utils/own.ts
   - src/utils/guards.ts
   - src/frontend-module.ts
+  - .agents/skills/verify-dms-lang/journeys/project-files.mjs
+  - .agents/skills/verify-dms-lang/journeys/parts/frontend-modules.mjs
 docs:
   - docs/2.installation.md
   - docs/3.configuration.md

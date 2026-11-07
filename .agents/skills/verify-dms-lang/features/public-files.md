@@ -1,6 +1,7 @@
 ---
 covers:
   - src/routes/publicLocales.ts
+  - .agents/skills/verify-dms-lang/journeys/public-files.mjs
 docs:
   - docs/5.extending.md
   - docs/3.configuration.md
