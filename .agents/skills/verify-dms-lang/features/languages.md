@@ -10,6 +10,7 @@ covers:
   - frontend-vue/app/build/components/LocaleTile.vue
   - frontend-vue/app/composables/translation/useLanguageActions.ts
   - frontend-vue/app/composables/translation/useLocaleNames.ts
+  - .agents/skills/verify-dms-lang/journeys/languages.mjs
 docs:
   - docs/4.usage/1.overview.md
   - docs/4.usage/5.workspace-settings.md

@@ -11,6 +11,8 @@ covers:
   - frontend-vue/app/build/components/PlaceholderText.vue
   - frontend-vue/app/composables/translation/useKeyActions.ts
   - frontend-vue/app/utils/keySaveErrors.ts
+  - .agents/skills/verify-dms-lang/journeys/keys.mjs
+  - .agents/skills/verify-dms-lang/journeys/parts/issue-rules.mjs
 docs:
   - docs/4.usage/2.translation-matrix.md
   - docs/4.usage/5.workspace-settings.md

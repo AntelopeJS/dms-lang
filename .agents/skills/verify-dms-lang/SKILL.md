@@ -41,7 +41,7 @@ It checks that every recorded process is alive and holds its port, both servers 
 ## Drive
 
 ```bash
-$C plan                                  # the diff mapped to features; unmapped surfaces
+$C plan                                  # the diff mapped to features; shared files; unmapped surfaces
 $C journey "$RUN" smoke
 $C journey "$RUN" matrix [journey-id...]
 ```
@@ -87,9 +87,9 @@ $C down "$RUN"
 
 ## Verdict rules
 
-1. **Run every feature whose `covers:` globs the diff touches, plus the smoke journey** (sign in, create a workspace, add French and a key, translate it, read it back from the public URL). `plan` prints that list as `run`.
+1. **Run every feature whose `covers:` globs the diff touches, plus the smoke journey** (sign in, create a workspace, add French and a key, translate it, read it back from the public URL). `plan` prints that list as `run`. A diff that changes a shared file (the `shared` globs of `verify.config.ts`: the package and workspace files, the lockfile, the `.npmrc` files, the module's entry, its page and route indexes, the translations routes, the frontend entry, build manifest and locale files, every file that code or journeys of four or more features import, explicitly or through the frontend's auto-imports, and this skill's helpers and playground) runs every feature, and `plan` lists those files under `shared`. Before a release, run every feature too. A `dms-control` older than the release that reads `shared` prints a plan with no `shared` field and only the touched features: compare `changed` with the `shared` globs yourself and run every feature when one matches. That `verdict` reads only the features in `run`, so it does not see the others you ran: a failing journey among them fails the verdict anyway. List it under `attention` and do not publish. Each feature also covers its own journey file and the parts only it uses, so a change to them runs that feature.
 2. **Unmapped surface fails the verdict.** User-facing code is `src/**`, `frontend-vue/**`, `skills/**` and `package.json`, tests and tool configs excluded (`verify.config.ts`). A changed file there that no feature glob covers is an unmapped surface: the PR adds it to a feature with its journeys. `map` checks the whole tree.
-3. **Every registered journey of a feature in `run` must have run and passed.** A missing journey fails as "not run", so run whole features. Known findings stay as failing journeys (see the feature files' Gotchas): they fail a verdict only when the diff touches their feature.
+3. **Every registered journey of a feature in `run` must have run and passed.** A missing journey fails as "not run", so run whole features. Known findings stay as failing journeys (see the feature files' Gotchas): they fail a verdict only when the verdict covers their feature, which a shared file makes every feature.
 4. **Docs.** Each touched feature lists its `docs:` pages. Judge every page against what the journeys showed. A page that no longer matches fails the verdict.
 5. **Formal checks.** Run `$C formal "$RUN"`. `verify.config.ts` lists one check, `key-writes`, which proves for every set of up to two project files that each key write the API accepts lands in the file the docs name and leaves the dashboard showing what the docs promise. It runs when the diff touches a file it covers, and fails the verdict when a rule newly fails, a rule the base checks is dropped, or the check no longer matches its record. How to read its output is in [`../verify-dms-lang-key-writes/SKILL.md`](../verify-dms-lang-key-writes/SKILL.md).
 6. **One-way doors.** The section comes right after the result line and is mandatory; a verdict without it is void. It holds `None` with a reason, or one row per door: kind, location, what cannot be undone, containment. `$C doors` prints the `One-way-door:` line for the diff from the path rules in `verify.config.ts`. Every file they flag needs a row, or a `falsePositives` entry saying why it is not a door.
