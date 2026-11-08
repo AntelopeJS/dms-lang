@@ -1,11 +1,14 @@
 import { antelopeKnipConfig } from "@antelopejs/tooling-configs/knip";
 
-const knipConfig = antelopeKnipConfig({
-  /**
-   * The harness is loaded by `ajs module test`, not imported, and it is what
-   * pulls in the in-memory Mongo.
-   */
-  entry: ["src/test/harness.ts"],
+/**
+ * Knip reads a top-level `entry`, `project` and `ignore` as unused once
+ * `workspaces` is set, and the root then analyses every file, the
+ * verification skills under `.agents/` included. The AntelopeJS rules are
+ * therefore the root workspace itself.
+ */
+const rootWorkspace = antelopeKnipConfig({
+  /** The docs scenes are loaded by `antelopejs-capture`, not imported. */
+  entry: ["docs/captures.ts"],
   ignore: [".amp/**"],
   /**
    * The frontend tests import Vue and Vite as the installed renderer
@@ -15,38 +18,28 @@ const knipConfig = antelopeKnipConfig({
   ignoreDependencies: ["vue", "vite"],
 });
 
-/** `#dms-ui/*` is the DMS UI layer, aliased by the frontend build like `#dms/*`. */
-knipConfig.ignoreUnresolved = [
-  "#dms/frontend-module",
-  "#dms/frontend-build",
-  /^#dms-ui\//,
-];
-/**
- * The DMS loads the frontend without imports knip can follow: the components
- * through the `import.meta.glob` of dms.frontend.ts, and the composables,
- * utils and types through the auto-imports dms.frontend.build.ts registers.
- * They are entries, so their exports only count as used inside the module
- * when a file imports them by path.
- */
-knipConfig.workspaces = {
+export default {
+  /** `#dms-ui/*` is the DMS UI layer, aliased by the frontend build like `#dms/*`. */
+  ignoreUnresolved: [
+    "#dms/frontend-module",
+    "#dms/frontend-build",
+    /^#dms-ui\//,
+  ],
   /**
-   * The docs scenes are loaded by `antelopejs-capture` and the verification
-   * skills by `dms-control`; none is imported.
+   * The DMS loads the frontend without imports knip can follow: the components
+   * through the `import.meta.glob` of dms.frontend.ts, and the composables,
+   * utils and types through the auto-imports dms.frontend.build.ts registers.
+   * They are entries, so their exports only count as used inside the module
+   * when a file imports them by path.
    */
-  ".": {
-    entry: ["docs/captures.ts"],
-    ignore: [
-      ".agents/skills/verify-dms-lang/**",
-      ".agents/skills/verify-dms-lang-key-writes/**",
-    ],
-  },
-  "frontend-vue": {
-    entry: [
-      "app/{components,build/components}/**/*.vue",
-      "app/{composables,utils,types,config}/**/*.ts",
-    ],
-    project: ["app/**/*.{ts,vue}"],
+  workspaces: {
+    ".": rootWorkspace,
+    "frontend-vue": {
+      entry: [
+        "app/{components,build/components}/**/*.vue",
+        "app/{composables,utils,types,config}/**/*.ts",
+      ],
+      project: ["app/**/*.{ts,vue}"],
+    },
   },
 };
-
-export default knipConfig;
