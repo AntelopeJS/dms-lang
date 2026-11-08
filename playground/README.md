@@ -8,7 +8,7 @@ A DMS project that loads `@antelopejs/dms-lang` from the parent folder, with edi
 
 | Package                                     | Supported         | Tested with |
 | ------------------------------------------- | ----------------- | ----------- |
-| `@antelopejs/dms`                           | `>=0.17.0 <1.0.0` | `0.17.0`    |
+| `@antelopejs/dms`                           | `>=0.17.0 <1.0.0` | `0.18.2`    |
 | `@antelopejs/interface-api`                 | `>=0.2.0 <1.0.0`  | `0.2.0`     |
 | `@antelopejs/interface-api-util`            | `>=0.3.0 <1.0.0`  | `0.3.0`     |
 | `@antelopejs/interface-core`                | `>=0.4.0 <1.0.0`  | `0.4.0`     |

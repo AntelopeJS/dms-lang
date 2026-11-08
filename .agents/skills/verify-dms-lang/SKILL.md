@@ -1,6 +1,6 @@
 ---
 name: verify-dms-lang
-description: "Drive the AntelopeJS dms-lang module (translation workspaces, the Lang dashboard pages, the public /i18n files) the way the platform owner does, inside a DMS with free ports, its own MongoDB database and a mail sink, and post a verdict with evidence. Use to prove a change to AntelopeJS/dms-lang works before merge, or to verify a PR."
+description: "Drive the AntelopeJS dms-lang module (translation workspaces, the Lang dashboard pages, the public /i18n files) the way the platform owner does, inside a DMS with free ports, its own MongoDB database and a mail sink, and report a verdict with evidence. Use to prove a change to AntelopeJS/dms-lang works before merge, or to verify a PR."
 ---
 
 # Verify dms-lang
@@ -87,7 +87,7 @@ $C down "$RUN"
 
 ## Verdict rules
 
-1. **Run every feature whose `covers:` globs the diff touches, plus the smoke journey** (sign in, create a workspace, add French and a key, translate it, read it back from the public URL). `plan` prints that list as `run`. A diff that changes a shared file (the `shared` globs of `verify.config.ts`: the package and workspace files, the lockfile, the `.npmrc` files, the module's entry, its page and route indexes, the translations routes, the frontend entry, build manifest and locale files, every file that code or journeys of four or more features import, explicitly or through the frontend's auto-imports, and this skill's helpers and playground) runs every feature, and `plan` lists those files under `shared`. Before a release, run every feature too. A `dms-control` older than the release that reads `shared` prints a plan with no `shared` field and only the touched features: compare `changed` with the `shared` globs yourself and run every feature when one matches. That `verdict` reads only the features in `run`, so it does not see the others you ran: a failing journey among them fails the verdict anyway. List it under `attention` and do not publish. Each feature also covers its own journey file and the parts only it uses, so a change to them runs that feature.
+1. **Run every feature whose `covers:` globs the diff touches, plus the smoke journey** (sign in, create a workspace, add French and a key, translate it, read it back from the public URL). `plan` prints that list as `run`. A diff that changes a shared file (the `shared` globs of `verify.config.ts`: the package and workspace files, the lockfile, the `.npmrc` files, the module's entry, its page and route indexes, the translations routes, the frontend entry, build manifest and locale files, every file that code or journeys of four or more features import, explicitly or through the frontend's auto-imports, and this skill's helpers and playground) runs every feature, and `plan` lists those files under `shared`. Before a release, run every feature too. A `dms-control` older than the release that reads `shared` prints a plan with no `shared` field and only the touched features: compare `changed` with the `shared` globs yourself and run every feature when one matches. That `verdict` reads only the features in `run`, so it does not see the others you ran: a failing journey among them fails the verdict anyway. List it under `attention` and report the failure in your reply. Each feature also covers its own journey file and the parts only it uses, so a change to them runs that feature.
 2. **Unmapped surface fails the verdict.** User-facing code is `src/**`, `frontend-vue/**`, `skills/**` and `package.json`, tests and tool configs excluded (`verify.config.ts`). A changed file there that no feature glob covers is an unmapped surface: the PR adds it to a feature with its journeys. `map` checks the whole tree.
 3. **Every registered journey of a feature in `run` must have run and passed.** A missing journey fails as "not run", so run whole features. Known findings stay as failing journeys (see the feature files' Gotchas): they fail a verdict only when the verdict covers their feature, which a shared file makes every feature.
 4. **Docs.** Each touched feature lists its `docs:` pages. Judge every page against what the journeys showed. A page that no longer matches fails the verdict.
@@ -113,22 +113,21 @@ Write your judgement to `$RUN/evidence/judgement.json`:
 
 A door row is `{ "kind", "location", "irreversible", "containment" }`, where `kind` is a `doors` key of `verify.config.ts`. `verifier` is required.
 
-Then render and publish:
+Then render the verdict:
 
 ```bash
 $C verdict "$RUN" --pr <n>      # writes evidence/verdict.md; exit 1 on FAIL
-$C publish "$RUN" --pr <n>
 ```
 
-- `verdict` computes the result from `feature.json`, the plan, the formal results and the judgement, in the shape of the outer-loop sample verdict.
-- `publish` commits `evidence/` to the orphan branch `verify-evidence` under `pr-<n>/<sha>/` from a temporary worktree, posts the verdict with `gh pr comment`, sets the commit status `verify` on the head SHA (`success` for PASS and PASS+NOTES, `failure` for FAIL) and reads it back. When GitHub refuses the status it prints the error and exits 1.
-- A new push voids the status: verify again on the new head.
+- `verdict` computes the result from `feature.json`, the plan, the formal results and the judgement, and writes it to `evidence/verdict.md`.
+- Report the verdict and what you saw in your own reply.
+- A new push voids the verdict: verify again on the new head.
 
-Post a verdict only from a thread that did not write the change, and name it in `verifier`.
+Judge from a thread that did not write the change, and name it in `verifier`.
 
 ## Trust
 
-The skill is not Trusted yet. It becomes Trusted when it passes a shadow run of 10 consecutive agent PRs, and its last maintain pass is newer than the last change to the repository or its `@antelopejs` dependencies and at most 30 days old. The verdict header says `not trusted yet` until then.
+The verdict header says `not trusted yet`.
 
 ## Gotchas
 
