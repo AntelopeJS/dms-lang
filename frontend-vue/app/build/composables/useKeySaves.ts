@@ -239,6 +239,8 @@ export function useKeySaves() {
 
 /** A confirmation to clear a base text, shown by a dialog its caller renders. */
 interface BaseClearQuestion {
+  /** Tells one question from the next: each gets a dialog of its own. */
+  id: number
   key: string
   answer: (confirmed: boolean) => void
 }
@@ -246,14 +248,22 @@ interface BaseClearQuestion {
 /**
  * Asks before a base text is emptied, in a dialog the caller renders (see
  * `clearBaseDialog`) so it opens in the caller's layer: the key panel's
- * drawer, which the DMS's own dialogs open under. `question` holds the open
- * one until the caller clears it, once the dialog has left the screen.
+ * drawer, which the DMS's own dialogs open under. `question` holds the last
+ * one asked until its dialog has left the screen (`left`); a question asked
+ * while the previous dialog leaves replaces it and stays.
  */
 export function useBaseClearQuestion() {
   const question = shallowRef<BaseClearQuestion | null>(null)
+  let asked = 0
   const ask = (key: string) =>
-    new Promise<boolean>((answer) => (question.value = { key, answer }))
-  return { question, ask }
+    new Promise<boolean>((answer) => {
+      asked += 1
+      question.value = { id: asked, key, answer }
+    })
+  const left = (id: number) => {
+    if (question.value?.id === id) question.value = null
+  }
+  return { question, ask, left }
 }
 
 /** The save state of each text of a set, a save flashing "Saved" for a moment. */

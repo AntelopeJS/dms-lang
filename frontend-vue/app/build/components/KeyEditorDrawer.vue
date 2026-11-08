@@ -97,7 +97,11 @@ const knownInherited = ref<KnownInherited | null>(null)
 const fieldStates = ref<Record<string, SaveState>>({})
 const fieldErrors = ref<Record<string, string>>({})
 const blocked = ref<Record<string, boolean>>({})
-const { question: baseClear, ask: askBaseClear } = useBaseClearQuestion()
+const {
+  question: baseClear,
+  ask: askBaseClear,
+  left: baseClearLeft,
+} = useBaseClearQuestion()
 const states = useSaveStates(fieldStates)
 const body = useTemplateRef<HTMLElement>('body')
 const fieldIds = useId()
@@ -655,10 +659,11 @@ onMounted(() => show(key.value))
       </div>
     </DmsContainerFooter>
     <DmsConfirmModal
-      v-if="baseClear"
-      v-bind="saves.clearBaseDialog(baseClear.key)"
-      @close="baseClear.answer"
-      @after:leave="baseClear = null"
+      v-for="question in baseClear ? [baseClear] : []"
+      :key="question.id"
+      v-bind="saves.clearBaseDialog(question.key)"
+      @close="question.answer"
+      @after:leave="baseClearLeft(question.id)"
     />
   </div>
 </template>

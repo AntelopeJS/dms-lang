@@ -106,10 +106,18 @@ export const panelJourneys = [
         tab.shows(/Clear the base text of shop\.title\?/),
         ctx.equal("values", pick(base.body, "row", "values"), { en: "Shop", fr: "Boutique" }),
       ]);
-      await tab.click({ role: "button", name: "Clear", exact: true, within: { role: "dialog", name: "Clear the base text of shop.title?" } });
+      const ASK = { role: "dialog", name: "Clear the base text of shop.title?" };
+      await tab.click({ role: "button", name: "Cancel", exact: true, within: ASK });
+      await ctx.verify("Cancel closes the confirmation and gives the base text back", [
+        tab.visible(ASK, { hidden: true }),
+        ctx.equal("the field", await fieldValue(tab, { role: "textbox", name: "English" }), "Shop"),
+      ]);
+      await tab.fill({ role: "textbox", name: "English" }, "");
+      await tab.click({ role: "button", name: "Save", exact: true });
+      await tab.click({ role: "button", name: "Clear", exact: true, within: ASK });
       const cleared = await lang(ctx, "read the cleared key", "GET", `/row?workspace=${id}&key=shop.title`);
       await ctx.verify("the confirmation opens above the panel, and its Clear clears the base text and keeps the panel open", [
-        tab.visible({ role: "dialog", name: "Clear the base text of shop.title?" }, { hidden: true }),
+        tab.visible(ASK, { hidden: true }),
         tab.visible({ role: "dialog", name: "shop.title" }),
         ctx.equal("values", pick(cleared.body, "row", "values"), { fr: "Boutique" }),
       ]);
