@@ -9,6 +9,7 @@ import { antelopeKnipConfig } from "@antelopejs/tooling-configs/knip";
 const rootWorkspace = antelopeKnipConfig({
   /** The docs scenes are loaded by `antelopejs-capture`, not imported. */
   entry: ["docs/captures.ts"],
+  project: ["tests/**/*.mjs", "docs/**/*.ts"],
   ignore: [".amp/**"],
   /**
    * The frontend tests import Vue and Vite as the installed renderer
