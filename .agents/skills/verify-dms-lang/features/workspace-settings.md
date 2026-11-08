@@ -58,7 +58,7 @@ The Workspaces page lists every set of translation files as a card and creates n
 - `card-buttons-stay-inside-a-card-with-a-long-url`: A card whose public URL or folder path is long keeps its buttons inside the card, and a pointer click on Switch switches.
 - `installed-modules-take-no-new-key`: The matrix of the installed modules offers no Add key, and the matrix of the project files does.
 - `delete-dialog-names-the-url-that-stops-responding`: The Delete dialog lists the public URL that stops responding, next to the files and the strings it removes.
-- `type-click-right-after-typing-a-description`: A click on a Type radio while the description field still has focus saves the description and the type, in one click.
+- `type-click-right-after-typing-a-description`: A click on a Type radio while the description field still has focus saves the description and the type, in one click, on a wide screen and at 320px, where the header's save badge wraps.
 
 ## How to get to it (user POV)
 
