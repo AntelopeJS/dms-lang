@@ -81,7 +81,8 @@ function saveDescription() {
     () =>
       void track('description', async () => {
         const saved = await updateDetails(id, { description: text || null })
-        if (saved) description.value = current.value?.description ?? ''
+        if (saved && !isTypingDescription.value)
+          description.value = current.value?.description ?? ''
         return saved
       }),
   )
@@ -140,7 +141,7 @@ usePageHeaderActions(() =>
       :label="$t('dms_lang.workspace.source_label')"
       :description="$t(`dms_lang.workspace.source_help_${kind}`)"
     >
-      <code class="text-muted font-mono text-xs break-all">
+      <code class="text-muted break-all font-mono text-xs">
         {{ $t(`dms_lang.workspace_kinds.${kind}.folder`) }}
       </code>
     </DmsFieldRow>
