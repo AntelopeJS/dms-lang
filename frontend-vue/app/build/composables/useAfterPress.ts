@@ -7,8 +7,9 @@ const TAP_CLICK_TIMEOUT_MS = 1000
  * Defers work to the click of the primary-button press in progress, so a save
  * started by the blur that press causes changes nothing on the page until
  * that click has landed. A touch tap blurs after its `pointerup`, so the
- * press lasts until the click, a `pointercancel`, the window's blur or, for
- * a tap that makes no click, {@link TAP_CLICK_TIMEOUT_MS}. Without such a
+ * press lasts until the click, a `pointercancel`, the window's blur, a press
+ * of another button or, for a tap that makes no click,
+ * {@link TAP_CLICK_TIMEOUT_MS}. Without such a
  * press, the work runs at once; work still waiting when the scope ends runs
  * then.
  */
@@ -40,7 +41,8 @@ export function useAfterPress(): (run: () => void) => void {
     'pointerdown',
     (event) => {
       clearTimeout(tapTimer)
-      isPressed = event.isPrimary && event.button === 0
+      if (event.isPrimary && event.button === 0) isPressed = true
+      else release()
     },
     capture,
   )
