@@ -8,6 +8,7 @@ import {
 import type { CellHold } from '../composables/useCellSaves'
 import {
   clearsBaseText,
+  useBaseClearQuestion,
   useEditStarts,
   useKeySaves,
   useSaveStates,
@@ -96,6 +97,7 @@ const knownInherited = ref<KnownInherited | null>(null)
 const fieldStates = ref<Record<string, SaveState>>({})
 const fieldErrors = ref<Record<string, string>>({})
 const blocked = ref<Record<string, boolean>>({})
+const { question: baseClear, ask: askBaseClear } = useBaseClearQuestion()
 const states = useSaveStates(fieldStates)
 const body = useTemplateRef<HTMLElement>('body')
 const fieldIds = useId()
@@ -337,7 +339,7 @@ function isClearingBase(codes: string[]): boolean {
 
 async function confirmBaseClear(codes: string[]) {
   if (!isClearingBase(codes)) return
-  if (!(await saves.confirmClearBase(key.value))) discardDraft(base.value)
+  if (!(await askBaseClear(key.value))) discardDraft(base.value)
 }
 
 async function persist(codes: string[]): Promise<boolean> {
@@ -652,5 +654,11 @@ onMounted(() => show(key.value))
         </div>
       </div>
     </DmsContainerFooter>
+    <DmsConfirmModal
+      v-if="baseClear"
+      v-bind="saves.clearBaseDialog(baseClear.key)"
+      @close="baseClear.answer"
+      @after:leave="baseClear = null"
+    />
   </div>
 </template>

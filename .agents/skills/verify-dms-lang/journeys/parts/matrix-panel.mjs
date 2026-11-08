@@ -106,6 +106,13 @@ export const panelJourneys = [
         tab.shows(/Clear the base text of shop\.title\?/),
         ctx.equal("values", pick(base.body, "row", "values"), { en: "Shop", fr: "Boutique" }),
       ]);
+      await tab.click({ role: "button", name: "Clear", exact: true, within: { role: "dialog", name: "Clear the base text of shop.title?" } });
+      const cleared = await lang(ctx, "read the cleared key", "GET", `/row?workspace=${id}&key=shop.title`);
+      await ctx.verify("the confirmation opens above the panel, and its Clear clears the base text and keeps the panel open", [
+        tab.visible({ role: "dialog", name: "Clear the base text of shop.title?" }, { hidden: true }),
+        tab.visible({ role: "dialog", name: "shop.title" }),
+        ctx.equal("values", pick(cleared.body, "row", "values"), { fr: "Boutique" }),
+      ]);
     },
   },
   {
