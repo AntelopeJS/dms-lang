@@ -1,4 +1,4 @@
-import { clickUntil, fieldValue, freshId, lang, pick, seedWorkspace } from "../../lang.mjs";
+import { clickUntil, eventually, fieldValue, freshId, lang, pick, seedWorkspace } from "../../lang.mjs";
 
 /** @typedef {import("../../lang.mjs").Ctx} Ctx */
 
@@ -115,7 +115,7 @@ export const panelJourneys = [
       await tab.fill({ role: "textbox", name: "English" }, "");
       await tab.click({ role: "button", name: "Save", exact: true });
       await tab.click({ role: "button", name: "Clear", exact: true, within: ASK });
-      const cleared = await lang(ctx, "read the cleared key", "GET", `/row?workspace=${id}&key=shop.title`);
+      const cleared = await eventually(() => lang(ctx, "read the cleared key", "GET", `/row?workspace=${id}&key=shop.title`), (answer) => pick(answer.body, "row", "values", "en") === undefined);
       await ctx.verify("the confirmation opens above the panel, and its Clear clears the base text and keeps the panel open", [
         tab.visible(ASK, { hidden: true }),
         tab.visible({ role: "dialog", name: "shop.title" }),
