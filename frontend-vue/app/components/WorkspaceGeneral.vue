@@ -157,7 +157,7 @@ usePageHeaderActions(() =>
         <p v-else class="text-highlighted text-sm">
           {{ current?.description || '—' }}
         </p>
-        <template #details>
+        <template #label-extra>
           <DmsSaveStatus
             :state="stateOf('description')"
             @retry="retries.description?.()"
@@ -174,7 +174,7 @@ usePageHeaderActions(() =>
           :items="typeItems"
           :disabled="!canEditDetails"
         />
-        <template #details>
+        <template #label-extra>
           <DmsSaveStatus :state="stateOf('type')" @retry="retries.type?.()" />
         </template>
       </DmsFieldRow>
@@ -206,7 +206,7 @@ usePageHeaderActions(() =>
           {{ baseLocale }}
         </span>
       </span>
-      <template #details>
+      <template #label-extra>
         <DmsSaveStatus :state="stateOf('base')" />
       </template>
     </DmsFieldRow>

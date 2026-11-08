@@ -1,5 +1,5 @@
 import { currentUrl, directionOf, namesInOrder } from "../../files.mjs";
-import { freshId, lang, list, seedWorkspace } from "../../lang.mjs";
+import { eventually, freshId, lang, list, pick, seedWorkspace } from "../../lang.mjs";
 
 /** @typedef {import("../../lang.mjs").Ctx} Ctx */
 
@@ -106,6 +106,23 @@ export const moreWorkspaceJourneys = [
       await ctx.verify("the installed modules ship their keys: no Add key", [tab.shows(/Read-only/), tab.visible({ role: "link", name: "Add key" }, { hidden: true }), tab.visible({ role: "button", name: "Add key" }, { hidden: true })]);
       await tab.goto("/modules/lang/translations?workspace=default");
       await ctx.verify("the project files take keys", [tab.visible({ role: "link", name: "Add key" })]);
+    },
+  },
+  {
+    id: "type-click-right-after-typing-a-description",
+    title: "a click on a Type radio while the description field still has focus saves both the description and the type",
+    entryPoint: "/modules/lang/workspace",
+    async run(/** @type {Ctx} */ ctx) {
+      const id = freshId(ctx, "typeclick");
+      await seedWorkspace(ctx, id, { locales: ["en"] });
+      const tab = await ctx.tab("admin");
+      await tab.signIn("admin");
+      await tab.goto(`/modules/lang/workspace?workspace=${id}`);
+      await tab.fill({ role: "textbox", name: "Texts of the iOS and Android app" }, "Texts of the shop");
+      await tab.click({ role: "radio", name: "Website" });
+      await eventually(() => lang(ctx, "wait for the description", "GET", `/workspace?workspace=${id}`), (answer) => pick(answer.body, "description") === "Texts of the shop");
+      const saved = await eventually(() => lang(ctx, "wait for the type", "GET", `/workspace?workspace=${id}`), (answer) => pick(answer.body, "type") === "website");
+      await ctx.verify("the one click saved the type as well as the description", [ctx.equal("description", pick(saved.body, "description"), "Texts of the shop"), ctx.equal("type", pick(saved.body, "type"), "website")]);
     },
   },
 ];
