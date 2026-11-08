@@ -544,7 +544,7 @@
 			"label": "Nom de l'espace",
 			"placeholder": "portail-partenaire",
 			"help": "Lettres minuscules, chiffres, tirets et tirets bas.",
-			"invalid": "Utilisez des lettres minuscules, des chiffres, des tirets et des tirets bas ; default, modules et all sont réservés.",
+			"invalid": "Utilisez des lettres minuscules, des chiffres, des tirets et des tirets bas ; default et modules sont réservés.",
 			"taken": "Un espace nommé {name} existe déjà.",
 			"unchanged": "C'est le nom actuel.",
 			"available": "{name} est disponible."

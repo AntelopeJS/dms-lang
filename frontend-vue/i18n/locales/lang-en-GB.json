@@ -544,7 +544,7 @@
 			"label": "Workspace name",
 			"placeholder": "partner-portal",
 			"help": "Lowercase letters, digits, dashes and underscores.",
-			"invalid": "Use lowercase letters, digits, dashes and underscores; default, modules and all are reserved.",
+			"invalid": "Use lowercase letters, digits, dashes and underscores; default and modules are reserved.",
 			"taken": "A workspace named {name} already exists.",
 			"unchanged": "This is the current name.",
 			"available": "{name} is available."
