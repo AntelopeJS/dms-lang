@@ -381,7 +381,7 @@ watch(
         </div>
 
         <template #footer>
-          <div class="flex items-center gap-2.5">
+          <div class="flex min-w-0 flex-1 items-center gap-2.5">
             <template v-if="workspace.kind === 'added'">
               <DmsStatusPill
                 tone="success"

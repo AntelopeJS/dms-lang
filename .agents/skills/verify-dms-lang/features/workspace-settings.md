@@ -55,6 +55,7 @@ The Workspaces page lists every set of translation files as a card and creates n
 - `switching-workspace-leaves-the-filters-behind`: Switching workspace from the scope bar keeps the page and drops the filters and the search of the workspace left.
 - `workspaces-sort-and-search-by-description-and-type`: The sort menu orders the cards by name or least translated first, and the search matches the id, the description and the type.
 - `right-to-left-languages-are-written-right-to-left`: The queue sets dir=rtl on the text of an Arabic translation and dir=ltr on an English one.
+- `card-buttons-stay-inside-a-card-with-a-long-url`: A card whose public URL or folder path is long keeps its buttons inside the card, and a pointer click on Switch switches.
 - `installed-modules-take-no-new-key`: The matrix of the installed modules offers no Add key, and the matrix of the project files does.
 - `delete-dialog-names-the-url-that-stops-responding`: The Delete dialog lists the public URL that stops responding, next to the files and the strings it removes.
 
