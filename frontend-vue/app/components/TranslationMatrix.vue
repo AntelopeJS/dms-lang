@@ -129,7 +129,7 @@ const tableMinWidth = computed(() => {
 })
 
 const { rows, groups, counts, targets, namespaces, isRowDone } =
-  useMatrixFilters(flat, filters, columnCodes, pinned)
+  useMatrixFilters(flat, filters, pinned)
 const doneCount = computed(() => rows.value.filter(isRowFinished).length)
 const rowCount = computed(() => rows.value.length)
 const view = useMatrixRows(groups, rowCount)

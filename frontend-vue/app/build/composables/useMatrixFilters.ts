@@ -45,17 +45,14 @@ export function parseFilter(value: string | undefined): TranslationFilter {
 
 /**
  * The languages the counts and the filters look at: the one being translated,
- * else the target languages shown as columns, else every target language.
+ * else every target language, whatever columns are shown.
  */
 export function targetLocales(
   flat: FlatTranslations,
   missingIn: string,
-  shown: string[],
 ): string[] {
   if (missingIn && flat.locales.includes(missingIn)) return [missingIn]
-  const targets = flat.locales.filter((code) => code !== flat.defaultLocale)
-  const visible = targets.filter((code) => shown.includes(code))
-  return visible.length ? visible : targets
+  return flat.locales.filter((code) => code !== flat.defaultLocale)
 }
 
 function rowStatus(
@@ -104,10 +101,9 @@ const NO_STATUS: RowStatus = { missing: [], hasIssue: false }
 function useRowStatuses(
   flat: Ref<FlatTranslations>,
   state: Ref<MatrixFilterState>,
-  shown: Ref<string[]>,
 ) {
   const targets = computed(() =>
-    targetLocales(flat.value, state.value.missingIn, shown.value),
+    targetLocales(flat.value, state.value.missingIn),
   )
   const statuses = computed(() => {
     const base = flat.value.defaultLocale
@@ -165,13 +161,11 @@ function useScopedRows(
 export function useMatrixFilters(
   flat: Ref<FlatTranslations>,
   state: Ref<MatrixFilterState>,
-  shown: Ref<string[]>,
   pinned: Ref<Set<string>>,
 ) {
   const { targets, statusOf, isRowMissing, predicates } = useRowStatuses(
     flat,
     state,
-    shown,
   )
   const { namespaces, scoped } = useScopedRows(flat, state)
   const matches = (row: FlatTranslationRow) =>
