@@ -1,4 +1,4 @@
-import { directionOf, namesInOrder } from "../../files.mjs";
+import { currentUrl, directionOf, namesInOrder } from "../../files.mjs";
 import { freshId, lang, list, seedWorkspace } from "../../lang.mjs";
 
 /** @typedef {import("../../lang.mjs").Ctx} Ctx */
@@ -49,6 +49,50 @@ export const moreWorkspaceJourneys = [
       await tab.goto(`/modules/lang/language?workspace=${id}&locale=fr`);
       await tab.visible({ role: "textbox", name: "One" });
       await ctx.verify("the French field is left to right", [ctx.equal("dir", await directionOf(tab, { role: "textbox", name: "One" }), "ltr")]);
+    },
+  },
+  {
+    id: "card-buttons-stay-inside-a-card-with-a-long-url",
+    title: "a card whose public URL or folder path is long keeps its buttons inside the card, and a pointer click on Switch switches",
+    entryPoint: "/modules/lang/workspaces",
+    async run(/** @type {Ctx} */ ctx) {
+      const long = `${freshId(ctx, "long").replace(/[^a-z0-9]/g, "")}`.padEnd(64, "x").slice(0, 64);
+      const current = freshId(ctx, "current");
+      await seedWorkspace(ctx, long, { locales: ["en"] });
+      await seedWorkspace(ctx, current, { locales: ["en"] });
+      const tab = await ctx.tab("admin");
+      await tab.signIn("admin");
+      await tab.goto(`/modules/lang/workspaces?workspace=${current}`);
+      await tab.visible({ role: "heading", name: long });
+      const outside = String(
+        await tab.page.evaluate(() =>
+          [...document.querySelectorAll(".dms-card")]
+            .flatMap((card) => {
+              const edge = card.getBoundingClientRect().right;
+              return [...card.querySelectorAll("button, a")].filter((button) => button.getBoundingClientRect().right > edge + 0.5).map((button) => button.textContent?.trim() || button.getAttribute("aria-label") || "?");
+            })
+            .join("|"),
+        ),
+      );
+      await ctx.verify("every card's buttons end inside the card", [ctx.equal("buttons past a card's edge", outside, "")]);
+      const clicked = String(
+        await tab.page
+          .locator(".dms-card")
+          .filter({ hasText: long })
+          .getByRole("button", { name: "Switch", exact: true })
+          .click({ timeout: 5000 })
+          .then(
+            () => "",
+            (/** @type {Error} */ error) => error.message.split("\n")[0] ?? "",
+          ),
+      );
+      const switched = Boolean(
+        await tab.page.waitForURL((/** @type {URL} */ url) => url.searchParams.get("workspace") === long, { timeout: 5000 }).then(
+          () => true,
+          () => false,
+        ),
+      );
+      await ctx.verify("a pointer click on Switch opens the workspace", [ctx.equal("click error", clicked, ""), ctx.holds("the workspace is in the URL", switched, currentUrl(tab))]);
     },
   },
   {
