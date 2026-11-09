@@ -4,6 +4,7 @@ import type { WorkspaceType } from '../types/lang'
 import type { SaveState } from '../utils/keySaves'
 import LocaleTile from '../build/components/LocaleTile.vue'
 import { useSaveStates } from '../build/composables/useKeySaves'
+import { useAfterPress } from '../build/composables/useAfterPress'
 
 /** A setting of the page, each saved on its own. */
 type DetailField = 'description' | 'type' | 'base'
@@ -16,6 +17,7 @@ const { addLanguage, makeBase } = useLanguageActions()
 const { updateDetails } = useWorkspaceActions()
 const { typeItems, typeOf, descriptionMax } = useWorkspaceTypes()
 const { route } = useWorkspaceRoute()
+const afterPress = useAfterPress()
 
 const workspaceId = computed(() => route.query.workspace ?? '')
 const canEditDetails = computed(
@@ -62,7 +64,9 @@ const isTypingDescription = ref(false)
 watch(
   () => current.value?.description,
   (text) => {
-    if (isTypingDescription.value || stateOf('description') === 'error') return
+    const state = stateOf('description')
+    if (isTypingDescription.value || state === 'error' || state === 'saving')
+      return
     description.value = text ?? ''
   },
   { immediate: true },
@@ -72,8 +76,15 @@ function saveDescription() {
   isTypingDescription.value = false
   const text = description.value.trim()
   if (text === (current.value?.description ?? '')) return
-  void track('description', () =>
-    updateDetails(workspaceId.value, { description: text || null }),
+  const id = workspaceId.value
+  afterPress(
+    () =>
+      void track('description', async () => {
+        const saved = await updateDetails(id, { description: text || null })
+        if (saved && !isTypingDescription.value)
+          description.value = current.value?.description ?? ''
+        return saved
+      }),
   )
 }
 
@@ -130,7 +141,7 @@ usePageHeaderActions(() =>
       :label="$t('dms_lang.workspace.source_label')"
       :description="$t(`dms_lang.workspace.source_help_${kind}`)"
     >
-      <code class="text-muted font-mono text-xs break-all">
+      <code class="text-muted break-all font-mono text-xs">
         {{ $t(`dms_lang.workspace_kinds.${kind}.folder`) }}
       </code>
     </DmsFieldRow>
@@ -157,7 +168,7 @@ usePageHeaderActions(() =>
         <p v-else class="text-highlighted text-sm">
           {{ current?.description || '—' }}
         </p>
-        <template #details>
+        <template #label-extra>
           <DmsSaveStatus
             :state="stateOf('description')"
             @retry="retries.description?.()"
@@ -174,7 +185,7 @@ usePageHeaderActions(() =>
           :items="typeItems"
           :disabled="!canEditDetails"
         />
-        <template #details>
+        <template #label-extra>
           <DmsSaveStatus :state="stateOf('type')" @retry="retries.type?.()" />
         </template>
       </DmsFieldRow>
@@ -206,7 +217,7 @@ usePageHeaderActions(() =>
           {{ baseLocale }}
         </span>
       </span>
-      <template #details>
+      <template #label-extra>
         <DmsSaveStatus :state="stateOf('base')" />
       </template>
     </DmsFieldRow>
