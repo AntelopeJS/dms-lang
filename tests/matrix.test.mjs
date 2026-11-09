@@ -5,13 +5,19 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import * as translations from "../frontend-vue/app/utils/translations.ts";
+import { vue } from "./helpers/frontend-runtime.mjs";
 
-Object.assign(globalThis, translations);
+Object.assign(globalThis, translations, { computed: vue.computed });
 
 const { exportFileName, translationsCsv } =
   await import("../frontend-vue/app/utils/matrixExport.ts");
-const { groupRows, parseFilter, targetLocales } =
-  await import("../frontend-vue/app/build/composables/useMatrixFilters.ts");
+const {
+  EMPTY_FILTERS,
+  groupRows,
+  parseFilter,
+  targetLocales,
+  useMatrixFilters,
+} = await import("../frontend-vue/app/build/composables/useMatrixFilters.ts");
 
 const flat = {
   defaultLocale: "en",
@@ -63,6 +69,27 @@ void test("targetLocales counts the language being translated, else the shown on
   assert.deepEqual(targetLocales(flat, "", ["en", "fr"]), ["fr"]);
   assert.deepEqual(targetLocales(flat, "", ["en"]), ["de", "fr"]);
   assert.deepEqual(targetLocales(flat, "it", ["en", "de"]), ["de"]);
+});
+
+void test("Every language keeps the keys missing in a hidden column", () => {
+  const shop = {
+    ...flat,
+    rows: [
+      { key: "shop.title", values: { en: "Shop", fr: "Boutique" } },
+      { key: "shop.pay", values: { en: "Pay", de: "Bezahlen" } },
+    ],
+  };
+  const { rows, counts } = useMatrixFilters(
+    vue.ref(shop),
+    vue.ref({ ...EMPTY_FILTERS, filter: "missing" }),
+    vue.ref(["en", "de"]),
+    vue.ref(new Set()),
+  );
+  assert.equal(counts.value.missing, 2);
+  assert.deepEqual(
+    rows.value.map((row) => row.key),
+    ["shop.title", "shop.pay"],
+  );
 });
 
 void test("groupRows counts every key of a namespace", () => {
