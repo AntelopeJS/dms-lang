@@ -1,5 +1,47 @@
 # Changelog
 
+## v0.5.2
+
+[compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.5.1...v0.5.2)
+
+### 🚀 Enhancements
+
+- **skills:** Add the verify-dms-lang verification skill ([#84](https://github.com/AntelopeJS/dms-lang/pull/84))
+
+### 🩹 Fixes
+
+- **verify:** Run every feature when a shared file changes ([#122](https://github.com/AntelopeJS/dms-lang/pull/122))
+- **knip:** Give the root workspace the AntelopeJS rules ([#125](https://github.com/AntelopeJS/dms-lang/pull/125))
+- **matrix:** Open the base-text clear confirmation above the key panel ([#127](https://github.com/AntelopeJS/dms-lang/pull/127))
+- **workspaces:** Keep a card's Switch button inside the card when its URL is long ([#128](https://github.com/AntelopeJS/dms-lang/pull/128))
+- **workspace:** Keep the first Type click after typing a description ([#124](https://github.com/AntelopeJS/dms-lang/pull/124))
+- **lang:** Stop the workspace name hint from reserving all ([#123](https://github.com/AntelopeJS/dms-lang/pull/123))
+- **matrix:** Count every language under Every language, whatever columns are shown ([#131](https://github.com/AntelopeJS/dms-lang/pull/131))
+
+### 📖 Documentation
+
+- **usage:** Describe the To review state and Mark as reviewed ([#126](https://github.com/AntelopeJS/dms-lang/pull/126))
+- **readme:** Open with the AntelopeJS DMS module kit ([#130](https://github.com/AntelopeJS/dms-lang/pull/130))
+
+### 📦 Build
+
+- **deps:** Bump @antelopejs packages to the 2026-11-06 releases ([#121](https://github.com/AntelopeJS/dms-lang/pull/121))
+- **deps:** Bump @antelopejs/dms to 0.18.2 and drop verify publish ([#129](https://github.com/AntelopeJS/dms-lang/pull/129))
+
+### 🏡 Chore
+
+- Remove the .amp directory ([#117](https://github.com/AntelopeJS/dms-lang/pull/117))
+- **verify:** Remove seeded runs from the verification skill ([#118](https://github.com/AntelopeJS/dms-lang/pull/118))
+- **ci:** Remove the weekly mutation caller ([#119](https://github.com/AntelopeJS/dms-lang/pull/119))
+
+### 🤖 CI
+
+- Call ci-node.yml@v1 ([#120](https://github.com/AntelopeJS/dms-lang/pull/120))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli ([@Upd4ting](http://github.com/Upd4ting))
+
 ## v0.5.1
 
 [compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.5.0...v0.5.1)
