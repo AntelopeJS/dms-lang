@@ -214,6 +214,12 @@ export function useKeySaves() {
     errorMessage,
     translate: (key, params) => t(key, params),
   }
+  const clearBaseDialog = (key: string) => ({
+    title: t('dms_lang.matrix.clear_base_title', { key }),
+    description: t('dms_lang.matrix.clear_base_description'),
+    color: 'warning' as const,
+    confirmLabel: t('dms_lang.matrix.clear_base_confirm'),
+  })
 
   return {
     /** Queues texts of a key behind the earlier writes of the same texts. */
@@ -224,15 +230,40 @@ export function useKeySaves() {
     /** Takes a key deleted elsewhere off the translations every page shows. */
     dropRow: (target: KeyTarget) =>
       translations.replaceRow(target.workspace, target.key, undefined),
+    /** The dialog that asks before a base text is emptied, for a panel that renders it itself. */
+    clearBaseDialog,
     /** Asks before a base text is emptied: the key would go missing everywhere. */
-    confirmClearBase: (key: string) =>
-      confirm({
-        title: t('dms_lang.matrix.clear_base_title', { key }),
-        description: t('dms_lang.matrix.clear_base_description'),
-        color: 'warning',
-        confirmLabel: t('dms_lang.matrix.clear_base_confirm'),
-      }),
+    confirmClearBase: (key: string) => confirm(clearBaseDialog(key)),
   }
+}
+
+/** A confirmation to clear a base text, shown by a dialog its caller renders. */
+interface BaseClearQuestion {
+  /** Tells one question from the next: each gets a dialog of its own. */
+  id: number
+  key: string
+  answer: (confirmed: boolean) => void
+}
+
+/**
+ * Asks before a base text is emptied, in a dialog the caller renders (see
+ * `clearBaseDialog`) so it opens in the caller's layer: the key panel's
+ * drawer, which the DMS's own dialogs open under. `question` holds the last
+ * one asked until its dialog has left the screen (`left`); a question asked
+ * while the previous dialog leaves replaces it and stays.
+ */
+export function useBaseClearQuestion() {
+  const question = shallowRef<BaseClearQuestion | null>(null)
+  let asked = 0
+  const ask = (key: string) =>
+    new Promise<boolean>((answer) => {
+      asked += 1
+      question.value = { id: asked, key, answer }
+    })
+  const left = (id: number) => {
+    if (question.value?.id === id) question.value = null
+  }
+  return { question, ask, left }
 }
 
 /** The save state of each text of a set, a save flashing "Saved" for a moment. */

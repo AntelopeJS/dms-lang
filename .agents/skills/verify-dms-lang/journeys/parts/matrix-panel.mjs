@@ -1,4 +1,4 @@
-import { clickUntil, fieldValue, freshId, lang, pick, seedWorkspace } from "../../lang.mjs";
+import { clickUntil, eventually, fieldValue, freshId, lang, pick, seedWorkspace } from "../../lang.mjs";
 
 /** @typedef {import("../../lang.mjs").Ctx} Ctx */
 
@@ -105,6 +105,21 @@ export const panelJourneys = [
       await ctx.verify("clearing the base text asks for a confirmation and clears nothing before it", [
         tab.shows(/Clear the base text of shop\.title\?/),
         ctx.equal("values", pick(base.body, "row", "values"), { en: "Shop", fr: "Boutique" }),
+      ]);
+      const ASK = { role: "dialog", name: "Clear the base text of shop.title?" };
+      await tab.click({ role: "button", name: "Cancel", exact: true, within: ASK });
+      await ctx.verify("Cancel closes the confirmation and gives the base text back", [
+        tab.visible(ASK, { hidden: true }),
+        ctx.equal("the field", await fieldValue(tab, { role: "textbox", name: "English" }), "Shop"),
+      ]);
+      await tab.fill({ role: "textbox", name: "English" }, "");
+      await tab.click({ role: "button", name: "Save", exact: true });
+      await tab.click({ role: "button", name: "Clear", exact: true, within: ASK });
+      const cleared = await eventually(() => lang(ctx, "read the cleared key", "GET", `/row?workspace=${id}&key=shop.title`), (answer) => pick(answer.body, "row", "values", "en") === undefined);
+      await ctx.verify("the confirmation opens above the panel, and its Clear clears the base text and keeps the panel open", [
+        tab.visible(ASK, { hidden: true }),
+        tab.visible({ role: "dialog", name: "shop.title" }),
+        ctx.equal("values", pick(cleared.body, "row", "values"), { fr: "Boutique" }),
       ]);
     },
   },
