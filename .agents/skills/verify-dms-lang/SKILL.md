@@ -132,7 +132,7 @@ The verdict header says `not trusted yet`.
 ## Gotchas
 
 - The `docs` environment is the one `dms-control` runs: logs at `warn`, mail to the run's sink. Ethereal and real SMTP are never reached.
-- `dms-control` finds `playwright-core` from the playground, and this module's `package.json` does not list it. `prepare` installs it into this folder with `npm install --no-save`, and the verification playground, which resolves from here, finds it. A run started without `--prepare` on a clone that never ran it fails with "dms-control needs playwright-core".
+- `dms-control` finds `playwright-core` from the playground. The root `package.json` lists it as a devDependency, and `prepare` also installs it into this folder with `npm install --no-save`, and the verification playground, which resolves from here, finds it. A run started without `--prepare` on a clone that never ran it fails with "dms-control needs playwright-core".
 - The verification playground sets `editable` from `DMS_LANG_EDITABLE` (on unless `false`) and stores created workspaces under the run's `HOME` (`workspacesDir`), so the repository's `playground/` and its `i18n-workspaces` are never written. `access/read-only-without-editable` sets the variable in the run's environment and restarts the backend.
 - The project files are the locale files of this folder's playground, copied into the run. `project-files`, `module-texts` and `matrix` journeys rewrite them and put the shipped files back; a journey that dies midway leaves them for the next journey's reset.
 - The `layers` layout is read at start: a journey that creates a `layers` folder restarts the backend before it reads.

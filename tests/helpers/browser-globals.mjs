@@ -1,8 +1,8 @@
 /**
  * @packageDocumentation
- * Stand-ins for the browser globals Node lacks, checked against the DOM
- * types: a stub may leave a member out, but each member it holds has the
- * type the browser gives it.
+ * Stand-ins for the browser globals Node lacks, typed against the DOM: a
+ * stub may leave a member out, but each member it holds is typed as the
+ * browser types it.
  */
 
 /**
