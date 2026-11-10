@@ -48,14 +48,16 @@ export function discoverLocaleRegistry(
 }
 
 /**
- * The folders a new language file lands in: each module's locales folder,
- * listed even while it does not exist, and the folders nested in it.
+ * The folders whose change can change a module's language files: the module's
+ * folder and its `layers` folder, which decide the layout, then each locales
+ * folder of that layout, listed even while it does not exist, and the folders
+ * nested in it.
  */
-export function localeDirectories(
-  modules: AddFrontendModuleOptions[],
-): string[] {
-  return modules.flatMap((module) =>
-    assetRoots(module.sourcePath).flatMap((root) => {
+export function watchedFolders(modules: AddFrontendModuleOptions[]): string[] {
+  return modules.flatMap((module) => [
+    module.sourcePath,
+    join(module.sourcePath, "layers"),
+    ...assetRoots(module.sourcePath).flatMap((root) => {
       const directory = localesDirectory(root);
       if (!existsSync(directory)) return [directory];
       const nested = readdirSync(directory, {
@@ -66,5 +68,5 @@ export function localeDirectories(
         .map((entry) => join(entry.parentPath, entry.name));
       return [directory, ...nested.sort()];
     }),
-  );
+  ]);
 }

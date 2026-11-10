@@ -23,7 +23,7 @@ The Project files workspace (`default`) edits the `<name>-<xx-XX>.json` files of
 ## Sub-features
 
 - `discovery-by-file-name`: files named `<name>-<xx-XX>.json` count, subfolders too; `app-it.json`, `en.json` and a `.txt` are ignored; `en-GB` and `en-US` merge into `en`; a removed or edited file shows on the next read.
-- `layers-replace-the-root-folder`: with a `layers` folder only `layers/*/i18n/locales` is scanned, even when empty; removing it brings the root folder back. The layout is read at start, so each step restarts the backend.
+- `layers-replace-the-root-folder`: with a `layers` folder only `layers/*/i18n/locales` is scanned, even when empty; removing it brings the root folder back. The backend runs throughout, so each layout change shows on the next read.
 - `later-file-wins`: two files define one key, the later file name wins and the key has one row.
 - `writes-follow-the-defining-file`: the four write-routing rules of the configuration page, in order: the defining file, the file with the longest part of the namespace, the last exactly named `app-<xx-XX>.json` (not a domain file such as `app-zeta-fr-FR.json`), the last file of the language.
 - `delete-uncovers-the-older-definition`: with two files defining a key, a delete, a clear and a rename change only the winning definition, and the older text shows again.

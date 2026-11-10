@@ -4,7 +4,7 @@ import {
   type FrontendModuleMetadata,
 } from "@antelopejs/interface-dms/page";
 import { createMemo, filesStamp } from "./cache";
-import { discoverLocaleRegistry, localeDirectories } from "./locale-discovery";
+import { discoverLocaleRegistry, watchedFolders } from "./locale-discovery";
 import { readJson } from "./json";
 import { deepMerge, type LocaleMessages } from "./tree";
 import { writeTargetOf } from "./write-target";
@@ -74,7 +74,7 @@ async function refreshModules(): Promise<void> {
 }
 
 function scanRegistry(): void {
-  directories = localeDirectories(modules);
+  directories = watchedFolders(modules);
   directoriesStamp = filesStamp(directories);
   registry = discoverLocaleRegistry(modules);
 }
