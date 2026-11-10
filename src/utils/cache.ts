@@ -23,13 +23,14 @@ function fileStamp(path: string): string {
   const written = writes.get(path) ?? 0;
   const stats = statSync(path, { throwIfNoEntry: false, bigint: true });
   if (!stats) return `${path}:${MISSING_FILE}:${written}`;
-  return `${path}:${stats.mtimeNs}:${stats.size}:${written}`;
+  return `${path}:${stats.ino}:${stats.mtimeNs}:${stats.ctimeNs}:${stats.size}:${written}`;
 }
 
 /**
- * What a set of files looks like (path, modification time, size, writes of
- * the module): a cached value read from them is stale as soon as one of them
- * changes, a file edited by hand included.
+ * What a set of files looks like (path, inode, modification and change
+ * times, size, writes of the module): a cached value read from them is stale
+ * as soon as one of them changes, a file edited by hand, copied with its
+ * modification time kept or moved in place of another included.
  */
 export function filesStamp(paths: string[]): string {
   return paths.map(fileStamp).join(STAMP_SEPARATOR);
