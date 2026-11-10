@@ -142,6 +142,54 @@ describe("[integration] registered locale sources", () => {
   });
 });
 
+describe("[integration] the layers layout of a running module", () => {
+  let directory: string;
+
+  before(() => {
+    directory = mkdtempSync(join(tmpdir(), "dms-lang-layers-"));
+  });
+  after(() => {
+    rmSync(directory, { recursive: true, force: true });
+  });
+
+  it("follows a layers folder created, filled and removed without a restart", async () => {
+    const sourcePath = join(directory, "layered");
+    const rootLocales = join(sourcePath, "i18n/locales");
+    mkdirSync(rootLocales, { recursive: true });
+    writeFileSync(
+      join(rootLocales, "app-pt-PT.json"),
+      JSON.stringify({ layeredFixture: { from: "root" } }),
+    );
+    await AddFrontendModule({
+      name: "dms-lang-test-layered",
+      sourcePath,
+      renderer: { name: "vue", version: "3" },
+      priority: 42,
+      options: { dmsI18nAppLayer: true },
+    });
+    await initializeLocaleRegistry();
+    expect(loadMessages("own").pt?.layeredFixture).to.deep.equal({
+      from: "root",
+    });
+    const layers = join(sourcePath, "layers");
+    mkdirSync(layers);
+    expect(getLocaleCodes("own")).to.not.include("pt");
+    const layerLocales = join(layers, "shop/i18n/locales");
+    mkdirSync(layerLocales, { recursive: true });
+    writeFileSync(
+      join(layerLocales, "shop-pt-PT.json"),
+      JSON.stringify({ layeredFixture: { from: "layer" } }),
+    );
+    expect(loadMessages("own").pt?.layeredFixture).to.deep.equal({
+      from: "layer",
+    });
+    rmSync(layers, { recursive: true });
+    expect(loadMessages("own").pt?.layeredFixture).to.deep.equal({
+      from: "root",
+    });
+  });
+});
+
 describe("[integration] project files split by domain or registered late", () => {
   let directory: string;
 
