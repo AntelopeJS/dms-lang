@@ -1,4 +1,4 @@
-import { baseCompile, NodeTypes } from "@intlify/message-compiler";
+import { createParser, NodeTypes } from "@intlify/message-compiler";
 import { isMissing, type TranslationValue } from "./tree";
 import { isNumberOrBoolean, isObject, isString } from "./guards";
 
@@ -56,11 +56,12 @@ function collectNames(node: AstNode, names: Set<string>): void {
 
 function compile(message: string): CompiledMessage {
   let compiles = true;
-  const { ast } = baseCompile(message, {
+  const ast = createParser({
+    location: false,
     onError: () => {
       compiles = false;
     },
-  });
+  }).parse(message);
   const names = new Set<string>();
   collectNames(ast.body, names);
   const body = ast.body;
