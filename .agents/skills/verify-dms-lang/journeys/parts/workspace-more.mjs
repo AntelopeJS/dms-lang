@@ -83,7 +83,7 @@ export const moreWorkspaceJourneys = [
           .click({ timeout: 5000 })
           .then(
             () => "",
-            (/** @type {Error} */ error) => error.message.split("\n")[0] ?? "",
+            (/** @type {unknown} */ error) => (error instanceof Error ? error.message : String(error)).split("\n")[0] ?? "",
           ),
       );
       const switched = Boolean(
