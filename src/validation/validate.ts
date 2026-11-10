@@ -1,5 +1,5 @@
-import { assertValidation } from "@antelopejs/interface-api-util";
-import { ZodError, type ZodType, type ZodTypeDef } from "zod";
+import { HTTPResult } from "@antelopejs/interface-api";
+import type { ZodError } from "zod";
 import { errorBody, errorMessage, errorStatus } from "../utils/errors";
 import { zodIssuesJson } from "../utils/zod-json";
 
@@ -23,16 +23,15 @@ function refusal(error: ZodError) {
   };
 }
 
-/** The input of a route parsed by its schema, or 400 `invalid_body` with the issues. */
-export function validate<Output, Input>(
-  schema: ZodType<Output, ZodTypeDef, Input>,
-  input: unknown,
-): Output {
-  return assertValidation(
-    input,
-    (value) => schema.parse(value),
-    (error) =>
-      error instanceof ZodError ? refusal(error) : errorBody(INVALID_BODY),
-    errorStatus(INVALID_BODY),
-  );
+/** What a zod `safeParse` returns: the parsed value, or the error that refused the input. */
+type Parsed<Output> =
+  | { success: true; data: Output }
+  | { success: false; error: ZodError };
+
+/** The value a route's schema parsed, or 400 `invalid_body` with the issues. */
+export function validated<Output>(result: Parsed<Output>): Output {
+  if (result.success) {
+    return result.data;
+  }
+  throw new HTTPResult(errorStatus(INVALID_BODY), refusal(result.error));
 }
