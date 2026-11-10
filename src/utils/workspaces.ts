@@ -7,6 +7,7 @@ import {
   unlinkSync,
 } from "node:fs";
 import { resolve, sep } from "node:path";
+import { createMemo, filesStamp } from "./cache";
 import { getTranslationConfig } from "./config";
 import { check, fail } from "./errors";
 import {
@@ -328,8 +329,11 @@ export function workspaceFiles(id: string): string[] {
 
 export interface ServedLocale {
   code: string;
+  /** Shared until the file changes: callers must not change it. */
   messages: JsonObject;
 }
+
+const memoizeServed = createMemo<JsonObject>();
 
 /**
  * The messages of a locale of an added workspace for the public endpoint: the exact code
@@ -344,7 +348,11 @@ export function readWorkspaceLocale(
   const codes = localeCodesOf(dir);
   const served = findLocale(codes, code) ?? findLocale(codes, languageOf(code));
   if (served === undefined) return null;
-  return { code: served, messages: readJson(localeFile(dir, served)) };
+  const path = localeFile(dir, served);
+  const messages = memoizeServed(path, filesStamp([path]), () =>
+    readJson(path),
+  );
+  return { code: served, messages };
 }
 
 /** The description and type a request sends: `null` or an empty value clears them. */

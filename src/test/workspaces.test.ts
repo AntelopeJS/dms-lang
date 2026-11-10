@@ -256,6 +256,19 @@ function describePublicAccess(): void {
     expect(readWorkspaceLocale("default", "en")).to.equal(null);
   });
 
+  it("serves a file again as soon as a write or a hand edit changed it", () => {
+    const { workspacesDir } = getTranslationConfig();
+    const served = () => readWorkspaceLocale(WORKSPACE, "nl")?.messages;
+    expect(served()).to.deep.equal({});
+    updateKey(keyStoreOf(WORKSPACE), "home.cta", { nl: "Koop" });
+    expect(served()).to.deep.equal({ home: { cta: "Koop" } });
+    writeFile(join(workspacesDir, WORKSPACE, "nl.json"), {
+      home: { cta: "Kopen" },
+    });
+    expect(served()).to.deep.equal({ home: { cta: "Kopen" } });
+    updateKey(keyStoreOf(WORKSPACE), "home.cta", { nl: null });
+  });
+
   it("opens the public files to any origin, preflight included", async () => {
     const url = `${API_BASE}/i18n/${WORKSPACE}/fr-FR.json`;
     const origin = { Origin: "https://www.example.com" };
