@@ -8,7 +8,7 @@ const LEADING_SPACE = /^\s/;
 const TRAILING_SPACE = /\s$/;
 const SINGLE_FORM = 1;
 /** Past this many checked texts, the remembered verdicts are dropped. */
-const MAX_REMEMBERED = 50_000;
+const MAX_REMEMBERED = 200_000;
 const PAIR_SEPARATOR = "\u0000";
 
 /** A message as the vue-i18n compiler reads it: whether it compiles, its variables and plural forms. */
