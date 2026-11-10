@@ -1,6 +1,13 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  utimesSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { setTimeout } from "node:timers/promises";
 import { runInNewContext } from "node:vm";
 import { expect } from "chai";
 import { GetMetadata } from "@antelopejs/interface-core";
@@ -27,16 +34,23 @@ import { jsonTrees, type LocaleTree, readText } from "./helpers/files";
 import {
   addLocale,
   createWorkspace,
+  deleteWorkspace,
   listWorkspaces,
   readWorkspaceLocale,
   removeLocale,
+  renameWorkspace,
   setWorkspaceDefaultLocale,
   updateWorkspaceDetails,
+  writeNewWorkspace,
 } from "../utils/workspaces";
 import { expectError } from "./errors";
 
 const WORKSPACE = "core-shop";
 const API_BASE = "http://127.0.0.1:5021";
+/** A modification time a copy that keeps it (`cp -p`, `rsync -a`) leaves on two files alike. */
+const KEPT_TIME = 1_700_000_000;
+/** Longer than the clock tick of a file system's change times. */
+const CLOCK_TICK_MS = 50;
 
 /** The keys KPI with two keys missing their base text: the namespaces, then the warning. */
 const KEYS_DETAIL = {
@@ -180,6 +194,7 @@ describe("[integration] workspace data model", () => {
   describeManifestWrites(() => directory);
   describeLanguages();
   describePublicAccess();
+  describePublicCache();
 });
 
 function describeLanguages(): void {
@@ -254,19 +269,6 @@ function describePublicAccess(): void {
     expect(readWorkspaceLocale("CORE-SHOP", "EN-GB")?.code).to.equal("en-GB");
     expect(readWorkspaceLocale(WORKSPACE, "de")).to.equal(null);
     expect(readWorkspaceLocale("default", "en")).to.equal(null);
-  });
-
-  it("serves a file again as soon as a write or a hand edit changed it", () => {
-    const { workspacesDir } = getTranslationConfig();
-    const served = () => readWorkspaceLocale(WORKSPACE, "nl")?.messages;
-    expect(served()).to.deep.equal({});
-    updateKey(keyStoreOf(WORKSPACE), "home.cta", { nl: "Koop" });
-    expect(served()).to.deep.equal({ home: { cta: "Koop" } });
-    writeFile(join(workspacesDir, WORKSPACE, "nl.json"), {
-      home: { cta: "Kopen" },
-    });
-    expect(served()).to.deep.equal({ home: { cta: "Kopen" } });
-    updateKey(keyStoreOf(WORKSPACE), "home.cta", { nl: null });
   });
 
   it("opens the public files to any origin, preflight included", async () => {
@@ -398,3 +400,60 @@ describe("[integration] the workspace page's record", () => {
     expect(metadata.pageInfo?.parentSlug).to.match(/\/workspaces$/);
   });
 });
+
+function describePublicCache(): void {
+  it("serves a file again as soon as a write or a hand edit changed it", () => {
+    const { workspacesDir } = getTranslationConfig();
+    const served = () => readWorkspaceLocale(WORKSPACE, "nl")?.messages;
+    expect(served()).to.deep.equal({});
+    updateKey(keyStoreOf(WORKSPACE), "home.cta", { nl: "Koop" });
+    expect(served()).to.deep.equal({ home: { cta: "Koop" } });
+    writeFile(join(workspacesDir, WORKSPACE, "nl.json"), {
+      home: { cta: "Kopen" },
+    });
+    expect(served()).to.deep.equal({ home: { cta: "Kopen" } });
+    updateKey(keyStoreOf(WORKSPACE), "home.cta", { nl: null });
+  });
+
+  it("serves a file replaced with its modification time kept", async () => {
+    const { workspacesDir } = getTranslationConfig();
+    const file = join(workspacesDir, WORKSPACE, "nl.json");
+    const replace = (cta: string) => {
+      writeFile(file, { home: { cta } });
+      utimesSync(file, KEPT_TIME, KEPT_TIME);
+    };
+    replace("Buy");
+    expect(readWorkspaceLocale(WORKSPACE, "nl")?.messages).to.deep.equal({
+      home: { cta: "Buy" },
+    });
+    await setTimeout(CLOCK_TICK_MS);
+    replace("Pay");
+    expect(readWorkspaceLocale(WORKSPACE, "nl")?.messages).to.deep.equal({
+      home: { cta: "Pay" },
+    });
+    writeFile(file, {});
+  });
+
+  it("serves the right file once two workspaces swap names", () => {
+    const { workspacesDir } = getTranslationConfig();
+    const seed = (title: string) => ({
+      defaultLocale: "en",
+      locales: [{ code: "en" }],
+      messages: { en: { home: { title } } },
+    });
+    writeNewWorkspace("swap-live", seed("Old shop"));
+    writeNewWorkspace("swap-next", seed("New shop"));
+    for (const id of ["swap-live", "swap-next"])
+      utimesSync(join(workspacesDir, id, "en.json"), KEPT_TIME, KEPT_TIME);
+    expect(readWorkspaceLocale("swap-live", "en")?.messages).to.deep.equal({
+      home: { title: "Old shop" },
+    });
+    renameWorkspace("swap-live", "swap-old");
+    renameWorkspace("swap-next", "swap-live");
+    expect(readWorkspaceLocale("swap-live", "en")?.messages).to.deep.equal({
+      home: { title: "New shop" },
+    });
+    deleteWorkspace("swap-live");
+    deleteWorkspace("swap-old");
+  });
+}
