@@ -11,9 +11,6 @@ importers:
       '@antelopejs/interface-api':
         specifier: '>=0.2.0 <1.0.0'
         version: 0.2.0(@antelopejs/interface-core@0.4.0)
-      '@antelopejs/interface-api-util':
-        specifier: '>=0.3.0 <1.0.0'
-        version: 0.3.0(@antelopejs/interface-api@0.2.0(@antelopejs/interface-core@0.4.0))(@antelopejs/interface-core@0.4.0)
       '@antelopejs/interface-core':
         specifier: '>=0.4.0 <1.0.0'
         version: 0.4.0
