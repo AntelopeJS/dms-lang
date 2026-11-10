@@ -22,14 +22,15 @@ export const journeys = guarded([
     async run(/** @type {Ctx} */ ctx) {
       const id = freshId(ctx, "shop");
       await seedWorkspace(ctx, id, { locales: ["en"], keys: { "a.b": { en: "Hello" } } });
-      const calls = /** @type {[string, string, string, unknown][]} */ ([
+      /** @type {[string, string, string, unknown][]} */
+      const calls = [
         ["list the workspaces", "GET", "/workspaces", undefined],
         ["read the keys", "GET", `/flat?workspace=${id}`, undefined],
         ["download a backup", "GET", `/backup?workspace=${id}`, undefined],
         ["create a workspace", "POST", "/workspace", { id: freshId(ctx, "x"), locale: { code: "en" } }],
         ["write a text", "PUT", "/key", { workspace: id, path: "a.b", values: { en: "Hacked" } }],
         ["delete the workspace", "DELETE", "/workspace", { id }],
-      ]);
+      ];
       for (const [label, method, path, body] of calls) {
         const answer = await ctx.api(label, { method, path: `/api/lang/translations${path}`, body, as: "anon" });
         await ctx.verify(`as a visitor: ${label}`, [ctx.status(answer, 401)]);
@@ -71,7 +72,8 @@ export const journeys = guarded([
             { key: "a.e", values: { en: "Only English" } },
           ]),
         ]);
-        const writes = /** @type {[string, string, string, unknown][]} */ ([
+        /** @type {[string, string, string, unknown][]} */
+        const writes = [
           ["create a workspace", "POST", "/workspace", { id: freshId(ctx, "x"), locale: { code: "en" } }],
           ["rename the workspace", "POST", "/workspace/rename", { id, newId: freshId(ctx, "y") }],
           ["delete the workspace", "DELETE", "/workspace", { id }],
@@ -86,7 +88,7 @@ export const journeys = guarded([
           ["change the description", "PATCH", "/workspace", { id, description: "Changed", type: "website" }],
           ["drop an override", "DELETE", "/key/override", { workspace: "default", path: OVERRIDDEN_KEY }],
           ["mark a key reviewed", "POST", "/key/reviewed", { workspace: id, path: "a.b", locales: ["fr"] }],
-        ]);
+        ];
         const tab = await ctx.tab("admin");
         await tab.signIn("admin");
         await tab.goto(`/modules/lang/translations?workspace=${id}`);

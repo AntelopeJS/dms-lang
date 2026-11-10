@@ -209,7 +209,7 @@ export const journeys = guarded([
       await ctx.verify("a taken name is named as existing", [tab.shows(new RegExp(`a workspace named ${taken} already exists`, "i"))]);
       for (const reserved of ["default", "modules", "two words"]) {
         await tab.fill({ role: "textbox", name: "Workspace name" }, reserved);
-        await ctx.verify(`"${reserved}" gets the naming rule`, [tab.shows(/lowercase letters, digits, dashes and underscores; default, modules and all are reserved/i)]);
+        await ctx.verify(`"${reserved}" gets the naming rule`, [tab.shows(/lowercase letters, digits, dashes and underscores; default and modules are reserved/i)]);
       }
       await tab.fill({ role: "textbox", name: "Workspace name" }, freshId(ctx, "free"));
       await ctx.verify("a free name is announced as available", [tab.shows(/is available/i)]);

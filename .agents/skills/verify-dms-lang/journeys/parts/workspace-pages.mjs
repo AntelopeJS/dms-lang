@@ -57,13 +57,14 @@ export const pageJourneys = [
     async run(/** @type {Ctx} */ ctx) {
       const longest = `l${freshId(ctx, "x").replace(/[^a-z0-9]/g, "")}`.padEnd(64, "z").slice(0, 64);
       const tooLong = `${longest}z`;
-      const cases = /** @type {[string, string, number][]} */ ([
+      /** @type {[string, string, number][]} */
+      const cases = [
         ["64 characters", longest, 200],
         ["65 characters", tooLong, 400],
         ["a leading dash", "-lead", 400],
         ["a leading underscore", "_lead", 400],
         ["a leading digit", `${freshId(ctx, "d")}`.replace(/^[a-z]+-/, "9"), 200],
-      ]);
+      ];
       for (const [label, name, status] of cases) {
         const answer = await lang(ctx, `create ${label}`, "POST", "/workspace", { id: name, locale: { code: "en" } });
         await ctx.verify(`${label}: ${status === 200 ? "accepted" : "refused"}`, [ctx.status(answer, status)]);

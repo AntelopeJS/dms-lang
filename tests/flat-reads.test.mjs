@@ -8,6 +8,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { setTimeout as sleep } from "node:timers/promises";
+import { stubBrowserGlobal } from "./helpers/browser-globals.mjs";
 import { browserRun, serverRender, vue } from "./helpers/frontend-runtime.mjs";
 
 const workspacesModule =
@@ -26,8 +27,13 @@ Object.assign(globalThis, {
   useRealtimeTopic: (_topic, handler) => {
     realtime.handler = handler;
   },
-  document: Object.assign(new EventTarget(), { visibilityState: "visible" }),
 });
+/** @type {DocumentVisibilityState} */
+const visibilityState = "visible";
+stubBrowserGlobal(
+  "document",
+  Object.assign(new EventTarget(), { visibilityState }),
+);
 
 const { useWorkspaceFlat, useWorkspaceFlatSync, useLangChanges } =
   await import("../frontend-vue/app/composables/translation/useWorkspaceFlat.ts");

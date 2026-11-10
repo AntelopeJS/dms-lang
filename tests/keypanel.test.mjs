@@ -7,6 +7,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { setTimeout as sleep } from "node:timers/promises";
+import { stubBrowserGlobal } from "./helpers/browser-globals.mjs";
 import {
   browserRun,
   history,
@@ -107,17 +108,19 @@ Object.assign(globalThis, {
     /** @param {string} key */
     keyLabel: (key) => key,
   }),
-  document: { visibilityState: "visible", addEventListener: listen },
-  window: {
-    history: { back: () => history.visits.push({ kind: "back" }) },
-    location: {
-      origin: ORIGIN,
-      get href() {
-        return new URL(history.page.url ?? "/", ORIGIN).href;
-      },
+});
+/** @type {DocumentVisibilityState} */
+const visibilityState = "visible";
+stubBrowserGlobal("document", { visibilityState, addEventListener: listen });
+stubBrowserGlobal("window", {
+  history: { back: () => history.visits.push({ kind: "back" }) },
+  location: {
+    origin: ORIGIN,
+    get href() {
+      return new URL(history.page.url ?? "/", ORIGIN).href;
     },
-    addEventListener: listen,
   },
+  addEventListener: listen,
 });
 Object.assign(
   globalThis,

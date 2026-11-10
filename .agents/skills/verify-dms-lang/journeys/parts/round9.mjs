@@ -104,7 +104,9 @@ export const roundNineMatrix = [
       await seedWorkspace(ctx, id, { locales: ["en", "fr"], keys: { "a.x": { en: "X" }, "a.y": { en: "Y" }, "a.z": { en: "Z" } } });
       const tab = await ctx.tab("admin");
       await tab.signIn("admin");
-      for (const [key, way] of /** @type {[string, string][]} */ ([["a.x", "X"], ["a.y", "Escape"], ["a.z", "outside"]])) {
+      /** @type {[string, string][]} */
+      const closers = [["a.x", "X"], ["a.y", "Escape"], ["a.z", "outside"]];
+      for (const [key, way] of closers) {
         await tab.goto(`/modules/lang/translations?workspace=${id}&key=${key}`);
         await clickUntil(tab, { role: "textbox", name: "Français" }, { role: "heading", name: key });
         await tab.fill({ role: "textbox", name: "Français" }, `fr ${key}`);
@@ -146,7 +148,9 @@ export const roundNineOverview = [
       const en = {};
       /** @type {Record<string, Record<string, string>>} */
       const fr = {};
-      for (const [ns, translated] of /** @type {[string, number][]} */ ([["n90", 9], ["n80", 8], ["n60", 6], ["n50", 5]])) {
+      /** @type {[string, number][]} */
+      const shares = [["n90", 9], ["n80", 8], ["n60", 6], ["n50", 5]];
+      for (const [ns, translated] of shares) {
         en[ns] = {};
         fr[ns] = {};
         for (let n = 0; n < 10; n += 1) {
