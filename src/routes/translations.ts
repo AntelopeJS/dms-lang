@@ -78,7 +78,7 @@ import {
 } from "../utils/workspaces";
 import { keySchema } from "../validation/key.schema";
 import { querySchema } from "../validation/query.schema";
-import { validate } from "../validation/validate";
+import { validated } from "../validation/validate";
 import { workspaceSchema } from "../validation/workspace.schema";
 
 /** A key as the workspace now holds it (none once it is gone), with the figures it changed. */
@@ -206,7 +206,7 @@ export class TranslationsController extends Controller(LANG_API) {
     @Parameter("workspace", "query") workspace?: string,
     @Parameter("page", "query") page?: string,
   ) {
-    const query = validate(querySchema.notice, { page });
+    const query = validated(querySchema.notice.safeParse({ page }));
     return workspaceNotice(resolveWorkspaceId(workspace), query.page);
   }
 
@@ -250,7 +250,7 @@ export class TranslationsController extends Controller(LANG_API) {
     @Parameter("workspace", "param") workspace: string,
     @Parameter("code", "param") code: string,
   ): DefaultLocaleResult {
-    validate(workspaceSchema.language, { workspace, code });
+    validated(workspaceSchema.language.safeParse({ workspace, code }));
     const id = editableWorkspace(workspace);
     const defaultLocale = setWorkspaceDefaultLocale(id, code);
     announce({ actor, session, workspace: id });
@@ -264,7 +264,7 @@ export class TranslationsController extends Controller(LANG_API) {
     @Parameter("workspace", "param") workspace: string,
     @Parameter("code", "param") code: string,
   ) {
-    validate(workspaceSchema.language, { workspace, code });
+    validated(workspaceSchema.language.safeParse({ workspace, code }));
     const id = editableWorkspace(workspace);
     removeLocale(id, code);
     announce({ actor, session, workspace: id });
@@ -283,7 +283,9 @@ export class TranslationsController extends Controller(LANG_API) {
     @Parameter("workspace", "query") workspace?: string,
     @Parameter("kind", "query") kind?: string,
   ) {
-    const query = validate(querySchema.snippet, { kind: kind || undefined });
+    const query = validated(
+      querySchema.snippet.safeParse({ kind: kind || undefined }),
+    );
     return workspaceSnippet(
       resolveWorkspaceId(workspace),
       query.kind,
@@ -336,7 +338,9 @@ export class TranslationsController extends Controller(LANG_API) {
     @RealtimeSession() session: string | undefined,
     @JsonBody() body: unknown,
   ): WorkspaceSummary {
-    const { id, locale, ...details } = validate(workspaceSchema.create, body);
+    const { id, locale, ...details } = validated(
+      workspaceSchema.create.safeParse(body),
+    );
     assertEditable();
     const created = createWorkspace(id, locale, details);
     announce({ actor, session, workspace: created });
@@ -349,7 +353,9 @@ export class TranslationsController extends Controller(LANG_API) {
     @RealtimeSession() session: string | undefined,
     @JsonBody() body: unknown,
   ): WorkspaceSummary {
-    const { id, ...details } = validate(workspaceSchema.update, body);
+    const { id, ...details } = validated(
+      workspaceSchema.update.safeParse(body),
+    );
     assertEditable();
     const summary = updateWorkspaceDetails(id, details);
     announce({ actor, session, workspace: summary.id });
@@ -362,7 +368,9 @@ export class TranslationsController extends Controller(LANG_API) {
     @RealtimeSession() session: string | undefined,
     @JsonBody() body: unknown,
   ): WorkspaceSummary {
-    const { id: previous, newId } = validate(workspaceSchema.rename, body);
+    const { id: previous, newId } = validated(
+      workspaceSchema.rename.safeParse(body),
+    );
     assertEditable();
     const id = renameWorkspace(previous, newId);
     announce({ actor, session, workspace: normalizeWorkspaceId(previous) });
@@ -376,7 +384,7 @@ export class TranslationsController extends Controller(LANG_API) {
     @RealtimeSession() session: string | undefined,
     @JsonBody() body: unknown,
   ) {
-    const { id } = validate(workspaceSchema.remove, body);
+    const { id } = validated(workspaceSchema.remove.safeParse(body));
     assertEditable();
     deleteWorkspace(id);
     announce({ actor, session, workspace: normalizeWorkspaceId(id) });
@@ -388,7 +396,7 @@ export class TranslationsController extends Controller(LANG_API) {
     @RealtimeSession() session: string | undefined,
     @JsonBody() body: unknown,
   ): WorkspaceSummary {
-    const backup = validate(workspaceSchema.import, body);
+    const backup = validated(workspaceSchema.import.safeParse(body));
     assertEditable();
     const id = importWorkspace(backup);
     announce({ actor, session, workspace: id });
@@ -401,7 +409,9 @@ export class TranslationsController extends Controller(LANG_API) {
     @RealtimeSession() session: string | undefined,
     @JsonBody() body: unknown,
   ): AddedLocale {
-    const { workspace, ...locale } = validate(workspaceSchema.addLocale, body);
+    const { workspace, ...locale } = validated(
+      workspaceSchema.addLocale.safeParse(body),
+    );
     const id = editableWorkspace(workspace);
     const added = addLocale(id, locale);
     announce({ actor, session, workspace: id });
@@ -414,7 +424,7 @@ export class TranslationsController extends Controller(LANG_API) {
     @RealtimeSession() session: string | undefined,
     @JsonBody() body: unknown,
   ): KeyResult {
-    const input = validate(keySchema.create, body);
+    const input = validated(keySchema.create.safeParse(body));
     const id = editableWorkspace(input.workspace);
     createKey(keyStoreOf(id), input.path, input.values, input.before);
     return keyResult({ actor, session }, id, [input.path]);
@@ -426,7 +436,7 @@ export class TranslationsController extends Controller(LANG_API) {
     @RealtimeSession() session: string | undefined,
     @JsonBody() body: unknown,
   ): KeyResult {
-    const input = validate(keySchema.update, body);
+    const input = validated(keySchema.update.safeParse(body));
     const id = editableWorkspace(input.workspace);
     updateKey(keyStoreOf(id), input.path, input.values, input.expected);
     return keyResult({ actor, session }, id, [input.path]);
@@ -438,7 +448,7 @@ export class TranslationsController extends Controller(LANG_API) {
     @RealtimeSession() session: string | undefined,
     @JsonBody() body: unknown,
   ): KeyResult {
-    const input = validate(keySchema.locales, body);
+    const input = validated(keySchema.locales.safeParse(body));
     const id = editableWorkspace(input.workspace);
     removeOverride(keyStoreOf(id), input.path, input.locales);
     return keyResult({ actor, session }, id, [input.path]);
@@ -450,7 +460,7 @@ export class TranslationsController extends Controller(LANG_API) {
     @RealtimeSession() session: string | undefined,
     @JsonBody() body: unknown,
   ): KeyResult {
-    const input = validate(keySchema.locales, body);
+    const input = validated(keySchema.locales.safeParse(body));
     const id = editableWorkspace(input.workspace);
     markReviewed(reviewStoreOf(id), input.path, input.locales);
     return keyResult({ actor, session }, id, [input.path]);
@@ -462,7 +472,7 @@ export class TranslationsController extends Controller(LANG_API) {
     @RealtimeSession() session: string | undefined,
     @JsonBody() body: unknown,
   ): KeyResult {
-    const input = validate(keySchema.rename, body);
+    const input = validated(keySchema.rename.safeParse(body));
     const id = editableWorkspace(input.workspace);
     const path = renameKey(keyStoreOf(id), input.path, input.newPath);
     return keyResult({ actor, session }, id, [input.path, path], path);
@@ -474,7 +484,7 @@ export class TranslationsController extends Controller(LANG_API) {
     @RealtimeSession() session: string | undefined,
     @JsonBody() body: unknown,
   ): KeyResult {
-    const input = validate(keySchema.remove, body);
+    const input = validated(keySchema.remove.safeParse(body));
     const id = editableWorkspace(input.workspace);
     deleteKey(keyStoreOf(id), input.path);
     return keyResult({ actor, session }, id, [input.path]);

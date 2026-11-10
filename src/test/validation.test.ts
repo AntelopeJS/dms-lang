@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { HTTPResult } from "@antelopejs/interface-api";
 import { keySchema } from "../validation/key.schema";
 import { querySchema } from "../validation/query.schema";
-import { validate } from "../validation/validate";
+import { validated } from "../validation/validate";
 import { workspaceSchema } from "../validation/workspace.schema";
 import { expectError } from "./errors";
 
@@ -12,7 +12,7 @@ describe("[unit] route inputs are validated at the entry", () => {
   it("accepts only texts and null as the values of a key", () => {
     for (const values of [{ en: { nested: "o" } }, { en: 42 }, { fr: true }]) {
       const body = expectError(
-        () => validate(keySchema.create, { ...KEY, values }),
+        () => validated(keySchema.create.safeParse({ ...KEY, values })),
         400,
         "invalid_body",
       );
@@ -20,13 +20,18 @@ describe("[unit] route inputs are validated at the entry", () => {
       expect(body).to.have.nested.property("issues[0].path[0]", "values");
     }
     expect(
-      validate(keySchema.create, { ...KEY, values: { en: "x", fr: null } }),
+      validated(
+        keySchema.create.safeParse({ ...KEY, values: { en: "x", fr: null } }),
+      ),
     ).to.deep.include({ values: { en: "x", fr: null } });
   });
 
   it("answers the zod issues with a generic key when zod worded them", () => {
     const body = expectError(
-      () => validate(keySchema.create, { ...KEY, values: {}, before: 42 }),
+      () =>
+        validated(
+          keySchema.create.safeParse({ ...KEY, values: {}, before: 42 }),
+        ),
       400,
       "invalid_body",
     );
@@ -37,7 +42,7 @@ describe("[unit] route inputs are validated at the entry", () => {
   it("answers zod's issues, a union's included, in the bytes the DMS reads", () => {
     let body: string | undefined;
     try {
-      validate(workspaceSchema.update, { id: "shop", type: 5 });
+      validated(workspaceSchema.update.safeParse({ id: "shop", type: 5 }));
     } catch (error) {
       if (error instanceof HTTPResult) body = error.getBody();
     }
@@ -49,19 +54,22 @@ describe("[unit] route inputs are validated at the entry", () => {
   it("refuses an unknown snippet or page instead of looking it up", () => {
     for (const kind of ["__proto__", "constructor", "php"])
       expectError(
-        () => validate(querySchema.snippet, { kind }),
+        () => validated(querySchema.snippet.safeParse({ kind })),
         400,
         "invalid_body",
       );
-    expect(validate(querySchema.snippet, {}).kind).to.equal("vue");
-    expect(validate(querySchema.notice, {}).page).to.equal("overview");
+    expect(validated(querySchema.snippet.safeParse({})).kind).to.equal("vue");
+    expect(validated(querySchema.notice.safeParse({})).page).to.equal(
+      "overview",
+    );
   });
 
   it("refuses a backup of another format or of a newer version", () => {
     const backup = { id: "copy", messages: { en: {} } };
     const refusal = (stamp: { format?: string; version?: number | string }) =>
       expectError(
-        () => validate(workspaceSchema.import, { ...backup, ...stamp }),
+        () =>
+          validated(workspaceSchema.import.safeParse({ ...backup, ...stamp })),
         400,
         "invalid_body",
       ).message;
@@ -73,31 +81,40 @@ describe("[unit] route inputs are validated at the entry", () => {
       "$dms_lang.errors.invalid_backup",
     );
     expect(
-      validate(workspaceSchema.import, {
-        ...backup,
-        format: "dms-lang.workspace",
-        version: 1,
-      }),
+      validated(
+        workspaceSchema.import.safeParse({
+          ...backup,
+          format: "dms-lang.workspace",
+          version: 1,
+        }),
+      ),
     ).to.deep.include({ id: "copy" });
   });
 
   it("bounds the description and the type of a workspace", () => {
     expectError(
       () =>
-        validate(workspaceSchema.update, {
-          id: "shop",
-          description: "x".repeat(501),
-        }),
+        validated(
+          workspaceSchema.update.safeParse({
+            id: "shop",
+            description: "x".repeat(501),
+          }),
+        ),
       400,
       "invalid_body",
     );
     expectError(
-      () => validate(workspaceSchema.update, { id: "shop", type: "game" }),
+      () =>
+        validated(
+          workspaceSchema.update.safeParse({ id: "shop", type: "game" }),
+        ),
       400,
       "invalid_body",
     );
     expect(
-      validate(workspaceSchema.update, { id: "shop", description: null }),
+      validated(
+        workspaceSchema.update.safeParse({ id: "shop", description: null }),
+      ),
     ).to.deep.equal({ id: "shop", description: null });
   });
 });
