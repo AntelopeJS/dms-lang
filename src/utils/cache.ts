@@ -37,6 +37,29 @@ export function filesStamp(paths: string[]): string {
 }
 
 /**
+ * The longest a file system can take to move a change time: a few
+ * milliseconds of kernel clock tick on Linux, two seconds on FAT. Two changes
+ * within one step leave the same times.
+ */
+const TIMESTAMP_STEP_NS = 2_000_000_000n;
+
+function changedWithinStep(path: string, now: bigint): boolean {
+  const stats = statSync(path, { throwIfNoEntry: false, bigint: true });
+  return stats !== undefined && now - stats.ctimeNs < TIMESTAMP_STEP_NS;
+}
+
+/**
+ * The {@link filesStamp} of `paths`, or null while one of them changed too
+ * recently for a later change to move its times: a value read from them then
+ * cannot be told apart from one read after that change, so it is read again.
+ */
+export function settledStamp(paths: string[]): string | null {
+  const now = BigInt(Date.now()) * 1_000_000n;
+  if (paths.some((path) => changedWithinStep(path, now))) return null;
+  return filesStamp(paths);
+}
+
+/**
  * A cache of values of one type: `memo(key, stamp, compute)` answers the
  * value cached under `key` while `stamp` (see {@link filesStamp}) is
  * unchanged; computed and cached otherwise. The value is shared: callers
