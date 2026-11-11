@@ -74,24 +74,21 @@ export const journeys = guarded([
   },
   {
     id: "layers-replace-the-root-folder",
-    title: "when a layers folder exists, only layers/*/i18n/locales is scanned, even if it is empty",
+    title: "when a layers folder exists, only layers/*/i18n/locales is scanned, even if it is empty, and a change of layout shows on the next read",
     entryPoint: "frontend-vue/layers/*/i18n/locales",
     async run(/** @type {Ctx} */ ctx) {
       resetProjectFiles(ctx);
       const layers = join(projectLocalesDir(ctx), "..", "..", "layers");
       mkdirSync(layers, { recursive: true });
-      await ctx.restartBackend();
       const empty = await rowsOf(ctx, "read the rows with an empty layers folder");
       await ctx.verify("an empty layers folder hides the root locale folder", [ctx.equal("rows", [...empty.keys()], [])]);
       mkdirSync(join(layers, "shop", "i18n", "locales", "deep"), { recursive: true });
       writeFileSync(join(layers, "shop", "i18n", "locales", "deep", "shop-en-GB.json"), `${JSON.stringify({ layered: { key: "From a layer" } }, null, 2)}\n`);
-      await ctx.restartBackend();
       const layered = await rowsOf(ctx, "read the rows with a layer");
       await ctx.verify("the layer's files, subfolders included, are the project files", [
         ctx.equal("rows", [...layered.entries()], [["layered.key", { en: "From a layer" }]]),
       ]);
       rmSync(layers, { recursive: true, force: true });
-      await ctx.restartBackend();
       const back = await rowsOf(ctx, "read the rows without layers");
       await ctx.verify("without a layers folder the root locale folder is scanned again", [ctx.equal("a root key", back.get("shop.title"), { en: "Shop", fr: "Boutique" })]);
     },

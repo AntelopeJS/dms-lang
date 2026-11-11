@@ -3,8 +3,8 @@ import {
   GetFrontendModules,
   type FrontendModuleMetadata,
 } from "@antelopejs/interface-dms/page";
-import { createMemo, filesStamp } from "./cache";
-import { discoverLocaleRegistry, localeDirectories } from "./locale-discovery";
+import { createMemo, filesStamp, settledStamp } from "./cache";
+import { discoverLocaleRegistry, watchedFolders } from "./locale-discovery";
 import { readJson } from "./json";
 import { deepMerge, type LocaleMessages } from "./tree";
 import { writeTargetOf } from "./write-target";
@@ -21,7 +21,7 @@ export type I18nRegistry = Record<string, RegistryEntry[]>;
 let modules: FrontendModuleMetadata[] = [];
 let modulesStamp = "";
 let directories: string[] = [];
-let directoriesStamp = "";
+let directoriesStamp: string | null = null;
 let registry: I18nRegistry = {};
 const memoizeMessages = createMemo<LocaleMessages>();
 
@@ -74,13 +74,14 @@ async function refreshModules(): Promise<void> {
 }
 
 function scanRegistry(): void {
-  directories = localeDirectories(modules);
-  directoriesStamp = filesStamp(directories);
+  directories = watchedFolders(modules);
+  directoriesStamp = settledStamp(directories);
   registry = discoverLocaleRegistry(modules);
 }
 
 function currentRegistry(): I18nRegistry {
-  if (filesStamp(directories) !== directoriesStamp) scanRegistry();
+  if (directoriesStamp === null || filesStamp(directories) !== directoriesStamp)
+    scanRegistry();
   return registry;
 }
 

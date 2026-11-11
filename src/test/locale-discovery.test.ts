@@ -5,7 +5,7 @@ import { expect } from "chai";
 import type { AddFrontendModuleOptions } from "@antelopejs/interface-dms/page";
 import {
   discoverLocaleRegistry,
-  localeDirectories,
+  watchedFolders,
 } from "../utils/locale-discovery";
 
 describe("[unit] Vue locale discovery", () => {
@@ -68,15 +68,17 @@ describe("[unit] Vue locale discovery", () => {
     expect(discoverLocaleRegistry(modules)).to.deep.equal({});
   });
 
-  it("lists the locales folders a new file lands in, missing ones included", () => {
+  it("watches each module's folder, its layers folder and its locales folders, missing ones included", () => {
     localeFile("app/i18n/locales/nested/app-fr-FR.json");
     localeFile("dms/layers/core/i18n/locales/core-en-GB.json");
     mkdirSync(join(directory, "dms/layers/empty"), { recursive: true });
-    expect(
-      localeDirectories([module("app", true), module("dms")]),
-    ).to.deep.equal([
+    expect(watchedFolders([module("app", true), module("dms")])).to.deep.equal([
+      join(directory, "app"),
+      join(directory, "app/layers"),
       join(directory, "app/i18n/locales"),
       join(directory, "app/i18n/locales/nested"),
+      join(directory, "dms"),
+      join(directory, "dms/layers"),
       join(directory, "dms/layers/core/i18n/locales"),
       join(directory, "dms/layers/empty/i18n/locales"),
     ]);
