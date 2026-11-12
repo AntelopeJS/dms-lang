@@ -1,5 +1,28 @@
 # Changelog
 
+## v0.5.3
+
+[compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.5.2...v0.5.3)
+
+### 🔥 Performance
+
+- **message-check:** Keep message verdicts for workspaces past 50,000 texts ([#133](https://github.com/AntelopeJS/dms-lang/pull/133))
+- **message-check:** Parse messages without generating their code ([#135](https://github.com/AntelopeJS/dms-lang/pull/135))
+- **public:** Parse a served language file once until it changes ([#134](https://github.com/AntelopeJS/dms-lang/pull/134))
+
+### 🩹 Fixes
+
+- **registry:** Follow a module's layers layout while it runs ([#137](https://github.com/AntelopeJS/dms-lang/pull/137))
+
+### 📦 Build
+
+- **deps:** Bump @antelopejs/tooling-configs to 0.5.0 ([#132](https://github.com/AntelopeJS/dms-lang/pull/132))
+- **deps:** Bump @antelopejs/tooling-configs to 0.5.1 ([#136](https://github.com/AntelopeJS/dms-lang/pull/136))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli ([@Upd4ting](http://github.com/Upd4ting))
+
 ## v0.5.2
 
 [compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.5.1...v0.5.2)
