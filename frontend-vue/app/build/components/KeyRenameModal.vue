@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { useI18nWorkspaces } from '../../composables/translation/useI18nWorkspaces'
+import { useMutationToast } from '../../composables/translation/useMutationToast'
+import { useWorkspaceFlat } from '../../composables/translation/useWorkspaceFlat'
 import {
   isValidKeyPath,
   keyPathConflict,

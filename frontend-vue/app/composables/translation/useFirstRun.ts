@@ -1,3 +1,4 @@
+import { useWorkspaceContext } from './useWorkspaceContext.ts'
 /**
  * Whether the workspace shown is an added one without any key yet: the
  * overview then shows its first steps instead of figures and a heatmap.

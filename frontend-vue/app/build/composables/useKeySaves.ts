@@ -16,6 +16,9 @@ import {
   type SaveState,
   type WriteLink,
 } from '../../utils/keySaves'
+import { useI18nWorkspaces } from '../../composables/translation/useI18nWorkspaces.ts'
+import { useMutationToast } from '../../composables/translation/useMutationToast.ts'
+import { useWorkspaceFlat } from '../../composables/translation/useWorkspaceFlat.ts'
 
 /** The key a write goes to. */
 export interface KeyTarget {

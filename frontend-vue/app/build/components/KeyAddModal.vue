@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import { useI18nWorkspaces } from '../../composables/translation/useI18nWorkspaces'
+import { useLocaleNames } from '../../composables/translation/useLocaleNames'
+import { useMutationToast } from '../../composables/translation/useMutationToast'
+import { useWorkspaceFlat } from '../../composables/translation/useWorkspaceFlat'
+import { useWorkspaceLabel } from '../../composables/translation/useWorkspaceLabel'
 import type { FlatTranslationRow, KeyRowResponse } from '../../types/lang'
 import {
   checkMessage,

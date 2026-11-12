@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useLocaleNames } from '../../composables/translation/useLocaleNames'
 type LocaleTileSize = 'sm' | 'md' | 'lg'
 
 interface Props {

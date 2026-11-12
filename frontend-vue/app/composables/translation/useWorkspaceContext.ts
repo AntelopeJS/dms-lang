@@ -1,4 +1,5 @@
 import type { ScopedWorkspace, WorkspacePermission } from '../../types/lang'
+import { useI18nWorkspaces } from './useI18nWorkspaces.ts'
 
 /**
  * Read-only view of the selected workspace and of what the current user may

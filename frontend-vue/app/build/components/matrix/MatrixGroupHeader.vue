@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useLangFormat } from '../../../composables/translation/useLangFormat'
 interface Props {
   namespace: string
   keys: number

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useLocaleNames } from '../../composables/translation/useLocaleNames'
 import type { SelectMenuItem } from '@nuxt/ui'
 import { typedLocaleCode, type LanguageOption } from '../../utils/languages'
 import LocaleTile from './LocaleTile.vue'

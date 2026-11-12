@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { useLangFormat } from '../../../composables/translation/useLangFormat'
+import { useLangLinks } from '../../../composables/translation/useLangLinks'
+import { useWorkspaceFlat } from '../../../composables/translation/useWorkspaceFlat'
 import {
   QUEUE_MODES,
   type QueueMode,

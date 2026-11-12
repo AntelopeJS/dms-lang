@@ -1,4 +1,5 @@
 import type { TranslationValue } from '../types/lang'
+import { serverErrorCode } from '../composables/translation/useMutationToast.ts'
 
 /** Why a key write was refused: changed elsewhere, deleted, a message that does not compile, or anything else. */
 export type KeySaveFailureKind = 'conflict' | 'deleted' | 'invalid' | 'other'

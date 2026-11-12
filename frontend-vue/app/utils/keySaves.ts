@@ -1,4 +1,5 @@
 import type { TranslationValue } from '../types/lang'
+import { isLocaleValueMissing } from './translations.ts'
 
 /** The text a save expects to replace (`null`: no text); `undefined` sends no check. */
 export type ExpectedText = string | null | undefined

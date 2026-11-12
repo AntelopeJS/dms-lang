@@ -1,4 +1,9 @@
 import type { Ref } from 'vue'
+import {
+  isValidWorkspaceId,
+  normalizeWorkspaceId,
+  useI18nWorkspaces,
+} from './useI18nWorkspaces.ts'
 
 export type WorkspaceNameState =
   'empty' | 'invalid' | 'taken' | 'unchanged' | 'available'

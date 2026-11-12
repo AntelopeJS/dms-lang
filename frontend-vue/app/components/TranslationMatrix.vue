@@ -1,4 +1,12 @@
 <script setup lang="ts">
+import { DEFAULT_WORKSPACE, useI18nWorkspaces } from '../composables/translation/useI18nWorkspaces'
+import { useKeyActions } from '../composables/translation/useKeyActions'
+import { useLangFormat } from '../composables/translation/useLangFormat'
+import { PAGE_ACTIONS, linkWithQuery, useLangLinks } from '../composables/translation/useLangLinks'
+import { useLanguageActions } from '../composables/translation/useLanguageActions'
+import { useLocaleNames } from '../composables/translation/useLocaleNames'
+import { useWorkspaceContext } from '../composables/translation/useWorkspaceContext'
+import { useWorkspaceRoute } from '../composables/translation/useWorkspaceRoute'
 import type { ComponentPublicInstance } from 'vue'
 import {
   useActiveElement,
@@ -7,9 +15,8 @@ import {
 } from '@vueuse/core'
 import { useDmsRouter } from '#dms/frontend-module'
 import type { FlatTranslationRow, LanguageCoverage } from '../types/lang'
-import { useWorkspaceFlatSync } from '../composables/translation/useWorkspaceFlat'
+import { useWorkspaceFlat, useWorkspaceFlatSync } from '../composables/translation/useWorkspaceFlat'
 import { stringValue } from '../utils/translations'
-import { languageCoverage } from '../utils/coverage'
 import PlaceholderText from '../build/components/PlaceholderText.vue'
 import MatrixCell from '../build/components/matrix/MatrixCell.vue'
 import MatrixColumns from '../build/components/matrix/MatrixColumns.vue'
@@ -34,6 +41,7 @@ import { useMatrixRows } from '../build/composables/useMatrixRows'
 import { useMatrixView } from '../build/composables/useMatrixView'
 import { useMatrixFilters } from '../build/composables/useMatrixFilters'
 import { useMatrixExport } from '../build/composables/useMatrixExport'
+import { useMatrixColumns } from '../build/composables/useMatrixColumns'
 import MatrixDoneBanner from '../build/matrix/MatrixDoneBanner.vue'
 import MatrixFooter from '../build/matrix/MatrixFooter.vue'
 import MatrixLanguageHeader from '../build/matrix/MatrixLanguageHeader.vue'
@@ -43,9 +51,6 @@ import { MATRIX_KEYS, shortcutName } from '../utils/shortcuts'
 const COMPACT_WIDTH = 768
 const OPEN_OVERLAY = '[role="dialog"][data-state="open"], [role="alertdialog"]'
 const SCROLL_MARGIN = '400px'
-const KEY_COLUMN_REM = 16
-const LANGUAGE_COLUMN_REM = 15
-const TODO_COLUMN_REM = 28
 const SKELETON_ROWS = 6
 
 const { t } = useI18n()
@@ -91,42 +96,17 @@ const saves = useCellSaves(rowOf, (address) => {
   if (address.workspace === selectedWorkspace.value) pin(address.key)
 })
 
-const languages = computed<LanguageCoverage[]>(() =>
-  languageCoverage(flat.value, (code) => nameAmong(code, flat.value.locales)),
-)
-const languageByCode = computed(
-  () => new Map(languages.value.map((entry) => [entry.code, entry])),
-)
-const targetLanguages = computed(() =>
-  languages.value
-    .filter((entry) => !entry.isBase)
-    .map((entry) => ({ code: entry.code, name: fullName(entry.code) })),
-)
-const todoLanguage = computed(() => {
-  const chosen = filters.value.missingIn
-  if (chosen && flat.value.locales.includes(chosen)) return chosen
-  if (!isCompact.value) return ''
-  const base = flat.value.defaultLocale
-  return order.value.find((code) => code !== base) ?? ''
-})
-const columnCodes = computed(() => {
-  if (!todoLanguage.value) return order.value
-  const base = flat.value.defaultLocale
-  return [base, todoLanguage.value].filter((code) =>
-    flat.value.locales.includes(code),
-  )
-})
-const columns = computed(() =>
-  columnCodes.value
-    .map((code) => languageByCode.value.get(code))
-    .filter((entry): entry is LanguageCoverage => Boolean(entry)),
-)
-const columnSiblings = computed(() => columns.value.map((entry) => entry.code))
-const compactColumn = computed(() => columns.value.at(-1))
-const tableMinWidth = computed(() => {
-  const column = todoLanguage.value ? TODO_COLUMN_REM : LANGUAGE_COLUMN_REM
-  return `${KEY_COLUMN_REM + columns.value.length * column}rem`
-})
+const {
+  languages,
+  languageByCode,
+  targetLanguages,
+  todoLanguage,
+  columnCodes,
+  columns,
+  columnSiblings,
+  compactColumn,
+  tableMinWidth,
+} = useMatrixColumns({ flat, filters, order, isCompact, nameAmong, fullName })
 
 const { rows, groups, counts, targets, namespaces, isRowDone } =
   useMatrixFilters(flat, filters, pinned)

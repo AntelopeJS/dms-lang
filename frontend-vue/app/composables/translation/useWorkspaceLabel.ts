@@ -1,4 +1,6 @@
 import type { WorkspaceSummary } from '../../types/lang'
+import { useI18nWorkspaces } from './useI18nWorkspaces.ts'
+import { useWorkspaceContext } from './useWorkspaceContext.ts'
 
 /** What naming a workspace needs. */
 type NamedWorkspace = Pick<WorkspaceSummary, 'id' | 'kind'>

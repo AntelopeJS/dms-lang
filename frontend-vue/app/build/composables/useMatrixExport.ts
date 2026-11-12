@@ -3,6 +3,7 @@ import UButton from '@nuxt/ui/components/Button.vue'
 import UDropdownMenu from '@nuxt/ui/components/DropdownMenu.vue'
 import type { FlatTranslationRow, FlatTranslations } from '../../types/lang'
 import { exportFileName, translationsCsv } from '../../utils/matrixExport'
+import { downloadText } from '../../utils/download.ts'
 
 interface MatrixExportOptions {
   t: ReturnType<typeof useI18n>['t']

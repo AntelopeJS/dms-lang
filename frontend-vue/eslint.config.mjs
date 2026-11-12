@@ -1,5 +1,7 @@
 // @ts-check
 import eslint from '@eslint/js'
+import dmsGlobals from '@antelopejs/dms/eslint-globals'
+import rendererGlobals from '@antelopejs/dms-frontend/eslint-globals'
 import typescript from '@typescript-eslint/eslint-plugin'
 import typescriptParser from '@typescript-eslint/parser'
 import vue from 'eslint-plugin-vue'
@@ -18,7 +20,12 @@ export default [
   {
     files: sourceFiles,
     languageOptions: {
-      globals: { ...globals.browser, ...globals.node },
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+        ...rendererGlobals,
+        ...dmsGlobals,
+      },
       parserOptions: {
         parser: typescriptParser,
         sourceType: 'module',
@@ -26,7 +33,6 @@ export default [
     },
     plugins: { '@typescript-eslint': typescript },
     rules: {
-      'no-undef': 'off',
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': [
         'error',

@@ -3,6 +3,7 @@ import type {
   WorkspaceLocale,
   WorkspaceType,
 } from '../types/lang'
+import { typedLocaleCode } from './languages.ts'
 
 /** The messages of each language of a workspace. */
 export type LocaleMessages = Record<string, Record<string, unknown>>

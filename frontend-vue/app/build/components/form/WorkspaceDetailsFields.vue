@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useWorkspaceTypes } from '../../../composables/translation/useWorkspaceActions'
 /**
  * What a workspace is for: its free description and its type, as rows of a
  * hand-built form (`FormRows`).
