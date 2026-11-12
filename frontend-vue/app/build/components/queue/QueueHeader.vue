@@ -93,9 +93,15 @@ const draftLinks = computed(() => drafts.elsewhere.value.map(draftLink))
 <template>
   <div class="border-default space-y-3 border-b px-4 py-3">
     <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-      <LocaleTile :code="locale" :siblings="flat.locales" />
+      <LocaleTile
+        :code="locale"
+        :siblings="flat.locales"
+      />
       <div class="grid min-w-0 gap-px">
-        <DmsEyebrow :label="$t('dms_lang.queue.title')" size="xs" />
+        <DmsEyebrow
+          :label="$t('dms_lang.queue.title')"
+          size="xs"
+        />
         <span class="text-highlighted truncate text-base font-semibold">
           {{ languageName }}
           <span class="text-dimmed font-mono text-xs font-normal">
@@ -124,7 +130,10 @@ const draftLinks = computed(() => drafts.elsewhere.value.map(draftLink))
       v-if="draftLinks.length"
       class="text-muted flex flex-wrap items-center gap-1.5 text-xs"
     >
-      <UIcon name="i-ph-note-pencil" class="text-warning size-3.5" />
+      <UIcon
+        name="i-ph-note-pencil"
+        class="text-warning size-3.5"
+      />
       <span>{{ $t('dms_lang.queue.drafts_elsewhere') }}</span>
       <UButton
         v-for="entry in draftLinks"
@@ -156,7 +165,11 @@ const draftLinks = computed(() => drafts.elsewhere.value.map(draftLink))
         :aria-label="$t('dms_lang.queue.scope_clear', { namespace })"
         @click="namespace = ''"
       />
-      <DmsSegmented v-model="mode" :items="modeItems" size="xs" />
+      <DmsSegmented
+        v-model="mode"
+        :items="modeItems"
+        size="xs"
+      />
     </div>
   </div>
 </template>

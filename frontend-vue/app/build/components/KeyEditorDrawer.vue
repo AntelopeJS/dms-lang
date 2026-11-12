@@ -551,7 +551,10 @@ onMounted(() => show(key.value))
 <template>
   <!-- Fills the drawer's flex body, so the DMS footer sits at its end. -->
   <div class="flex flex-1 flex-col gap-4">
-    <div ref="body" class="space-y-4">
+    <div
+      ref="body"
+      class="space-y-4"
+    >
       <div
         v-for="code in locales"
         :key="`${key}-${code}`"
@@ -600,7 +603,10 @@ onMounted(() => show(key.value))
             <template v-if="isBusy">
               {{ $t('dms_lang.drawer.saving') }}
             </template>
-            <span v-else-if="pendingCount" class="text-error">
+            <span
+              v-else-if="pendingCount"
+              class="text-error"
+            >
               {{ $t('dms_lang.drawer.unsaved_count', pendingCount) }}
             </span>
             <template v-else>{{ $t('dms_lang.drawer.autosave') }}</template>

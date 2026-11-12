@@ -133,8 +133,8 @@ function close(added: boolean) {
             {{
               isInvalidCode
                 ? $t('dms_lang.language_add.invalid_code', {
-                    code: search.trim(),
-                  })
+                  code: search.trim(),
+                })
                 : $t('dms_lang.language_add.no_match')
             }}
           </template>
@@ -144,7 +144,10 @@ function close(added: boolean) {
           role="status"
           class="text-warning flex items-start gap-2 text-xs"
         >
-          <UIcon name="i-ph-warning" class="mt-0.5 size-3.5 shrink-0" />
+          <UIcon
+            name="i-ph-warning"
+            class="mt-0.5 size-3.5 shrink-0"
+          />
           {{
             $t('dms_lang.language_add.added_elsewhere', {
               name: fullName(addedElsewhere),
@@ -156,7 +159,10 @@ function close(added: boolean) {
           v-else-if="selectedOption && sameLanguage.length"
           class="text-warning flex items-start gap-2 text-xs"
         >
-          <UIcon name="i-ph-warning" class="mt-0.5 size-3.5 shrink-0" />
+          <UIcon
+            name="i-ph-warning"
+            class="mt-0.5 size-3.5 shrink-0"
+          />
           {{
             $t('dms_lang.language_add.same_language', {
               codes: sameLanguage.join(', '),
@@ -165,8 +171,14 @@ function close(added: boolean) {
             })
           }}
         </p>
-        <p v-else class="text-muted flex items-start gap-2 text-xs">
-          <UIcon name="i-ph-info" class="mt-0.5 size-3.5 shrink-0" />
+        <p
+          v-else
+          class="text-muted flex items-start gap-2 text-xs"
+        >
+          <UIcon
+            name="i-ph-info"
+            class="mt-0.5 size-3.5 shrink-0"
+          />
           {{ $t('dms_lang.language_add.any_code') }}
         </p>
       </div>
@@ -187,9 +199,9 @@ function close(added: boolean) {
           :label="
             selectedOption
               ? $t('dms_lang.language_add.submit_named', {
-                  name: selectedOption.name,
-                  code: selectedOption.code,
-                })
+                name: selectedOption.name,
+                code: selectedOption.code,
+              })
               : $t('dms_lang.language_add.submit')
           "
           @click="submit"

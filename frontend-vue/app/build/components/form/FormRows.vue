@@ -17,8 +17,14 @@ const props = withDefaults(defineProps<FormRowsProps>(), {
 <template>
   <div class="flex flex-col">
     <slot />
-    <p v-if="props.hasRequired" class="text-dimmed pb-2 text-xs">
-      <span class="text-error" aria-hidden="true">*</span>
+    <p
+      v-if="props.hasRequired"
+      class="text-dimmed pb-2 text-xs"
+    >
+      <span
+        class="text-error"
+        aria-hidden="true"
+      >*</span>
       {{ $t('dms.form.required_legend') }}
     </p>
   </div>

@@ -52,7 +52,10 @@ const controlId = useId()
     :label-for="controlId"
     :required="props.required"
   >
-    <template v-if="slots['label-extra']" #label-extra>
+    <template
+      v-if="slots['label-extra']"
+      #label-extra
+    >
       <slot name="label-extra" />
     </template>
     <UFormField
@@ -61,8 +64,14 @@ const controlId = useId()
       class="min-w-0"
     >
       <slot :id="controlId" />
-      <template v-if="props.error" #error="{ error: message }">
-        <UIcon name="i-ph-warning-circle" class="size-3.5 shrink-0" />
+      <template
+        v-if="props.error"
+        #error="{ error: message }"
+      >
+        <UIcon
+          name="i-ph-warning-circle"
+          class="size-3.5 shrink-0"
+        />
         {{ message }}
       </template>
     </UFormField>

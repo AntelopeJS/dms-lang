@@ -19,7 +19,10 @@ function scope(target: string) {
     :padded="false"
     :title="$t('dms_lang.language_namespaces.title')"
   >
-    <template v-if="namespace" #actions>
+    <template
+      v-if="namespace"
+      #actions
+    >
       <UButton
         size="xs"
         color="neutral"
@@ -29,11 +32,24 @@ function scope(target: string) {
         @click="namespace = ''"
       />
     </template>
-    <div v-if="!isLoaded" class="space-y-2 p-4">
-      <USkeleton v-for="index in 5" :key="index" class="h-6 w-full" />
+    <div
+      v-if="!isLoaded"
+      class="space-y-2 p-4"
+    >
+      <USkeleton
+        v-for="index in 5"
+        :key="index"
+        class="h-6 w-full"
+      />
     </div>
-    <ul v-else class="divide-default divide-y">
-      <li v-for="entry in namespaceProgress" :key="entry.namespace">
+    <ul
+      v-else
+      class="divide-default divide-y"
+    >
+      <li
+        v-for="entry in namespaceProgress"
+        :key="entry.namespace"
+      >
         <button
           type="button"
           class="grid w-full grid-cols-[minmax(0,1fr)_5rem_3rem_3rem] items-center gap-3 px-4 py-2.5 text-left transition-colors"
@@ -67,9 +83,15 @@ function scope(target: string) {
         </button>
       </li>
     </ul>
-    <template v-if="isLoaded" #footer>
+    <template
+      v-if="isLoaded"
+      #footer
+    >
       <p class="text-dimmed flex items-center gap-1.5 text-xs">
-        <UIcon name="i-ph-info" class="size-3.5" />
+        <UIcon
+          name="i-ph-info"
+          class="size-3.5"
+        />
         {{ $t('dms_lang.language_namespaces.hint') }}
       </p>
     </template>

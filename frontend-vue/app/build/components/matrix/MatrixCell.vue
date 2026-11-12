@@ -204,7 +204,10 @@ function escapeDraft() {
 </script>
 
 <template>
-  <div v-if="isEditing" class="space-y-1">
+  <div
+    v-if="isEditing"
+    class="space-y-1"
+  >
     <p
       v-if="!props.isBase && props.baseValue"
       class="text-dimmed line-clamp-2 px-1 text-xs"
@@ -232,7 +235,10 @@ function escapeDraft() {
       class="text-warning flex items-start gap-1 px-1 text-[10.5px]"
       role="status"
     >
-      <UIcon name="i-ph-arrows-clockwise" class="mt-px size-3 shrink-0" />
+      <UIcon
+        name="i-ph-arrows-clockwise"
+        class="mt-px size-3 shrink-0"
+      />
       <span class="min-w-0">
         {{ $t('dms_lang.matrix.changed_elsewhere') }}
         <PlaceholderText
@@ -240,19 +246,28 @@ function escapeDraft() {
           :text="props.changedElsewhere"
           class="text-default"
         />
-        <span v-else class="italic">
+        <span
+          v-else
+          class="italic"
+        >
           {{ $t('dms_lang.matrix.current_none') }}
         </span>
       </span>
     </p>
-    <ul v-if="issues.length" class="space-y-0.5 px-1">
+    <ul
+      v-if="issues.length"
+      class="space-y-0.5 px-1"
+    >
       <li
         v-for="issue in issues"
         :key="issue.kind"
         class="flex items-start gap-1 text-[10.5px]"
         :class="issue.severity === 'error' ? 'text-error' : 'text-warning'"
       >
-        <UIcon name="i-ph-warning" class="mt-px size-3 shrink-0" />
+        <UIcon
+          name="i-ph-warning"
+          class="mt-px size-3 shrink-0"
+        />
         {{ messageIssueText(issue, t) }}
       </li>
     </ul>
@@ -295,7 +310,10 @@ function escapeDraft() {
         <ShortcutKbds :keys="MATRIX_KEYS.cancel" />
         {{ $t('dms_lang.matrix.shortcut_cancel') }}
       </span>
-      <span v-if="!props.isBase && props.baseValue" class="font-mono">
+      <span
+        v-if="!props.isBase && props.baseValue"
+        class="font-mono"
+      >
         {{
           $t('dms_lang.matrix.length', {
             count: draft.length,
@@ -333,7 +351,10 @@ function escapeDraft() {
     </div>
   </div>
 
-  <div v-else-if="props.failure" class="space-y-1">
+  <div
+    v-else-if="props.failure"
+    class="space-y-1"
+  >
     <button
       type="button"
       data-matrix-cell
@@ -344,11 +365,20 @@ function escapeDraft() {
       :disabled="!props.editable"
       @click="emit('edit', props.rowKey, props.code)"
     >
-      <PlaceholderText v-if="props.failure.draft" :text="props.failure.draft" />
-      <span v-else class="text-dimmed italic">—</span>
+      <PlaceholderText
+        v-if="props.failure.draft"
+        :text="props.failure.draft"
+      />
+      <span
+        v-else
+        class="text-dimmed italic"
+      >—</span>
     </button>
     <p class="text-error flex items-start gap-1 text-xs">
-      <UIcon name="i-ph-warning-circle" class="mt-0.5 size-3.5 shrink-0" />
+      <UIcon
+        name="i-ph-warning-circle"
+        class="mt-0.5 size-3.5 shrink-0"
+      />
       <span>
         {{ $t('dms_lang.matrix.not_saved') }} · {{ props.failure.message }}
       </span>
@@ -363,7 +393,10 @@ function escapeDraft() {
         :text="props.value"
         class="text-default"
       />
-      <span v-else class="italic">
+      <span
+        v-else
+        class="italic"
+      >
         {{ $t('dms_lang.matrix.current_none') }}
       </span>
     </p>
@@ -413,14 +446,20 @@ function escapeDraft() {
     ]"
     @click="props.editable && emit('edit', props.rowKey, props.code)"
   >
-    <span v-if="isMissing && props.inherited" class="block space-y-0.5">
+    <span
+      v-if="isMissing && props.inherited"
+      class="block space-y-0.5"
+    >
       <span class="text-dimmed line-clamp-3 italic">
         {{ props.inherited }}
       </span>
       <span
         class="text-dimmed flex items-center gap-1 font-mono text-[10px] uppercase"
       >
-        <UIcon name="i-ph-puzzle-piece" class="size-3" />
+        <UIcon
+          name="i-ph-puzzle-piece"
+          class="size-3"
+        />
         {{ $t('dms_lang.matrix.inherited') }}
       </span>
     </span>
@@ -444,8 +483,14 @@ function escapeDraft() {
         {{ $t('dms_lang.matrix.translate') }}
       </span>
     </span>
-    <span v-else-if="isMissing" class="text-dimmed italic">—</span>
-    <span v-else-if="props.override" class="block space-y-0.5">
+    <span
+      v-else-if="isMissing"
+      class="text-dimmed italic"
+    >—</span>
+    <span
+      v-else-if="props.override"
+      class="block space-y-0.5"
+    >
       <PlaceholderText
         :text="props.override"
         class="text-default line-clamp-3"
@@ -462,7 +507,10 @@ function escapeDraft() {
       class="line-clamp-3"
       :title="props.value.length > LONG_TEXT ? props.value : undefined"
     >
-      <PlaceholderText :text="props.value" class="text-default" />
+      <PlaceholderText
+        :text="props.value"
+        class="text-default"
+      />
     </span>
     <span
       v-for="issue in issues"
@@ -470,7 +518,10 @@ function escapeDraft() {
       class="mt-1 flex items-start gap-1 font-mono text-[10.5px]"
       :class="issue.severity === 'error' ? 'text-error' : 'text-warning'"
     >
-      <UIcon name="i-ph-warning" class="mt-px size-3 shrink-0" />
+      <UIcon
+        name="i-ph-warning"
+        class="mt-px size-3 shrink-0"
+      />
       {{ messageIssueText(issue, t) }}
     </span>
     <span
@@ -478,10 +529,16 @@ function escapeDraft() {
       class="text-info mt-1 flex items-center gap-1 font-mono text-[10.5px]"
       :title="$t('dms_lang.drawer.outdated')"
     >
-      <UIcon name="i-ph-clock-counter-clockwise" class="size-3" />
+      <UIcon
+        name="i-ph-clock-counter-clockwise"
+        class="size-3"
+      />
       {{ $t('dms_lang.matrix.outdated') }}
     </span>
-    <span v-if="props.state !== 'idle'" class="mt-1 flex">
+    <span
+      v-if="props.state !== 'idle'"
+      class="mt-1 flex"
+    >
       <DmsSaveStatus :state="props.state" />
     </span>
   </component>

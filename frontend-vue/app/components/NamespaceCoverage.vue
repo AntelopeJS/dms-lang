@@ -118,8 +118,15 @@ usePageHeaderActions(() => [
       />
     </template>
 
-    <div v-if="!isLoaded" class="space-y-2 p-4">
-      <USkeleton v-for="index in 4" :key="index" class="h-8 w-full" />
+    <div
+      v-if="!isLoaded"
+      class="space-y-2 p-4"
+    >
+      <USkeleton
+        v-for="index in 4"
+        :key="index"
+        class="h-8 w-full"
+      />
     </div>
 
     <DmsEmptyState
@@ -133,7 +140,10 @@ usePageHeaderActions(() => [
       "
     />
 
-    <div v-else class="overflow-x-auto px-4 pt-3 pb-4">
+    <div
+      v-else
+      class="overflow-x-auto px-4 pt-3 pb-4"
+    >
       <div
         class="grid items-center gap-1.5"
         :style="{ gridTemplateColumns: gridTemplate }"
@@ -145,9 +155,16 @@ usePageHeaderActions(() => [
           class="flex justify-center"
           :title="`${nameAmong(code, targets)} · ${code}`"
         >
-          <LocaleTile :code="code" :siblings="targets" size="sm" />
+          <LocaleTile
+            :code="code"
+            :siblings="targets"
+            size="sm"
+          />
         </span>
-        <template v-for="entry in namespaces" :key="entry.namespace">
+        <template
+          v-for="entry in namespaces"
+          :key="entry.namespace"
+        >
           <span class="flex min-w-0 items-baseline gap-1.5">
             <span class="text-highlighted truncate font-mono text-xs">
               {{ entry.namespace }}
@@ -201,7 +218,10 @@ usePageHeaderActions(() => [
       </div>
     </div>
 
-    <template v-if="isLoaded && namespaces.length && locales.length" #footer>
+    <template
+      v-if="isLoaded && namespaces.length && locales.length"
+      #footer
+    >
       <div class="text-dimmed flex flex-wrap items-center gap-3 text-xs">
         <span class="inline-flex items-center gap-1.5">
           <span class="bg-success size-2 rounded-sm" />
