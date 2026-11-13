@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.6.0
+
+[compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.5.3...v0.6.0)
+
+### 💅 Refactors
+
+- **lint:** Fix the code behind nine eslint rule-offs and the one ts-expect-error ([#138](https://github.com/AntelopeJS/dms-lang/pull/138))
+
+### 📦 Build
+
+- **deps:** ⚠️  Move to DMS 0.19, interface-dms 0.13 and interface-api 0.3 ([#139](https://github.com/AntelopeJS/dms-lang/pull/139))
+
+#### ⚠️ Breaking Changes
+
+- **deps:** ⚠️  Move to DMS 0.19, interface-dms 0.13 and interface-api 0.3 ([#139](https://github.com/AntelopeJS/dms-lang/pull/139))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli ([@Upd4ting](http://github.com/Upd4ting))
+
 ## v0.5.3
 
 [compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.5.2...v0.5.3)
