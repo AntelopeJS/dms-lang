@@ -61,7 +61,7 @@
     "size": "antelopejs-check-size",
     "sync": "antelopejs-sync",
     "sync:check": "antelopejs-sync --check",
-    "format:check": "oxfmt --check .",
+    "format:check": "oxfmt --check . && pnpm --dir frontend-vue format:check",
     "suppressions": "antelopejs-suppressions",
     "suppressions:update": "antelopejs-suppressions --update"
   },

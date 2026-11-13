@@ -14,6 +14,7 @@
     "dev": "pnpm --dir ../playground frontend:dev",
     "prepare-frontend": "ajs dms prepare",
     "format": "prettier --write .",
+    "format:check": "prettier --check --log-level warn .",
     "lint": "eslint . --max-warnings=0",
     "lint:fix": "eslint . --fix"
   },

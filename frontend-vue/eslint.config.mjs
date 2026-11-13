@@ -16,9 +16,9 @@ function enabledVueRules(configs) {
 }
 
 /**
- * The AntelopeJS Nuxt preset, with the checks it leaves to tools this layer
- * does not run: oxfmt does not format it, so the template layout rules stay,
- * and composables keep the Vue rules the preset scopes to `.vue` files.
+ * The AntelopeJS Nuxt preset. Prettier owns the template layout, so void
+ * elements self-close the way Prettier writes them, and composables keep the
+ * Vue rules the preset scopes to `.vue` files.
  */
 export default antelopeNuxtConfig()
   .append({
@@ -34,16 +34,7 @@ export default antelopeNuxtConfig()
     rules: {
       'no-undef': 'error',
       'no-unreachable': 'error',
-      'vue/html-closing-bracket-newline': 'error',
-      'vue/html-closing-bracket-spacing': 'error',
-      'vue/html-indent': 'error',
-      'vue/html-quotes': 'error',
-      'vue/max-attributes-per-line': 'error',
-      'vue/multiline-html-element-content-newline': 'error',
-      'vue/mustache-interpolation-spacing': 'error',
-      'vue/no-multi-spaces': 'error',
-      'vue/no-spaces-around-equal-signs-in-attribute': 'error',
-      'vue/singleline-html-element-content-newline': 'error',
+      'vue/html-self-closing': ['error', { html: { void: 'always' } }],
     },
   })
   .onResolved((configs) => [
