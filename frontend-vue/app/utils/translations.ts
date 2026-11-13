@@ -81,14 +81,14 @@ const QUOTE = "'"
 const LINKED_MARK = '@'
 export const PLURAL_SEPARATOR = '|'
 /** What the scanner reads as a variable, to highlight and rename it. */
-const PLACEHOLDER_NAME = /^(?:[A-Za-z_][\w$-]*|\d+)$/
+const PLACEHOLDER_NAME = /^(?:[a-z_][\w$-]*|\d+)$/i
 const LITERAL_PATTERN = /\s*'((?:[^'\\\n]|\\.)*)'\s*\}/y
 const LITERAL_ESCAPE = /\\u([0-9a-fA-F]{4})|\\(.)/g
-const LINKED_PATTERN = /@(?:\.[A-Za-z]+)?:(?:\(([^()\s]+)\)|([\w.$-]+)|(?=\{))/y
+const LINKED_PATTERN = /@(?:\.[a-z]+)?:(?:\(([^()\s]+)\)|([\w.$-]+)|(?=\{))/iy
 const IMPLICIT_PLURAL_NAMES = ['count', 'n']
 const LEADING_SPACE = /^\s/
 const TRAILING_SPACE = /\s$/
-const KEY_PATH_PATTERN = /^[\w-]+(\.[\w-]+)*$/
+const KEY_PATH_PATTERN = /^[\w-]+(?:\.[\w-]+)*$/
 const MAX_KEY_SEGMENT_LENGTH = 128
 const FORBIDDEN_KEY_SEGMENTS = new Set([
   '__proto__',
