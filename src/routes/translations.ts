@@ -6,6 +6,7 @@ import {
   Post,
   Put,
   Route,
+  type QueryValue,
 } from "@antelopejs/interface-api";
 import { AuthOwnerOnly } from "@antelopejs/interface-dms/auth";
 import type { User } from "@antelopejs/interface-dms/auth/db";
@@ -22,6 +23,7 @@ import {
 import { announce, RealtimeSession } from "../utils/announce";
 import { localeStats, workspaceAbout, workspaceKpis } from "../utils/blocks";
 import { JsonBody } from "../utils/body";
+import { queryText } from "../utils/query";
 import {
   findWorkspace,
   listAllWorkspaces,
@@ -192,35 +194,43 @@ export class TranslationsController extends Controller(LANG_API) {
   }
 
   @Get("/kpis")
-  kpis(@Parameter("workspace", "query") workspace?: string) {
-    return workspaceKpis(resolveWorkspaceId(workspace));
+  kpis(@Parameter("workspace", "query") workspace?: QueryValue) {
+    return workspaceKpis(resolveWorkspaceId(queryText(workspace)));
   }
 
   @Get("/about")
-  about(@Parameter("workspace", "query") workspace?: string) {
-    return workspaceAbout(resolveWorkspaceId(workspace));
+  about(@Parameter("workspace", "query") workspace?: QueryValue) {
+    return workspaceAbout(resolveWorkspaceId(queryText(workspace)));
   }
 
   @Get("/notice")
   notice(
-    @Parameter("workspace", "query") workspace?: string,
-    @Parameter("page", "query") page?: string,
+    @Parameter("workspace", "query") workspace?: QueryValue,
+    @Parameter("page", "query") page?: QueryValue,
   ) {
-    const query = validated(querySchema.notice.safeParse({ page }));
-    return workspaceNotice(resolveWorkspaceId(workspace), query.page);
+    const query = validated(
+      querySchema.notice.safeParse({ page: queryText(page) }),
+    );
+    return workspaceNotice(
+      resolveWorkspaceId(queryText(workspace)),
+      query.page,
+    );
   }
 
   @Get("/locale-stats")
   localeStats(
-    @Parameter("workspace", "query") workspace?: string,
-    @Parameter("locale", "query") locale?: string,
+    @Parameter("workspace", "query") workspace?: QueryValue,
+    @Parameter("locale", "query") locale?: QueryValue,
   ) {
-    return localeStats(resolveWorkspaceId(workspace), locale ?? "");
+    return localeStats(
+      resolveWorkspaceId(queryText(workspace)),
+      queryText(locale) ?? "",
+    );
   }
 
   @Get("/languages")
-  languages(@Parameter("workspace", "query") workspace?: string) {
-    return listLanguages(resolveWorkspaceId(workspace));
+  languages(@Parameter("workspace", "query") workspace?: QueryValue) {
+    return listLanguages(resolveWorkspaceId(queryText(workspace)));
   }
 
   @Get("/languages/:workspace/:code/removal-confirm")
@@ -271,23 +281,23 @@ export class TranslationsController extends Controller(LANG_API) {
   }
 
   @Get("/endpoint")
-  async endpoint(@Parameter("workspace", "query") workspace?: string) {
+  async endpoint(@Parameter("workspace", "query") workspace?: QueryValue) {
     return workspaceEndpoint(
-      resolveWorkspaceId(workspace),
+      resolveWorkspaceId(queryText(workspace)),
       await publicOrigin(),
     );
   }
 
   @Get("/snippet")
   async snippet(
-    @Parameter("workspace", "query") workspace?: string,
-    @Parameter("kind", "query") kind?: string,
+    @Parameter("workspace", "query") workspace?: QueryValue,
+    @Parameter("kind", "query") kind?: QueryValue,
   ) {
     const query = validated(
-      querySchema.snippet.safeParse({ kind: kind || undefined }),
+      querySchema.snippet.safeParse({ kind: queryText(kind) || undefined }),
     );
     return workspaceSnippet(
-      resolveWorkspaceId(workspace),
+      resolveWorkspaceId(queryText(workspace)),
       query.kind,
       await publicOrigin(),
     );
@@ -295,41 +305,45 @@ export class TranslationsController extends Controller(LANG_API) {
 
   @Get("/export")
   export(
-    @Parameter("workspace", "query") workspace?: string,
-    @Parameter("locale", "query") locale?: string,
+    @Parameter("workspace", "query") workspace?: QueryValue,
+    @Parameter("locale", "query") locale?: QueryValue,
   ) {
-    const id = resolveWorkspaceId(workspace);
-    return locale ? exportLanguage(id, locale) : exportWorkspace(id);
+    const id = resolveWorkspaceId(queryText(workspace));
+    const language = queryText(locale);
+    return language ? exportLanguage(id, language) : exportWorkspace(id);
   }
 
   @Get("/backup")
-  backup(@Parameter("workspace", "query") workspace?: string) {
-    return backupWorkspace(resolveWorkspaceId(workspace));
+  backup(@Parameter("workspace", "query") workspace?: QueryValue) {
+    return backupWorkspace(resolveWorkspaceId(queryText(workspace)));
   }
 
   @Get("/flat")
-  flat(@Parameter("workspace", "query") workspace?: string) {
-    return resolveFlat(resolveWorkspaceId(workspace));
+  flat(@Parameter("workspace", "query") workspace?: QueryValue) {
+    return resolveFlat(resolveWorkspaceId(queryText(workspace)));
   }
 
   @Get("/row")
   row(
-    @Parameter("workspace", "query") workspace?: string,
-    @Parameter("key", "query") key?: string,
+    @Parameter("workspace", "query") workspace?: QueryValue,
+    @Parameter("key", "query") key?: QueryValue,
   ): KeyResult {
-    return rowResult(resolveWorkspaceId(workspace), key ?? "");
+    return rowResult(
+      resolveWorkspaceId(queryText(workspace)),
+      queryText(key) ?? "",
+    );
   }
 
   @Get("/namespaces")
-  namespaces(@Parameter("workspace", "query") workspace?: string) {
-    return namespaceCoverage(resolveWorkspaceId(workspace));
+  namespaces(@Parameter("workspace", "query") workspace?: QueryValue) {
+    return namespaceCoverage(resolveWorkspaceId(queryText(workspace)));
   }
 
   @Get("/workspace")
   workspace(
-    @Parameter("workspace", "query") workspace?: string,
+    @Parameter("workspace", "query") workspace?: QueryValue,
   ): WorkspaceSummary {
-    return findWorkspace(workspace);
+    return findWorkspace(queryText(workspace));
   }
 
   @Post("/workspace")
