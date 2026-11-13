@@ -116,7 +116,10 @@ async function submit() {
     @update:open="(open: boolean) => !open && close(null)"
   >
     <template #body>
-      <form novalidate @submit.prevent="submit">
+      <form
+        novalidate
+        @submit.prevent="submit"
+      >
         <FormRows has-required>
           <FormFieldRow :label="$t('dms_lang.key_rename.current')">
             <template #default="{ id }">

@@ -151,7 +151,10 @@ onBeforeUnmount(() => clearTimeout(urlTimer))
 
 <template>
   <template v-if="!isUnknown">
-    <DmsCard v-if="view === 'loading'" padded>
+    <DmsCard
+      v-if="view === 'loading'"
+      padded
+    >
       <div class="space-y-4">
         <USkeleton class="h-5 w-1/3" />
         <USkeleton class="h-14 w-full" />
@@ -197,12 +200,18 @@ onBeforeUnmount(() => clearTimeout(urlTimer))
       ]"
     />
 
-    <DmsCard v-else :padded="false">
+    <DmsCard
+      v-else
+      :padded="false"
+    >
       <div ref="root">
         <QueueHeader />
         <QueueDone v-if="isFinished || !current" />
         <template v-else>
-          <QueueEditor ref="editor" :row="current" />
+          <QueueEditor
+            ref="editor"
+            :row="current"
+          />
           <QueueActions />
           <QueueUpNext />
         </template>

@@ -115,7 +115,10 @@ defineExpose({
 <template>
   <div class="space-y-4 px-4 py-4">
     <div class="flex items-center gap-2">
-      <UIcon name="i-ph-key" class="text-dimmed size-4" />
+      <UIcon
+        name="i-ph-key"
+        class="text-dimmed size-4"
+      />
       <span class="break-all font-mono text-xs">
         <span class="text-dimmed">{{ keyParts.path }}</span>
         <span class="text-primary font-semibold">{{ keyParts.leaf }}</span>
@@ -153,7 +156,11 @@ defineExpose({
 
     <div class="space-y-1.5">
       <div class="flex items-center gap-2 text-sm">
-        <LocaleTile :code="baseLocale" size="sm" is-base />
+        <LocaleTile
+          :code="baseLocale"
+          size="sm"
+          is-base
+        />
         <span class="text-highlighted font-medium">
           {{ nameOf(baseLocale) }}
         </span>
@@ -170,20 +177,32 @@ defineExpose({
           :text="baseText"
           class="text-highlighted"
         />
-        <span v-else class="text-dimmed italic">
+        <span
+          v-else
+          class="text-dimmed italic"
+        >
           {{ $t('dms_lang.queue.no_base') }}
         </span>
       </div>
     </div>
 
-    <div v-if="contextLocales.length" class="space-y-1">
-      <DmsEyebrow :label="$t('dms_lang.queue.context')" size="xs" />
+    <div
+      v-if="contextLocales.length"
+      class="space-y-1"
+    >
+      <DmsEyebrow
+        :label="$t('dms_lang.queue.context')"
+        size="xs"
+      />
       <p
         v-for="code in contextLocales"
         :key="code"
         class="text-muted flex items-start gap-2 text-sm"
       >
-        <LocaleTile :code="code" size="sm" />
+        <LocaleTile
+          :code="code"
+          size="sm"
+        />
         <span :dir="textDirection(code)">
           {{ stringValue(props.row.values[code]) }}
         </span>
@@ -192,7 +211,10 @@ defineExpose({
 
     <div class="space-y-1.5">
       <div class="flex items-center gap-2 text-sm">
-        <LocaleTile :code="locale" size="sm" />
+        <LocaleTile
+          :code="locale"
+          size="sm"
+        />
         <span class="text-highlighted font-medium">{{ languageName }}</span>
         <span class="text-dimmed font-mono text-xs">{{ locale }}</span>
         <span
@@ -272,7 +294,10 @@ defineExpose({
             : $t('dms_lang.queue.read_only')
         "
       >
-        <template v-if="isModules" #actions>
+        <template
+          v-if="isModules"
+          #actions
+        >
           <UButton
             :label="$t('dms_lang.queue.override')"
             icon="i-ph-pencil-simple"
@@ -300,25 +325,37 @@ defineExpose({
         :ui="{ base: 'text-base' }"
       />
 
-      <ul v-if="issues.length" class="space-y-0.5 text-xs">
+      <ul
+        v-if="issues.length"
+        class="space-y-0.5 text-xs"
+      >
         <li
           v-for="issue in issues"
           :key="issue.kind"
           class="inline-flex w-full items-center gap-1"
           :class="issue.severity === 'error' ? 'text-error' : 'text-warning'"
         >
-          <UIcon name="i-ph-warning" class="size-3.5 shrink-0" />
+          <UIcon
+            name="i-ph-warning"
+            class="size-3.5 shrink-0"
+          />
           {{ messageIssueText(issue, t) }}
         </li>
       </ul>
 
-      <ul v-if="rejectedProblems.length" class="text-error space-y-0.5 text-xs">
+      <ul
+        v-if="rejectedProblems.length"
+        class="text-error space-y-0.5 text-xs"
+      >
         <li
           v-for="problem in rejectedProblems"
           :key="problem"
           class="inline-flex w-full items-center gap-1"
         >
-          <UIcon name="i-ph-x-circle" class="size-3.5 shrink-0" />
+          <UIcon
+            name="i-ph-x-circle"
+            class="size-3.5 shrink-0"
+          />
           {{ problem }}
         </li>
       </ul>
@@ -366,7 +403,10 @@ defineExpose({
         />
       </div>
 
-      <p v-if="isArmed && !isBlocked" class="text-warning text-xs font-medium">
+      <p
+        v-if="isArmed && !isBlocked"
+        class="text-warning text-xs font-medium"
+      >
         {{ $t('dms_lang.queue.save_anyway_hint') }}
       </p>
     </div>

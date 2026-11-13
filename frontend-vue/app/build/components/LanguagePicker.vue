@@ -106,7 +106,10 @@ function step(event: KeyboardEvent) {
 </script>
 
 <template>
-  <div v-if="props.isOpen" class="space-y-3">
+  <div
+    v-if="props.isOpen"
+    class="space-y-3"
+  >
     <DmsInputText
       :id="props.id"
       v-model="search"
@@ -196,7 +199,9 @@ function step(event: KeyboardEvent) {
         v-if="!props.options.length"
         class="text-muted px-2 py-6 text-center text-sm"
       >
-        <slot name="empty">{{ $t('dms_lang.language_add.no_match') }}</slot>
+        <slot name="empty">
+          {{ $t('dms_lang.language_add.no_match') }}
+        </slot>
       </p>
     </div>
   </div>
@@ -214,20 +219,32 @@ function step(event: KeyboardEvent) {
     :ui="{ content: 'min-w-80' }"
   >
     <template #leading>
-      <LocaleTile v-if="code" :code="code" size="sm" />
+      <LocaleTile
+        v-if="code"
+        :code="code"
+        size="sm"
+      />
     </template>
     <template #default>
-      <span v-if="code" class="flex min-w-0 items-center gap-1.5">
+      <span
+        v-if="code"
+        class="flex min-w-0 items-center gap-1.5"
+      >
         <span class="text-highlighted truncate">{{ fullName(code) }}</span>
         <span class="text-dimmed font-mono text-xs">· {{ code }}</span>
       </span>
-      <span v-else class="text-dimmed truncate">{{ props.placeholder }}</span>
+      <span
+        v-else
+        class="text-dimmed truncate"
+      >{{ props.placeholder }}</span>
     </template>
     <template #item-trailing="{ item }">
       <span class="text-dimmed font-mono text-xs">{{ item.value }}</span>
     </template>
     <template #empty>
-      <slot name="empty">{{ $t('dms_lang.language_add.no_match') }}</slot>
+      <slot name="empty">
+        {{ $t('dms_lang.language_add.no_match') }}
+      </slot>
     </template>
   </USelectMenu>
 </template>

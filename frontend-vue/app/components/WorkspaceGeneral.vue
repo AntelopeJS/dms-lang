@@ -165,7 +165,10 @@ usePageHeaderActions(() =>
           @focus="isTypingDescription = true"
           @blur="saveDescription"
         />
-        <p v-else class="text-highlighted text-sm">
+        <p
+          v-else
+          class="text-highlighted text-sm"
+        >
           {{ current?.description || '—' }}
         </p>
         <template #label-extra>
@@ -181,12 +184,15 @@ usePageHeaderActions(() =>
       >
         <DmsSegmentedSelect
           :model-value="current?.type"
-          @update:model-value="pickType"
           :items="typeItems"
           :disabled="!canEditDetails"
+          @update:model-value="pickType"
         />
         <template #label-extra>
-          <DmsSaveStatus :state="stateOf('type')" @retry="retries.type?.()" />
+          <DmsSaveStatus
+            :state="stateOf('type')"
+            @retry="retries.type?.()"
+          />
         </template>
       </DmsFieldRow>
     </template>
@@ -196,7 +202,10 @@ usePageHeaderActions(() =>
       :label="$t('dms_lang.workspace.base_label')"
       :description="$t('dms_lang.workspace.base_help')"
     >
-      <USkeleton v-if="!current" class="h-8 w-64" />
+      <USkeleton
+        v-if="!current"
+        class="h-8 w-64"
+      />
       <USelect
         v-else-if="canManageLanguages"
         v-model="baseModel"
@@ -204,14 +213,22 @@ usePageHeaderActions(() =>
         class="w-full max-w-xs"
       >
         <template #leading>
-          <LocaleTile :code="baseLocale" size="sm" is-base />
+          <LocaleTile
+            :code="baseLocale"
+            size="sm"
+            is-base
+          />
         </template>
       </USelect>
       <span
         v-else
         class="text-highlighted inline-flex items-center gap-2 text-sm"
       >
-        <LocaleTile :code="baseLocale" size="sm" is-base />
+        <LocaleTile
+          :code="baseLocale"
+          size="sm"
+          is-base
+        />
         {{ fullName(baseLocale) }}
         <span class="text-dimmed font-mono text-xs">
           {{ baseLocale }}

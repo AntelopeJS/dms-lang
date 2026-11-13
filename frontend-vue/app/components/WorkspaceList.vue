@@ -242,7 +242,10 @@ watch(
       ]"
     />
 
-    <div v-if="hasToolbar" class="flex flex-wrap items-center gap-2">
+    <div
+      v-if="hasToolbar"
+      class="flex flex-wrap items-center gap-2"
+    >
       <UInput
         v-model="search"
         icon="i-ph-magnifying-glass"
@@ -281,7 +284,11 @@ watch(
 
     <div class="grid gap-4 lg:grid-cols-2">
       <template v-if="!isLoaded && !hasError">
-        <DmsCard v-for="index in 4" :key="index" padded>
+        <DmsCard
+          v-for="index in 4"
+          :key="index"
+          padded
+        >
           <div class="space-y-4">
             <USkeleton class="h-6 w-1/2" />
             <USkeleton class="h-10 w-full" />
@@ -314,8 +321,8 @@ watch(
                   v-bind="kindPill(workspace)"
                 />
                 <DmsStatusPill
-                  dot="none"
                   v-if="workspace.id === selectedWorkspace"
+                  dot="none"
                   tone="primary"
                   size="sm"
                   icon="i-ph-check"
@@ -325,7 +332,7 @@ watch(
               <p class="text-muted mt-0.5 line-clamp-2 text-xs">
                 {{
                   workspace.description ||
-                  $t(`dms_lang.workspace_kinds.${workspace.kind}.description`)
+                    $t(`dms_lang.workspace_kinds.${workspace.kind}.description`)
                 }}
               </p>
             </div>
@@ -340,8 +347,15 @@ watch(
           </div>
 
           <dl class="grid grid-cols-4 gap-3">
-            <div v-for="stat in statsOf(workspace)" :key="stat.id">
-              <DmsEyebrow as="dt" :label="stat.label" size="xs" />
+            <div
+              v-for="stat in statsOf(workspace)"
+              :key="stat.id"
+            >
+              <DmsEyebrow
+                as="dt"
+                :label="stat.label"
+                size="xs"
+              />
               <dd
                 class="text-highlighted font-mono text-lg font-semibold"
                 :class="stat.tone"
@@ -363,7 +377,10 @@ watch(
                 :is-base="code === workspace.baseLocale"
               />
               {{ code }}
-              <span v-if="code === workspace.baseLocale" class="text-dimmed">
+              <span
+                v-if="code === workspace.baseLocale"
+                class="text-dimmed"
+              >
                 {{ $t('dms_lang.common.base') }}
               </span>
               <span
@@ -428,7 +445,11 @@ watch(
         class="border-default text-muted hover:border-primary/50 hover:text-highlighted flex min-h-56 flex-col items-center justify-center gap-3 rounded-(--dms-radius-card) border border-dashed p-6 text-center transition-colors"
         @click="create"
       >
-        <DmsIconWell icon="i-ph-plus" tone="primary" size="lg" />
+        <DmsIconWell
+          icon="i-ph-plus"
+          tone="primary"
+          size="lg"
+        />
         <span class="text-highlighted text-sm font-semibold">
           {{ $t('dms_lang.workspaces.new') }}
         </span>

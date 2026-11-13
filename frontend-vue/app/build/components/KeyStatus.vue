@@ -37,7 +37,10 @@ defineProps<Props>()
       v-if="placeholders"
       class="text-dimmed inline-flex items-center gap-1.5 text-xs"
     >
-      <UIcon name="i-ph-brackets-curly" class="size-3.5" />
+      <UIcon
+        name="i-ph-brackets-curly"
+        class="size-3.5"
+      />
       {{ $t('dms_lang.drawer.placeholders') }}
       <PlaceholderText :text="placeholders" />
     </span>

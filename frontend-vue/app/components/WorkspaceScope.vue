@@ -189,7 +189,10 @@ watch(
 </script>
 
 <template>
-  <div v-if="!isUnknown" class="space-y-3">
+  <div
+    v-if="!isUnknown"
+    class="space-y-3"
+  >
     <div
       class="dms-card flex flex-wrap items-center gap-x-3.5 gap-y-2.5 py-2 pr-3.5 pl-2"
     >
@@ -233,8 +236,14 @@ watch(
             size="sm"
           />
           <span class="grid gap-px">
-            <DmsEyebrow :label="$t('dms_lang.scope.workspace')" size="xs" />
-            <USkeleton v-if="!current" class="h-4 w-24" />
+            <DmsEyebrow
+              :label="$t('dms_lang.scope.workspace')"
+              size="xs"
+            />
+            <USkeleton
+              v-if="!current"
+              class="h-4 w-24"
+            />
             <span
               v-else
               class="text-highlighted text-sm leading-tight font-semibold"
@@ -242,7 +251,10 @@ watch(
               {{ workspaceLabel(current) }}
             </span>
           </span>
-          <UIcon name="i-ph-caret-up-down" class="text-dimmed ml-1 size-4" />
+          <UIcon
+            name="i-ph-caret-up-down"
+            class="text-dimmed ml-1 size-4"
+          />
         </button>
       </UDropdownMenu>
 
@@ -258,7 +270,10 @@ watch(
         <USkeleton class="h-4 w-16" />
       </div>
 
-      <div v-else class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+      <div
+        v-else
+        class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm"
+      >
         <DmsStatusPill
           dot="none"
           :tone="isEditable ? 'success' : 'warning'"
@@ -287,7 +302,10 @@ watch(
           :to="baseMissingLink"
           class="text-warning inline-flex items-center gap-1 hover:underline"
         >
-          <UIcon name="i-ph-warning" class="size-4" />
+          <UIcon
+            name="i-ph-warning"
+            class="size-4"
+          />
           {{
             $t(
               'dms_lang.scope.base_missing',
@@ -301,12 +319,18 @@ watch(
           class="text-muted inline-flex items-center gap-1.5"
         >
           {{ $t('dms_lang.scope.base') }}
-          <LocaleTile :code="scope.defaultLocale" size="sm" />
+          <LocaleTile
+            :code="scope.defaultLocale"
+            size="sm"
+          />
           <span class="font-mono text-xs">{{ scope.defaultLocale }}</span>
         </span>
       </div>
 
-      <USkeleton v-if="!current" class="ml-auto h-3 w-40" />
+      <USkeleton
+        v-if="!current"
+        class="ml-auto h-3 w-40"
+      />
       <p
         v-else
         class="text-dimmed ml-auto min-w-0 truncate font-mono text-xs"
@@ -325,7 +349,10 @@ watch(
       :description="$t('dms_lang.scope.server_read_only_description')"
     />
 
-    <DmsCard v-if="isFirstRun" :padded="false">
+    <DmsCard
+      v-if="isFirstRun"
+      :padded="false"
+    >
       <DmsEmptyState
         icon="i-ph-rocket-launch"
         tone="primary"
@@ -335,7 +362,10 @@ watch(
         :actions="firstRunActions"
       >
         <template #content>
-          <DmsCheckList size="sm" :items="firstRunSteps" />
+          <DmsCheckList
+            size="sm"
+            :items="firstRunSteps"
+          />
         </template>
       </DmsEmptyState>
     </DmsCard>

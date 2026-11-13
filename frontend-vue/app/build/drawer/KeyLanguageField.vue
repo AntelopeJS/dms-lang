@@ -56,7 +56,11 @@ const props = defineProps<{
 
 <template>
   <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-    <LocaleTile :code="code" size="sm" :is-base="code === base" />
+    <LocaleTile
+      :code="code"
+      size="sm"
+      :is-base="code === base"
+    />
     <label
       v-if="props.editable"
       :for="fieldIdOf(code)"
@@ -64,7 +68,10 @@ const props = defineProps<{
     >
       {{ nativeName(code) }}
     </label>
-    <span v-else class="text-highlighted font-medium">
+    <span
+      v-else
+      class="text-highlighted font-medium"
+    >
       {{ nativeName(code) }}
     </span>
     <span class="text-dimmed font-mono text-xs">{{ code }}</span>
@@ -80,7 +87,10 @@ const props = defineProps<{
         v-if="hasConflict(code)"
         class="text-error inline-flex items-center gap-1 font-medium"
       >
-        <UIcon name="i-ph-warning" class="size-3.5" />
+        <UIcon
+          name="i-ph-warning"
+          class="size-3.5"
+        />
         {{ $t('dms_lang.drawer.conflict') }}
       </span>
       <template v-else-if="saveStateOf(code) !== 'idle'">
@@ -163,8 +173,14 @@ const props = defineProps<{
     v-else
     class="border-default rounded-md border bg-(--dms-bg-muted) px-3 py-2 text-sm"
   >
-    <PlaceholderText v-if="draftOf(code)" :text="draftOf(code)" />
-    <span v-else class="text-dimmed">—</span>
+    <PlaceholderText
+      v-if="draftOf(code)"
+      :text="draftOf(code)"
+    />
+    <span
+      v-else
+      class="text-dimmed"
+    >—</span>
     <p
       v-if="row.overrides?.[code]"
       class="text-dimmed border-default mt-2 border-t pt-2 text-xs"
@@ -183,13 +199,18 @@ const props = defineProps<{
     <p class="text-dimmed">
       <template v-if="ownOf(code)">
         {{ $t('dms_lang.drawer.conflict_value') }}
-        <PlaceholderText :text="ownOf(code)" class="text-default" />
+        <PlaceholderText
+          :text="ownOf(code)"
+          class="text-default"
+        />
       </template>
       <template v-else>
         {{ $t('dms_lang.drawer.conflict_empty') }}
       </template>
     </p>
-    <p class="text-dimmed">{{ $t('dms_lang.drawer.conflict_help') }}</p>
+    <p class="text-dimmed">
+      {{ $t('dms_lang.drawer.conflict_help') }}
+    </p>
     <div class="flex flex-wrap gap-1.5">
       <UButton
         size="xs"
@@ -209,7 +230,10 @@ const props = defineProps<{
       />
     </div>
   </div>
-  <p v-else-if="fieldErrors[code]" class="text-error text-xs">
+  <p
+    v-else-if="fieldErrors[code]"
+    class="text-error text-xs"
+  >
     {{ fieldErrors[code] }}
   </p>
   <div
@@ -255,7 +279,7 @@ const props = defineProps<{
         <UButton
           v-if="
             issue.tokens.length === 1 &&
-            issueOfKind(code, 'extra')?.tokens.length === 1
+              issueOfKind(code, 'extra')?.tokens.length === 1
           "
           size="xs"
           color="error"
@@ -281,7 +305,7 @@ const props = defineProps<{
       <UButton
         v-else-if="
           issue.severity === 'error' &&
-          escapeMessage(draftOf(code)) !== draftOf(code)
+            escapeMessage(draftOf(code)) !== draftOf(code)
         "
         size="xs"
         color="error"
@@ -296,9 +320,9 @@ const props = defineProps<{
   <p
     v-else-if="
       props.editable &&
-      code !== base &&
-      baseText &&
-      statusOf(code) === 'missing'
+        code !== base &&
+        baseText &&
+        statusOf(code) === 'missing'
     "
     class="text-dimmed text-xs"
   >

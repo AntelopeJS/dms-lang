@@ -47,7 +47,11 @@ async function submit() {
     @update:open="(open: boolean) => !open && close(null)"
   >
     <template #body>
-      <form class="space-y-4" novalidate @submit.prevent="submit">
+      <form
+        class="space-y-4"
+        novalidate
+        @submit.prevent="submit"
+      >
         <FormRows has-required>
           <FormFieldRow
             :label="$t('dms_lang.workspace_name.label')"
@@ -56,7 +60,12 @@ async function submit() {
             required
           >
             <template #default="{ id }">
-              <DmsInputText :id="id" v-model="name" autofocus class="w-full" />
+              <DmsInputText
+                :id="id"
+                v-model="name"
+                autofocus
+                class="w-full"
+              />
             </template>
           </FormFieldRow>
         </FormRows>
@@ -70,7 +79,10 @@ async function submit() {
               {{ links.publicLocaleUrl(props.workspace) }}
             </code>
           </div>
-          <UIcon name="i-ph-arrow-down" class="text-dimmed size-3.5" />
+          <UIcon
+            name="i-ph-arrow-down"
+            class="text-dimmed size-3.5"
+          />
           <div>
             <DmsEyebrow
               :label="$t('dms_lang.workspace_rename.after')"

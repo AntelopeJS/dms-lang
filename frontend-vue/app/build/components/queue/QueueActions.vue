@@ -23,7 +23,12 @@ const { isSaving, isArmed } = save
         <ShortcutKbds :keys="QUEUE_KEYS.previous" />
       </UButton>
       <div class="flex-1" />
-      <UButton color="neutral" variant="outline" size="sm" @click="skip">
+      <UButton
+        color="neutral"
+        variant="outline"
+        size="sm"
+        @click="skip"
+      >
         {{ $t('dms_lang.queue.skip') }}
         <ShortcutKbds :keys="QUEUE_KEYS.skip" />
       </UButton>
@@ -44,7 +49,11 @@ const { isSaving, isArmed } = save
       </UButton>
     </div>
     <p class="text-dimmed mt-2 text-xs">
-      <i18n-t keypath="dms_lang.queue.shortcuts_hint" scope="global" tag="span">
+      <i18n-t
+        keypath="dms_lang.queue.shortcuts_hint"
+        scope="global"
+        tag="span"
+      >
         <template #leave>
           <ShortcutKbds :keys="QUEUE_KEYS.leaveField" />
         </template>

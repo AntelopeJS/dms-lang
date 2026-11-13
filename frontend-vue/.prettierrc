@@ -3,8 +3,10 @@
   "singleQuote": true,
   "trailingComma": "all",
   "endOfLine": "auto",
-  "plugins": ["prettier-plugin-tailwindcss"],
+  "plugins": [
+    "prettier-plugin-tailwindcss"
+  ],
   "useTabs": false,
-
-  "htmlWhitespaceSensitivity": "ignore"
+  "htmlWhitespaceSensitivity": "ignore",
+  "singleAttributePerLine": true
 }

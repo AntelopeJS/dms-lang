@@ -119,7 +119,10 @@ function onDrop(target: string) {
               @keydown.up.prevent="move(row.code, -1)"
               @keydown.down.prevent="move(row.code, 1)"
             >
-              <UIcon name="i-ph-dots-six-vertical" class="size-4" />
+              <UIcon
+                name="i-ph-dots-six-vertical"
+                class="size-4"
+              />
             </button>
             <UCheckbox
               :model-value="row.shown"

@@ -380,7 +380,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <DmsCard v-if="!isUnknown" ref="root" :padded="false" class="overflow-hidden">
+  <DmsCard
+    v-if="!isUnknown"
+    ref="root"
+    :padded="false"
+    class="overflow-hidden"
+  >
     <MatrixToolbar
       v-model:filters="filters"
       :counts="counts"
@@ -401,7 +406,10 @@ onBeforeUnmount(() => {
       />
     </MatrixToolbar>
 
-    <div v-if="isModules" class="p-3">
+    <div
+      v-if="isModules"
+      class="p-3"
+    >
       <DmsBanner
         tone="warning"
         size="sm"
@@ -437,7 +445,10 @@ onBeforeUnmount(() => {
       ]"
     />
 
-    <div v-else-if="!isLoaded" class="divide-default divide-y">
+    <div
+      v-else-if="!isLoaded"
+      class="divide-default divide-y"
+    >
       <div
         v-for="index in SKELETON_ROWS"
         :key="index"
@@ -461,7 +472,10 @@ onBeforeUnmount(() => {
     />
 
     <div v-else-if="isCompact && compactColumn">
-      <template v-for="group in view.rendered.value" :key="group.namespace">
+      <template
+        v-for="group in view.rendered.value"
+        :key="group.namespace"
+      >
         <div class="border-default border-b bg-(--dms-bg-muted) px-4 py-2">
           <MatrixGroupHeader
             :namespace="group.namespace"
@@ -491,7 +505,7 @@ onBeforeUnmount(() => {
           <p
             v-if="
               !compactColumn.isBase &&
-              !editor.isEditing(row.key, compactColumn.code)
+                !editor.isEditing(row.key, compactColumn.code)
             "
             class="text-dimmed line-clamp-3 text-xs"
           >
@@ -511,10 +525,18 @@ onBeforeUnmount(() => {
           />
         </div>
       </template>
-      <div v-if="view.hasMore.value" ref="sentinel" class="h-8" />
+      <div
+        v-if="view.hasMore.value"
+        ref="sentinel"
+        class="h-8"
+      />
     </div>
 
-    <div v-else ref="scroller" class="max-h-[70vh] overflow-auto">
+    <div
+      v-else
+      ref="scroller"
+      class="max-h-[70vh] overflow-auto"
+    >
       <table
         role="grid"
         :aria-rowcount="rows.length"
@@ -523,19 +545,22 @@ onBeforeUnmount(() => {
         @keydown="onGridKeydown"
       >
         <colgroup>
-          <col class="w-44 sm:w-64" />
+          <col class="w-44 sm:w-64">
           <col
             v-for="column in columns"
             :key="column.code"
             :class="todoLanguage ? 'w-[28rem]' : 'w-60'"
-          />
+          >
         </colgroup>
         <thead class="sticky top-0 z-20 bg-(--dms-surface-card)">
           <tr>
             <th
               class="border-default sticky left-0 z-10 border-r border-b bg-(--dms-surface-card) px-4 py-2.5 text-left shadow-[4px_0_6px_-4px_rgb(0_0_0/0.25)]"
             >
-              <DmsEyebrow :label="$t('dms_lang.matrix.key')" size="xs" />
+              <DmsEyebrow
+                :label="$t('dms_lang.matrix.key')"
+                size="xs"
+              />
             </th>
             <th
               v-for="column in columns"
@@ -550,7 +575,10 @@ onBeforeUnmount(() => {
             </th>
           </tr>
         </thead>
-        <tbody v-for="group in view.rendered.value" :key="group.namespace">
+        <tbody
+          v-for="group in view.rendered.value"
+          :key="group.namespace"
+        >
           <tr>
             <td
               :colspan="columns.length + 1"
@@ -609,7 +637,11 @@ onBeforeUnmount(() => {
           </tr>
         </tbody>
       </table>
-      <div v-if="view.hasMore.value" ref="sentinel" class="h-8" />
+      <div
+        v-if="view.hasMore.value"
+        ref="sentinel"
+        class="h-8"
+      />
     </div>
 
     <MatrixFooter

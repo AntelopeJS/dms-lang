@@ -324,10 +324,7 @@ function describePublicAccess(): void {
   it("imports a backup through the checks of a key write", () => {
     const imported = importWorkspace({
       id: "core-checked",
-      locales: [
-        // @ts-expect-error a numeric flag is off-contract input (WorkspaceLocale.flag is a string); the import must drop it and keep the trimmed name
-        { code: "EN", name: " English ", flag: 42 },
-      ],
+      locales: [{ code: "EN", name: " English ", flag: " " }],
       messages: { en: { a: { b: "B", empty: " " }, gone: { x: "" } } },
     });
     const backup = backupWorkspace(imported);

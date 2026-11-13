@@ -32,8 +32,15 @@ const parts = computed<TextPart[]>(() =>
 
 <template>
   <span class="break-words whitespace-pre-wrap">
-    <template v-for="(part, index) in parts" :key="index">
-      <span v-if="part.classes" :class="part.classes" :title="part.title">
+    <template
+      v-for="(part, index) in parts"
+      :key="index"
+    >
+      <span
+        v-if="part.classes"
+        :class="part.classes"
+        :title="part.title"
+      >
         {{ part.label }}
       </span>
       <template v-else>{{ part.label }}</template>
