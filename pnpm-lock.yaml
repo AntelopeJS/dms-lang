@@ -9,7 +9,7 @@ importers:
   .:
     dependencies:
       '@antelopejs/interface-api':
-        specifier: '>=0.3.0 <1.0.0'
+        specifier: '>=0.3.1 <1.0.0'
         version: 0.3.2(@antelopejs/interface-core@0.4.0)
       '@antelopejs/interface-core':
         specifier: '>=0.4.0 <1.0.0'
@@ -167,7 +167,7 @@ importers:
         specifier: '>=0.19.0 <1.0.0'
         version: 0.19.4(@antelopejs/core@1.21.0)(bare-buffer@3.7.1)
       '@antelopejs/interface-api':
-        specifier: '>=0.3.0 <1.0.0'
+        specifier: '>=0.3.1 <1.0.0'
         version: 0.3.2(@antelopejs/interface-core@0.4.0)
       '@antelopejs/interface-api-util':
         specifier: '>=0.3.0 <1.0.0'

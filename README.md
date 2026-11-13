@@ -50,7 +50,7 @@ Restart the backend, then the frontend, and open **Modules › Translations** (`
 
 | Package                      | Supported         | Tested with |
 | ---------------------------- | ----------------- | ----------- |
-| `@antelopejs/interface-api`  | `>=0.3.0 <1.0.0`  | `0.3.2`     |
+| `@antelopejs/interface-api`  | `>=0.3.1 <1.0.0`  | `0.3.2`     |
 | `@antelopejs/interface-core` | `>=0.4.0 <1.0.0`  | `0.4.0`     |
 | `@antelopejs/interface-dms`  | `>=0.13.0 <1.0.0` | `0.13.2`    |
 
