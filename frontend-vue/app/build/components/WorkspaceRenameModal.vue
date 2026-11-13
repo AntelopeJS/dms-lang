@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { useI18nWorkspaces } from '../../composables/translation/useI18nWorkspaces'
+import { useLangLinks } from '../../composables/translation/useLangLinks'
+import { useMutationToast } from '../../composables/translation/useMutationToast'
+import { useWorkspaceNameCheck } from '../../composables/translation/useWorkspaceNameCheck'
 import FormFieldRow from './form/FormFieldRow.vue'
 import FormRows from './form/FormRows.vue'
 

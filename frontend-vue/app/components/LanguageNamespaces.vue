@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import { useWorkspaceFlatSync } from '../composables/translation/useWorkspaceFlat'
+import { useLangFormat } from '../composables/translation/useLangFormat'
+import { useLanguageQueue } from '../composables/translation/useLanguageQueue'
+import { useWorkspaceContext } from '../composables/translation/useWorkspaceContext'
+import {
+  useWorkspaceFlat,
+  useWorkspaceFlatSync,
+} from '../composables/translation/useWorkspaceFlat'
 import { coverageTone } from '../utils/coverage'
 
 const { isLoaded } = useWorkspaceFlat()

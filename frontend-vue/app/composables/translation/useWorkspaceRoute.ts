@@ -1,4 +1,12 @@
 import { useDmsRoute, useDmsRouter } from '#dms/frontend-module'
+import type { LangPage, PageQuery } from './useLangLinks'
+import { normalizeWorkspaceId, useI18nWorkspaces } from './useI18nWorkspaces.ts'
+import {
+  LANG_PAGES,
+  PAGE_ACTION_QUERY,
+  langPageOf,
+  linkWithQuery,
+} from './useLangLinks.ts'
 
 export interface SelectWorkspaceOptions {
   /** The page to land on; the current one by default. */

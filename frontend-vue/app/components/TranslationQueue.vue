@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import { useWorkspaceFlatSync } from '../composables/translation/useWorkspaceFlat'
+import { useLangLinks } from '../composables/translation/useLangLinks'
+import { useLanguageActions } from '../composables/translation/useLanguageActions'
+import { useLocaleNames } from '../composables/translation/useLocaleNames'
+import { useQueueSession } from '../composables/translation/useQueueSession'
+import { useWorkspaceContext } from '../composables/translation/useWorkspaceContext'
+import { useWorkspaceLabel } from '../composables/translation/useWorkspaceLabel'
+import { useWorkspaceFlat, useWorkspaceFlatSync } from '../composables/translation/useWorkspaceFlat'
 import UButton from '@nuxt/ui/components/Button.vue'
 import UDropdownMenu from '@nuxt/ui/components/DropdownMenu.vue'
 import { useDmsRouter } from '#dms/frontend-module'

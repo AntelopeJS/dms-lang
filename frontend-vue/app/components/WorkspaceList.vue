@@ -1,4 +1,10 @@
 <script setup lang="ts">
+import { useLangFormat } from '../composables/translation/useLangFormat'
+import { PAGE_ACTIONS, useLangLinks } from '../composables/translation/useLangLinks'
+import { useWorkspaceActions, useWorkspaceTypes } from '../composables/translation/useWorkspaceActions'
+import { useWorkspaceContext } from '../composables/translation/useWorkspaceContext'
+import { useWorkspaceLabel } from '../composables/translation/useWorkspaceLabel'
+import { useWorkspaceRoute } from '../composables/translation/useWorkspaceRoute'
 import UButton from '@nuxt/ui/components/Button.vue'
 import type { WorkspaceKind, WorkspaceStats } from '../types/lang'
 import { COVERAGE_TEXT_CLASSES, coverageTone } from '../utils/coverage'
@@ -9,7 +15,7 @@ import {
 } from '../utils/workspaces'
 import type { WorkspaceSort } from '../utils/workspaces'
 import LocaleTile from '../build/components/LocaleTile.vue'
-import { useWorkspaceSummary } from '../composables/translation/useI18nWorkspaces'
+import { useI18nWorkspaces, useWorkspaceSummary } from '../composables/translation/useI18nWorkspaces'
 
 interface WorkspaceStat {
   id: string

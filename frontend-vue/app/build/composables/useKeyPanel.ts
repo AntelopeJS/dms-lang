@@ -6,6 +6,10 @@ import KeyEditorDrawer from '../components/KeyEditorDrawer.vue'
 import KeyStatus from '../components/KeyStatus.vue'
 import { NAMESPACE_SEPARATOR } from '../../utils/translations'
 import type { CellHold } from './useCellSaves'
+import { useI18nWorkspaces } from '../../composables/translation/useI18nWorkspaces.ts'
+import { linkWithQuery } from '../../composables/translation/useLangLinks.ts'
+import { useWorkspaceFlat } from '../../composables/translation/useWorkspaceFlat.ts'
+import { useWorkspaceRoute } from '../../composables/translation/useWorkspaceRoute.ts'
 
 export interface PanelRequest {
   key: string

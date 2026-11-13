@@ -1,4 +1,12 @@
 <script setup lang="ts">
+import { useLanguageActions } from '../composables/translation/useLanguageActions'
+import { useLocaleNames } from '../composables/translation/useLocaleNames'
+import {
+  useWorkspaceActions,
+  useWorkspaceTypes,
+} from '../composables/translation/useWorkspaceActions'
+import { useWorkspaceContext } from '../composables/translation/useWorkspaceContext'
+import { useWorkspaceRoute } from '../composables/translation/useWorkspaceRoute'
 import UButton from '@nuxt/ui/components/Button.vue'
 import type { WorkspaceType } from '../types/lang'
 import type { SaveState } from '../utils/keySaves'

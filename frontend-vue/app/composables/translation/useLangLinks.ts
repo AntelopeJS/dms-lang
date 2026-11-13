@@ -1,3 +1,4 @@
+import { useI18nWorkspaces } from './useI18nWorkspaces.ts'
 const MODULE_BASE = '/modules/lang'
 
 export const LANG_PAGES = {

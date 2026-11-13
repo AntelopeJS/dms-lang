@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { DEFAULT_WORKSPACE } from '../../../composables/translation/useI18nWorkspaces'
+import { useWorkspaceContext } from '../../../composables/translation/useWorkspaceContext'
+import { useWorkspaceFlat } from '../../../composables/translation/useWorkspaceFlat'
+import { useWorkspaceRoute } from '../../../composables/translation/useWorkspaceRoute'
 import type { FlatTranslationRow } from '../../../types/lang'
 import type { MessageIssueKind } from '../../../utils/translations'
 import {

@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { useLangLinks } from '../composables/translation/useLangLinks'
+import { useWorkspaceActions } from '../composables/translation/useWorkspaceActions'
+import { useWorkspaceContext } from '../composables/translation/useWorkspaceContext'
+import { useWorkspaceRoute } from '../composables/translation/useWorkspaceRoute'
 const { t } = useI18n()
 const { current, canManage, isUnknown, allows } = useWorkspaceContext()
 const { renameWorkspace, deleteWorkspace, downloadBackup } =

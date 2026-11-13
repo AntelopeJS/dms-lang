@@ -2,6 +2,8 @@ import type { FlatTranslations } from '../../types/lang'
 import type { QueueSession } from '../../composables/translation/useQueueSession'
 import type { DraftCheck, DraftId } from '../../utils/queueDrafts'
 import { useQueueToasts } from './useQueueToasts'
+import { useI18nWorkspaces } from '../../composables/translation/useI18nWorkspaces.ts'
+import { useWorkspaceFlat } from '../../composables/translation/useWorkspaceFlat.ts'
 
 /** What is known to exist, for telling which drafts lost their key. */
 interface LiveTargets {

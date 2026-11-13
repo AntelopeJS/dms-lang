@@ -1,4 +1,10 @@
 <script setup lang="ts">
+import { useI18nWorkspaces } from '../../../composables/translation/useI18nWorkspaces'
+import { useLangFormat } from '../../../composables/translation/useLangFormat'
+import { useLangLinks } from '../../../composables/translation/useLangLinks'
+import { useLocaleNames } from '../../../composables/translation/useLocaleNames'
+import { useWorkspaceFlat } from '../../../composables/translation/useWorkspaceFlat'
+import { useWorkspaceRoute } from '../../../composables/translation/useWorkspaceRoute'
 import type { DropdownMenuItem } from '@nuxt/ui'
 import { QUEUE_MODES } from '../../../composables/translation/useLanguageQueue'
 import type { DraftGroup } from '../../../utils/queueDrafts'

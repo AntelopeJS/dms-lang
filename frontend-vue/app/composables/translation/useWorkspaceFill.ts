@@ -1,4 +1,8 @@
 import { useDmsRouter, useDmsState } from '#dms/frontend-module'
+import { DEFAULT_WORKSPACE, useI18nWorkspaces } from './useI18nWorkspaces.ts'
+import { linkWithQuery } from './useLangLinks.ts'
+import { useWorkspaceContext } from './useWorkspaceContext.ts'
+import { useWorkspaceRoute } from './useWorkspaceRoute.ts'
 
 /**
  * Gives a page opened without `?workspace=` (a menu link, a new tab) the

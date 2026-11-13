@@ -6,7 +6,7 @@
   "config": {
     "@typescript-eslint/no-explicit-any for frontend-vue/**/*.{js,mjs,cjs,ts,vue}": 0,
     "no-redeclare for frontend-vue/**/*.{js,mjs,cjs,ts,vue}": 0,
-    "no-undef for frontend-vue/**/*.{js,mjs,cjs,ts,vue}": 1,
+    "no-undef for frontend-vue/**/*.{js,mjs,cjs,ts,vue}": 0,
     "no-unused-vars for frontend-vue/**/*.{js,mjs,cjs,ts,vue}": 1,
     "vue/attributes-order for frontend-vue/**/*.{js,mjs,cjs,ts,vue}": 0,
     "vue/html-indent for frontend-vue/**/*.{js,mjs,cjs,ts,vue}": 0,

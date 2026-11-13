@@ -6,6 +6,10 @@ import {
   parseFilter,
   type MatrixFilterState,
 } from './useMatrixFilters'
+import { useI18nWorkspaces } from '../../composables/translation/useI18nWorkspaces.ts'
+import { linkWithQuery } from '../../composables/translation/useLangLinks.ts'
+import { useWorkspaceFlat } from '../../composables/translation/useWorkspaceFlat.ts'
+import { useWorkspaceRoute } from '../../composables/translation/useWorkspaceRoute.ts'
 
 type FilterQuery = Record<keyof MatrixFilterState, string>
 

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useWorkspaceContext } from '../../../composables/translation/useWorkspaceContext'
 import { QUEUE_KEYS } from '../../../utils/shortcuts'
 import ShortcutKbds from '../ShortcutKbds.vue'
 import { useQueue } from '../../composables/useQueueContext'

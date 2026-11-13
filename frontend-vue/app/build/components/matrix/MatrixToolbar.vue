@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useLangFormat } from '../../../composables/translation/useLangFormat'
 import { watchDebounced } from '@vueuse/core'
 import type { TranslationFilter } from '../../../types/lang'
 import type {

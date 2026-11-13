@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import { useI18nWorkspaces } from '../../composables/translation/useI18nWorkspaces'
+import { useLocaleNames } from '../../composables/translation/useLocaleNames'
+import { serverErrorCode, useMutationToast } from '../../composables/translation/useMutationToast'
+import { useWorkspaceFlat } from '../../composables/translation/useWorkspaceFlat'
+import { useWorkspaceLabel } from '../../composables/translation/useWorkspaceLabel'
 import LanguagePicker from './LanguagePicker.vue'
 import { canonicalLocale, hasSubtags, languageOf } from '../../utils/languages'
 

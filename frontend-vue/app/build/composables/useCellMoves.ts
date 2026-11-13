@@ -3,6 +3,7 @@ import type { FlatTranslationRow } from '../../types/lang'
 import type { CellMove, CellRef } from './useCellEditor'
 import type { MatrixGroup } from './useMatrixFilters'
 import type { useMatrixRows } from './useMatrixRows'
+import { isRowValueMissing } from '../../utils/translations.ts'
 
 /** Forward or backward through the cells. */
 export type JumpStep = 1 | -1

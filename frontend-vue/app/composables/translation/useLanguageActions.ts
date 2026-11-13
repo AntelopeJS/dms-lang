@@ -2,6 +2,11 @@ import type { Ref } from 'vue'
 import { until } from '@vueuse/core'
 import { useDmsState } from '#dms/frontend-module'
 import LanguageAddModal from '../../build/components/LanguageAddModal.vue'
+import { languageUrl, useI18nWorkspaces } from './useI18nWorkspaces.ts'
+import { useLangFormat } from './useLangFormat.ts'
+import { useLocaleNames } from './useLocaleNames.ts'
+import { useWorkspaceContext } from './useWorkspaceContext.ts'
+import { useWorkspaceFlat } from './useWorkspaceFlat.ts'
 
 /** What the language actions share: the selected workspace and the DMS helpers. */
 interface LanguageActionsContext {

@@ -1,4 +1,5 @@
 import type { FlatTranslationRow } from '../types/lang'
+import { stringValue } from './translations.ts'
 
 const BYTE_ORDER_MARK = '﻿'
 const LINE_BREAK = '\r\n'

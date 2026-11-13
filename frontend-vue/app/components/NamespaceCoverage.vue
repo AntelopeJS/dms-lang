@@ -1,4 +1,10 @@
 <script setup lang="ts">
+import { useFirstRun } from '../composables/translation/useFirstRun'
+import { LANG_API } from '../composables/translation/useI18nWorkspaces'
+import { useLangFormat } from '../composables/translation/useLangFormat'
+import { useLangLinks } from '../composables/translation/useLangLinks'
+import { useLocaleNames } from '../composables/translation/useLocaleNames'
+import { useWorkspaceContext } from '../composables/translation/useWorkspaceContext'
 import UButton from '@nuxt/ui/components/Button.vue'
 import type { NamespaceMatrix, NamespaceRow } from '../types/lang'
 import LocaleTile from '../build/components/LocaleTile.vue'

@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import { useI18nWorkspaces } from '../../composables/translation/useI18nWorkspaces'
+import { useLangLinks } from '../../composables/translation/useLangLinks'
+import { useLocaleNames } from '../../composables/translation/useLocaleNames'
+import { useMutationToast } from '../../composables/translation/useMutationToast'
+import { useWorkspaceNameCheck } from '../../composables/translation/useWorkspaceNameCheck'
 import type { WorkspaceDetails, WorkspaceType } from '../../types/lang'
 import type { WorkspaceBackup } from '../../utils/workspaceBackup'
 import { canonicalLocale, searchLanguages } from '../../utils/languages'

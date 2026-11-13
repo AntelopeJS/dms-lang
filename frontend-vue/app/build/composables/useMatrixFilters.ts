@@ -4,6 +4,12 @@ import type {
   FlatTranslations,
   TranslationFilter,
 } from '../../types/lang'
+import {
+  isRowValueMissing,
+  namespaceOf,
+  needsReview,
+  stringValue,
+} from '../../utils/translations.ts'
 
 export interface MatrixGroup {
   namespace: string

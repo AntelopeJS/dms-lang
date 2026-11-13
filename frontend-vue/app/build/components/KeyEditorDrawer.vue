@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { useKeyActions } from '../../composables/translation/useKeyActions'
+import { useLocaleNames } from '../../composables/translation/useLocaleNames'
+import { useMutationToast } from '../../composables/translation/useMutationToast'
+import { useWorkspaceFlat } from '../../composables/translation/useWorkspaceFlat'
 import type { FlatTranslationRow, KeyPanelHeader } from '../../types/lang'
 import {
   storedText,
@@ -25,6 +29,7 @@ import {
   type MessageIssue,
 } from '../../utils/translations'
 import ShortcutKbds from './ShortcutKbds.vue'
+import { useFieldFocus } from '../drawer/fieldFocus'
 import type { FieldStatus } from '../drawer/fieldStatus'
 import KeyLanguageField from '../drawer/KeyLanguageField.vue'
 import { KEY_PANEL_KEYS } from '../../utils/shortcuts'
@@ -104,6 +109,7 @@ const {
 } = useBaseClearQuestion()
 const states = useSaveStates(fieldStates)
 const body = useTemplateRef<HTMLElement>('body')
+const { fieldInput, focusField } = useFieldFocus(body)
 const fieldIds = useId()
 let queue: Promise<unknown> = Promise.resolve()
 
@@ -263,24 +269,6 @@ function overwrite(code: string) {
 // Labels a language's field with its name, for assistive technologies.
 function fieldIdOf(code: string): string {
   return `${fieldIds}-${code}`
-}
-
-function fieldInput(code: string): HTMLTextAreaElement | null {
-  return (
-    body.value?.querySelector<HTMLTextAreaElement>(
-      `[data-locale="${code}"] textarea`,
-    ) ?? null
-  )
-}
-
-async function focusField(code?: string, caret?: number) {
-  if (!code) return
-  await nextTick()
-  const input = fieldInput(code)
-  if (!input) return
-  input.scrollIntoView({ block: 'nearest' })
-  input.focus()
-  if (caret !== undefined) input.setSelectionRange(caret, caret)
 }
 
 function insertAtCaret(code: string, token: string) {

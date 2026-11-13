@@ -17,6 +17,7 @@ import {
   type KeyWriteFailed,
   type KeyWriteOutcome,
 } from './useKeySaves'
+import { useMutationToast } from '../../composables/translation/useMutationToast.ts'
 
 export interface CellFailure {
   /** The text that could not be saved: kept until saved or discarded. */
