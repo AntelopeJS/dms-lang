@@ -12,9 +12,10 @@
 
 - **deps:** ⚠️  Move to DMS 0.19, interface-dms 0.13 and interface-api 0.3 ([#139](https://github.com/AntelopeJS/dms-lang/pull/139))
 
-#### ⚠️ Breaking Changes
+### ⚠️ Breaking changes
 
-- **deps:** ⚠️  Move to DMS 0.19, interface-dms 0.13 and interface-api 0.3 ([#139](https://github.com/AntelopeJS/dms-lang/pull/139))
+- Requires `@antelopejs/dms` 0.19 (`>=0.19.0 <1.0.0`), `@antelopejs/interface-dms` `>=0.13.0 <1.0.0`, `@antelopejs/interface-api` `>=0.3.1 <1.0.0` and `@antelopejs/interface-database-decorators` `>=0.3.1 <1.0.0`. Projects on DMS 0.18 must stay on 0.5.3 ([#139](https://github.com/AntelopeJS/dms-lang/pull/139)).
+- A query parameter given without a value, such as `?workspace` or `?workspace=`, counts as absent. It used to fail with a 500 ([#139](https://github.com/AntelopeJS/dms-lang/pull/139)).
 
 ### ❤️ Contributors
 
