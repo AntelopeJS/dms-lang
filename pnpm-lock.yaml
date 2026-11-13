@@ -31,11 +31,11 @@ importers:
         specifier: 1.21.0
         version: 1.21.0
       '@antelopejs/dms':
-        specifier: '>=0.19.0 <1.0.0'
-        version: 0.19.4(@antelopejs/core@1.21.0)(bare-buffer@3.7.1)
+        specifier: '>=0.19.5 <1.0.0'
+        version: 0.19.5(@antelopejs/core@1.21.0)(bare-buffer@3.7.1)
       '@antelopejs/dms-frontend':
-        specifier: '>=0.10.0 <1.0.0'
-        version: 0.10.0(@antelopejs/core@1.21.0)
+        specifier: '>=0.10.4 <1.0.0'
+        version: 0.10.4(@antelopejs/core@1.21.0)
       '@antelopejs/interface-data-api':
         specifier: '>=0.6.0 <1.0.0'
         version: 0.6.0(@antelopejs/interface-api-util@0.3.0(@antelopejs/interface-api@0.3.2(@antelopejs/interface-core@0.4.0))(@antelopejs/interface-core@0.4.0))(@antelopejs/interface-api@0.3.2(@antelopejs/interface-core@0.4.0))(@antelopejs/interface-core@0.4.0)(@antelopejs/interface-database-decorators@0.4.1(@antelopejs/interface-api@0.3.2(@antelopejs/interface-core@0.4.0))(@antelopejs/interface-core@0.4.0)(@antelopejs/interface-database@0.3.0(@antelopejs/interface-core@0.4.0)))(@antelopejs/interface-database@0.3.0(@antelopejs/interface-core@0.4.0))
@@ -124,9 +124,12 @@ importers:
       '@antelopejs/core':
         specifier: 1.21.0
         version: 1.21.0
+      '@antelopejs/dms':
+        specifier: '>=0.19.5 <1.0.0'
+        version: 0.19.5(@antelopejs/core@1.21.0)(bare-buffer@3.7.1)
       '@antelopejs/dms-frontend':
-        specifier: '>=0.10.0 <0.11.0'
-        version: 0.10.0(@antelopejs/core@1.21.0)
+        specifier: '>=0.10.4 <0.11.0'
+        version: 0.10.4(@antelopejs/core@1.21.0)
       '@eslint/js':
         specifier: ^9
         version: 9.39.5
@@ -164,8 +167,8 @@ importers:
   playground:
     dependencies:
       '@antelopejs/dms':
-        specifier: '>=0.19.0 <1.0.0'
-        version: 0.19.4(@antelopejs/core@1.21.0)(bare-buffer@3.7.1)
+        specifier: '>=0.19.5 <1.0.0'
+        version: 0.19.5(@antelopejs/core@1.21.0)(bare-buffer@3.7.1)
       '@antelopejs/interface-api':
         specifier: '>=0.3.1 <1.0.0'
         version: 0.3.2(@antelopejs/interface-core@0.4.0)
@@ -192,8 +195,8 @@ importers:
         specifier: 1.21.0
         version: 1.21.0
       '@antelopejs/dms-frontend':
-        specifier: '>=0.10.0 <1.0.0'
-        version: 0.10.0(@antelopejs/core@1.21.0)
+        specifier: '>=0.10.4 <1.0.0'
+        version: 0.10.4(@antelopejs/core@1.21.0)
       '@types/node':
         specifier: ^22.14.1
         version: 22.20.2
@@ -226,15 +229,15 @@ packages:
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
 
-  '@antelopejs/dms-frontend@0.10.0':
-    resolution: {integrity: sha512-zNsYW0NUPHoJNj3tNUDxubXQUH0171Ga/avp8ka0VK253eQD7KDgImq8Fc3tmG5GD+oBzhUlO4RMun5BapqfYQ==}
+  '@antelopejs/dms-frontend@0.10.4':
+    resolution: {integrity: sha512-YdOM6XoCNGSRvuTT+QMXa39Q/yr2rqdNs2luV1MggwCuWJxc9oXVvccD5vWXabSUxrgoihlFsRK+ztJ6pAGGZA==}
     engines: {node: '>=20.19.0'}
     hasBin: true
     peerDependencies:
       '@antelopejs/core': '>=1.16.0 <2'
 
-  '@antelopejs/dms@0.19.4':
-    resolution: {integrity: sha512-a9z/vd37KpEMOjG1jXwbt0XWVGsod/MQdAnsYSV3bSsik51Di/VZg9OdtrKvYUu2iNt5heBhdZUVFMkU3y5kOg==}
+  '@antelopejs/dms@0.19.5':
+    resolution: {integrity: sha512-0qcDPDMiF+CJR6IYWtgWnU6s3vvwq8tAKV3wnYTR7WG/fpFigwHXKRxHQkMABc8WSFPFFwaXgyIKELOy4ZaCsA==}
     hasBin: true
     peerDependencies:
       '@antelopejs/core': '>=1.21.0 <2'
@@ -5234,14 +5237,15 @@ snapshots:
       semver: 7.8.5
       typescript: 5.9.3
 
-  '@antelopejs/dms-frontend@0.10.0(@antelopejs/core@1.21.0)':
+  '@antelopejs/dms-frontend@0.10.4(@antelopejs/core@1.21.0)':
     dependencies:
       '@antelopejs/core': 1.21.0
       '@intlify/message-compiler': 11.4.14
       chokidar: 4.0.3
       commander: 13.1.0
       ignore: 7.0.9
-      semver: 7.8.5
+      semver: 7.8.6
+      yaml: 2.9.1
     optionalDependencies:
       '@oxc-parser/binding-darwin-arm64': 0.95.0
       '@oxc-parser/binding-darwin-x64': 0.95.0
@@ -5249,7 +5253,7 @@ snapshots:
       '@oxc-parser/binding-linux-x64-gnu': 0.95.0
       '@oxc-parser/binding-win32-x64-msvc': 0.95.0
 
-  '@antelopejs/dms@0.19.4(@antelopejs/core@1.21.0)(bare-buffer@3.7.1)':
+  '@antelopejs/dms@0.19.5(@antelopejs/core@1.21.0)(bare-buffer@3.7.1)':
     dependencies:
       2fa: 0.1.2
       '@antelopejs/interface-api': 0.3.2(@antelopejs/interface-core@0.4.0)

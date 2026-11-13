@@ -75,8 +75,8 @@
   "devDependencies": {
     "@antelopejs/api": "^1.7.0",
     "@antelopejs/core": "1.21.0",
-    "@antelopejs/dms": ">=0.19.0 <1.0.0",
-    "@antelopejs/dms-frontend": ">=0.10.0 <1.0.0",
+    "@antelopejs/dms": ">=0.19.5 <1.0.0",
+    "@antelopejs/dms-frontend": ">=0.10.4 <1.0.0",
     "@antelopejs/interface-data-api": ">=0.6.0 <1.0.0",
     "@antelopejs/interface-database": ">=0.3.0 <1.0.0",
     "@antelopejs/interface-database-decorators": ">=0.3.1 <1.0.0",
