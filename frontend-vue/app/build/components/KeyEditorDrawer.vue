@@ -292,16 +292,16 @@ function knownInheritedOf(path: string) {
 }
 
 function settle(codes: string[], values: Record<string, string>) {
-  const rest = { ...drafts.value }
+  const rest = new Map(Object.entries(drafts.value))
   for (const code of codes) {
-    const isDone = rest[code] === values[code]
-    if (isDone) delete rest[code]
+    const isDone = rest.get(code) === values[code]
+    if (isDone) rest.delete(code)
     if (isDone) editStarts.end(code)
     else editStarts.set(code, storedText(values[code]))
     setFieldState(code, 'idle')
     states.flashSaved(code)
   }
-  drafts.value = rest
+  drafts.value = Object.fromEntries(rest)
 }
 
 function collect(codes: string[]) {

@@ -115,19 +115,22 @@ function useFlatRead(
     return id ? flatKey(id) : null
   }
   // The first run starts within the call, before its result is returned.
-  let held: FlatRead | undefined
+  const holder: { read?: FlatRead } = {}
   const read = useApiData<FlatTranslations>(
     key,
     ({ $authFetch, signal }): Promise<FlatTranslations> =>
       readFlat({
         workspace: toValue(workspace),
-        current: held && !held.placeholder.value ? held.data.value : null,
+        current:
+          holder.read && !holder.read.placeholder.value
+            ? holder.read.data.value
+            : null,
         authFetch: $authFetch,
         signal,
       }),
     { immediate: options.immediate, refreshOnPageRefresh: false },
   )
-  held = read
+  holder.read = read
   return read
 }
 
