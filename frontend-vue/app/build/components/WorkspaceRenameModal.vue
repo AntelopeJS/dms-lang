@@ -79,7 +79,7 @@ async function submit() {
               :label="$t('dms_lang.workspace_rename.before')"
               size="xs"
             />
-            <code class="text-muted font-mono text-xs break-all">
+            <code class="text-muted break-all font-mono text-xs">
               {{ links.publicLocaleUrl(props.workspace) }}
             </code>
           </div>
@@ -92,7 +92,7 @@ async function submit() {
               :label="$t('dms_lang.workspace_rename.after')"
               size="xs"
             />
-            <code class="text-highlighted font-mono text-xs break-all">
+            <code class="text-highlighted break-all font-mono text-xs">
               {{
                 links.publicLocaleUrl(check.normalized.value || props.workspace)
               }}

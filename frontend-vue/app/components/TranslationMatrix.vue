@@ -1,8 +1,15 @@
 <script setup lang="ts">
-import { DEFAULT_WORKSPACE, useI18nWorkspaces } from '../composables/translation/useI18nWorkspaces'
+import {
+  DEFAULT_WORKSPACE,
+  useI18nWorkspaces,
+} from '../composables/translation/useI18nWorkspaces'
 import { useKeyActions } from '../composables/translation/useKeyActions'
 import { useLangFormat } from '../composables/translation/useLangFormat'
-import { PAGE_ACTIONS, linkWithQuery, useLangLinks } from '../composables/translation/useLangLinks'
+import {
+  PAGE_ACTIONS,
+  linkWithQuery,
+  useLangLinks,
+} from '../composables/translation/useLangLinks'
 import { useLanguageActions } from '../composables/translation/useLanguageActions'
 import { useLocaleNames } from '../composables/translation/useLocaleNames'
 import { useWorkspaceContext } from '../composables/translation/useWorkspaceContext'
@@ -15,7 +22,10 @@ import {
 } from '@vueuse/core'
 import { useDmsRouter } from '#dms/frontend-module'
 import type { FlatTranslationRow, LanguageCoverage } from '../types/lang'
-import { useWorkspaceFlat, useWorkspaceFlatSync } from '../composables/translation/useWorkspaceFlat'
+import {
+  useWorkspaceFlat,
+  useWorkspaceFlatSync,
+} from '../composables/translation/useWorkspaceFlat'
 import { stringValue } from '../utils/translations'
 import PlaceholderText from '../build/components/PlaceholderText.vue'
 import MatrixCell from '../build/components/matrix/MatrixCell.vue'
@@ -27,10 +37,7 @@ import {
   useCellSaves,
   type CellAddress,
 } from '../build/composables/useCellSaves'
-import {
-  useCellEditor,
-  type CellRef,
-} from '../build/composables/useCellEditor'
+import { useCellEditor, type CellRef } from '../build/composables/useCellEditor'
 import {
   focusNeighbourCell,
   useCellMoves,
@@ -456,7 +463,7 @@ onBeforeUnmount(() => {
         v-for="group in view.rendered.value"
         :key="group.namespace"
       >
-        <div class="border-default border-b bg-(--dms-bg-muted) px-4 py-2">
+        <div class="border-default bg-(--dms-bg-muted) border-b px-4 py-2">
           <MatrixGroupHeader
             :namespace="group.namespace"
             :keys="group.keys"
@@ -485,7 +492,7 @@ onBeforeUnmount(() => {
           <p
             v-if="
               !compactColumn.isBase &&
-                !editor.isEditing(row.key, compactColumn.code)
+              !editor.isEditing(row.key, compactColumn.code)
             "
             class="text-dimmed line-clamp-3 text-xs"
           >
@@ -525,17 +532,17 @@ onBeforeUnmount(() => {
         @keydown="onGridKeydown"
       >
         <colgroup>
-          <col class="w-44 sm:w-64">
+          <col class="w-44 sm:w-64" />
           <col
             v-for="column in columns"
             :key="column.code"
             :class="todoLanguage ? 'w-[28rem]' : 'w-60'"
-          >
+          />
         </colgroup>
-        <thead class="sticky top-0 z-20 bg-(--dms-surface-card)">
+        <thead class="bg-(--dms-surface-card) sticky top-0 z-20">
           <tr>
             <th
-              class="border-default sticky left-0 z-10 border-r border-b bg-(--dms-surface-card) px-4 py-2.5 text-left shadow-[4px_0_6px_-4px_rgb(0_0_0/0.25)]"
+              class="border-default bg-(--dms-surface-card) sticky left-0 z-10 border-b border-r px-4 py-2.5 text-left shadow-[4px_0_6px_-4px_rgb(0_0_0/0.25)]"
             >
               <DmsEyebrow
                 :label="$t('dms_lang.matrix.key')"
@@ -545,7 +552,7 @@ onBeforeUnmount(() => {
             <th
               v-for="column in columns"
               :key="column.code"
-              class="border-default border-b border-l px-3 pt-2.5 pb-0 text-left font-normal"
+              class="border-default border-b border-l px-3 pb-0 pt-2.5 text-left font-normal"
             >
               <MatrixLanguageHeader
                 :column="column"
@@ -562,7 +569,7 @@ onBeforeUnmount(() => {
           <tr>
             <td
               :colspan="columns.length + 1"
-              class="border-default border-b bg-(--dms-bg-muted) py-1.5"
+              class="border-default bg-(--dms-bg-muted) border-b py-1.5"
             >
               <div class="sticky left-0 inline-block px-4">
                 <MatrixGroupHeader
@@ -581,7 +588,7 @@ onBeforeUnmount(() => {
             class="group/row align-top"
           >
             <td
-              class="border-default group-hover/row:bg-elevated/30 sticky left-0 z-10 border-r border-b bg-(--dms-surface-card) px-4 py-2.5 shadow-[4px_0_6px_-4px_rgb(0_0_0/0.25)]"
+              class="border-default group-hover/row:bg-elevated/30 bg-(--dms-surface-card) sticky left-0 z-10 border-b border-r px-4 py-2.5 shadow-[4px_0_6px_-4px_rgb(0_0_0/0.25)]"
             >
               <MatrixKeyCell
                 :row-key="row.key"
@@ -598,7 +605,9 @@ onBeforeUnmount(() => {
               :key="column.code"
               :data-row="rowIndex.get(row.key)"
               :data-col="columnIndex"
-              :data-editing="editor.isEditing(row.key, column.code) || undefined"
+              :data-editing="
+                editor.isEditing(row.key, column.code) || undefined
+              "
               class="border-default group-hover/row:bg-elevated/30 border-b border-l px-1.5 py-1"
             >
               <MatrixCell

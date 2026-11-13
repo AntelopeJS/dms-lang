@@ -473,7 +473,11 @@ function stayOnKey() {
 
 watch(
   () =>
-    [props.keys[props.startIndex], props.initialDrafts, props.workspace] as const,
+    [
+      props.keys[props.startIndex],
+      props.initialDrafts,
+      props.workspace,
+    ] as const,
   async ([target, , next], _previous, onCleanup) => {
     if (target === undefined) return
     if (target === key.value && next === workspace.value) {
@@ -599,7 +603,7 @@ onMounted(() => show(key.value))
             </span>
             <template v-else>{{ $t('dms_lang.drawer.autosave') }}</template>
           </span>
-          <span class="hidden items-center gap-1 @sm:inline-flex">
+          <span class="@sm:inline-flex hidden items-center gap-1">
             <ShortcutKbds :keys="KEY_PANEL_KEYS.saveNext" />
             {{ $t('dms_lang.drawer.save_next') }}
           </span>

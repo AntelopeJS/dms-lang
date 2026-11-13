@@ -135,7 +135,7 @@ function step(event: KeyboardEvent) {
         v-if="free.length"
         :label="$t('dms_lang.language_add.suggested', free.length)"
         size="xs"
-        class="px-2 pt-1 pb-1.5"
+        class="px-2 pb-1.5 pt-1"
       />
       <button
         v-for="option in free"
@@ -173,7 +173,7 @@ function step(event: KeyboardEvent) {
         <DmsEyebrow
           :label="$t('dms_lang.language_add.already_added')"
           size="xs"
-          class="px-2 pt-3 pb-1.5"
+          class="px-2 pb-1.5 pt-3"
         />
         <div
           v-for="option in added"
@@ -237,7 +237,9 @@ function step(event: KeyboardEvent) {
       <span
         v-else
         class="text-dimmed truncate"
-      >{{ props.placeholder }}</span>
+      >
+        {{ props.placeholder }}
+      </span>
     </template>
     <template #item-trailing="{ item }">
       <span class="text-dimmed font-mono text-xs">{{ item.value }}</span>

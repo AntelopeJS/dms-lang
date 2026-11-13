@@ -97,7 +97,7 @@ function onDrop(target: string) {
         <DmsEyebrow
           :label="$t('dms_lang.matrix.columns_hint')"
           size="xs"
-          class="px-2 pt-1.5 pb-2"
+          class="px-2 pb-2 pt-1.5"
         />
         <ul class="space-y-0.5">
           <li

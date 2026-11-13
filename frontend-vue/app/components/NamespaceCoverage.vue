@@ -148,7 +148,7 @@ usePageHeaderActions(() => [
 
     <div
       v-else
-      class="overflow-x-auto px-4 pt-3 pb-4"
+      class="overflow-x-auto px-4 pb-4 pt-3"
     >
       <div
         class="grid items-center gap-1.5"
@@ -183,7 +183,7 @@ usePageHeaderActions(() => [
             v-for="code in locales"
             :key="code"
             :to="cellLink(entry, code)"
-            class="grid h-8 place-items-center rounded-md font-mono text-xs font-semibold ring-1 transition-opacity ring-inset hover:opacity-80"
+            class="grid h-8 place-items-center rounded-md font-mono text-xs font-semibold ring-1 ring-inset transition-opacity hover:opacity-80"
             :class="HEAT_CLASSES[coverageTone(shownCoverage(entry, code))]"
             :title="cellLabel(entry, code)"
             :aria-label="cellLabel(entry, code)"

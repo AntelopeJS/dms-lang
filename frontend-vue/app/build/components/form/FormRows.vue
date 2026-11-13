@@ -24,7 +24,9 @@ const props = withDefaults(defineProps<FormRowsProps>(), {
       <span
         class="text-error"
         aria-hidden="true"
-      >*</span>
+      >
+        *
+      </span>
       {{ $t('dms.form.required_legend') }}
     </p>
   </div>

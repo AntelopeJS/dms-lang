@@ -25,7 +25,7 @@ const split = computed(() => props.rowKey.lastIndexOf(NAMESPACE_SEPARATOR) + 1)
   <div class="flex items-start gap-1.5">
     <button
       type="button"
-      class="hover:text-primary min-w-0 flex-1 text-left font-mono text-xs break-all"
+      class="hover:text-primary min-w-0 flex-1 break-all text-left font-mono text-xs"
       :title="$t('dms_lang.matrix.open_key')"
       @click="emit('open')"
     >
@@ -58,7 +58,7 @@ const split = computed(() => props.rowKey.lastIndexOf(NAMESPACE_SEPARATOR) + 1)
       color="neutral"
       variant="ghost"
       icon="i-ph-git-fork"
-      class="-my-1 shrink-0 opacity-0 transition-opacity group-hover/row:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
+      class="-my-1 shrink-0 opacity-0 transition-opacity focus-visible:opacity-100 group-hover/row:opacity-100 [@media(hover:none)]:opacity-100"
       :aria-label="$t('dms_lang.matrix.override_named', { key: props.rowKey })"
       :title="$t('dms_lang.override.action')"
       @click="emit('override')"

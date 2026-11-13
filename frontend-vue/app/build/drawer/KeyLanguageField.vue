@@ -112,11 +112,7 @@ const props = defineProps<{
         class="text-warning font-mono font-semibold uppercase"
       >
         {{
-          $t(
-            code === base
-              ? BASE_MISSING_LABEL
-              : FIELD_STATUS_LABELS.missing,
-          )
+          $t(code === base ? BASE_MISSING_LABEL : FIELD_STATUS_LABELS.missing)
         }}
       </span>
       <template v-else-if="statusOf(code) !== 'done'">
@@ -171,7 +167,7 @@ const props = defineProps<{
   />
   <div
     v-else
-    class="border-default rounded-md border bg-(--dms-bg-muted) px-3 py-2 text-sm"
+    class="border-default bg-(--dms-bg-muted) rounded-md border px-3 py-2 text-sm"
   >
     <PlaceholderText
       v-if="draftOf(code)"
@@ -180,7 +176,9 @@ const props = defineProps<{
     <span
       v-else
       class="text-dimmed"
-    >—</span>
+    >
+      —
+    </span>
     <p
       v-if="row.overrides?.[code]"
       class="text-dimmed border-default mt-2 border-t pt-2 text-xs"
@@ -245,11 +243,7 @@ const props = defineProps<{
       :key="issue.kind"
       class="flex flex-wrap items-center gap-x-3 gap-y-1"
     >
-      <span
-        :class="
-          issue.severity === 'error' ? 'text-error' : 'text-warning'
-        "
-      >
+      <span :class="issue.severity === 'error' ? 'text-error' : 'text-warning'">
         {{ messageIssueText(issue, t) }}
         <template v-if="issue.kind === 'missing'">
           {{
@@ -279,7 +273,7 @@ const props = defineProps<{
         <UButton
           v-if="
             issue.tokens.length === 1 &&
-              issueOfKind(code, 'extra')?.tokens.length === 1
+            issueOfKind(code, 'extra')?.tokens.length === 1
           "
           size="xs"
           color="error"
@@ -305,7 +299,7 @@ const props = defineProps<{
       <UButton
         v-else-if="
           issue.severity === 'error' &&
-            escapeMessage(draftOf(code)) !== draftOf(code)
+          escapeMessage(draftOf(code)) !== draftOf(code)
         "
         size="xs"
         color="error"
@@ -320,9 +314,9 @@ const props = defineProps<{
   <p
     v-else-if="
       props.editable &&
-        code !== base &&
-        baseText &&
-        statusOf(code) === 'missing'
+      code !== base &&
+      baseText &&
+      statusOf(code) === 'missing'
     "
     class="text-dimmed text-xs"
   >

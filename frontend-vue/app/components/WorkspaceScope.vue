@@ -2,7 +2,11 @@
 import { useFirstRun } from '../composables/translation/useFirstRun'
 import { useI18nWorkspaces } from '../composables/translation/useI18nWorkspaces'
 import { useLangFormat } from '../composables/translation/useLangFormat'
-import { PAGE_ACTIONS, PAGE_ACTION_QUERY, useLangLinks } from '../composables/translation/useLangLinks'
+import {
+  PAGE_ACTIONS,
+  PAGE_ACTION_QUERY,
+  useLangLinks,
+} from '../composables/translation/useLangLinks'
 import { useLanguageActions } from '../composables/translation/useLanguageActions'
 import { useLocaleNames } from '../composables/translation/useLocaleNames'
 import { useWorkspaceTypes } from '../composables/translation/useWorkspaceActions'
@@ -24,23 +28,12 @@ const MENU_FILTER_FIELDS = ['label', 'description', 'workspaceId', 'summary']
 const { t } = useI18n()
 const { formatCount } = useLangFormat()
 const { workspaces, editable, isLoaded, whenLoaded } = useI18nWorkspaces()
-const {
-  current,
-  isEditable,
-  isModules,
-  isAdded,
-  isUnknown,
-  isResolved,
-} = useWorkspaceContext()
+const { current, isEditable, isModules, isAdded, isUnknown, isResolved } =
+  useWorkspaceContext()
 const { labelOf } = useWorkspaceLabel()
 useLangChanges()
-const {
-  switchLink,
-  queryWorkspace,
-  pageAction,
-  clearPageAction,
-  currentPage,
-} = useWorkspaceRoute()
+const { switchLink, queryWorkspace, pageAction, clearPageAction, currentPage } =
+  useWorkspaceRoute()
 
 /** What the bar says about the workspace shown, from the workspace list. */
 const scope = computed(() => ({
@@ -205,7 +198,7 @@ watch(
     class="space-y-3"
   >
     <div
-      class="dms-card flex flex-wrap items-center gap-x-3.5 gap-y-2.5 py-2 pr-3.5 pl-2"
+      class="dms-card flex flex-wrap items-center gap-x-3.5 gap-y-2.5 py-2 pl-2 pr-3.5"
     >
       <UDropdownMenu
         :items="menuItems"
@@ -238,7 +231,7 @@ watch(
         </template>
         <button
           type="button"
-          class="hover:bg-elevated/60 hover:border-default flex h-11 items-center gap-2.5 rounded-md border border-transparent pr-2.5 pl-1.5 text-left transition-colors"
+          class="hover:bg-elevated/60 hover:border-default flex h-11 items-center gap-2.5 rounded-md border border-transparent pl-1.5 pr-2.5 text-left transition-colors"
           :aria-label="$t('dms_lang.scope.switch')"
         >
           <DmsIconWell
@@ -257,7 +250,7 @@ watch(
             />
             <span
               v-else
-              class="text-highlighted text-sm leading-tight font-semibold"
+              class="text-highlighted text-sm font-semibold leading-tight"
             >
               {{ workspaceLabel(current) }}
             </span>
@@ -382,4 +375,3 @@ watch(
     </DmsCard>
   </div>
 </template>
-

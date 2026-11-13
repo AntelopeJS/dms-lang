@@ -201,8 +201,7 @@ function resetForNext() {
 }
 
 function write(key: string): Promise<KeyRowResponse> {
-  if (isOverride.value)
-    return updateKey(props.workspace, key, written.value)
+  if (isOverride.value) return updateKey(props.workspace, key, written.value)
   return createKey(props.workspace, key, written.value)
 }
 

@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { useI18nWorkspaces } from '../../composables/translation/useI18nWorkspaces'
 import { useLocaleNames } from '../../composables/translation/useLocaleNames'
-import { serverErrorCode, useMutationToast } from '../../composables/translation/useMutationToast'
+import {
+  serverErrorCode,
+  useMutationToast,
+} from '../../composables/translation/useMutationToast'
 import { useWorkspaceFlat } from '../../composables/translation/useWorkspaceFlat'
 import { useWorkspaceLabel } from '../../composables/translation/useWorkspaceLabel'
 import LanguagePicker from './LanguagePicker.vue'
@@ -138,8 +141,8 @@ function close(added: boolean) {
             {{
               isInvalidCode
                 ? $t('dms_lang.language_add.invalid_code', {
-                  code: search.trim(),
-                })
+                    code: search.trim(),
+                  })
                 : $t('dms_lang.language_add.no_match')
             }}
           </template>
@@ -204,9 +207,9 @@ function close(added: boolean) {
           :label="
             selectedOption
               ? $t('dms_lang.language_add.submit_named', {
-                name: selectedOption.name,
-                code: selectedOption.code,
-              })
+                  name: selectedOption.name,
+                  code: selectedOption.code,
+                })
               : $t('dms_lang.language_add.submit')
           "
           @click="submit"
