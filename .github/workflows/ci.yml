@@ -17,7 +17,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-# Two independent jobs instead of one sequence: the pull request waits for
+# Parallel jobs on Linux and Windows: the pull request waits for
 # the slowest of them rather than for the sum of all steps. The branch
 # rulesets require the `ubuntu` check, which aggregates them.
 jobs:
@@ -38,30 +38,19 @@ jobs:
         pnpm-lock.yaml
       renovate-sync: false
       test-job: true
-    permissions:
-      contents: read
-
-  frontend:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - run: pnpm install --frozen-lockfile
+      windows: true
       # Builds and typechecks the frontend layer against the DMS layer from
       # the `@antelopejs/dms` devDependency: no running backend needed.
-      - run: pnpm test:frontend
+      extra-commands: pnpm test:frontend
+      extra-commands-job: true
+    permissions:
+      contents: read
 
   # The single check the branch rulesets require: green only when every job
   # above succeeded.
   ubuntu:
     if: always()
-    needs: [ci, frontend]
+    needs: [ci]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
