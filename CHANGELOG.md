@@ -1,5 +1,40 @@
 # Changelog
 
+## v0.7.0
+
+[compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.6.0...v0.7.0)
+
+### 🩹 Fixes
+
+- **deps:** Accept any zod 3.x from 3.24.2 so the project shares one zod copy ([#146](https://github.com/AntelopeJS/dms-lang/pull/146))
+- **frontend:** Use the component names of DMS 0.20 ([#147](https://github.com/AntelopeJS/dms-lang/pull/147))
+
+### 💅 Refactors
+
+- **frontend:** Lint auto-imported names against the DMS globals ([#141](https://github.com/AntelopeJS/dms-lang/pull/141))
+- **frontend:** Lint frontend-vue with the AntelopeJS Nuxt preset ([#142](https://github.com/AntelopeJS/dms-lang/pull/142))
+
+### 📖 Documentation
+
+- **changelog:** Breaking changes of dms-lang 0.6.0 ([#140](https://github.com/AntelopeJS/dms-lang/pull/140))
+
+### 📦 Build
+
+- **deps:** ⚠️  Move to DMS 0.20, interface-dms 0.14 and tooling-configs 0.7 ([#145](https://github.com/AntelopeJS/dms-lang/pull/145))
+
+### 🤖 CI
+
+- **frontend:** Check Prettier formatting in format:check ([#144](https://github.com/AntelopeJS/dms-lang/pull/144))
+- Run CI on Windows beside Linux ([#143](https://github.com/AntelopeJS/dms-lang/pull/143))
+
+#### ⚠️ Breaking Changes
+
+- **deps:** ⚠️  Move to DMS 0.20, interface-dms 0.14 and tooling-configs 0.7 ([#145](https://github.com/AntelopeJS/dms-lang/pull/145))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli ([@Upd4ting](http://github.com/Upd4ting))
+
 ## v0.6.0
 
 [compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.5.3...v0.6.0)
