@@ -2,3 +2,6 @@ packages:
   - .
   - frontend-vue
   - playground
+allowBuilds:
+  lefthook: false
+  mongodb-memory-server: false
