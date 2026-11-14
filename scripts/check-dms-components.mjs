@@ -7,7 +7,7 @@
  * the unknown tags only; exits 1 when there are any.
  */
 import { readdirSync, readFileSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
@@ -24,11 +24,12 @@ const DMS_ALIASES = ["ActivityFeedBlock", "SectionBlock", "FieldRowBlock"];
 /** @param {string} directory */
 function vueFiles(directory) {
   return readdirSync(directory, { recursive: true, encoding: "utf8" })
+    .map((path) => path.replaceAll(sep, "/"))
     .filter(
       (path) =>
         path.endsWith(".vue") && !path.split("/").includes("node_modules"),
     )
-    .map((path) => join(directory, path));
+    .map((path) => `${directory.replaceAll(sep, "/")}/${path}`);
 }
 
 /** @param {string} path */
