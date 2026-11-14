@@ -15,7 +15,7 @@
     "prepare-frontend": "ajs dms prepare",
     "format": "prettier --write .",
     "format:check": "prettier --check --log-level warn .",
-    "lint": "eslint . --max-warnings=0",
+    "lint": "eslint . --max-warnings=0 && node --input-type=module -e \"import { assertDmsComponents } from '@antelopejs/dms/checks/dms-components'; await assertDmsComponents({ layer: '.', sources: ['../src'] });\"",
     "lint:fix": "eslint . --fix"
   },
   "devDependencies": {
