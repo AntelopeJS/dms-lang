@@ -57,14 +57,14 @@ export default defineConfig({
       source: {
         type: "package",
         package: "@antelopejs/mongodb",
-        version: "1.6.2",
+        version: "1.8.1",
       },
     },
     "auth-jwt": {
       source: {
         type: "package",
         package: "@antelopejs/auth-jwt",
-        version: "1.0.3",
+        version: "1.1.2",
       },
       config: {
         secret: JWT_SECRET,
@@ -74,14 +74,14 @@ export default defineConfig({
       source: {
         type: "package",
         package: "@antelopejs/file-storage-local",
-        version: "0.1.13",
+        version: "0.2.1",
       },
     },
     nodemailer: {
       source: {
         type: "package",
         package: "@antelopejs/nodemailer",
-        version: "0.0.6",
+        version: "0.0.12",
       },
       config: {
         host: "127.0.0.1",
