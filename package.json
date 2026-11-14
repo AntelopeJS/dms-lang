@@ -70,7 +70,7 @@
     "@antelopejs/interface-core": ">=0.5.1 <0.6.0",
     "@antelopejs/interface-dms": ">=0.14.0 <0.15.0",
     "@intlify/message-compiler": "^11.1.12",
-    "zod": "~3.24.2"
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@antelopejs/api": "~1.7.4",
