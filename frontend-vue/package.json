@@ -7,7 +7,7 @@
   "license": "Apache-2.0",
   "packageManager": "pnpm@10.6.5",
   "engines": {
-    "@antelopejs/dms-frontend": ">=0.10.0 <0.11.0"
+    "@antelopejs/dms-frontend": ">=0.11.1 <0.12.0"
   },
   "scripts": {
     "build": "pnpm --dir ../playground exec ajs dms build",
@@ -19,10 +19,10 @@
     "lint:fix": "eslint . --fix"
   },
   "devDependencies": {
-    "@antelopejs/core": "1.21.0",
-    "@antelopejs/dms": ">=0.19.5 <1.0.0",
-    "@antelopejs/dms-frontend": ">=0.10.4 <0.11.0",
-    "@antelopejs/tooling-configs": "^0.5.1",
+    "@antelopejs/core": "~1.23.2",
+    "@antelopejs/dms": ">=0.20.0 <0.21.0",
+    "@antelopejs/dms-frontend": ">=0.11.1 <0.12.0",
+    "@antelopejs/tooling-configs": ">=0.7.1 <0.8.0",
     "@nuxt/eslint-config": "^1.17.0",
     "@vueuse/core": "^14.4.0",
     "eslint": "^9",
