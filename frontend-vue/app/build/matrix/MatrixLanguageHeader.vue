@@ -42,7 +42,7 @@ defineProps<{
       }}
     </span>
   </div>
-  <DmsMeter
+  <DmsMeterBar
     class="mt-2"
     :value="column.coverage"
     :max="100"

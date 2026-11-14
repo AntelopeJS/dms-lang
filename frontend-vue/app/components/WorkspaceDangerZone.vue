@@ -29,7 +29,7 @@ function remove() {
 </script>
 
 <template>
-  <DmsSection
+  <DmsSectionPanel
     v-if="canManage && !isUnknown"
     danger
     :title="$t('dms_lang.workspace.danger_title')"
@@ -81,5 +81,5 @@ function remove() {
         @click="remove"
       />
     </DmsFieldRow>
-  </DmsSection>
+  </DmsSectionPanel>
 </template>

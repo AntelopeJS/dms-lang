@@ -240,7 +240,7 @@ watch(
             size="sm"
           />
           <span class="grid gap-px">
-            <DmsEyebrow
+            <DmsEyebrowLabel
               :label="$t('dms_lang.scope.workspace')"
               size="xs"
             />
@@ -344,7 +344,7 @@ watch(
       </p>
     </div>
 
-    <DmsBanner
+    <DmsNoticeBanner
       v-if="showReadOnlyServer"
       tone="warning"
       size="sm"
@@ -353,7 +353,7 @@ watch(
       :description="$t('dms_lang.scope.server_read_only_description')"
     />
 
-    <DmsCard
+    <DmsCardPanel
       v-if="isFirstRun"
       :padded="false"
     >
@@ -372,6 +372,6 @@ watch(
           />
         </template>
       </DmsEmptyState>
-    </DmsCard>
+    </DmsCardPanel>
   </div>
 </template>

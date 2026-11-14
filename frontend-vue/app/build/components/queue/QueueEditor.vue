@@ -194,7 +194,7 @@ defineExpose({
       v-if="contextLocales.length"
       class="space-y-1"
     >
-      <DmsEyebrow
+      <DmsEyebrowLabel
         :label="$t('dms_lang.queue.context')"
         size="xs"
       />
@@ -238,7 +238,7 @@ defineExpose({
         </span>
       </div>
 
-      <DmsBanner
+      <DmsNoticeBanner
         v-if="conflict !== undefined"
         tone="warning"
         icon="i-ph-warning"
@@ -265,9 +265,9 @@ defineExpose({
             @click="save.overwrite"
           />
         </template>
-      </DmsBanner>
+      </DmsNoticeBanner>
 
-      <DmsBanner
+      <DmsNoticeBanner
         v-if="isOutdated && canEditValues && !drafts.has(props.row.key)"
         tone="warning"
         size="sm"
@@ -285,9 +285,9 @@ defineExpose({
             @click="save.markReviewed"
           />
         </template>
-      </DmsBanner>
+      </DmsNoticeBanner>
 
-      <DmsBanner
+      <DmsNoticeBanner
         v-if="!canEditValues"
         tone="info"
         size="sm"
@@ -311,7 +311,7 @@ defineExpose({
             :to="overrideLink"
           />
         </template>
-      </DmsBanner>
+      </DmsNoticeBanner>
 
       <UTextarea
         ref="textarea"

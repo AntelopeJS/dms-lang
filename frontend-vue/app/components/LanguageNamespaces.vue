@@ -20,7 +20,7 @@ function scope(target: string) {
 </script>
 
 <template>
-  <DmsCard
+  <DmsCardPanel
     v-if="!isUnknown && ((exists && !isBase) || !isLoaded)"
     :padded="false"
     :title="$t('dms_lang.language_namespaces.title')"
@@ -70,7 +70,7 @@ function scope(target: string) {
           <span class="text-highlighted truncate font-mono text-xs">
             {{ entry.namespace }}
           </span>
-          <DmsMeter
+          <DmsMeterBar
             :value="entry.coverage"
             :max="100"
             format="none"
@@ -101,5 +101,5 @@ function scope(target: string) {
         {{ $t('dms_lang.language_namespaces.hint') }}
       </p>
     </template>
-  </DmsCard>
+  </DmsCardPanel>
 </template>

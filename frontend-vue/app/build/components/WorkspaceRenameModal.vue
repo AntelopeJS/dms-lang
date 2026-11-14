@@ -75,7 +75,7 @@ async function submit() {
         </FormRows>
         <div class="border-default space-y-2 rounded-md border px-3 py-2.5">
           <div>
-            <DmsEyebrow
+            <DmsEyebrowLabel
               :label="$t('dms_lang.workspace_rename.before')"
               size="xs"
             />
@@ -88,7 +88,7 @@ async function submit() {
             class="text-dimmed size-3.5"
           />
           <div>
-            <DmsEyebrow
+            <DmsEyebrowLabel
               :label="$t('dms_lang.workspace_rename.after')"
               size="xs"
             />

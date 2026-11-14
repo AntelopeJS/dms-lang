@@ -121,7 +121,7 @@ usePageHeaderActions(() =>
 </script>
 
 <template>
-  <DmsSection
+  <DmsSectionPanel
     v-if="!isUnknown"
     :title="$t('dms_lang.workspace.general_title')"
     :description="
@@ -160,7 +160,7 @@ usePageHeaderActions(() =>
         :label="$t('dms_lang.workspace_details.description_label')"
         :description="$t('dms_lang.workspace_details.description_help')"
       >
-        <DmsTextarea
+        <DmsInputTextarea
           v-if="canEditDetails"
           v-model="description"
           :rows="DESCRIPTION_ROWS"
@@ -264,5 +264,5 @@ usePageHeaderActions(() =>
         @click="addLanguage()"
       />
     </DmsFieldRow>
-  </DmsSection>
+  </DmsSectionPanel>
 </template>

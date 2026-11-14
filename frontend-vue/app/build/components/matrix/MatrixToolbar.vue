@@ -132,7 +132,7 @@ watchDebounced(
       class="w-full"
       :aria-label="$t('dms_lang.matrix.filter_label')"
     />
-    <DmsSegmented
+    <DmsSegmentedControl
       v-else
       v-model="filterModel"
       :items="filterItems"

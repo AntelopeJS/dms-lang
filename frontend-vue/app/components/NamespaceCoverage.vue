@@ -108,7 +108,7 @@ usePageHeaderActions(() => [
 </script>
 
 <template>
-  <DmsCard
+  <DmsCardPanel
     v-if="!isUnknown && !isFirstRun"
     :padded="false"
     :title="$t('dms_lang.namespaces.title')"
@@ -244,5 +244,5 @@ usePageHeaderActions(() => [
         <span class="ml-auto">{{ $t('dms_lang.namespaces.legend') }}</span>
       </div>
     </template>
-  </DmsCard>
+  </DmsCardPanel>
 </template>
