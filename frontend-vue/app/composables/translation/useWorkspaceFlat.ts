@@ -7,7 +7,11 @@ import type {
   KeyRowResponse,
 } from '../../types/lang'
 import { EMPTY_FLAT, withRow } from '../../utils/coverage'
-import { ENDPOINTS, MODULES_WORKSPACE, useI18nWorkspaces } from './useI18nWorkspaces.ts'
+import {
+  ENDPOINTS,
+  MODULES_WORKSPACE,
+  useI18nWorkspaces,
+} from './useI18nWorkspaces.ts'
 
 /** Realtime topic the backend publishes on after each write. */
 export const LANG_REALTIME_TOPIC = 'dms-lang.translations'
@@ -133,7 +137,6 @@ function useFlatRead(
   holder.read = read
   return read
 }
-
 
 function recordChange(workspace: string, payload: ChangedPayload): void {
   const known = changedKeys.get(workspace)

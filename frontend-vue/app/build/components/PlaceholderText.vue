@@ -31,7 +31,7 @@ const parts = computed<TextPart[]>(() =>
 </script>
 
 <template>
-  <span class="break-words whitespace-pre-wrap">
+  <span class="whitespace-pre-wrap break-words">
     <template
       v-for="(part, index) in parts"
       :key="index"

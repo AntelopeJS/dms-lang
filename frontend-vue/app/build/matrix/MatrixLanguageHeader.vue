@@ -31,7 +31,7 @@ defineProps<{
     />
     <span
       v-else
-      class="text-dimmed ml-auto font-mono text-[10.5px] whitespace-nowrap"
+      class="text-dimmed ml-auto whitespace-nowrap font-mono text-[10.5px]"
     >
       {{
         $t(

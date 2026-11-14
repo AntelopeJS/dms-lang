@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { useLangFormat } from '../composables/translation/useLangFormat'
-import { PAGE_ACTIONS, useLangLinks } from '../composables/translation/useLangLinks'
-import { useWorkspaceActions, useWorkspaceTypes } from '../composables/translation/useWorkspaceActions'
+import {
+  PAGE_ACTIONS,
+  useLangLinks,
+} from '../composables/translation/useLangLinks'
+import {
+  useWorkspaceActions,
+  useWorkspaceTypes,
+} from '../composables/translation/useWorkspaceActions'
 import { useWorkspaceContext } from '../composables/translation/useWorkspaceContext'
 import { useWorkspaceLabel } from '../composables/translation/useWorkspaceLabel'
 import { useWorkspaceRoute } from '../composables/translation/useWorkspaceRoute'
@@ -15,7 +21,10 @@ import {
 } from '../utils/workspaces'
 import type { WorkspaceSort } from '../utils/workspaces'
 import LocaleTile from '../build/components/LocaleTile.vue'
-import { useI18nWorkspaces, useWorkspaceSummary } from '../composables/translation/useI18nWorkspaces'
+import {
+  useI18nWorkspaces,
+  useWorkspaceSummary,
+} from '../composables/translation/useI18nWorkspaces'
 
 interface WorkspaceStat {
   id: string
@@ -159,10 +168,7 @@ function kindPill(workspace: WorkspaceStats): WorkspacePill {
 }
 
 function labelsOf(workspace: WorkspaceStats): string[] {
-  return [
-    kindPill(workspace).label,
-    labelOf(workspace),
-  ]
+  return [kindPill(workspace).label, labelOf(workspace)]
 }
 
 function localeCodes(workspace: WorkspaceStats): string[] {
@@ -190,16 +196,17 @@ function create() {
   return createWorkspace()
 }
 
-usePageHeaderActions(() =>
-  canCreate.value
-    ? h(UButton, {
-        label: t('dms_lang.workspace_import.open'),
-        icon: 'i-ph-upload-simple',
-        color: 'neutral',
-        variant: 'outline',
-        onClick: importWorkspace,
-      })
-    : null,
+usePageHeaderActions(
+  () =>
+    canCreate.value
+      ? h(UButton, {
+          label: t('dms_lang.workspace_import.open'),
+          icon: 'i-ph-upload-simple',
+          color: 'neutral',
+          variant: 'outline',
+          onClick: importWorkspace,
+        })
+      : null,
   { order: -1 },
 )
 
@@ -212,7 +219,6 @@ watch(
   },
   { immediate: true },
 )
-
 </script>
 
 <template>
@@ -338,7 +344,7 @@ watch(
               <p class="text-muted mt-0.5 line-clamp-2 text-xs">
                 {{
                   workspace.description ||
-                    $t(`dms_lang.workspace_kinds.${workspace.kind}.description`)
+                  $t(`dms_lang.workspace_kinds.${workspace.kind}.description`)
                 }}
               </p>
             </div>
@@ -375,7 +381,7 @@ watch(
             <span
               v-for="code in localeCodes(workspace)"
               :key="code"
-              class="border-default inline-flex items-center gap-1.5 rounded-md border py-0.5 pr-2 pl-0.5 font-mono text-xs"
+              class="border-default inline-flex items-center gap-1.5 rounded-md border py-0.5 pl-0.5 pr-2 font-mono text-xs"
             >
               <LocaleTile
                 :code="code"
@@ -448,7 +454,7 @@ watch(
       <button
         v-if="isLoaded && canCreate"
         type="button"
-        class="border-default text-muted hover:border-primary/50 hover:text-highlighted flex min-h-56 flex-col items-center justify-center gap-3 rounded-(--dms-radius-card) border border-dashed p-6 text-center transition-colors"
+        class="border-default text-muted hover:border-primary/50 hover:text-highlighted rounded-(--dms-radius-card) flex min-h-56 flex-col items-center justify-center gap-3 border border-dashed p-6 text-center transition-colors"
         @click="create"
       >
         <DmsIconWell

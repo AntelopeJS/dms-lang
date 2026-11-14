@@ -372,7 +372,9 @@ function escapeDraft() {
       <span
         v-else
         class="text-dimmed italic"
-      >—</span>
+      >
+        —
+      </span>
     </button>
     <p class="text-error flex items-start gap-1 text-xs">
       <UIcon
@@ -468,7 +470,7 @@ function escapeDraft() {
       class="flex items-center gap-2"
     >
       <span
-        class="text-warning font-mono text-[10px] font-bold tracking-wider uppercase"
+        class="text-warning font-mono text-[10px] font-bold uppercase tracking-wider"
       >
         {{
           props.isBase
@@ -486,7 +488,9 @@ function escapeDraft() {
     <span
       v-else-if="isMissing"
       class="text-dimmed italic"
-    >—</span>
+    >
+      —
+    </span>
     <span
       v-else-if="props.override"
       class="block space-y-0.5"

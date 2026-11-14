@@ -5,7 +5,10 @@ import { useLocaleNames } from '../composables/translation/useLocaleNames'
 import { useQueueSession } from '../composables/translation/useQueueSession'
 import { useWorkspaceContext } from '../composables/translation/useWorkspaceContext'
 import { useWorkspaceLabel } from '../composables/translation/useWorkspaceLabel'
-import { useWorkspaceFlat, useWorkspaceFlatSync } from '../composables/translation/useWorkspaceFlat'
+import {
+  useWorkspaceFlat,
+  useWorkspaceFlatSync,
+} from '../composables/translation/useWorkspaceFlat'
 import UButton from '@nuxt/ui/components/Button.vue'
 import UDropdownMenu from '@nuxt/ui/components/DropdownMenu.vue'
 import { useDmsRouter } from '#dms/frontend-module'
@@ -148,9 +151,7 @@ const canManageLanguage = computed(
     !isBase.value,
 )
 
-usePageHeaderActions(() =>
-  canManageLanguage.value ? languageMenu() : null,
-)
+usePageHeaderActions(() => (canManageLanguage.value ? languageMenu() : null))
 
 onBeforeUnmount(() => clearTimeout(urlTimer))
 </script>

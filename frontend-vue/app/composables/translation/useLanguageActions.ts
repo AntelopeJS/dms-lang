@@ -58,7 +58,9 @@ async function openAddModal(context: LanguageActionsContext): Promise<boolean> {
       props: {
         workspace: context.workspaces.selectedWorkspace.value,
         existing: codesOf(context),
-        baseName: context.nativeName(context.current.value?.defaultLocale ?? ''),
+        baseName: context.nativeName(
+          context.current.value?.defaultLocale ?? '',
+        ),
       },
     })
     return (await modal.open()) === true
@@ -137,7 +139,9 @@ async function makeBase(
   await context.translations.refresh()
   notify(
     context,
-    context.t('dms_lang.language_base.done', { name: context.nativeName(code) }),
+    context.t('dms_lang.language_base.done', {
+      name: context.nativeName(code),
+    }),
   )
   return true
 }

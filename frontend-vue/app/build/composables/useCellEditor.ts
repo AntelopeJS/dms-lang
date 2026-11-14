@@ -83,7 +83,12 @@ function trackDraft(
   context.isDirty.value = text !== context.options.shownValue(key, code)
 }
 
-function open(context: EditorContext, key: string, code: string, draft: string) {
+function open(
+  context: EditorContext,
+  key: string,
+  code: string,
+  draft: string,
+) {
   context.editing.value = { key, code, draft }
   trackDraft(context, key, code, draft)
 }
@@ -139,7 +144,12 @@ function startEdit(
   options.saves.begin(address)
   context.opened.workspace = options.workspace.value
   context.opened.isBase = code === options.baseLocale()
-  open(context, key, code, draft ?? failure?.draft ?? options.shownValue(key, code))
+  open(
+    context,
+    key,
+    code,
+    draft ?? failure?.draft ?? options.shownValue(key, code),
+  )
   context.cursor.value = { key, code }
   options.onStart(key)
 }

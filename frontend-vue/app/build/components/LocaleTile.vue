@@ -43,7 +43,7 @@ const letters = computed(() => tileOf(props.code, props.siblings))
       SIZE_CLASSES[props.size],
       letters.length > SHORT_TILE_LENGTH ? WIDE_PADDING[props.size] : '',
       props.isBase
-        ? 'text-primary bg-(--dms-accent-tint-strong) ring-1 ring-(--dms-accent-line) ring-inset'
+        ? 'text-primary bg-(--dms-accent-tint-strong) ring-(--dms-accent-line) ring-1 ring-inset'
         : 'bg-elevated text-toned ring-accented ring-1 ring-inset',
     ]"
     aria-hidden="true"
