@@ -24,7 +24,7 @@ jobs:
   # `pnpm run checks`: typecheck, lint, format, knip, the backend and node
   # tests (one build), size, ratchet and sync.
   ci:
-    uses: AntelopeJS/.github/.github/workflows/ci-node.yml@v1
+    uses: AntelopeJS/.github/.github/workflows/ci-node.yml@7a3507e8969bcd381f6773d34c74302d576d702c
     with:
       docs-files: |
         README.md
