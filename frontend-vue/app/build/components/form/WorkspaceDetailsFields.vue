@@ -21,7 +21,7 @@ const { typeItems, typeOf, descriptionMax } = useWorkspaceTypes()
     :help="$t('dms_lang.workspace_details.description_help')"
   >
     <template #default="{ id }">
-      <DmsTextarea
+      <DmsInputTextarea
         :id="id"
         v-model="description"
         :rows="DESCRIPTION_ROWS"

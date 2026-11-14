@@ -16,7 +16,7 @@ const { upNext, drafts, baseLocale } = session
       :key="entry.row.key"
       class="grid grid-cols-[4rem_minmax(0,16rem)_minmax(0,1fr)] items-center gap-3 px-4 py-2"
     >
-      <DmsEyebrow
+      <DmsEyebrowLabel
         v-if="offset === 0"
         :label="$t('dms_lang.queue.up_next')"
         size="xs"

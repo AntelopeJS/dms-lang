@@ -131,7 +131,7 @@ function step(event: KeyboardEvent) {
       role="listbox"
       class="max-h-80 space-y-0.5 overflow-y-auto"
     >
-      <DmsEyebrow
+      <DmsEyebrowLabel
         v-if="free.length"
         :label="$t('dms_lang.language_add.suggested', free.length)"
         size="xs"
@@ -170,7 +170,7 @@ function step(event: KeyboardEvent) {
         />
       </button>
       <template v-if="added.length">
-        <DmsEyebrow
+        <DmsEyebrowLabel
           :label="$t('dms_lang.language_add.already_added')"
           size="xs"
           class="px-2 pb-1.5 pt-3"

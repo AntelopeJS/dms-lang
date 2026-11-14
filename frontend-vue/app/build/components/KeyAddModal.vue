@@ -280,7 +280,7 @@ async function submit() {
               />
             </template>
             <template #default="{ id }">
-              <DmsTextarea
+              <DmsInputTextarea
                 :id="id"
                 :model-value="valueOf(code)"
                 :rows="code === props.baseLocale ? 2 : 1"
@@ -321,7 +321,7 @@ async function submit() {
     </template>
     <template #footer>
       <div class="flex w-full items-center gap-2">
-        <DmsCheckbox
+        <DmsInputCheckbox
           v-model="addAnother"
           :label="$t('dms_lang.key_add.add_another')"
         />

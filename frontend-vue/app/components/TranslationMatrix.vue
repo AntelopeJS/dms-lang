@@ -367,7 +367,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <DmsCard
+  <DmsCardPanel
     v-if="!isUnknown"
     ref="root"
     :padded="false"
@@ -397,7 +397,7 @@ onBeforeUnmount(() => {
       v-if="isModules"
       class="p-3"
     >
-      <DmsBanner
+      <DmsNoticeBanner
         tone="warning"
         size="sm"
         icon="i-ph-lock-simple"
@@ -544,7 +544,7 @@ onBeforeUnmount(() => {
             <th
               class="border-default bg-(--dms-surface-card) sticky left-0 z-10 border-b border-r px-4 py-2.5 text-left shadow-[4px_0_6px_-4px_rgb(0_0_0/0.25)]"
             >
-              <DmsEyebrow
+              <DmsEyebrowLabel
                 :label="$t('dms_lang.matrix.key')"
                 size="xs"
               />
@@ -641,5 +641,5 @@ onBeforeUnmount(() => {
       :is-compact="isCompact"
       :format-count="formatCount"
     />
-  </DmsCard>
+  </DmsCardPanel>
 </template>

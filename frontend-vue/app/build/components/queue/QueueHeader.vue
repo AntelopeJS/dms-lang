@@ -104,7 +104,7 @@ const draftLinks = computed(() => drafts.elsewhere.value.map(draftLink))
         :siblings="flat.locales"
       />
       <div class="grid min-w-0 gap-px">
-        <DmsEyebrow
+        <DmsEyebrowLabel
           :label="$t('dms_lang.queue.title')"
           size="xs"
         />
@@ -152,7 +152,7 @@ const draftLinks = computed(() => drafts.elsewhere.value.map(draftLink))
       />
     </div>
     <div class="flex flex-wrap items-center gap-3">
-      <DmsMeter
+      <DmsMeterBar
         class="min-w-24 flex-1"
         :value="session.progress.value"
         :max="100"
@@ -171,7 +171,7 @@ const draftLinks = computed(() => drafts.elsewhere.value.map(draftLink))
         :aria-label="$t('dms_lang.queue.scope_clear', { namespace })"
         @click="namespace = ''"
       />
-      <DmsSegmented
+      <DmsSegmentedControl
         v-model="mode"
         :items="modeItems"
         size="xs"

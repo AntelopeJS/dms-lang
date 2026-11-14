@@ -223,7 +223,7 @@ watch(
 
 <template>
   <div class="space-y-4">
-    <DmsBanner
+    <DmsNoticeBanner
       v-if="isLoaded && !editable"
       tone="info"
       icon="i-ph-lock-simple"
@@ -233,7 +233,7 @@ watch(
       <template #actions>
         <DmsCopyButton :value="EDITABLE_CONFIG" />
       </template>
-    </DmsBanner>
+    </DmsNoticeBanner>
 
     <DmsEmptyState
       v-if="hasError && !isLoaded"
@@ -296,7 +296,7 @@ watch(
 
     <div class="grid gap-4 lg:grid-cols-2">
       <template v-if="!isLoaded && !hasError">
-        <DmsCard
+        <DmsCardPanel
           v-for="index in 4"
           :key="index"
           padded
@@ -306,10 +306,10 @@ watch(
             <USkeleton class="h-10 w-full" />
             <USkeleton class="h-6 w-2/3" />
           </div>
-        </DmsCard>
+        </DmsCardPanel>
       </template>
 
-      <DmsCard
+      <DmsCardPanel
         v-for="workspace in shown"
         :key="workspace.id"
         :padded="false"
@@ -363,7 +363,7 @@ watch(
               v-for="stat in statsOf(workspace)"
               :key="stat.id"
             >
-              <DmsEyebrow
+              <DmsEyebrowLabel
                 as="dt"
                 :label="stat.label"
                 size="xs"
@@ -449,7 +449,7 @@ watch(
             />
           </div>
         </template>
-      </DmsCard>
+      </DmsCardPanel>
 
       <button
         v-if="isLoaded && canCreate"

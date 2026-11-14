@@ -38,9 +38,9 @@ wins; the DMS itself declares `>=0.4.0 <0.5.0` because it is the implementer.
   registered: every screen is a backend page.
 - `useConfirm()` takes `color`, not `confirmColor`.
 - `build/` components of the DMS are private: the module only uses root
-  components (`DmsCard`, `DmsStatGroup`, `DmsMeter`, `DmsEmptyState`,
-  `DmsBanner`, `DmsSection`, `DmsFieldRow`, `DmsSegmented`, `DmsStatusPill`,
-  `DmsIconWell`, `DmsSectionHeader`, `DmsEyebrow`, `DmsCopyButton`,
+  components (`DmsCardPanel`, `DmsStatGroup`, `DmsMeterBar`, `DmsEmptyState`,
+  `DmsNoticeBanner`, `DmsSectionPanel`, `DmsFieldRow`, `DmsSegmentedControl`, `DmsStatusPill`,
+  `DmsIconWell`, `DmsSectionHeader`, `DmsEyebrowLabel`, `DmsCopyButton`,
   `DmsCheckList`, `DmsKeyValueList`) and public composables (`useConfirm`,
   `usePageHeaderActions`, `useRegionalFormat`, `useAuthFetch`, …).
 
@@ -158,7 +158,7 @@ links to the matrix filtered on that namespace and language.
 - Loading: skeleton rows, the layout never jumps.
 - Load failure: `DmsEmptyState` `variant="error"` with "Try again", previous
   numbers hidden.
-- Modules workspace: a warning `DmsBanner` "Keys shipped by installed modules"
+- Modules workspace: a warning `DmsNoticeBanner` "Keys shipped by installed modules"
   with "Browse keys".
 
 ## 5. Translations matrix
@@ -242,7 +242,7 @@ locales, key count, per-locale coverage and missing counts, and the override
 count of the project files: one request instead of one `/flat` per workspace.
 
 **Q7.2 Workspace settings?**
-`DmsSection` + `DmsFieldRow` rows: name (with Rename…), base language (select,
+`DmsSectionPanel` + `DmsFieldRow` rows: name (with Rename…), base language (select,
 saved instantly), languages (coverage bars, overflow per language, Add
 language), "Use in your app" with i18next / fetch / curl snippets, danger zone
 (rename, delete). The About card is a `DmsKeyValueList`.
