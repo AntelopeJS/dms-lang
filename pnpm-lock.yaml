@@ -21,7 +21,7 @@ importers:
         specifier: ^11.1.12
         version: 11.4.14
       zod:
-        specifier: ~3.24.2
+        specifier: ^3.24.2
         version: 3.24.4
     devDependencies:
       '@antelopejs/api':
