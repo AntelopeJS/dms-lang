@@ -9,7 +9,7 @@ import {
 } from "node:fs";
 import { registerHooks } from "node:module";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { after, before, test } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { backendBoundary } from "../frontend-vue/build/backend-boundary.ts";
@@ -121,6 +121,7 @@ function resolver(request, id) {
 
 const backendFile = () => join(repository, "dms-lang/src/backend.ts");
 const BOUNDARY = /Backend boundary/;
+const NAMED_FILES = /Backend boundary: (.+) imports (.+), which is under/;
 
 void test("the build fails on an import of the backend source, naming both files", async () => {
   const failure = build(
@@ -128,9 +129,10 @@ void test("the build fails on an import of the backend source, naming both files
   );
   await assert.rejects(failure, (error) => {
     assert.ok(error instanceof Error);
-    assert.match(error.message, BOUNDARY);
-    assert.ok(error.message.includes(join(frontend, "entry.ts")));
-    assert.ok(error.message.includes(backendFile()));
+    const named = NAMED_FILES.exec(error.message);
+    assert.ok(named, error.message);
+    assert.equal(resolve(named[1]), join(frontend, "entry.ts"));
+    assert.equal(resolve(named[2]), backendFile());
     return true;
   });
 });
