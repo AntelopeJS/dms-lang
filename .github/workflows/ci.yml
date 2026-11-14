@@ -31,7 +31,6 @@ jobs:
         docs
         playground/README.md
       cache-paths: |
-        .antelope/cache
         ~/.cache/mongodb-binaries
       cache-key-files: |
         src/test/harness.ts
