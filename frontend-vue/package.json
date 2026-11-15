@@ -15,12 +15,12 @@
     "prepare-frontend": "ajs dms prepare",
     "format": "prettier --write .",
     "format:check": "prettier --check --log-level warn .",
-    "lint": "eslint . --max-warnings=0",
+    "lint": "eslint . --max-warnings=0 && node --input-type=module -e \"import { assertDmsComponents } from '@antelopejs/dms/checks/dms-components'; await assertDmsComponents({ layer: '.', sources: ['../src'] });\"",
     "lint:fix": "eslint . --fix"
   },
   "devDependencies": {
     "@antelopejs/core": "~1.23.2",
-    "@antelopejs/dms": ">=0.20.0 <0.21.0",
+    "@antelopejs/dms": ">=0.20.1 <0.21.0",
     "@antelopejs/dms-frontend": ">=0.11.1 <0.12.0",
     "@antelopejs/tooling-configs": ">=0.7.1 <0.8.0",
     "@nuxt/eslint-config": "^1.17.0",
