@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.7.1
+
+[compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.7.0...v0.7.1)
+
+### 💅 Refactors
+
+- **lint:** Use the shared assertDmsComponents check of @antelopejs/dms ([#148](https://github.com/AntelopeJS/dms-lang/pull/148))
+
+### 📦 Build
+
+- Move to @antelopejs/tooling-configs 0.8 and the three-tier CI ([#150](https://github.com/AntelopeJS/dms-lang/pull/150))
+
+### 🏡 Chore
+
+- **deps:** Move to the batch-cursor mongodb driver and the 15 November releases ([#149](https://github.com/AntelopeJS/dms-lang/pull/149))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli
+
 ## v0.7.0
 
 [compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.6.0...v0.7.0)
