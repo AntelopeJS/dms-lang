@@ -6,6 +6,7 @@ import { freshId, guarded, lang, pick, raw, recordRaw } from "../lang.mjs";
 export const journeys = guarded([
   {
     id: "smoke",
+    tag: "@smoke",
     title: "an owner creates a workspace, adds French and a key, translates it in the matrix, and the public URL serves the message",
     entryPoint: "Workspaces > New workspace, Add language, Add key, a matrix cell",
     async run(/** @type {Ctx} */ ctx) {

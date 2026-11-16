@@ -5,7 +5,7 @@ description: "Drive the AntelopeJS dms-lang module (translation workspaces, the 
 
 # Verify dms-lang
 
-Every deterministic step is a `dms-control` command. You choose which journeys to run and judge what they show; you never write a multi-step shell recipe. When a journey you need does not exist, add it to `journeys/<feature>.mjs`, describe it in its feature file, and run it.
+Every deterministic step is a `dms-control` command. You choose which journeys to run and judge what they show; you never write a multi-step shell recipe. When a journey you need does not exist, add it to `e2e/journeys/<feature>.mjs`, describe it in its feature file, and run it.
 
 `dms-control` is the bin of `@antelopejs/dms`, a devDependency of this module. Run it from the repository root with Node 24 after `pnpm install`.
 
@@ -20,7 +20,7 @@ $C                       # lists every command
 RUN=$($C up --prepare)   # installs, builds, starts; prints the run folder
 ```
 
-`--prepare` first runs the `prepare` commands of `verify.config.ts` (the frozen install, the module build, `playwright-core` into this folder and the link to the repository playground's `node_modules`); without it `up` uses the builds already there, and `doctor` fails on a stale one. `up` reads the playground from `verify.config.ts` (`playground/` in this folder: the DMS, the api, the database, auth, file storage and mail modules, the module under verification as a `local` source at the repository root, and a small app module of its own that flags its frontend module as the writable project files) and starts an isolated DMS:
+`--prepare` first runs the `prepare` commands of `verify.config.ts` (the frozen install, the module build and the link to the repository playground's `node_modules`); without it `up` uses the builds already there, and `doctor` fails on a stale one. `up` reads the playground from `verify.config.ts` (`playground/` in this folder: the DMS, the api, the database, auth, file storage and mail modules, the module under verification as a `local` source at the repository root, and a small app module of its own that flags its frontend module as the writable project files) and starts an isolated DMS:
 
 - the checkout is laid out again under `$RUN/root`, every sibling linked, and the playground copied without `node_modules`, `.antelope` and `.dms-frontend`, so the run's build and `.antelope/` are its own, and the module's `dist` and the repository stay the real ones;
 - the API, the dashboard and the mail sink get free ports from the kernel, and `HOME` is `$RUN/home`;
@@ -46,8 +46,10 @@ $C journey "$RUN" smoke
 $C journey "$RUN" matrix [journey-id...]
 ```
 
-- Each feature file in [features/](features/README.md) lists its source globs (`covers:`), its docs pages (`docs:`) and its journeys; the journeys are in `journeys/<feature>.mjs`, with the helpers they share in `lang.mjs`.
-- A journey starts on an empty database of the run (the backend restarts on it) with the administrator onboarded, unless it says otherwise (`package` keeps the current one). The created workspaces are files under the run's `HOME`, and the project files are the locale files of the run's copy of the playground: a journey uses fresh workspace ids and puts the project files back. It drives the dashboard by ARIA role and name through playwright-core, one browser context per account, and reads every mutation back through a second view: a reload, the API, another account's tab, the captured mail, or a backend restart.
+- Each feature file in [features/](features/README.md) lists its source globs (`covers:`), its docs pages (`docs:`) and its journeys; the journeys are in `e2e/journeys/<feature>.mjs` at the repository root (the `journeys` folder of `verify.config.ts`), with the helpers they share in `e2e/lang.mjs` and `e2e/files.mjs`.
+- A journey may set `tag` (Playwright tags such as `"@smoke"`, the set the full CI tier runs), `knownFailures`, which maps the name of each check that fails today to the finding that makes it fail, and `last: true` when it changes the run's playground for later backends. A listed check that fails is `known` and does not fail the journey; a listed check that passes is `fixed` and fails the journey until the entry is removed.
+- The same journeys run as the Playwright suite of `e2e/`, which CI runs (`@smoke` on a ready pull request to `main`, every journey nightly): `pnpm e2e` prepares and starts a run, runs every journey on it and stops it; `pnpm e2e -g <feature or journey id>` or `--grep @smoke` narrows it. `DMS_E2E_PREBUILT=1` skips the prepare commands, and `DMS_E2E_RUN=$RUN` drives a run you started with `up`, which it leaves running. Failed journeys keep their evidence under the run, and the report attaches each failed step's screenshot and ARIA snapshot and the backend log.
+- A journey starts on an empty database of the run (the backend restarts on it) with the administrator onboarded, unless it says otherwise (`package` keeps the current one). The created workspaces are files under the run's `HOME`, and the project files are the locale files of the run's copy of the playground: a journey uses fresh workspace ids and puts the project files back. It drives the dashboard by ARIA role and name through Playwright, one browser context per account, and reads every mutation back through a second view: a reload, the API, another account's tab, the captured mail, or a backend restart.
 - To look at the product yourself, use these commands, each a single step on the run's long-lived browser or API:
 
 | Command | What it does |
@@ -87,60 +89,32 @@ $C down "$RUN"
 
 ## Verdict rules
 
-1. **Run every feature whose `covers:` globs the diff touches, plus the smoke journey** (sign in, create a workspace, add French and a key, translate it, read it back from the public URL). `plan` prints that list as `run`. A diff that changes a shared file (the `shared` globs of `verify.config.ts`: the package and workspace files, the lockfile, the `.npmrc` files, the module's entry, its page and route indexes, the translations routes, the frontend entry, build manifest and locale files, every file that code or journeys of four or more features import, explicitly or through the frontend's auto-imports, and this skill's helpers and playground) runs every feature, and `plan` lists those files under `shared`. Before a release, run every feature too. A `dms-control` older than the release that reads `shared` prints a plan with no `shared` field and only the touched features: compare `changed` with the `shared` globs yourself and run every feature when one matches. That `verdict` reads only the features in `run`, so it does not see the others you ran: a failing journey among them fails the verdict anyway. List it under `attention` and report the failure in your reply. Each feature also covers its own journey file and the parts only it uses, so a change to them runs that feature.
+State the verdict in your own reply. Start it with the result, then the doors, then what each rule below showed.
+
+1. **Run every feature whose `covers:` globs the diff touches, plus the smoke journey** (sign in, create a workspace, add French and a key, translate it, read it back from the public URL). `plan` prints that list as `run`. A diff that changes a shared file (the `shared` globs of `verify.config.ts`: the package and workspace files, the lockfile, the `.npmrc` files, the module's entry, its page and route indexes, the translations routes, the frontend entry, build manifest and locale files, every file that code or journeys of four or more features import, explicitly or through the frontend's auto-imports, and the journeys' helpers and this skill's playground) runs every feature, and `plan` lists those files under `shared`. A release runs every feature too (`plan --all`). Each feature also covers its own journey file and the parts only it uses, so a change to them runs that feature. A journey of those features that did not run fails the verdict.
 2. **Unmapped surface fails the verdict.** User-facing code is `src/**`, `frontend-vue/**`, `skills/**` and `package.json`, tests and tool configs excluded (`verify.config.ts`). A changed file there that no feature glob covers is an unmapped surface: the PR adds it to a feature with its journeys. `map` checks the whole tree.
-3. **Every registered journey of a feature in `run` must have run and passed.** A missing journey fails as "not run", so run whole features. Known findings stay as failing journeys (see the feature files' Gotchas): they fail a verdict only when the verdict covers their feature, which a shared file makes every feature.
-4. **Docs.** Each touched feature lists its `docs:` pages. Judge every page against what the journeys showed. A page that no longer matches fails the verdict.
+3. **Every registered journey of a feature in `run` must have run and passed.** A missing journey fails as "not run", so run whole features. A known finding is listed in its journey's `knownFailures` (see the feature files' Gotchas): its check reads `known` and does not fail the journey. Name each one in the reply as a note.
+4. **Docs.** Each touched feature lists its `docs:` pages. Judge every page against what the journeys showed, and name in the reply each page and whether it matches. A page that no longer matches fails the verdict.
 5. **Formal checks.** Run `$C formal "$RUN"`. `verify.config.ts` lists one check, `key-writes`, which proves for every set of up to two project files that each key write the API accepts lands in the file the docs name and leaves the dashboard showing what the docs promise. It runs when the diff touches a file it covers, and fails the verdict when a rule newly fails, a rule the base checks is dropped, or the check no longer matches its record. How to read its output is in [`../verify-dms-lang-key-writes/SKILL.md`](../verify-dms-lang-key-writes/SKILL.md).
-6. **One-way doors.** The section comes right after the result line and is mandatory; a verdict without it is void. It holds `None` with a reason, or one row per door: kind, location, what cannot be undone, containment. `$C doors` prints the `One-way-door:` line for the diff from the path rules in `verify.config.ts`. Every file they flag needs a row, or a `falsePositives` entry saying why it is not a door.
-7. **Result.** FAIL if any of rules 1 to 6 fail. PASS+NOTES when something is not verified or needs the owner's attention. PASS otherwise.
+6. **One-way doors.** The reply lists them right after the result line, and a reply without the list is void. It holds `None` with a reason, or one row per door: kind, location, what cannot be undone, containment. `$C doors` prints the `One-way-door:` line for the diff from the path rules in `verify.config.ts`. Every file they flag needs a row, or a sentence saying why it is not a door.
+7. **Result.** FAIL if any of rules 1 to 6 fail. PASS+NOTES when something is not verified or needs the owner's attention: list what no journey reached (at least the [Not driven](#not-driven) items the change touches), and why, and what the owner should look at that the skill cannot judge. PASS otherwise.
 
-Write your judgement to `$RUN/evidence/judgement.json`:
+A new push voids the verdict: verify again on the new head. Nothing is posted to GitHub.
 
-```json
-{
-  "doors": {
-    "none": "the diff changes only the verification skill",
-    "rows": [],
-    "falsePositives": [{ "kind": "contract", "location": "package.json", "reason": "only a devDependency changed" }]
-  },
-  "docs": [{ "page": "docs/4.usage/2.translation-matrix.md", "matches": true, "note": "" }],
-  "notVerified": ["What no journey reached, and why"],
-  "attention": ["What the owner should look at that the skill cannot judge"],
-  "verifier": "the fresh verifier thread's URL; it did not write the change"
-}
-```
-
-A door row is `{ "kind", "location", "irreversible", "containment" }`, where `kind` is a `doors` key of `verify.config.ts`. `verifier` is required.
-
-Then render the verdict:
-
-```bash
-$C verdict "$RUN" --pr <n>      # writes evidence/verdict.md; exit 1 on FAIL
-```
-
-- `verdict` computes the result from `feature.json`, the plan, the formal results and the judgement, and writes it to `evidence/verdict.md`.
-- Report the verdict and what you saw in your own reply.
-- A new push voids the verdict: verify again on the new head.
-
-Judge from a thread that did not write the change, and name it in `verifier`.
-
-## Trust
-
-The verdict header says `not trusted yet`.
+Give a verdict only from a thread that did not write the change, and name that thread in the reply.
 
 ## Gotchas
 
 - The `docs` environment is the one `dms-control` runs: logs at `warn`, mail to the run's sink. Ethereal and real SMTP are never reached.
-- `dms-control` finds `playwright-core` from the playground. The root `package.json` lists it as a devDependency, and `prepare` also installs it into this folder with `npm install --no-save`, and the verification playground, which resolves from here, finds it. A run started without `--prepare` on a clone that never ran it fails with "dms-control needs playwright-core".
+- `dms-control journey` launches the Chromium of the `playwright-core` it resolves from the playground, the root devDependency; `pnpm e2e` uses the browser of `@playwright/test`. The root `playwright-core` stays on the version `@playwright/test` resolves, so both launch the same Chromium: install it once with `pnpm exec playwright install --only-shell chromium`.
 - The verification playground sets `editable` from `DMS_LANG_EDITABLE` (on unless `false`) and stores created workspaces under the run's `HOME` (`workspacesDir`), so the repository's `playground/` and its `i18n-workspaces` are never written. `access/read-only-without-editable` sets the variable in the run's environment and restarts the backend.
 - The project files are the locale files of this folder's playground, copied into the run. `project-files`, `module-texts` and `matrix` journeys rewrite them and put the shipped files back; a journey that dies midway leaves them for the next journey's reset.
 - `mongod` is found through `DMS_CONTROL_MONGOD`, then `mongod` on `PATH`, then the binary `mongodb-memory-server-core` keeps in `mongodb-binaries` of the user's cache folder. A verifier whose `HOME` is not the usual one can miss it: `up --prepare` then stops with no `mongod`. Look in `"${XDG_CACHE_HOME:-$HOME/.cache}/mongodb-binaries"`, export the binary as `DMS_CONTROL_MONGOD` and run `up` again before judging anything.
 - `tab.signIn` in these journeys waits for the sign-in form to hydrate (its Show password button turns into Hide password) before it types and clicks Login. The server renders the form as a plain `method="post"` form and hydrates it after the `load` event, so a click before that posts to `/auth`, which answers `{"message":"Not found"}` and leaves the page on `/auth`.
-- Every Lang page renders on the server and hydrates after `load`, like the sign-in form: a click that lands first does nothing. A journey that opens a dialog or a menu as its first action on a page uses `clickUntil` (`lang.mjs`), which clicks again until what it opens shows, and reads a field with `fieldValue`, which gives `undefined` for a missing field instead of ending the journey without a failing check.
+- Every Lang page renders on the server and hydrates after `load`, like the sign-in form: a click that lands first does nothing. A journey that opens a dialog or a menu as its first action on a page uses `clickUntil` (`e2e/lang.mjs`), which clicks again until what it opens shows, and reads a field with `fieldValue`, which gives `undefined` for a missing field instead of ending the journey without a failing check.
 - Each journey restarts the backend on a fresh database; the created workspaces are files and stay in the run, so every journey creates its own ids.
 - The module store and `up` install package modules from the npm registry. A package published minutes earlier can answer 404 until the registry propagates it; run `up` again a few minutes later.
-- Writing a journey: a check (`tab.visible`, `tab.shows`, `tab.at`, `ctx.equal`…) only counts inside `ctx.verify` (or `ctx.record` for a raw request). `tab.at` compares the path, not the query. `tab.visible(target, { hidden: true })` passes when the element is absent. Headings are styled in capitals, so match their text without case. The helpers in `lang.mjs` read answers through `pick` and `list`, so a journey holds no `any`.
+- Writing a journey: a check (`tab.visible`, `tab.shows`, `tab.at`, `ctx.equal`…) only counts inside `ctx.verify` (or `ctx.record` for a raw request). `tab.at` compares the path, not the query. `tab.visible(target, { hidden: true })` passes when the element is absent. Headings are styled in capitals, so match their text without case. The helpers in `e2e/lang.mjs` read answers through `pick` and `list`, so a journey holds no `any`.
 - Facts the journeys pin from the product that `docs/` does not state: files the module creates are tab-indented JSON with a final newline, an uppercase workspace name is folded to lowercase, a created workspace records the base text each translation was written for (`outdated` on a row until it is marked reviewed). No journey requests a regional code without its own file (`fr-BE.json`): the docs and the backend disagree on it (dms-lang#85).
 - Where the dashboard and the docs name a control differently, a journey accepts both names, so neither is pinned: the matrix's language filter (docs "Missing in", dashboard "Translate into", dms-lang#90) and its Incomplete tab (named Missing when one language is counted).
 - The playground's app module watches `verify-frontend-modules.txt` in the run's `HOME` while the backend runs: `app-unflagged` (or `app-flagged`) registers it again without (or with) `dmsI18nAppLayer`, `late-installed` or `late-app-layer` registers a second module (`playground/late-frontend-vue`, priority 0). A restarted backend starts from the shipped registration; the journeys remove the file when they end.
@@ -150,7 +124,7 @@ The verdict header says `not trusted yet`.
 
 ## Not driven
 
-List these under `notVerified` in the judgement of every verdict; no journey reaches them:
+No journey reaches these; name the ones a change touches as not verified in the verdict:
 
 - the dark mode (the heatmap's green, amber and red are driven through the classes of the cells);
 - a member who is not the owner, and so another user seeing a change (needs the invitation flow);
@@ -158,11 +132,10 @@ List these under `notVerified` in the judgement of every verdict; no journey rea
 - `workspacesDir` itself (the verification playground pins it to the run's `HOME`);
 - the "Saving…" and "Saved" flash of a cell (it lasts 1.8 s, less than a step's capture under load); Not saved and Retry are driven;
 - the placeholder tokens' look and the "Missing" tab's name (the docs say Incomplete, the dashboard says Missing for one language; both names pass);
-- the language filter's "any language" with a column hidden: the docs say whatever columns are shown, the dashboard counts only the shown columns (issue draft `dms-lang-matrix-every-language-follows-the-columns`);
 - layout: the key panel's header cut at two lines (the footer's place is checked by a bounding box);
 - the repository's own playground (`pnpm dev`, `pnpm frontend:dev`) and `ajs project modules add`, which are the developer's commands, not the module's.
 
-The CSV export, Download backup and Import are driven through `tab.page`, Playwright's page of the tab: `downloadOf` (`lang.mjs`) reads the `download` event, and the `filechooser` event takes the file Import reads.
+The CSV export, Download backup and Import are driven through `tab.page`, Playwright's page of the tab: `downloadOf` (`e2e/files.mjs`) reads the `download` event, and the `filechooser` event takes the file Import reads.
 
 A step whose check fails because the backend or the dashboard stopped answering, or because the sign-in form did not complete in three attempts of 30 s (`signInHydrated` loads the form again and retries before it gives up), ends the journey with a `NOT VERIFIED` error and no failing check.
 

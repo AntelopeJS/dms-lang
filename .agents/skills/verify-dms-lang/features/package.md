@@ -9,7 +9,7 @@ covers:
   - frontend-vue/i18n/locales/**
   - src/index.ts
   - src/frontend-module.ts
-  - .agents/skills/verify-dms-lang/journeys/package.mjs
+  - e2e/journeys/package.mjs
 docs:
   - docs/2.installation.md
   - README.md

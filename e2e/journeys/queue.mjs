@@ -30,6 +30,7 @@ async function queueWorkspace(ctx) {
 export const journeys = guarded([
   {
     id: "translate-key-by-key",
+    tag: "@smoke",
     title: "the queue walks the missing keys least complete namespace first, Save & next stores each text, and the last one ends on the done state",
     entryPoint: "/modules/lang/language?locale=fr",
     async run(/** @type {Ctx} */ ctx) {

@@ -10,6 +10,7 @@ import { eventually, freshId, guarded, lang, list, pick, readLocaleFile, seedWor
 export const journeys = guarded([
   {
     id: "create-translate-read",
+    tag: "@smoke",
     title: "a key added with a base text is translated, its figures follow, and a changed placeholder is flagged as an issue",
     entryPoint: "POST /api/lang/translations/key, PUT /key",
     async run(/** @type {Ctx} */ ctx) {

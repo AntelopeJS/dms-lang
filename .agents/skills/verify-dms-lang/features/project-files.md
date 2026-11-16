@@ -7,9 +7,10 @@ covers:
   - src/utils/resolve.ts
   - src/utils/own.ts
   - src/utils/guards.ts
+  - src/utils/query.ts
   - src/frontend-module.ts
-  - .agents/skills/verify-dms-lang/journeys/project-files.mjs
-  - .agents/skills/verify-dms-lang/journeys/parts/frontend-modules.mjs
+  - e2e/journeys/project-files.mjs
+  - e2e/journeys/parts/frontend-modules.mjs
 docs:
   - docs/2.installation.md
   - docs/3.configuration.md
@@ -29,7 +30,7 @@ The Project files workspace (`default`) edits the `<name>-<xx-XX>.json` files of
 - `delete-uncovers-the-older-definition`: with two files defining a key, a delete, a clear and a rename change only the winning definition, and the older text shows again.
 - `rename-stays-in-the-defining-file`: a key renamed into another namespace stays in the file that defined it.
 - `dropping-an-override-removes-only-the-winning-one`: dropping an override of a module key removes the newest project definition and the older one shows again.
-- `no-workspace-query-defaults-to-the-project-files`: a page opened without `?workspace=` by someone who never chose one shows the project files.
+- `no-workspace-query-defaults-to-the-project-files`: a page opened without `?workspace=` by someone who never chose one shows the project files, and an API read with a valueless `?workspace` answers the project files too.
 - `pages-arrive-rendered-by-the-server`: the HTML the frontend server sends, read without a browser, holds the matrix rows with their texts and the queue's first missing key; without `?workspace=` the server sends the workspace of the `dms-lang-workspace` cookie, else the project files.
 - `reregistering-changes-the-origin`: the playground registers its module again without `dmsI18nAppLayer`: `shop.title` moves to the installed modules with no file change; flagged again, it is a project file again.
 - `lower-priority-app-layer-merges-first`: a second flagged module of priority 0, registered while the backend runs, adds `late.hello` to the project files, and the app module (priority 1) keeps `shop.title`.

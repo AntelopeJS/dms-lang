@@ -35,6 +35,7 @@ async function matrixWorkspace(ctx) {
 export const journeys = guarded([
   {
     id: "edit-a-cell-saves-and-moves-on",
+    tag: "@smoke",
     title: "a click edits a cell in place, Enter saves it and moves to the next row, Escape cancels",
     entryPoint: "/modules/lang/translations > a cell",
     async run(/** @type {Ctx} */ ctx) {

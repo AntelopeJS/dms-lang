@@ -1,7 +1,7 @@
 ---
 covers:
   - src/utils/announce.ts
-  - .agents/skills/verify-dms-lang/journeys/realtime.mjs
+  - e2e/journeys/realtime.mjs
 docs:
   - docs/5.extending.md
 ---

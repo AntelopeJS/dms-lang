@@ -8,10 +8,10 @@ covers:
   - frontend-vue/app/utils/queue*.ts
   - frontend-vue/app/composables/translation/useLanguageQueue.ts
   - frontend-vue/app/composables/translation/useQueue*.ts
-  - .agents/skills/verify-dms-lang/journeys/queue.mjs
-  - .agents/skills/verify-dms-lang/journeys/parts/queue-keys.mjs
-  - .agents/skills/verify-dms-lang/journeys/parts/queue-more.mjs
-  - .agents/skills/verify-dms-lang/journeys/parts/round12.mjs
+  - e2e/journeys/queue.mjs
+  - e2e/journeys/parts/queue-keys.mjs
+  - e2e/journeys/parts/queue-more.mjs
+  - e2e/journeys/parts/round12.mjs
 docs:
   - docs/4.usage/3.translation-queue.md
 ---
