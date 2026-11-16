@@ -15,8 +15,8 @@ importers:
         specifier: '>=0.5.1 <0.6.0'
         version: 0.5.1
       '@antelopejs/interface-dms':
-        specifier: 0.14.3-next.916.gd319141
-        version: 0.14.3-next.916.gd319141(f5da06a0c98a7b29fb38c747917eadf0)
+        specifier: '>=0.14.0 <0.15.0'
+        version: 0.14.3(f5da06a0c98a7b29fb38c747917eadf0)
       '@intlify/message-compiler':
         specifier: ^11.1.12
         version: 11.4.14
@@ -31,8 +31,8 @@ importers:
         specifier: ~1.24.0
         version: 1.24.0
       '@antelopejs/dms':
-        specifier: 0.20.8-next.936.g1313dd7
-        version: 0.20.8-next.936.g1313dd7(@antelopejs/core@1.24.0)(@playwright/test@1.65.1)(bare-buffer@3.7.1)(typescript@6.0.3)
+        specifier: '>=0.20.8 <0.21.0'
+        version: 0.20.8(@antelopejs/core@1.24.0)(@playwright/test@1.65.1)(bare-buffer@3.7.1)(typescript@6.0.3)
       '@antelopejs/dms-frontend':
         specifier: '>=0.11.4 <0.12.0'
         version: 0.11.4(@antelopejs/core@1.24.0)
@@ -46,8 +46,8 @@ importers:
         specifier: '>=0.5.2 <0.6.0'
         version: 0.5.2(@antelopejs/interface-api@0.3.3(@antelopejs/interface-core@0.5.1))(@antelopejs/interface-core@0.5.1)(@antelopejs/interface-database@0.4.0(@antelopejs/interface-core@0.5.1))
       '@antelopejs/tooling-configs':
-        specifier: 0.8.1-next.372.g1d7ef26
-        version: 0.8.1-next.372.g1d7ef26(@nuxt/eslint-config@1.17.0(@typescript-eslint/utils@8.70.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3))(@vue/compiler-sfc@3.5.42)(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3))(knip@6.34.0)(mongodb-memory-server@11.3.0(bare-buffer@3.7.1)(socks@2.8.8))(oxfmt@0.66.0)(oxlint@1.81.0(oxlint-tsgolint@7.0.2001))(pixelmatch@8.0.0)(playwright-core@1.65.1)(sharp@0.35.5(@types/node@24.13.3))
+        specifier: '>=0.8.1 <0.9.0'
+        version: 0.8.1(@nuxt/eslint-config@1.17.0(@typescript-eslint/utils@8.70.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3))(@vue/compiler-sfc@3.5.42)(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3))(knip@6.34.0)(mongodb-memory-server@11.3.0(bare-buffer@3.7.1)(socks@2.8.8))(oxfmt@0.66.0)(oxlint@1.81.0(oxlint-tsgolint@7.0.2001))(pixelmatch@8.0.0)(playwright-core@1.65.1)(sharp@0.35.5(@types/node@24.13.3))
       '@playwright/test':
         specifier: ~1.65.0
         version: 1.65.1
@@ -128,14 +128,14 @@ importers:
         specifier: ~1.24.0
         version: 1.24.0
       '@antelopejs/dms':
-        specifier: 0.20.8-next.936.g1313dd7
-        version: 0.20.8-next.936.g1313dd7(@antelopejs/core@1.24.0)(@playwright/test@1.65.1)(bare-buffer@3.7.1)(typescript@6.0.3)
+        specifier: '>=0.20.8 <0.21.0'
+        version: 0.20.8(@antelopejs/core@1.24.0)(@playwright/test@1.65.1)(bare-buffer@3.7.1)(typescript@6.0.3)
       '@antelopejs/dms-frontend':
         specifier: '>=0.11.4 <0.12.0'
         version: 0.11.4(@antelopejs/core@1.24.0)
       '@antelopejs/tooling-configs':
-        specifier: 0.8.1-next.372.g1d7ef26
-        version: 0.8.1-next.372.g1d7ef26(@nuxt/eslint-config@1.17.0(@typescript-eslint/utils@8.70.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3))(@vue/compiler-sfc@3.5.42)(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3))(knip@6.34.0)(mongodb-memory-server@11.3.0(bare-buffer@3.7.1)(socks@2.8.8))(oxfmt@0.66.0)(oxlint@1.81.0(oxlint-tsgolint@7.0.2001))(pixelmatch@8.0.0)(playwright-core@1.65.1)(sharp@0.35.5(@types/node@24.13.3))
+        specifier: '>=0.8.1 <0.9.0'
+        version: 0.8.1(@nuxt/eslint-config@1.17.0(@typescript-eslint/utils@8.70.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3))(@vue/compiler-sfc@3.5.42)(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3))(knip@6.34.0)(mongodb-memory-server@11.3.0(bare-buffer@3.7.1)(socks@2.8.8))(oxfmt@0.66.0)(oxlint@1.81.0(oxlint-tsgolint@7.0.2001))(pixelmatch@8.0.0)(playwright-core@1.65.1)(sharp@0.35.5(@types/node@24.13.3))
       '@nuxt/eslint-config':
         specifier: ^1.17.0
         version: 1.17.0(@typescript-eslint/utils@8.70.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3))(@vue/compiler-sfc@3.5.42)(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3)
@@ -164,8 +164,8 @@ importers:
   playground:
     dependencies:
       '@antelopejs/dms':
-        specifier: 0.20.8-next.936.g1313dd7
-        version: 0.20.8-next.936.g1313dd7(@antelopejs/core@1.24.0)(@playwright/test@1.65.1)(bare-buffer@3.7.1)(typescript@6.0.3)
+        specifier: '>=0.20.8 <0.21.0'
+        version: 0.20.8(@antelopejs/core@1.24.0)(@playwright/test@1.65.1)(bare-buffer@3.7.1)(typescript@6.0.3)
       '@antelopejs/interface-api':
         specifier: '>=0.3.3 <0.4.0'
         version: 0.3.3(@antelopejs/interface-core@0.5.1)
@@ -185,8 +185,8 @@ importers:
         specifier: '>=0.5.2 <0.6.0'
         version: 0.5.2(@antelopejs/interface-api@0.3.3(@antelopejs/interface-core@0.5.1))(@antelopejs/interface-core@0.5.1)(@antelopejs/interface-database@0.4.0(@antelopejs/interface-core@0.5.1))
       '@antelopejs/interface-dms':
-        specifier: 0.14.3-next.916.gd319141
-        version: 0.14.3-next.916.gd319141(f5da06a0c98a7b29fb38c747917eadf0)
+        specifier: '>=0.14.0 <0.15.0'
+        version: 0.14.3(f5da06a0c98a7b29fb38c747917eadf0)
     devDependencies:
       '@antelopejs/core':
         specifier: ~1.24.0
@@ -233,8 +233,8 @@ packages:
     peerDependencies:
       '@antelopejs/core': ~1.24.0
 
-  '@antelopejs/dms@0.20.8-next.936.g1313dd7':
-    resolution: {integrity: sha512-YmzXdW2XSq3spQBfptT5pOeRVLSdPfn4MrvXv7yVKlejQsXtZDU6JmOL+bvLoWb3kP5heKMk4E2D2Ay1322WcA==}
+  '@antelopejs/dms@0.20.8':
+    resolution: {integrity: sha512-3+GBORC23xOkPpDbl5eEVugj2tduJ85ftNI1EJxEsviE7NVdIRq4Hwd4cNQ1M43HmhpC5ogQHjQ80xDE4Yvh5Q==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
     peerDependencies:
@@ -294,13 +294,13 @@ packages:
     peerDependencies:
       '@antelopejs/interface-core': '>=0.5.1 <0.6.0'
 
-  '@antelopejs/interface-dms-builder@0.5.2-next.936.g1313dd7':
-    resolution: {integrity: sha512-iRwFFimKLVwKH9i639TmSjroebnAV8snxPVrH6LzkJlN7IanDRFplA7NFV5qELkK6S1j8lmAhe3rxyOleInMUg==}
+  '@antelopejs/interface-dms-builder@0.5.2':
+    resolution: {integrity: sha512-xtP5ZdkjTlvYxiRcLfDnHqtep9K369Nqgdf7ym0Yf8j93LF+XcRP35Z1Egs5abXrQ6F7zchey+1kOEIo2g8JNg==}
     peerDependencies:
       '@antelopejs/interface-core': '>=0.5.1 <0.6.0'
 
-  '@antelopejs/interface-dms@0.14.3-next.916.gd319141':
-    resolution: {integrity: sha512-75twpbIal3hJ+KAky6xGj9kSRH0dHOQmDrRvYRq9ARd73p/EaNBA0tjeay4HTacD1ktMN5bEde73rLG3BOex4A==}
+  '@antelopejs/interface-dms@0.14.3':
+    resolution: {integrity: sha512-BLeYSp4RXpwYXMBHza6T581/oCLPEri7NeIuTwin9Fgj+4Robexer9Ot/1H3SytEJa36di1+e06B+aiPkLYR4A==}
     peerDependencies:
       '@antelopejs/interface-api': '>=0.3.0 <0.4.0'
       '@antelopejs/interface-api-util': '>=0.3.0 <0.4.0'
@@ -325,8 +325,8 @@ packages:
     peerDependencies:
       '@antelopejs/interface-core': '>=0.2.4 <1.0.0'
 
-  '@antelopejs/tooling-configs@0.8.1-next.372.g1d7ef26':
-    resolution: {integrity: sha512-nj/Md/9vA1OJUP0jS7BJSwUZfcVPdQS6+i5hrC4iZdLrbpb0X+0nvvx/zsiFPsN50eKlvNxTYLBcphILtgt2sQ==}
+  '@antelopejs/tooling-configs@0.8.1':
+    resolution: {integrity: sha512-n/cqWGg2jow3KdVFuhPxYk6EfizzKLVTu9i47pnuZx97UGOYo1GQ22pYu6xgsxKvxCMKOXTLCLjG4GF4qQXwAw==}
     engines: {node: '>=22.18.0'}
     hasBin: true
     peerDependencies:
@@ -5998,7 +5998,7 @@ snapshots:
       '@oxc-parser/binding-linux-x64-gnu': 0.95.0
       '@oxc-parser/binding-win32-x64-msvc': 0.95.0
 
-  '@antelopejs/dms@0.20.8-next.936.g1313dd7(@antelopejs/core@1.24.0)(@playwright/test@1.65.1)(bare-buffer@3.7.1)(typescript@6.0.3)':
+  '@antelopejs/dms@0.20.8(@antelopejs/core@1.24.0)(@playwright/test@1.65.1)(bare-buffer@3.7.1)(typescript@6.0.3)':
     dependencies:
       2fa: 0.1.2
       '@antelopejs/interface-api': 0.3.3(@antelopejs/interface-core@0.5.1)
@@ -6007,8 +6007,8 @@ snapshots:
       '@antelopejs/interface-data-api': 0.8.0(@antelopejs/interface-api-util@0.3.2(@antelopejs/interface-api@0.3.3(@antelopejs/interface-core@0.5.1))(@antelopejs/interface-core@0.5.1))(@antelopejs/interface-api@0.3.3(@antelopejs/interface-core@0.5.1))(@antelopejs/interface-core@0.5.1)(@antelopejs/interface-database-decorators@0.5.2(@antelopejs/interface-api@0.3.3(@antelopejs/interface-core@0.5.1))(@antelopejs/interface-core@0.5.1)(@antelopejs/interface-database@0.4.0(@antelopejs/interface-core@0.5.1)))(@antelopejs/interface-database@0.4.0(@antelopejs/interface-core@0.5.1))
       '@antelopejs/interface-database': 0.4.0(@antelopejs/interface-core@0.5.1)
       '@antelopejs/interface-database-decorators': 0.5.2(@antelopejs/interface-api@0.3.3(@antelopejs/interface-core@0.5.1))(@antelopejs/interface-core@0.5.1)(@antelopejs/interface-database@0.4.0(@antelopejs/interface-core@0.5.1))
-      '@antelopejs/interface-dms': 0.14.3-next.916.gd319141(f5da06a0c98a7b29fb38c747917eadf0)
-      '@antelopejs/interface-dms-builder': 0.5.2-next.936.g1313dd7(@antelopejs/interface-core@0.5.1)
+      '@antelopejs/interface-dms': 0.14.3(f5da06a0c98a7b29fb38c747917eadf0)
+      '@antelopejs/interface-dms-builder': 0.5.2(@antelopejs/interface-core@0.5.1)
       '@antelopejs/interface-email': 0.2.1(@antelopejs/interface-core@0.5.1)
       '@antelopejs/interface-file-storage': 0.1.7(@antelopejs/interface-core@0.5.1)
       '@csstools/css-tokenizer': 4.0.0
@@ -6090,11 +6090,11 @@ snapshots:
       '@antelopejs/interface-core': 0.5.1
     optional: true
 
-  '@antelopejs/interface-dms-builder@0.5.2-next.936.g1313dd7(@antelopejs/interface-core@0.5.1)':
+  '@antelopejs/interface-dms-builder@0.5.2(@antelopejs/interface-core@0.5.1)':
     dependencies:
       '@antelopejs/interface-core': 0.5.1
 
-  '@antelopejs/interface-dms@0.14.3-next.916.gd319141(f5da06a0c98a7b29fb38c747917eadf0)':
+  '@antelopejs/interface-dms@0.14.3(f5da06a0c98a7b29fb38c747917eadf0)':
     dependencies:
       '@antelopejs/interface-api': 0.3.3(@antelopejs/interface-core@0.5.1)
       '@antelopejs/interface-api-util': 0.3.2(@antelopejs/interface-api@0.3.3(@antelopejs/interface-core@0.5.1))(@antelopejs/interface-core@0.5.1)
@@ -6123,7 +6123,7 @@ snapshots:
       - supports-color
     optional: true
 
-  '@antelopejs/tooling-configs@0.8.1-next.372.g1d7ef26(@nuxt/eslint-config@1.17.0(@typescript-eslint/utils@8.70.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3))(@vue/compiler-sfc@3.5.42)(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3))(knip@6.34.0)(mongodb-memory-server@11.3.0(bare-buffer@3.7.1)(socks@2.8.8))(oxfmt@0.66.0)(oxlint@1.81.0(oxlint-tsgolint@7.0.2001))(pixelmatch@8.0.0)(playwright-core@1.65.1)(sharp@0.35.5(@types/node@24.13.3))':
+  '@antelopejs/tooling-configs@0.8.1(@nuxt/eslint-config@1.17.0(@typescript-eslint/utils@8.70.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3))(@vue/compiler-sfc@3.5.42)(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3))(knip@6.34.0)(mongodb-memory-server@11.3.0(bare-buffer@3.7.1)(socks@2.8.8))(oxfmt@0.66.0)(oxlint@1.81.0(oxlint-tsgolint@7.0.2001))(pixelmatch@8.0.0)(playwright-core@1.65.1)(sharp@0.35.5(@types/node@24.13.3))':
     dependencies:
       '@oxlint/plugins': 1.81.0
       dts-bundle-generator: 9.5.1
