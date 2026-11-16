@@ -50,8 +50,8 @@ export const roundTenNames = [
       await tab.signIn("admin");
       await tab.goto(`/modules/lang/translations?workspace=${shared}`);
       await ctx.verify("matrix: both French columns, the regional one named with its region", [
-        tab.visible({ role: "gridcell", name: /^Français \d+ missing/ }),
-        tab.visible({ role: "gridcell", name: /^Français \(Belgique\) \d+ missing/ }),
+        tab.visible({ role: "columnheader", name: /^Français \d+ missing/ }),
+        tab.visible({ role: "columnheader", name: /^Français \(Belgique\) \d+ missing/ }),
       ]);
       await tab.goto(`/modules/lang/overview?workspace=${shared}`);
       await ctx.verify("heatmap: the cell names the region", [tab.visible({ role: "link", name: /^a · Français \(Belgique\): / })]);

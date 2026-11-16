@@ -10,7 +10,7 @@ covers:
   - src/validation/query.schema.ts
   - src/pages/workspaces.ts
   - src/pages/workspace-guard.ts
-  - .agents/skills/verify-dms-lang/journeys/workspaces.mjs
+  - e2e/journeys/workspaces.mjs
 docs:
   - docs/1.introduction.md
   - docs/3.configuration.md

@@ -21,14 +21,14 @@ covers:
   - frontend-vue/app/config/shortcuts-registry.ts
   - frontend-vue/app/utils/shortcuts.ts
   - frontend-vue/app/build/components/ShortcutKbds.vue
-  - .agents/skills/verify-dms-lang/journeys/matrix.mjs
-  - .agents/skills/verify-dms-lang/journeys/parts/matrix-export.mjs
-  - .agents/skills/verify-dms-lang/journeys/parts/matrix-folding.mjs
-  - .agents/skills/verify-dms-lang/journeys/parts/matrix-keys.mjs
-  - .agents/skills/verify-dms-lang/journeys/parts/matrix-more.mjs
-  - .agents/skills/verify-dms-lang/journeys/parts/matrix-panel-keys.mjs
-  - .agents/skills/verify-dms-lang/journeys/parts/matrix-panel.mjs
-  - .agents/skills/verify-dms-lang/journeys/parts/matrix-view.mjs
+  - e2e/journeys/matrix.mjs
+  - e2e/journeys/parts/matrix-export.mjs
+  - e2e/journeys/parts/matrix-folding.mjs
+  - e2e/journeys/parts/matrix-keys.mjs
+  - e2e/journeys/parts/matrix-more.mjs
+  - e2e/journeys/parts/matrix-panel-keys.mjs
+  - e2e/journeys/parts/matrix-panel.mjs
+  - e2e/journeys/parts/matrix-view.mjs
 docs:
   - docs/4.usage/2.translation-matrix.md
   - docs/1.introduction.md

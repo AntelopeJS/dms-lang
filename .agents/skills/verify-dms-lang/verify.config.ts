@@ -33,6 +33,8 @@ export interface VerifyConfig {
   notShared: string[];
   smoke: string;
   smokeJourney: string;
+  /** The folder of the journeys modules, relative to the repository root. Absent: `journeys/` in the skill folder. */
+  journeys?: string;
   doors: Record<DoorKind, DoorRule | null>;
   formal: FormalCheck[];
 }
@@ -44,7 +46,6 @@ const config: VerifyConfig = {
   prepare: [
     ["pnpm", "install", "--frozen-lockfile", "--prefer-offline", "--ignore-scripts"],
     ["pnpm", "run", "build"],
-    ["npm", "install", "--no-save", "--no-package-lock", "--no-audit", "--no-fund", "--prefix", SKILL, "playwright-core@1.56.1"],
     ["ln", "-sfn", "../../../../playground/node_modules", `${SKILL}/playground/node_modules`],
   ],
   userFacing: ["src/**", "frontend-vue/**", "skills/**", "package.json"],
@@ -102,16 +103,19 @@ const config: VerifyConfig = {
     "frontend-vue/app/utils/translations.ts",
     "frontend-vue/app/build/components/LocaleTile.vue",
     `${SKILL}/verify.config.ts`,
-    `${SKILL}/lang.mjs`,
-    `${SKILL}/files.mjs`,
-    `${SKILL}/journeys/parts/round9.mjs`,
-    `${SKILL}/journeys/parts/round10.mjs`,
-    `${SKILL}/journeys/parts/round11.mjs`,
+    "e2e/lang.mjs",
+    "e2e/files.mjs",
+    "e2e/journeys/parts/round9.mjs",
+    "e2e/journeys/parts/round10.mjs",
+    "e2e/journeys/parts/round11.mjs",
+    "e2e/playwright.config.ts",
+    "e2e/journeys.spec.ts",
     `${SKILL}/playground/**`,
   ],
   notShared: [".agents/skills/verify-dms-lang-key-writes/**"],
   smoke: "smoke",
   smokeJourney: "onboard, sign in, publish one translated message, read it back from the public URL",
+  journeys: "e2e/journeys",
   doors: {
     data: {
       globs: [

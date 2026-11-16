@@ -10,6 +10,7 @@ import { PROJECT_FILES, freshId, guarded, lang, list, pick, projectLocalesDir, r
 export const journeys = guarded([
   {
     id: "create-and-list",
+    tag: "@smoke",
     title: "a created workspace is listed with its languages, details and public URL, and its files are stored",
     entryPoint: "POST /api/lang/translations/workspace, then GET /workspaces",
     async run(/** @type {Ctx} */ ctx) {

@@ -67,9 +67,9 @@ export const viewJourneys = [
       await tab.signIn("admin");
       await tab.goto(`/modules/lang/translations?workspace=${id}`);
       await ctx.verify("every language is a column with its missing count and a coverage bar", [
-        tab.visible({ role: "gridcell", name: /^English base 100$/ }),
-        tab.visible({ role: "gridcell", name: /^Deutsch 1 missing 66$/ }),
-        tab.visible({ role: "gridcell", name: /^Français 1 missing 66$/ }),
+        tab.visible({ role: "columnheader", name: /^English base 100$/ }),
+        tab.visible({ role: "columnheader", name: /^Deutsch 1 missing 66$/ }),
+        tab.visible({ role: "columnheader", name: /^Français 1 missing 66$/ }),
         tab.count({ role: "meter" }, 3),
         tab.visible({ role: "button", name: "Languages 3/3" }),
       ]);
@@ -83,8 +83,8 @@ export const viewJourneys = [
       await tab.click({ role: "checkbox", name: "Deutsch" });
       await tab.press("Escape");
       await ctx.verify("Languages hides the German column", [
-        tab.visible({ role: "gridcell", name: /^Deutsch/ }, { hidden: true }),
-        tab.visible({ role: "gridcell", name: /^Français 1 missing/ }),
+        tab.visible({ role: "columnheader", name: /^Deutsch/ }, { hidden: true }),
+        tab.visible({ role: "columnheader", name: /^Français 1 missing/ }),
         tab.count({ role: "meter" }, 2),
         tab.visible({ role: "button", name: "Languages 2/3" }),
       ]);
