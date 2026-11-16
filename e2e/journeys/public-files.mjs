@@ -18,6 +18,7 @@ async function checkoutWorkspace(ctx, id) {
 export const journeys = guarded([
   {
     id: "serves-the-nested-tree",
+    tag: "@smoke",
     title: "a translated message is served as the language's nested tree, without the keys it has no text for, on both origins",
     entryPoint: "GET /i18n/<workspace>/<locale>.json",
     async run(/** @type {Ctx} */ ctx) {

@@ -230,6 +230,9 @@ export const journeys = guarded([
       await tab.signIn("admin");
       await tab.goto("/modules/lang/overview");
       await ctx.verify("the scope bar names the project files", [tab.shows(/workspace\s*project files/i)]);
+      const bare = await lang(ctx, "read the figures with a valueless workspace parameter", "GET", "/kpis?workspace");
+      const named = await lang(ctx, "read the figures of the project files", "GET", "/kpis?workspace=default");
+      await ctx.verify("a valueless ?workspace reads the project files", [ctx.status(bare, 200), ctx.status(named, 200), ctx.equal("figures", bare.body, named.body)]);
     },
   },
   ...projectFileJourneys,

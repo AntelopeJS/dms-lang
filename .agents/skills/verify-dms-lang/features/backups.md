@@ -4,8 +4,8 @@ covers:
   - src/utils/json.ts
   - frontend-vue/app/utils/workspaceBackup.ts
   - frontend-vue/app/utils/download.ts
-  - .agents/skills/verify-dms-lang/journeys/backups.mjs
-  - .agents/skills/verify-dms-lang/journeys/parts/api-reads.mjs
+  - e2e/journeys/backups.mjs
+  - e2e/journeys/parts/api-reads.mjs
 docs:
   - docs/4.usage/4.workspaces.md
   - docs/4.usage/5.workspace-settings.md

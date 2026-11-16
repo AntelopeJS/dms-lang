@@ -102,7 +102,7 @@ export async function gridOrder(tab, names) {
     await tab.page
       .getByRole("row")
       .first()
-      .getByRole("gridcell")
+      .getByRole("columnheader")
       .evaluateAll((/** @type {Element[]} */ cells, /** @type {string[]} */ known) => cells.map((cell) => known.find((name) => (cell.textContent ?? "").includes(name)) ?? "Key").join("|"), names),
   );
 }

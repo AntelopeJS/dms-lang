@@ -177,11 +177,11 @@ export const roundElevenOverview = [
       await tab.goto(`/modules/lang/overview?workspace=${alone}`);
       await ctx.verify("alone: plain Français", [tab.visible({ role: "cell", name: /^Français fr-BE · / }), tab.visible({ role: "cell", name: /Belgique/ }, { hidden: true })]);
       await tab.goto(`/modules/lang/translations?workspace=${shared}`);
-      await tab.visible({ role: "gridcell", name: /^Français \(Belgique\)/ });
-      const sharedTile = await textOf(tab, "gridcell", /^Français \(Belgique\)/);
+      await tab.visible({ role: "columnheader", name: /^Français \(Belgique\)/ });
+      const sharedTile = await textOf(tab, "columnheader", /^Français \(Belgique\)/);
       await tab.goto(`/modules/lang/translations?workspace=${alone}`);
-      await tab.visible({ role: "gridcell", name: /^Français/ });
-      const aloneTile = await textOf(tab, "gridcell", /^Français/);
+      await tab.visible({ role: "columnheader", name: /^Français/ });
+      const aloneTile = await textOf(tab, "columnheader", /^Français/);
       await ctx.verify("the tile letters add the region when the language is shared (FR-BE) and not when alone (FR)", [
         ctx.holds("shared tile", sharedTile.startsWith("FR-BE"), sharedTile.slice(0, 40)),
         ctx.holds("lone tile", /^FR(?!-)/.test(aloneTile), aloneTile.slice(0, 40)),

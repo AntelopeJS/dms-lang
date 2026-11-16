@@ -1,0 +1,19 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "..",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "allowJs": true,
+    "checkJs": false,
+    "lib": ["esnext", "dom", "dom.iterable"],
+    "types": ["node"],
+    "paths": {},
+    "incremental": false,
+    "declaration": false,
+    "sourceMap": false,
+    "noEmit": true
+  },
+  "include": ["*.ts", "**/*.mjs"],
+  "exclude": ["playwright-report", "test-results", "blob-report"]
+}

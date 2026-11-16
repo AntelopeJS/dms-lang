@@ -21,14 +21,14 @@ covers:
   - frontend-vue/app/config/shortcuts-registry.ts
   - frontend-vue/app/utils/shortcuts.ts
   - frontend-vue/app/build/components/ShortcutKbds.vue
-  - .agents/skills/verify-dms-lang/journeys/matrix.mjs
-  - .agents/skills/verify-dms-lang/journeys/parts/matrix-export.mjs
-  - .agents/skills/verify-dms-lang/journeys/parts/matrix-folding.mjs
-  - .agents/skills/verify-dms-lang/journeys/parts/matrix-keys.mjs
-  - .agents/skills/verify-dms-lang/journeys/parts/matrix-more.mjs
-  - .agents/skills/verify-dms-lang/journeys/parts/matrix-panel-keys.mjs
-  - .agents/skills/verify-dms-lang/journeys/parts/matrix-panel.mjs
-  - .agents/skills/verify-dms-lang/journeys/parts/matrix-view.mjs
+  - e2e/journeys/matrix.mjs
+  - e2e/journeys/parts/matrix-export.mjs
+  - e2e/journeys/parts/matrix-folding.mjs
+  - e2e/journeys/parts/matrix-keys.mjs
+  - e2e/journeys/parts/matrix-more.mjs
+  - e2e/journeys/parts/matrix-panel-keys.mjs
+  - e2e/journeys/parts/matrix-panel.mjs
+  - e2e/journeys/parts/matrix-view.mjs
 docs:
   - docs/4.usage/2.translation-matrix.md
   - docs/1.introduction.md
@@ -52,7 +52,7 @@ Every key of the workspace as a row, every language as a column, with inline edi
 - `language-and-namespace-filters`: `missingIn=` (the toolbar's language filter) keeps the rows missing in one language and `namespace=` restricts the rows to one namespace.
 - `key-panel-renames-and-closing-saves`: closing the key panel saves the language that changed, and Rename gives the key its new path with both texts.
 - `sidebar-badge-counts-the-project-files`: the sidebar lists Overview, Translation matrix and Translation queue under Translate, Workspaces and Workspace settings under Manage; the breadcrumb's Translations opens `/modules/lang/overview`; the matrix's badge counts the project files' one gap while another workspace is open, and goes once it is translated.
-- `missing-in-and-the-language-columns`: each column header reads its missing count with a coverage meter; with every column shown the incomplete rows are those missing in any language; Languages hides German, and the language filter set to German still keeps the row German lacks.
+- `missing-in-and-the-language-columns`: each column header reads its missing count with a coverage meter; with every column shown the incomplete rows are those missing in any language; Languages hides German, Every language still keeps the row German lacks, and the language filter set to German keeps it too.
 - `groups-collapse-and-stay-as-they-were`: a namespace group collapses and opens again, and closing the key panel leaves a collapsed group collapsed.
 - `cell-line-break-and-failed-save`: Shift Enter adds a line break without saving; a save the backend cannot write (the language file made read-only) says Not saved with Retry and keeps the text, and Retry saves it.
 - `key-panel-moves-between-keys`: the header reads `2 of 3 · shop`; J and K, and the Next and Previous arrows, open the next and previous key; J typed in a field is text.
