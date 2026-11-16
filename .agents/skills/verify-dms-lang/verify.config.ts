@@ -78,6 +78,7 @@ const config: VerifyConfig = {
     "src/utils/json.ts",
     "src/utils/keys.ts",
     "src/utils/locale-codes.ts",
+    "src/utils/query.ts",
     "src/utils/registry.ts",
     "src/utils/resolve.ts",
     "src/utils/snippets.ts",

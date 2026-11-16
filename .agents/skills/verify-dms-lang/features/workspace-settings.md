@@ -4,6 +4,7 @@ covers:
   - src/utils/public-url.ts
   - frontend-vue/app/components/WorkspaceList.vue
   - frontend-vue/app/components/WorkspaceGeneral.vue
+  - frontend-vue/app/build/composables/useAfterPress.ts
   - frontend-vue/app/components/WorkspaceDangerZone.vue
   - frontend-vue/app/build/components/WorkspaceCreateModal.vue
   - frontend-vue/app/build/components/WorkspaceRenameModal.vue

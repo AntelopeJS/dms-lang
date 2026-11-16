@@ -82,11 +82,13 @@ export const viewJourneys = [
       await tab.click({ role: "button", name: "Languages 3/3" });
       await tab.click({ role: "checkbox", name: "Deutsch" });
       await tab.press("Escape");
-      await ctx.verify("Languages hides the German column", [
+      await ctx.verify("Languages hides the German column, and every language still counts it", [
         tab.visible({ role: "columnheader", name: /^Deutsch/ }, { hidden: true }),
         tab.visible({ role: "columnheader", name: /^Français 1 missing/ }),
         tab.count({ role: "meter" }, 2),
         tab.visible({ role: "button", name: "Languages 2/3" }),
+        tab.visible({ role: "button", name: "Open shop.title in the panel" }),
+        tab.visible({ role: "button", name: "Open shop.pay in the panel" }),
       ]);
       await tab.click({ role: "combobox", name: MISSING_IN });
       await tab.click({ role: "option", name: /^Deutsch/ });

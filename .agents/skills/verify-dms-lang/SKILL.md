@@ -89,47 +89,19 @@ $C down "$RUN"
 
 ## Verdict rules
 
-1. **Run every feature whose `covers:` globs the diff touches, plus the smoke journey** (sign in, create a workspace, add French and a key, translate it, read it back from the public URL). `plan` prints that list as `run`. A diff that changes a shared file (the `shared` globs of `verify.config.ts`: the package and workspace files, the lockfile, the `.npmrc` files, the module's entry, its page and route indexes, the translations routes, the frontend entry, build manifest and locale files, every file that code or journeys of four or more features import, explicitly or through the frontend's auto-imports, and this skill's helpers and playground) runs every feature, and `plan` lists those files under `shared`. Before a release, run every feature too. A `dms-control` older than the release that reads `shared` prints a plan with no `shared` field and only the touched features: compare `changed` with the `shared` globs yourself and run every feature when one matches. That `verdict` reads only the features in `run`, so it does not see the others you ran: a failing journey among them fails the verdict anyway. List it under `attention` and report the failure in your reply. Each feature also covers its own journey file and the parts only it uses, so a change to them runs that feature.
+State the verdict in your own reply. Start it with the result, then the doors, then what each rule below showed.
+
+1. **Run every feature whose `covers:` globs the diff touches, plus the smoke journey** (sign in, create a workspace, add French and a key, translate it, read it back from the public URL). `plan` prints that list as `run`. A diff that changes a shared file (the `shared` globs of `verify.config.ts`: the package and workspace files, the lockfile, the `.npmrc` files, the module's entry, its page and route indexes, the translations routes, the frontend entry, build manifest and locale files, every file that code or journeys of four or more features import, explicitly or through the frontend's auto-imports, and the journeys' helpers and this skill's playground) runs every feature, and `plan` lists those files under `shared`. A release runs every feature too (`plan --all`). Each feature also covers its own journey file and the parts only it uses, so a change to them runs that feature. A journey of those features that did not run fails the verdict.
 2. **Unmapped surface fails the verdict.** User-facing code is `src/**`, `frontend-vue/**`, `skills/**` and `package.json`, tests and tool configs excluded (`verify.config.ts`). A changed file there that no feature glob covers is an unmapped surface: the PR adds it to a feature with its journeys. `map` checks the whole tree.
-3. **Every registered journey of a feature in `run` must have run and passed.** A missing journey fails as "not run", so run whole features. Known findings stay as failing journeys (see the feature files' Gotchas): they fail a verdict only when the verdict covers their feature, which a shared file makes every feature.
-4. **Docs.** Each touched feature lists its `docs:` pages. Judge every page against what the journeys showed. A page that no longer matches fails the verdict.
+3. **Every registered journey of a feature in `run` must have run and passed.** A missing journey fails as "not run", so run whole features. A known finding is listed in its journey's `knownFailures` (see the feature files' Gotchas): its check reads `known` and does not fail the journey. Name each one in the reply as a note.
+4. **Docs.** Each touched feature lists its `docs:` pages. Judge every page against what the journeys showed, and name in the reply each page and whether it matches. A page that no longer matches fails the verdict.
 5. **Formal checks.** Run `$C formal "$RUN"`. `verify.config.ts` lists one check, `key-writes`, which proves for every set of up to two project files that each key write the API accepts lands in the file the docs name and leaves the dashboard showing what the docs promise. It runs when the diff touches a file it covers, and fails the verdict when a rule newly fails, a rule the base checks is dropped, or the check no longer matches its record. How to read its output is in [`../verify-dms-lang-key-writes/SKILL.md`](../verify-dms-lang-key-writes/SKILL.md).
-6. **One-way doors.** The section comes right after the result line and is mandatory; a verdict without it is void. It holds `None` with a reason, or one row per door: kind, location, what cannot be undone, containment. `$C doors` prints the `One-way-door:` line for the diff from the path rules in `verify.config.ts`. Every file they flag needs a row, or a `falsePositives` entry saying why it is not a door.
-7. **Result.** FAIL if any of rules 1 to 6 fail. PASS+NOTES when something is not verified or needs the owner's attention. PASS otherwise.
+6. **One-way doors.** The reply lists them right after the result line, and a reply without the list is void. It holds `None` with a reason, or one row per door: kind, location, what cannot be undone, containment. `$C doors` prints the `One-way-door:` line for the diff from the path rules in `verify.config.ts`. Every file they flag needs a row, or a sentence saying why it is not a door.
+7. **Result.** FAIL if any of rules 1 to 6 fail. PASS+NOTES when something is not verified or needs the owner's attention: list what no journey reached (at least the [Not driven](#not-driven) items the change touches), and why, and what the owner should look at that the skill cannot judge. PASS otherwise.
 
-Write your judgement to `$RUN/evidence/judgement.json`:
+A new push voids the verdict: verify again on the new head. Nothing is posted to GitHub.
 
-```json
-{
-  "doors": {
-    "none": "the diff changes only the verification skill",
-    "rows": [],
-    "falsePositives": [{ "kind": "contract", "location": "package.json", "reason": "only a devDependency changed" }]
-  },
-  "docs": [{ "page": "docs/4.usage/2.translation-matrix.md", "matches": true, "note": "" }],
-  "notVerified": ["What no journey reached, and why"],
-  "attention": ["What the owner should look at that the skill cannot judge"],
-  "verifier": "the fresh verifier thread's URL; it did not write the change"
-}
-```
-
-A door row is `{ "kind", "location", "irreversible", "containment" }`, where `kind` is a `doors` key of `verify.config.ts`. `verifier` is required.
-
-Then render the verdict:
-
-```bash
-$C verdict "$RUN" --pr <n>      # writes evidence/verdict.md; exit 1 on FAIL
-```
-
-- `verdict` computes the result from `feature.json`, the plan, the formal results and the judgement, and writes it to `evidence/verdict.md`.
-- Report the verdict and what you saw in your own reply.
-- A new push voids the verdict: verify again on the new head.
-
-Judge from a thread that did not write the change, and name it in `verifier`.
-
-## Trust
-
-The verdict header says `not trusted yet`.
+Give a verdict only from a thread that did not write the change, and name that thread in the reply.
 
 ## Gotchas
 
@@ -152,7 +124,7 @@ The verdict header says `not trusted yet`.
 
 ## Not driven
 
-List these under `notVerified` in the judgement of every verdict; no journey reaches them:
+No journey reaches these; name the ones a change touches as not verified in the verdict:
 
 - the dark mode (the heatmap's green, amber and red are driven through the classes of the cells);
 - a member who is not the owner, and so another user seeing a change (needs the invitation flow);
@@ -160,7 +132,6 @@ List these under `notVerified` in the judgement of every verdict; no journey rea
 - `workspacesDir` itself (the verification playground pins it to the run's `HOME`);
 - the "Saving…" and "Saved" flash of a cell (it lasts 1.8 s, less than a step's capture under load); Not saved and Retry are driven;
 - the placeholder tokens' look and the "Missing" tab's name (the docs say Incomplete, the dashboard says Missing for one language; both names pass);
-- the language filter's "any language" with a column hidden: the docs say whatever columns are shown, the dashboard counts only the shown columns (issue draft `dms-lang-matrix-every-language-follows-the-columns`);
 - layout: the key panel's header cut at two lines (the footer's place is checked by a bounding box);
 - the repository's own playground (`pnpm dev`, `pnpm frontend:dev`) and `ajs project modules add`, which are the developer's commands, not the module's.
 
