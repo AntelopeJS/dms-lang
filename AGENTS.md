@@ -30,10 +30,6 @@ A release that raises the DMS floor is breaking. List it under `### ⚠️ Break
 
 `pnpm test` builds once, then runs the `src/test` suites against an in-memory MongoDB and the `tests` suites. `pnpm run checks` runs it. It does not run `pnpm test:frontend`, which builds and typechecks `frontend-vue` against the DMS layer and has its own CI job. Run it when you change the Vue layer.
 
-## Orb
-
-`.agents/setup` belongs to the guardrail pack. The MongoDB install, the build and the playground install live in `.agents/playground`, which the `dms-backend` service runs before it starts.
-
 <!-- antelopejs-guardrails:start -->
 <!-- Managed by @antelopejs/tooling-configs. `antelopejs-sync` rewrites everything between these markers; write repository-specific guidance outside them. -->
 
