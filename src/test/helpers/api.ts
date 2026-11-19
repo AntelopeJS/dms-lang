@@ -80,6 +80,12 @@ export function text(value: JsonValue | undefined, ...path: string[]): string {
   return isString(found) ? found : "";
 }
 
+/** The JSON object an answer holds; a test that expects one fails loudly on anything else. */
+export function objectOf(value: JsonValue | undefined): JsonObject {
+  if (!isJsonObject(value)) throw new TypeError("expected a JSON object");
+  return value;
+}
+
 /** The objects of the array at `path`, none when the field is not an array. */
 export function objects(
   value: JsonValue | undefined,
