@@ -3,12 +3,7 @@ import { spawnSync } from "node:child_process";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
-const CHECK = fileURLToPath(
-  new URL(
-    "../.agents/skills/verify-dms-lang-key-writes/check.mjs",
-    import.meta.url,
-  ),
-);
+const CHECK = fileURLToPath(new URL("./key-writes/check.mjs", import.meta.url));
 const FIVE_MINUTES_MS = 300_000;
 const OUTPUT_LIMIT_BYTES = 64 * 1024 * 1024;
 
