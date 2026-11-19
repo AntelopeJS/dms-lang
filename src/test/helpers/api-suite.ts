@@ -54,6 +54,14 @@ export function useWorkspaceStorage(editable: boolean): WorkspaceStorage {
   };
 }
 
+/** Has the platform owner registered before the tests of the enclosing `describe` run. Call it inside a `describe`. */
+export function useOwner(): void {
+  before(async function () {
+    this.timeout(SETUP_TIMEOUT_MS);
+    await ownerToken();
+  });
+}
+
 /** What a seeded workspace holds: its languages, the first being the base, and the texts of its keys by language. */
 export interface Seed {
   locales?: string[];
