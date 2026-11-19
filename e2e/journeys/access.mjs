@@ -1,9 +1,12 @@
 import { join } from "node:path";
-import { freshId, guarded, lang, list, pick, projectLocalesDir, raw, readJsonFile, recordRaw, resetProjectFiles, seedWorkspace, toRow, workspaceFiles } from "../lang.mjs";
+import { clickUntil, freshId, guarded, lang, list, pick, projectLocalesDir, raw, readJsonFile, recordRaw, resetProjectFiles, seedWorkspace, toRow, workspaceFiles } from "../lang.mjs";
 
 /** @typedef {import("../lang.mjs").Ctx} Ctx */
 
 const OVERRIDDEN_KEY = "dms.button.save_changes";
+const SIGNUP_LINK = /\/auth\/signup\?token=/;
+/** Permission ids `GET /workspaces` names for the writes of the matrix and the Workspaces page. */
+const LANG_PERMISSIONS = ["modules.lang.translate.translations.scoped.matrix.edit", "modules.lang.manage.workspaces.list.create"];
 
 /**
  * @param {Ctx} ctx The journey
@@ -40,6 +43,65 @@ export const journeys = guarded([
       recordRaw(ctx, publicRead, [ctx.equal("status", publicRead.status, 200), ctx.equal("body", publicRead.json, { a: { b: "Hello" } })]);
       await ctx.verify("nothing a visitor sent changed the workspace", [
         ctx.status(owner, 200),
+        ctx.equal("rows", pick(owner.body, "rows"), [{ key: "a.b", values: { en: "Hello" } }]),
+        ctx.equal("files", workspaceFiles(ctx, id), [".workspace.json", "en.json"]),
+      ]);
+    },
+  },
+  {
+    id: "a-member-who-is-not-the-owner-is-refused",
+    title: "a member who joined through an invitation gets 403 from the API and no Lang page, while the owner's workspace stays as it was",
+    entryPoint: "Settings > Members > Invite members, then the member's session on /modules/lang and /api/lang/translations/*",
+    async run(/** @type {Ctx} */ ctx) {
+      const id = freshId(ctx, "shop");
+      await seedWorkspace(ctx, id, { locales: ["en"], keys: { "a.b": { en: "Hello" } } });
+      const roleName = "Translators";
+      const role = await ctx.api("create a role holding the Lang write permissions", {
+        method: "POST",
+        path: "/dms/pages/settings/workspace/roles/create",
+        body: { name: roleName, description: "", permissions: LANG_PERMISSIONS },
+      });
+      await ctx.verify("the role exists", [ctx.status(role, 200)], { critical: true });
+      const admin = await ctx.tab("admin");
+      await admin.signIn("admin");
+      const email = ctx.email("member");
+      const password = ctx.password();
+      await admin.goto("/settings/workspace/members");
+      await clickUntil(admin, { role: "button", name: "Invite members" }, { role: "textbox", name: "Email addresses" });
+      await admin.fill({ role: "textbox", name: "Email addresses" }, email);
+      await admin.press("Enter", { role: "textbox", name: "Email addresses" });
+      await admin.click({ role: "button", name: roleName, exact: true, within: { role: "group", name: "Roles" } });
+      await admin.click({ role: "button", name: "Send invitations" });
+      const mail = await ctx.mail((message) => message.to.some((to) => to.includes(email)) && message.links.some((link) => SIGNUP_LINK.test(link)));
+      const link = mail.match?.links.findLast((link) => SIGNUP_LINK.test(link));
+      await ctx.verify("the invitation email carries a sign-up link", [ctx.holds("sign-up link", link !== undefined, `${mail.messages.length} messages captured`)], { critical: true });
+      const member = await ctx.tab("anon", "member");
+      await member.goto(String(link));
+      await member.fill({ role: "textbox", name: "First and last name" }, "Mia Member");
+      await member.fill({ role: "textbox", name: "Password" }, password);
+      await member.click({ role: "button", name: "Create my account" });
+      await ctx.verify("the member is signed in", [member.at(/^\/(?!auth)/)], { critical: true });
+      ctx.addAccount("member", { email, password });
+      /** @type {[string, string, string, unknown][]} */
+      const calls = [
+        ["list the workspaces", "GET", "/workspaces", undefined],
+        ["read the keys", "GET", `/flat?workspace=${id}`, undefined],
+        ["create a workspace", "POST", "/workspace", { id: freshId(ctx, "x"), locale: { code: "en" } }],
+        ["write a text", "PUT", "/key", { workspace: id, path: "a.b", values: { en: "Changed" } }],
+      ];
+      for (const [label, method, path, body] of calls) {
+        const answer = await ctx.api(label, { method, path: `/api/lang/translations${path}`, body, as: "member" });
+        await ctx.verify(`as the member: ${label}`, [ctx.status(answer, 403)]);
+      }
+      await member.goto(`/modules/lang/overview?workspace=${id}`);
+      await ctx.verify("the member is sent away from the Lang page, and the dashboard offers none", [
+        member.at(/^\/(?!modules\/lang)/),
+        member.visible({ role: "link", name: /^Lang$/ }, { hidden: true }),
+        member.visible({ role: "button", name: "Add language" }, { hidden: true }),
+        member.shows(/Hello/, { not: true }),
+      ]);
+      const owner = await lang(ctx, "read the keys as the owner", "GET", `/flat?workspace=${id}`);
+      await ctx.verify("nothing the member sent changed the workspace", [
         ctx.equal("rows", pick(owner.body, "rows"), [{ key: "a.b", values: { en: "Hello" } }]),
         ctx.equal("files", workspaceFiles(ctx, id), [".workspace.json", "en.json"]),
       ]);

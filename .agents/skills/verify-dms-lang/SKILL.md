@@ -126,8 +126,8 @@ Give a verdict only from a thread that did not write the change, and name that t
 
 No journey reaches these; name the ones a change touches as not verified in the verdict:
 
-- the dark mode (the heatmap's green, amber and red are driven through the classes of the cells);
-- a member who is not the owner, and so another user seeing a change (needs the invitation flow);
+- the dark mode beyond the heatmap (`heatmap-tones-stay-apart-and-readable-in-dark-mode` drives its cells);
+- another user seeing a change: a member who is not the owner is refused (`a-member-who-is-not-the-owner-is-refused`), so only a second owner could, and no journey invites one;
 - a frontend module removed while Lang runs (only taking an AntelopeJS module down removes one);
 - `workspacesDir` itself (the verification playground pins it to the run's `HOME`);
 - the "Saving…" and "Saved" flash of a cell (it lasts 1.8 s, less than a step's capture under load); Not saved and Retry are driven;
