@@ -35,8 +35,8 @@ importers:
         specifier: ~1.24.5
         version: 1.24.5
       '@antelopejs/dms':
-        specifier: 0.21.4-next.939.g641c7fa
-        version: 0.21.4-next.939.g641c7fa(@antelopejs/core@1.24.5)(@playwright/test@1.65.1)(bare-buffer@3.7.1)(typescript@6.0.3)
+        specifier: 0.21.4-next.944.g3da5606
+        version: 0.21.4-next.944.g3da5606(@antelopejs/core@1.24.5)(@playwright/test@1.65.1)(bare-buffer@3.7.1)(typescript@6.0.3)
       '@antelopejs/dms-frontend':
         specifier: '>=0.11.8 <0.12.0'
         version: 0.11.8(@antelopejs/core@1.24.5)
@@ -168,8 +168,8 @@ importers:
   playground:
     dependencies:
       '@antelopejs/dms':
-        specifier: 0.21.4-next.939.g641c7fa
-        version: 0.21.4-next.939.g641c7fa(@antelopejs/core@1.24.5)(@playwright/test@1.65.1)(bare-buffer@3.7.1)(typescript@6.0.3)
+        specifier: 0.21.4-next.944.g3da5606
+        version: 0.21.4-next.944.g3da5606(@antelopejs/core@1.24.5)(@playwright/test@1.65.1)(bare-buffer@3.7.1)(typescript@6.0.3)
       '@antelopejs/interface-api':
         specifier: '>=0.3.3 <0.4.0'
         version: 0.3.3(@antelopejs/interface-core@0.5.1)
@@ -253,8 +253,8 @@ packages:
       typescript:
         optional: true
 
-  '@antelopejs/dms@0.21.4-next.939.g641c7fa':
-    resolution: {integrity: sha512-wAF+SPGjEl4X8JM23HFXBLtTRjBQqx5OoWg3Cxm2Pm260UDdeLukgbZw0dw5ifNZoMv7wjV/uyTiqZ+WSeK7Rw==}
+  '@antelopejs/dms@0.21.4-next.944.g3da5606':
+    resolution: {integrity: sha512-Os2WiWC8f5cm4JBtLea0ZQxnx09Iwp4t9vb1pWBcrcR8HJI3EshGE2jqjmspY4BovEgI0yYGzmH73QFPC9/IUg==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
     peerDependencies:
@@ -6067,7 +6067,7 @@ snapshots:
       - react-native-b4a
       - supports-color
 
-  '@antelopejs/dms@0.21.4-next.939.g641c7fa(@antelopejs/core@1.24.5)(@playwright/test@1.65.1)(bare-buffer@3.7.1)(typescript@6.0.3)':
+  '@antelopejs/dms@0.21.4-next.944.g3da5606(@antelopejs/core@1.24.5)(@playwright/test@1.65.1)(bare-buffer@3.7.1)(typescript@6.0.3)':
     dependencies:
       2fa: 0.1.2
       '@antelopejs/interface-api': 0.3.3(@antelopejs/interface-core@0.5.1)
@@ -7997,7 +7997,7 @@ snapshots:
       '@typescript-eslint/visitor-keys': 8.70.0
       debug: 4.4.3(supports-color@8.1.1)
       minimatch: 10.2.5
-      semver: 7.8.5
+      semver: 7.8.6
       tinyglobby: 0.2.17
       ts-api-utils: 2.5.0(typescript@6.0.3)
       typescript: 6.0.3

@@ -42,11 +42,11 @@ export interface VerifyConfig {
 const SKILL = ".agents/skills/verify-dms-lang";
 
 const config: VerifyConfig = {
-  playground: `${SKILL}/playground`,
+  playground: "e2e/playground",
   prepare: [
     ["pnpm", "install", "--frozen-lockfile", "--prefer-offline", "--ignore-scripts"],
     ["pnpm", "run", "build"],
-    ["ln", "-sfn", "../../../../playground/node_modules", `${SKILL}/playground/node_modules`],
+    ["ln", "-sfn", "../../playground/node_modules", "e2e/playground/node_modules"],
   ],
   userFacing: ["src/**", "frontend-vue/**", "skills/**", "package.json"],
   notUserFacing: [
@@ -111,7 +111,8 @@ const config: VerifyConfig = {
     "e2e/journeys/parts/round11.mjs",
     "e2e/playwright.config.ts",
     "e2e/journeys.spec.ts",
-    `${SKILL}/playground/**`,
+    "e2e/playground/**",
+    "e2e/journeys.config.ts",
   ],
   notShared: [".agents/skills/verify-dms-lang-key-writes/**"],
   smoke: "smoke",
@@ -183,8 +184,8 @@ const config: VerifyConfig = {
         "src/utils/registry.ts",
         "src/utils/locale-discovery.ts",
       ],
-      files: [".agents/skills/verify-dms-lang-key-writes/**"],
-      command: ["node", ".agents/skills/verify-dms-lang-key-writes/check.mjs"],
+      files: [".agents/skills/verify-dms-lang-key-writes/**", "tests/key-writes/**"],
+      command: ["node", "tests/key-writes/check.mjs"],
       baseCommand: ["node", fileURLToPath(new URL("../verify-dms-lang-key-writes/base.mjs", import.meta.url))],
       violation: /^VIOLATED (\S+)$/gm,
       passing: /^(?:HOLDS|KNOWN) (\S+)$/gm,

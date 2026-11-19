@@ -19,7 +19,7 @@ if (editableMode !== "default") langConfig.editable = editableMode !== "false";
 
 /**
  * The repository's playground with the ports, origins, secrets and mail
- * `dms-control` sets for a run. The playground module and the module under
+ * the e2e kit sets for a run. The playground module and the module under
  * verification are the checkout's own builds.
  */
 export default defineConfig({
@@ -29,14 +29,14 @@ export default defineConfig({
       source: { type: "local", path: "." },
     },
     "dms-lang": {
-      source: { type: "local", path: "../../../.." },
+      source: { type: "local", path: "../.." },
       config: langConfig,
     },
     dms: {
       source: {
         type: "package",
         package: "@antelopejs/dms",
-        version: "0.21.4-next.939.g641c7fa",
+        version: "0.21.4-next.944.g3da5606",
       },
       config: {
         homepage: "/modules",

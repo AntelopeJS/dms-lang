@@ -377,7 +377,7 @@ $RECYCLE.BIN/
 .pnpm-store
 /frontend-vue/.output/
 
-/.agents/skills/verify-dms-lang/playground/node_modules
+/e2e/playground/node_modules
 
 # Playwright output of the e2e suite
 /e2e/playwright-report/

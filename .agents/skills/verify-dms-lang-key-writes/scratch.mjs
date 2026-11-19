@@ -9,6 +9,9 @@ export const SKILL = dirname(fileURLToPath(import.meta.url));
 /** The root of the checkout that runs this skill. */
 export const REPO = join(SKILL, "../../..");
 
+/** The folder of the check in the checkout that runs this skill. */
+const CHECKER = join(REPO, "tests/key-writes");
+
 /**
  * @param {string} program The program
  * @param {string[]} args Its arguments
@@ -22,8 +25,8 @@ export function run(program, args, cwd) {
 /**
  * Makes another checkout of the repository ready for this check: links this
  * checkout's `node_modules` when it has none, builds its `src/` to `dist/`,
- * and, when `replace` is set or it has no copy of this skill, puts this
- * skill's current files in it.
+ * and, when `replace` is set or it has no copy of the check, puts this
+ * checkout's check in it.
  *
  * @param {string} dir The other checkout's root
  * @param {boolean} replace Whether to run this checkout's check rather than the other checkout's own
@@ -33,9 +36,9 @@ export function prepareCheckout(dir, replace) {
   if (!existsSync(join(dir, "node_modules"))) symlinkSync(join(REPO, "node_modules"), join(dir, "node_modules"));
   const built = run(join(REPO, "node_modules/.bin/tsc"), ["-p", "tsconfig.json"], dir);
   if (built.status !== 0) throw new Error(`${dir} does not build:\n${built.stdout}`);
-  const skill = join(dir, relative(REPO, SKILL));
-  if (!replace && existsSync(join(skill, "check.mjs"))) return join(skill, "check.mjs");
-  rmSync(skill, { recursive: true, force: true });
-  cpSync(SKILL, skill, { recursive: true });
-  return join(skill, "check.mjs");
+  const checker = join(dir, relative(REPO, CHECKER));
+  if (!replace && existsSync(join(checker, "check.mjs"))) return join(checker, "check.mjs");
+  rmSync(checker, { recursive: true, force: true });
+  cpSync(CHECKER, checker, { recursive: true });
+  return join(checker, "check.mjs");
 }

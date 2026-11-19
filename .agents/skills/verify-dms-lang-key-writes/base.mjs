@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
-import record from "./record.json" with { type: "json" };
+import record from "../../../tests/key-writes/record.json" with { type: "json" };
 import { prepareCheckout } from "./scratch.mjs";
 
 /**

@@ -90,7 +90,7 @@ jobs:
           echo "e2e suite \`${suite}\`" >> "$GITHUB_STEP_SUMMARY"
 
   # The journeys of e2e/ as a Playwright suite. Its global setup prepares and
-  # starts one dms-control run per shard.
+  # starts one run per shard.
   e2e:
     needs: select
     if: needs.select.outputs.suite != 'none'
@@ -120,8 +120,8 @@ jobs:
           path: |
             ~/.cache/mongodb-binaries
             ~/.cache/ms-playwright
-            .agents/skills/verify-dms-lang/playground/.antelope/cache
-          key: e2e-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', '.agents/skills/verify-dms-lang/playground/antelope.config.ts') }}
+            e2e/playground/.antelope/cache
+          key: e2e-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'e2e/playground/antelope.config.ts') }}
       - uses: actions/cache@v4
         with:
           path: ~/.cache/dms-control/frontend
