@@ -48,6 +48,8 @@ How translated is this workspace: four figures, the languages least complete fir
 - `language-tiles-carry-the-region-only-when-shared`: The overview's language rows read Français (Belgique) next to a sibling French and plain Français when fr-BE is alone.
 - `scope-bar-shows-the-base-language-on-every-page`: The workspace bar of the overview, the matrix and the queue reads its base language (Base EN en), counts and public URL.
 
+- `the-pages-follow-the-dashboard-language`: picking français in the user menu turns the overview, the Lang menu, the matrix, the queue, the Workspaces page and the settings French after a reload, with no `dms_lang.` key left untranslated.
+- `heatmap-tones-stay-apart-and-readable-in-dark-mode`: with the system in dark mode the page carries the `dark` class, and the heatmap's green, amber and red cells paint three different colours, each figure at least 3:1 against its cell.
 ## How to get to it (user POV)
 
 - Modules > Translations > Translate > Overview.

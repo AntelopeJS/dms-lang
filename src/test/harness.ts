@@ -3,12 +3,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { defineConfig } from "@antelopejs/interface-core/config";
 import { MongoMemoryReplSet } from "mongodb-memory-server-core";
+import { SETUP_TOKEN } from "./setup-token";
 
 const API_PORT = 5021;
 const LOCAL_BUILD_COMMAND = process.env.DMS_PREBUILT ? [] : ["pnpm build"];
 const JWT_SECRET = "test-jwt-secret";
 const HTML_RENDER_SECRET = "test-html-render-secret";
 const MONGO_BINARY_VERSION = "8.0.8";
+
+process.env.DMS_SETUP_TOKEN = SETUP_TOKEN;
 
 let mongod: MongoMemoryReplSet;
 let storageDir: string;

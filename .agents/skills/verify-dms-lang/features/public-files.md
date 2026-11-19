@@ -21,6 +21,7 @@ Every workspace a person creates is served as public JSON at `/i18n/<workspace>/
 - `workspace-ids-are-case-insensitive`: `/i18n/<ID in capitals>/fr.json` reads the same file.
 - `a-region-without-a-file-is-served-its-language`: Fr-BE.json is served the fr file with Content-Language fr when the workspace has no fr-BE.
 
+- `another-app-loads-the-workspace-with-the-fetch-setup`: a page of another app, served from its own loopback origin and signed in nowhere, runs the settings page's fetch setup in Chromium and gets the French texts merged over the English ones, so the browser's CORS check passes for real.
 ## How to get to it (user POV)
 
 - Another app fetches `https://<apiBaseUrl>/i18n/<workspace>/<locale>.json`. The Overview and the workspace settings show the URL.

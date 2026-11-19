@@ -1,5 +1,7 @@
+import { once } from "node:events";
+import { createServer } from "node:http";
 import { roundNinePublic } from "./parts/round9.mjs";
-import { freshId, guarded, lang, raw, recordRaw, seedWorkspace } from "../lang.mjs";
+import { freshId, guarded, lang, parseJson, pick, raw, recordRaw, seedWorkspace } from "../lang.mjs";
 
 /** @typedef {import("../lang.mjs").Ctx} Ctx */
 
@@ -108,6 +110,33 @@ export const journeys = guarded([
         ctx.equal("HTTP status", answer.status, 200),
         ctx.equal("the same tree", answer.json, { checkout: { pay: "Payer maintenant" } }),
       ]);
+    },
+  },
+  {
+    id: "another-app-loads-the-workspace-with-the-fetch-setup",
+    title: "a page of another app, on its own origin and signed in nowhere, runs the fetch setup of the settings page and gets the language's texts over the base",
+    entryPoint: "Workspace settings > Use in your app > Fetch, run in a browser page of another origin",
+    async run(/** @type {Ctx} */ ctx) {
+      const id = freshId(ctx, "elsewhere");
+      await checkoutWorkspace(ctx, id);
+      const snippet = await lang(ctx, "read the fetch setup", "GET", `/snippet?workspace=${id}&kind=fetch`);
+      const code = String(pick(snippet.body, "code")).replace("const messages = await loadMessages();", "");
+      const shop = createServer((_request, response) => {
+        response.writeHead(200, { "content-type": "text/html" });
+        response.end("<!doctype html><title>Shop</title><h1>Shop</h1>");
+      }).listen(0, "127.0.0.1");
+      await once(shop, "listening");
+      try {
+        const app = `http://127.0.0.1:${Number(pick(shop.address(), "port"))}`;
+        const tab = await ctx.tab("anon", "another app");
+        await tab.page.goto(`${app}/`);
+        const loaded = parseJson(String(await tab.page.evaluate(`(async () => {\n${code}\nreturn JSON.stringify(await loadMessages("fr"));\n})()`).catch((/** @type {unknown} */ error) => JSON.stringify(String(error)))));
+        await ctx.verify("the browser lets the other origin read the files, and the French text wins over the English one", [
+          ctx.equal("messages", loaded, { checkout: { pay: "Payer maintenant", cancel: "Cancel order" } }),
+        ]);
+      } finally {
+        shop.close();
+      }
     },
   },
   ...roundNinePublic,
