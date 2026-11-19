@@ -1,3 +1,5 @@
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { expect } from "chai";
 import type { JsonValue } from "../utils/json";
 import { type Answer, field, lang, objects, text } from "./helpers/api";
@@ -79,6 +81,30 @@ describe("[integration] the project files over the HTTP API: reading", function 
     expect(rows.get("x.only_a")).to.deep.equal({ en: "A" });
     expect(rows.get("x.only_b")).to.deep.equal({ en: "B" });
   });
+
+  it("layers-replace-the-root-folder: scans only layers/*/i18n/locales once a layers folder exists, even an empty one, and follows a change of layout on the next read", async () => {
+    project.reset();
+    const layers = join(project.root(), "layers");
+    mkdirSync(layers, { recursive: true });
+    expect(
+      [...(await projectRows()).keys()],
+      "an empty layers folder hides the root",
+    ).to.deep.equal([]);
+    const deep = join(layers, "shop", "i18n", "locales", "deep");
+    mkdirSync(deep, { recursive: true });
+    writeFileSync(
+      join(deep, "shop-en-GB.json"),
+      JSON.stringify({ layered: { key: "From a layer" } }),
+    );
+    expect([...(await projectRows()).entries()]).to.deep.equal([
+      ["layered.key", { en: "From a layer" }],
+    ]);
+    rmSync(layers, { recursive: true, force: true });
+    expect((await projectRows()).get("shop.title")).to.deep.equal({
+      en: "Shop",
+      fr: "Boutique",
+    });
+  });
 });
 
 describe("[integration] the project files over the HTTP API: writing", function () {
@@ -146,6 +172,19 @@ describe("[integration] the project files over the HTTP API: changing and droppi
   this.timeout(REQUEST_TIMEOUT_MS);
   useWorkspaceStorage(true);
   const project = useProjectFiles();
+
+  it("a-namespace-tie-goes-to-the-last-file: writes a new key to the last file in merge order when two files hold the same depth of its namespace", async () => {
+    project.reset();
+    project.put("crm-fr-FR.json", { crm: { deals: { title: "Affaires" } } });
+    project.put("zz-fr-FR.json", { crm: { contacts: { title: "Contacts" } } });
+    await write("POST", "crm.notes.title", { fr: "Notes" });
+    expect(project.read("zz-fr-FR.json", "crm", "notes", "title")).to.equal(
+      "Notes",
+    );
+    expect(project.read("crm-fr-FR.json")).to.deep.equal({
+      crm: { deals: { title: "Affaires" } },
+    });
+  });
 
   it("delete-uncovers-the-older-definition: changes only the winning definition when a key is deleted, cleared or renamed, so an older duplicate shows again", async () => {
     project.reset();
