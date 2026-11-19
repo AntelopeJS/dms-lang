@@ -352,7 +352,7 @@ const SIGN_IN_TIMEOUT_MS = 30_000;
 const SIGN_IN_ATTEMPTS = 3;
 
 /**
- * Waits until the sign-in form is interactive. The server renders it as a plain `<form method="post">` and the
+ * Waits until a form with a password field (sign-in, sign-up) is interactive. The server renders it as a plain `<form method="post">` and the
  * dashboard hydrates it after the page's `load` event: a Login click before that posts the form to `/auth`, which
  * answers `{"message":"Not found"}` and leaves the page on `/auth`. The Show password toggle only works once the
  * form is hydrated, so the button becoming Hide password proves it.
@@ -360,7 +360,7 @@ const SIGN_IN_ATTEMPTS = 3;
  * @param {Tab} tab The tab on the sign-in page
  * @returns {Promise<boolean>} Whether the form became interactive
  */
-async function waitForHydration(tab) {
+export async function waitForHydration(tab) {
   for (let attempt = 0; attempt < HYDRATION_ATTEMPTS; attempt += 1) {
     await tab.click(SHOW_PASSWORD);
     const toggled = await tab.visible(HIDE_PASSWORD, { timeoutMs: HYDRATION_POLL_MS });

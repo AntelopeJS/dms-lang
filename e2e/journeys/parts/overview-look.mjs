@@ -31,6 +31,7 @@ export const overviewLook = [
       await clickUntil(tab, { role: "button", name: /^Verify Admin/ }, { role: "menuitem", name: "Language" });
       await tab.click({ role: "menuitem", name: "Language" });
       await tab.click({ role: "menuitemcheckbox", name: "français" });
+      await tab.visible({ role: "heading", name: "Vue d'ensemble", exact: true });
       await tab.reload();
       await ctx.verify("the overview and the Lang menu read in French after a reload", [
         tab.visible({ role: "heading", name: "Vue d'ensemble", exact: true }),
@@ -43,8 +44,11 @@ export const overviewLook = [
       for (const path of ["overview", "translations", "language?locale=fr&", "workspaces", "workspace"]) {
         const [page, query = ""] = path.split("?");
         await tab.goto(`/modules/lang/${page}?${query}workspace=${id}`);
-        await tab.visible({ role: "link", name: /^Vue d'ensemble/ });
-        await ctx.verify(`${page} shows no untranslated key`, [tab.shows(/dms_lang\./, { not: true }), tab.shows(/\bOverview\b|\bTranslation matrix\b/, { not: true })]);
+        await ctx.verify(`${page} reads in French and shows no untranslated key`, [
+          tab.visible({ role: "link", name: /^Vue d'ensemble/ }),
+          tab.shows(/dms_lang\./, { not: true }),
+          tab.shows(/\bOverview\b|\bTranslation matrix\b/, { not: true }),
+        ]);
       }
     },
   },
