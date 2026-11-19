@@ -50,6 +50,7 @@ function pack(folder) {
     {
       cwd: REPOSITORY,
       encoding: "utf8",
+      shell: process.platform === "win32",
     },
   );
   assert.equal(packed.status, 0, packed.stderr);
