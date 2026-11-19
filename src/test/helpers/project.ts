@@ -36,6 +36,8 @@ export interface ProjectFiles {
   read(name: string, ...path: string[]): JsonValue | undefined;
   /** The folder holding the locales folder and the `layers` folder of the project. */
   root(): string;
+  /** Registers the project's frontend module again, flagged as the application layer or not. */
+  register(appLayer: boolean): Promise<void>;
 }
 
 /**
@@ -62,17 +64,19 @@ export function useProjectFiles(): ProjectFiles {
     },
     remove: (name) => rmSync(join(locales(), name)),
     read: (name, ...path) => field(readJson(join(locales(), name)), ...path),
+    register: (appLayer) =>
+      AddFrontendModule({
+        name: "dms-lang-test-http-project",
+        sourcePath: root(),
+        renderer: { name: "vue", version: "3" },
+        priority: 70,
+        options: { dmsI18nAppLayer: appLayer },
+      }),
   };
   before(async () => {
     directory = mkdtempSync(join(tmpdir(), "dms-lang-http-project-"));
     project.reset();
-    await AddFrontendModule({
-      name: "dms-lang-test-http-project",
-      sourcePath: root(),
-      renderer: { name: "vue", version: "3" },
-      priority: 70,
-      options: { dmsI18nAppLayer: true },
-    });
+    await project.register(true);
     await initializeLocaleRegistry();
   });
   after(() => {

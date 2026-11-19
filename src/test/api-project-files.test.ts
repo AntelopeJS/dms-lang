@@ -1,5 +1,7 @@
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { AddFrontendModule } from "@antelopejs/interface-dms/page";
 import { expect } from "chai";
 import type { JsonValue } from "../utils/json";
 import { type Answer, field, lang, objects, text } from "./helpers/api";
@@ -356,5 +358,122 @@ describe("[integration] the texts of the installed modules over the HTTP API", f
       path: KEY,
     });
     expect(locked.status).to.equal(404);
+  });
+});
+
+const LATE_HELLO = "Hello from a late module";
+const REGISTRATION_TIMEOUT_MS = 10_000;
+const POLL_MS = 100;
+
+/** The English text of a key in a workspace, undefined when the workspace does not have the key. */
+async function english(
+  workspace: string,
+  key: string,
+): Promise<JsonValue | undefined> {
+  const answer = await lang("GET", `/row?workspace=${workspace}&key=${key}`);
+  return field(answer.body, "row", "values", "en");
+}
+
+/** Reads the text until it is the wanted one or the time is up: the module lists a registration once the DMS announces it. */
+async function settled(
+  workspace: string,
+  key: string,
+  wanted: JsonValue | undefined,
+): Promise<JsonValue | undefined> {
+  const deadline = Date.now() + REGISTRATION_TIMEOUT_MS;
+  let seen = await english(workspace, key);
+  while (seen !== wanted && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, POLL_MS));
+    seen = await english(workspace, key);
+  }
+  return seen;
+}
+
+/** A frontend module of priority 0 that the backend did not know at start. */
+interface LateModule {
+  /** Registers it with its texts, flagged as an application layer or not. */
+  register(appLayer: boolean): Promise<void>;
+  /** Registers it again on a folder without texts. */
+  forget(): Promise<void>;
+}
+
+/** Call it inside a `describe`. */
+function useLateModule(): LateModule {
+  let directory = "";
+  const register = (folder: string, appLayer: boolean) =>
+    AddFrontendModule({
+      name: "dms-lang-test-late-module",
+      sourcePath: join(directory, folder),
+      renderer: { name: "vue", version: "3" },
+      priority: 0,
+      options: { dmsI18nAppLayer: appLayer },
+    });
+  before(() => {
+    directory = mkdtempSync(join(tmpdir(), "dms-lang-late-module-"));
+    const locales = join(directory, "texts", "i18n", "locales");
+    mkdirSync(locales, { recursive: true });
+    mkdirSync(join(directory, "empty"));
+    writeFileSync(
+      join(locales, "late-en-GB.json"),
+      JSON.stringify({ late: { hello: LATE_HELLO }, shop: { title: "Late" } }),
+    );
+  });
+  after(() => {
+    rmSync(directory, { recursive: true, force: true });
+  });
+  return {
+    register: (appLayer) => register("texts", appLayer),
+    forget: () => register("empty", false),
+  };
+}
+
+describe("[integration] frontend modules registered while the module runs", function () {
+  this.timeout(REQUEST_TIMEOUT_MS);
+  useWorkspaceStorage(true);
+  const project = useProjectFiles();
+  const late = useLateModule();
+
+  it("reregistering-changes-the-origin: registering the project's frontend module again without dmsI18nAppLayer moves its keys to the installed modules, and flagging it again brings them back, its files unchanged", async () => {
+    project.reset();
+    expect(await english("default", "shop.title")).to.equal("Shop");
+    try {
+      await project.register(false);
+      expect(await settled("modules", "shop.title", "Shop")).to.equal("Shop");
+      expect(await english("default", "shop.title")).to.equal(undefined);
+      await project.register(true);
+      expect(await settled("default", "shop.title", "Shop")).to.equal("Shop");
+      expect(await english("modules", "shop.title")).to.equal(undefined);
+      expect(project.read("app-en-GB.json", "shop", "title")).to.equal("Shop");
+    } finally {
+      await project.register(true);
+    }
+  });
+
+  it("lower-priority-app-layer-merges-first: a second flagged module of lower priority, registered after start, joins the project files, and the higher-priority module wins on a key both define", async () => {
+    project.reset();
+    try {
+      await late.register(true);
+      expect(await settled("default", "late.hello", LATE_HELLO)).to.equal(
+        LATE_HELLO,
+      );
+      expect(await english("default", "shop.title")).to.equal("Shop");
+    } finally {
+      await late.forget();
+    }
+  });
+
+  it("a-module-registered-after-start-appears: a frontend module registered after Lang started shows its texts in the installed modules without a restart", async () => {
+    expect(await settled("modules", "late.hello", undefined)).to.equal(
+      undefined,
+    );
+    try {
+      await late.register(false);
+      expect(await settled("modules", "late.hello", LATE_HELLO)).to.equal(
+        LATE_HELLO,
+      );
+      expect(await english("default", "late.hello")).to.equal(undefined);
+    } finally {
+      await late.forget();
+    }
   });
 });
