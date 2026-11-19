@@ -3,7 +3,7 @@ import { antelopeKnipConfig } from "@antelopejs/tooling-configs/knip";
 /**
  * Knip reads a top-level `entry`, `project` and `ignore` as unused once
  * `workspaces` is set, and the root then analyses every file, the
- * verification skills under `.agents/` included. The AntelopeJS rules are
+ * agent skills under `.agents/` included. The AntelopeJS rules are
  * therefore the root workspace itself.
  */
 const rootWorkspace = antelopeKnipConfig({

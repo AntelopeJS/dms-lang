@@ -1,5 +1,5 @@
 {
-  "name": "verify-dms-lang-app",
+  "name": "dms-lang-e2e-app",
   "version": "0.0.0",
   "private": true,
   "main": "index.cjs",

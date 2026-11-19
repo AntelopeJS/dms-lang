@@ -11,13 +11,13 @@ const RENDERER = { name: "vue", version: "3" };
  * `late-installed` or `late-app-layer` registers a second module, at priority 0, that the backend did not know at
  * start. A restarted backend starts from the shipped registration whatever the file holds.
  */
-const REGISTRATIONS = path.join(process.env.HOME ?? ".", "verify-frontend-modules.txt");
+const REGISTRATIONS = path.join(process.env.HOME ?? ".", "e2e-frontend-modules.txt");
 
 /** The topic the docs tell a module of its own to subscribe to. */
 const TRANSLATIONS_TOPIC = "dms-lang.translations";
 
 /** One JSON line per message the backend hears on {@link TRANSLATIONS_TOPIC}, as a third-party subscriber would. */
-const HEARD = path.join(process.env.HOME ?? ".", "verify-realtime-heard.jsonl");
+const HEARD = path.join(process.env.HOME ?? ".", "e2e-realtime-heard.jsonl");
 
 /**
  * @param {boolean} appLayer Whether the project's module is flagged as the writable application layer
@@ -25,10 +25,10 @@ const HEARD = path.join(process.env.HOME ?? ".", "verify-realtime-heard.jsonl");
  */
 function registerApp(appLayer) {
   return AddFrontendModule({
-    name: "verify-app-frontend-vue",
+    name: "e2e-app-frontend-vue",
     sourcePath: path.join(__dirname, "frontend-vue"),
     renderer: RENDERER,
-    configKey: "verifyApp",
+    configKey: "e2eApp",
     priority: 1,
     options: { dmsI18nAppLayer: appLayer },
   });
@@ -40,10 +40,10 @@ function registerApp(appLayer) {
  */
 function registerLate(appLayer) {
   return AddFrontendModule({
-    name: "verify-late-frontend-vue",
+    name: "e2e-late-frontend-vue",
     sourcePath: path.join(__dirname, "late-frontend-vue"),
     renderer: RENDERER,
-    configKey: "verifyLate",
+    configKey: "e2eLate",
     priority: 0,
     options: { dmsI18nAppLayer: appLayer },
   });
