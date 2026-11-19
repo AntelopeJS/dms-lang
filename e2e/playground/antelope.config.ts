@@ -23,7 +23,7 @@ if (editableMode !== "default") langConfig.editable = editableMode !== "false";
  * verification are the checkout's own builds.
  */
 export default defineConfig({
-  name: "verify-dms-lang",
+  name: "dms-lang-e2e",
   modules: {
     app: {
       source: { type: "local", path: "." },
@@ -36,11 +36,11 @@ export default defineConfig({
       source: {
         type: "package",
         package: "@antelopejs/dms",
-        version: "0.21.4-next.944.g3da5606",
+        version: "0.21.4-next.949.gf051f91",
       },
       config: {
         homepage: "/modules",
-        meta: { title: "AntelopeJS Lang", description: "Lang verification" },
+        meta: { title: "AntelopeJS Lang", description: "Lang e2e suite" },
         auth: {
           jwtSecret: process.env.DMS_JWT_SECRET ?? "dev",
           signInCountry: { database: false },
@@ -63,7 +63,7 @@ export default defineConfig({
       },
       config: {
         url: process.env.MONGO_URL ?? "mongodb://localhost:27017",
-        database: process.env.MONGO_DATABASE ?? "verify_dms_lang",
+        database: process.env.MONGO_DATABASE ?? "dms_lang_e2e",
       },
       importOverrides: [],
       disabledExports: [],

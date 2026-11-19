@@ -297,7 +297,7 @@ export function renderedUrl(html) {
  * @returns {Promise<Answer>} The last answer
  */
 export function reregister(ctx, wanted, read, accept) {
-  writeFileSync(join(ctx.state.home, "verify-frontend-modules.txt"), `${wanted}\n`);
+  writeFileSync(join(ctx.state.home, "e2e-frontend-modules.txt"), `${wanted}\n`);
   return eventually(read, accept, 20_000);
 }
 
@@ -307,7 +307,7 @@ export function reregister(ctx, wanted, read, accept) {
  * @param {Ctx} ctx The journey
  */
 export function forgetRegistrations(ctx) {
-  rmSync(join(ctx.state.home, "verify-frontend-modules.txt"), { force: true });
+  rmSync(join(ctx.state.home, "e2e-frontend-modules.txt"), { force: true });
 }
 
 /**

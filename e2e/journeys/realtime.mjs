@@ -12,7 +12,7 @@ import { eventually, freshId, guarded, isRow, lang, parseJson, pick, seedWorkspa
  */
 function heard(ctx) {
   try {
-    return readFileSync(join(ctx.state.home, "verify-realtime-heard.jsonl"), "utf8").split("\n").map(parseJson).filter(isRow);
+    return readFileSync(join(ctx.state.home, "e2e-realtime-heard.jsonl"), "utf8").split("\n").map(parseJson).filter(isRow);
   } catch {
     return [];
   }

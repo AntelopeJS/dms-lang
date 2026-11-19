@@ -1,5 +1,5 @@
 {
-  "name": "verify-app-frontend-vue",
+  "name": "e2e-app-frontend-vue",
   "version": "0.0.0",
   "private": true,
   "type": "module",
