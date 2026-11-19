@@ -124,9 +124,9 @@ jobs:
           key: e2e-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'e2e/playground/antelope.config.ts') }}
       - uses: actions/cache@v4
         with:
-          path: ~/.cache/dms-control/frontend
-          key: dms-control-frontend-${{ github.sha }}
-          restore-keys: dms-control-frontend-
+          path: ~/.cache/dms-e2e/frontend
+          key: dms-e2e-frontend-${{ github.sha }}
+          restore-keys: dms-e2e-frontend-
       - name: Install Chromium and its system packages
         run: |
           if timeout 240 pnpm exec playwright install --with-deps --only-shell chromium; then

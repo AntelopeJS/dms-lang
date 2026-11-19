@@ -35,8 +35,8 @@ importers:
         specifier: ~1.24.5
         version: 1.24.5
       '@antelopejs/dms':
-        specifier: 0.21.4-next.944.g3da5606
-        version: 0.21.4-next.944.g3da5606(@antelopejs/core@1.24.5)(@playwright/test@1.65.1)(bare-buffer@3.7.1)(typescript@6.0.3)
+        specifier: 0.21.4-next.949.gf051f91
+        version: 0.21.4-next.949.gf051f91(@antelopejs/core@1.24.5)(@playwright/test@1.65.1)(bare-buffer@3.7.1)(typescript@6.0.3)
       '@antelopejs/dms-frontend':
         specifier: '>=0.11.8 <0.12.0'
         version: 0.11.8(@antelopejs/core@1.24.5)
@@ -168,8 +168,8 @@ importers:
   playground:
     dependencies:
       '@antelopejs/dms':
-        specifier: 0.21.4-next.944.g3da5606
-        version: 0.21.4-next.944.g3da5606(@antelopejs/core@1.24.5)(@playwright/test@1.65.1)(bare-buffer@3.7.1)(typescript@6.0.3)
+        specifier: 0.21.4-next.949.gf051f91
+        version: 0.21.4-next.949.gf051f91(@antelopejs/core@1.24.5)(@playwright/test@1.65.1)(bare-buffer@3.7.1)(typescript@6.0.3)
       '@antelopejs/interface-api':
         specifier: '>=0.3.3 <0.4.0'
         version: 0.3.3(@antelopejs/interface-core@0.5.1)
@@ -253,10 +253,9 @@ packages:
       typescript:
         optional: true
 
-  '@antelopejs/dms@0.21.4-next.944.g3da5606':
-    resolution: {integrity: sha512-Os2WiWC8f5cm4JBtLea0ZQxnx09Iwp4t9vb1pWBcrcR8HJI3EshGE2jqjmspY4BovEgI0yYGzmH73QFPC9/IUg==}
+  '@antelopejs/dms@0.21.4-next.949.gf051f91':
+    resolution: {integrity: sha512-z+CbH1VDF5o80thXoQy7iEsffa1KuONNOLGkY+ncfx53mISorlc4D1q0m/bCKkmcGkeDx+RudU+I3An7OEwweA==}
     engines: {node: ^20.19.0 || >=22.12.0}
-    hasBin: true
     peerDependencies:
       '@antelopejs/core': ~1.24.5
       '@playwright/test': ^1.65.0
@@ -6067,7 +6066,7 @@ snapshots:
       - react-native-b4a
       - supports-color
 
-  '@antelopejs/dms@0.21.4-next.944.g3da5606(@antelopejs/core@1.24.5)(@playwright/test@1.65.1)(bare-buffer@3.7.1)(typescript@6.0.3)':
+  '@antelopejs/dms@0.21.4-next.949.gf051f91(@antelopejs/core@1.24.5)(@playwright/test@1.65.1)(bare-buffer@3.7.1)(typescript@6.0.3)':
     dependencies:
       2fa: 0.1.2
       '@antelopejs/interface-api': 0.3.3(@antelopejs/interface-core@0.5.1)
