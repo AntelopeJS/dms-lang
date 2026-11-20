@@ -29,14 +29,18 @@ const FRONTEND_MANIFEST = z.object({
 });
 
 /**
- * @param {string} tarball The packed file
+ * @param {string} folder Where the tarball is
+ * @param {string} tarball The packed file's name in `folder`
  * @param {string} file A path inside the package
  * @returns {string} The file's text
  */
-function readPacked(tarball, file) {
-  return spawnSync("tar", ["-xzOf", tarball, `package/${file}`], {
+function readPacked(folder, tarball, file) {
+  const read = spawnSync("tar", ["-xzOf", tarball, `package/${file}`], {
+    cwd: folder,
     encoding: "utf8",
-  }).stdout;
+  });
+  assert.equal(read.status, 0, read.stderr);
+  return read.stdout;
 }
 
 /**
@@ -54,15 +58,21 @@ function pack(folder) {
     },
   );
   assert.equal(packed.status, 0, packed.stderr);
-  const tarball = join(folder, packed.stdout.trim().split("\n").at(-1) ?? "");
-  const listed = spawnSync("tar", ["-tzf", tarball], { encoding: "utf8" });
+  const tarball = packed.stdout.trim().split(/\r?\n/).at(-1) ?? "";
+  const listed = spawnSync("tar", ["-tzf", tarball], {
+    cwd: folder,
+    encoding: "utf8",
+  });
+  assert.equal(listed.status, 0, listed.stderr);
   return {
-    manifest: MANIFEST.parse(JSON.parse(readPacked(tarball, "package.json"))),
+    manifest: MANIFEST.parse(
+      JSON.parse(readPacked(folder, tarball, "package.json")),
+    ),
     frontend: FRONTEND_MANIFEST.parse(
-      JSON.parse(readPacked(tarball, "frontend-vue/package.json")),
+      JSON.parse(readPacked(folder, tarball, "frontend-vue/package.json")),
     ),
     files: listed.stdout
-      .split("\n")
+      .split(/\r?\n/)
       .map((line) => line.replace(/^package\//, ""))
       .filter(Boolean),
   };
