@@ -795,6 +795,401 @@
 			"keys": {
 				"tab": "Tab"
 			}
+		},
+		"automation": {
+			"fields": {
+				"actorId": "Actor id",
+				"at": "When",
+				"backup": "Backup",
+				"baseLanguageName": "Base language name",
+				"baseLocale": "Base language",
+				"baseMissing": "Keys without base text",
+				"baseText": "Base text",
+				"before": "Before key",
+				"bytes": "Size in bytes",
+				"changed": "Changed",
+				"checkExpected": "Check current text",
+				"cleared": "Cleared",
+				"code": "Language code",
+				"compiles": "Compiles",
+				"complete": "Complete",
+				"confirm": "Confirmation",
+				"coverage": "Coverage",
+				"createKeys": "Create missing keys",
+				"created": "Keys created",
+				"data": "Data",
+				"deliveryId": "Delivery id",
+				"description": "Description",
+				"editable": "Editable",
+				"exists": "Exists",
+				"expectedText": "Expected text",
+				"extraSpaces": "Extra spaces",
+				"fallback": "Use fallbacks",
+				"fallbackLocale": "Fallback language",
+				"fireOnStart": "Fire on start",
+				"flag": "Flag",
+				"format": "Format",
+				"found": "Found",
+				"hasIssue": "Has an issue",
+				"hasMore": "Has more",
+				"id": "Translation workspace id",
+				"inLanguage": "Name in language",
+				"includeAutomationWrites": "Include procedure writes",
+				"includeStats": "Include figures",
+				"incompleteKeys": "Incomplete keys",
+				"inherited": "Module texts",
+				"intervalSeconds": "Interval (seconds)",
+				"isBase": "Is the base language",
+				"isEmpty": "Empty",
+				"isNamespace": "Is a namespace",
+				"issue": "Issue",
+				"issues": "Issues",
+				"items": "Items",
+				"key": "Translation key",
+				"keyCount": "Key count",
+				"keyPrefix": "Key prefix",
+				"keys": "Keys",
+				"keysAdded": "Keys added",
+				"keysChanged": "Keys changed",
+				"keysRemoved": "Keys removed",
+				"keysTruncated": "Keys truncated",
+				"kind": "Kind",
+				"kinds": "Kinds",
+				"language": "Language subtag",
+				"limit": "Limit",
+				"linkedKeys": "Linked keys",
+				"locale": "Language",
+				"localeMissing": "Missing per language",
+				"localeProgress": "Coverage per language",
+				"locales": "Languages",
+				"maxBytes": "Maximum size (bytes)",
+				"message": "Message",
+				"messages": "Texts",
+				"missing": "Missing",
+				"missingLocales": "Languages missing a text",
+				"missingParams": "Missing parameters",
+				"mode": "Mode",
+				"moduleTexts": "Module texts",
+				"modulesAdded": "Modules added",
+				"modulesRemoved": "Modules removed",
+				"name": "Name",
+				"namespace": "Namespace",
+				"namespaces": "Namespaces",
+				"newId": "New id",
+				"newKey": "New key",
+				"offset": "Offset",
+				"onMissing": "When missing",
+				"operation": "Operation",
+				"operations": "Operations",
+				"origin": "Origin",
+				"originProcedureId": "Origin procedure id",
+				"originRunId": "Origin run id",
+				"outdated": "Outdated",
+				"overridden": "Overridden",
+				"overriddenChanged": "Overridden keys changed",
+				"overrides": "Overrides",
+				"params": "Parameters",
+				"pluralFormsDiffer": "Plural forms differ",
+				"previousBaseLocale": "Previous base language",
+				"previousCoverage": "Previous coverage",
+				"previousKey": "Previous key",
+				"previousText": "Previous text",
+				"previousWorkspace": "Previous translation workspace",
+				"problems": "Problems",
+				"publicUrl": "Public URL",
+				"reason": "Reason",
+				"removed": "Removed",
+				"removedLocales": "Languages removed",
+				"reviewTrackingCleared": "Review tracking cleared",
+				"reviewed": "Reviewed",
+				"sameLanguage": "Same language",
+				"served": "Served",
+				"servedLocale": "Served language",
+				"siblings": "Shown together",
+				"skipped": "Keys skipped",
+				"staleLocales": "Languages to review",
+				"stillOutdated": "Still outdated",
+				"stillVisible": "Still visible",
+				"targets": "Target languages",
+				"template": "Template",
+				"text": "Text",
+				"texts": "Translations",
+				"textsRemoved": "Texts removed",
+				"threshold": "Threshold",
+				"toReview": "To review",
+				"total": "Total",
+				"totalKeys": "Total keys",
+				"translated": "Translated",
+				"translatedStrings": "Translated texts",
+				"truncated": "Truncated",
+				"type": "Type",
+				"unchanged": "Unchanged",
+				"unknownParams": "Unknown parameters",
+				"url": "URL",
+				"usedFallback": "Used a fallback",
+				"valid": "Valid",
+				"values": "Texts",
+				"workspace": "Translation workspace",
+				"workspaceKind": "Translation workspace kind",
+				"workspaces": "Translation workspaces",
+				"written": "Written"
+			},
+			"hints": {
+				"workspace": "The translation catalog (not a tenant): default for the project files, modules, or an added translation workspace id",
+				"key": "Dot path of the key, e.g. emails.welcome.subject",
+				"locale": "Language code, e.g. fr or fr-BE",
+				"keyPrefix": "Only keys equal to it or under it as a namespace; empty for every key",
+				"includeAutomationWrites": "Also fire for writes made by procedures; off by default so a procedure does not trigger itself",
+				"intervalSeconds": "How often to check, in seconds",
+				"params": "Values of the message placeholders: name fills the name placeholder, 0 the first list one; count or n chooses the plural form",
+				"limit": "How many items to return",
+				"offset": "How many matching items to skip"
+			},
+			"triggers": {
+				"translationsChanged": {
+					"name": "Translations changed",
+					"description": "Something in a translation workspace was written through Lang: a text, a key, a language or the translation workspace itself",
+					"fields": {
+						"workspace": "Fire only for this translation workspace; empty for every one",
+						"operations": "Fire only for these operations; empty for every operation"
+					}
+				},
+				"baseTextChanged": {
+					"name": "Base text changed",
+					"description": "The base-language text of a key in a translation workspace changed; its translations may be outdated",
+					"fields": {
+						"workspace": "Fire only for this translation workspace; empty for every one"
+					}
+				},
+				"languageCompleted": {
+					"name": "Language completed",
+					"description": "A language of a translation workspace reached full coverage: every key has a text. Fires for writes made by procedures too",
+					"fields": {
+						"workspace": "Fire only for this translation workspace; empty for every one",
+						"locale": "Fire only for this language; empty for every target language"
+					}
+				},
+				"coverageBelow": {
+					"name": "Language coverage dropped",
+					"description": "Checks a translation workspace on an interval and fires when a language's coverage falls below a threshold",
+					"fields": {
+						"workspace": "Translation workspace to watch; empty for the project files and every added one",
+						"locale": "Language to watch; empty for every target language",
+						"threshold": "Fire when coverage goes from at least this percentage to below it; 100 fires when a complete language stops being complete",
+						"fireOnStart": "Also fire, on the first check, for languages already below the threshold"
+					}
+				},
+				"moduleTextsChanged": {
+					"name": "Module texts changed",
+					"description": "The texts that installed modules ship changed: a module was added or removed, or its language files changed",
+					"fields": {
+						"intervalSeconds": "How often to check the module language files, in seconds; 0 follows module additions and removals only"
+					}
+				}
+			},
+			"actions": {
+				"setTranslation": {
+					"name": "Set translation",
+					"description": "Write or clear the text of one key in one language of a translation workspace",
+					"fields": {
+						"text": "New text; empty or spaces only clears it",
+						"checkExpected": "Refuse the write when the current text is not the expected text",
+						"expectedText": "Text expected now, empty for no text; read only when Check current text is on"
+					}
+				},
+				"createKey": {
+					"name": "Create translation key",
+					"description": "Add a key to a translation workspace with its base text, and optionally its translations",
+					"fields": {
+						"baseText": "Text in the base language",
+						"texts": "Other languages' texts, by language code",
+						"before": "Sibling key the new key goes right before; empty appends it"
+					}
+				},
+				"markReviewed": {
+					"name": "Mark translations reviewed",
+					"description": "Record that a key's translations were checked against the current base text, so they leave the review queue (added translation workspaces only)",
+					"fields": {
+						"locales": "Languages to mark; empty for every language holding a text"
+					}
+				},
+				"addLanguage": {
+					"name": "Add language",
+					"description": "Add a language to an added translation workspace",
+					"fields": {
+						"name": "Display name; empty uses the language's own name",
+						"flag": "Flag emoji shown next to the language"
+					}
+				},
+				"importLanguage": {
+					"name": "Import language texts",
+					"description": "Write many texts of one language into an existing translation workspace from a nested or flat JSON object",
+					"fields": {
+						"messages": "Texts as a nested tree or flat paths, at most 5000",
+						"mode": "merge writes every given text; fillMissing only keys without a text; replace also clears the language's other texts",
+						"createKeys": "Create the keys the translation workspace lacks instead of skipping them"
+					}
+				},
+				"createWorkspace": {
+					"name": "Create translation workspace",
+					"description": "Create an added translation workspace with its base language",
+					"fields": {
+						"id": "Id of the new translation workspace: lower-case letters, digits, _ and -",
+						"baseLanguageName": "Display name of the base language",
+						"description": "What the translation workspace is for",
+						"type": "Kind of app the translations are for"
+					}
+				},
+				"importWorkspace": {
+					"name": "Restore translation workspace",
+					"description": "Create an added translation workspace from a backup made by Export translation workspace",
+					"fields": {
+						"backup": "Backup object, as Export translation workspace gives it in backup format",
+						"id": "Id to create; empty uses the backup's id"
+					}
+				},
+				"renameKey": {
+					"name": "Rename translation key",
+					"description": "Move a key to a new path in every language of a translation workspace"
+				},
+				"deleteKey": {
+					"name": "Delete translation key",
+					"description": "Delete a key in every language of a translation workspace"
+				},
+				"removeOverride": {
+					"name": "Remove module text override",
+					"description": "Remove the project's own text for a module key so the module's text shows again (project files translation workspace)",
+					"fields": {
+						"locales": "Languages to restore; empty for every language"
+					}
+				},
+				"removeLanguage": {
+					"name": "Remove language",
+					"description": "Remove a language and all its texts from an added translation workspace"
+				},
+				"setBaseLanguage": {
+					"name": "Set base language",
+					"description": "Make another language the base of an added translation workspace; review tracking restarts"
+				},
+				"updateWorkspace": {
+					"name": "Edit translation workspace",
+					"description": "Change the description or type of an added translation workspace. A field left untouched keeps its value; a field set to an empty value clears it",
+					"fields": {
+						"description": "New description; an empty value clears it",
+						"type": "New type; an empty value clears it"
+					}
+				},
+				"renameWorkspace": {
+					"name": "Rename translation workspace",
+					"description": "Change the id of an added translation workspace; its public URL changes with it, so apps loading the old URL break",
+					"fields": {
+						"newId": "New id: lower-case letters, digits, _ and -"
+					}
+				},
+				"deleteWorkspace": {
+					"name": "Delete translation workspace",
+					"description": "Delete an added translation workspace with all its languages and texts. Irreversible",
+					"fields": {
+						"confirm": "Repeat the translation workspace id to confirm"
+					}
+				},
+				"translate": {
+					"name": "Translate text",
+					"description": "Read a key's text in a language from a translation workspace, with fallback, and fill its parameters",
+					"fields": {
+						"fallbackLocale": "Tried when the language and its language subtag have no text; empty goes to the base language",
+						"fallback": "Off: only the language and its language subtag",
+						"onMissing": "When no tried language has a text: fail the step, return an empty text, or return the key"
+					}
+				},
+				"getKey": {
+					"name": "Get translation key",
+					"description": "Read every language's text of a key in a translation workspace, with its review state"
+				},
+				"missingKeys": {
+					"name": "List missing translations",
+					"description": "List the keys of a translation workspace that have no text in a language, with their base text",
+					"fields": {
+						"locale": "Language whose missing texts to list"
+					}
+				},
+				"keysToReview": {
+					"name": "List translations to review",
+					"description": "List the texts of a language in a translation workspace that need another look: a message issue, or translated from an older base text",
+					"fields": {
+						"locale": "Language whose texts to list",
+						"reason": "any, outdated (translated from an older base text) or issue (a message problem)"
+					}
+				},
+				"languageCoverage": {
+					"name": "Language coverage",
+					"description": "Coverage figures of one language of a translation workspace",
+					"fields": {
+						"locale": "Language; matched exactly, else by its language subtag"
+					}
+				},
+				"namespaceCoverage": {
+					"name": "Coverage by namespace",
+					"description": "Missing texts per top-level namespace and language of a translation workspace",
+					"fields": {
+						"locale": "One target language; empty for every one"
+					}
+				},
+				"workspaceSummary": {
+					"name": "Translation workspace summary",
+					"description": "Languages, size and coverage of a translation workspace"
+				},
+				"exportWorkspace": {
+					"name": "Export translation workspace",
+					"description": "The texts of a translation workspace, or of one language, as JSON; or a backup that Restore translation workspace accepts",
+					"fields": {
+						"locale": "One language's file; empty for every language",
+						"format": "messages for the texts, backup for a full backup",
+						"maxBytes": "Fail above this size, so the run log stays small"
+					}
+				},
+				"listWorkspaces": {
+					"name": "List translation workspaces",
+					"description": "Every translation workspace: project files, added ones and module texts",
+					"fields": {
+						"kinds": "Kinds to list; empty for every kind",
+						"includeStats": "Add the key count and coverage of each"
+					}
+				},
+				"publicUrl": {
+					"name": "Translation file URL",
+					"description": "The public URL an app loads a language of an added translation workspace from",
+					"fields": {
+						"locale": "Language; empty gives the URL template"
+					}
+				}
+			},
+			"data": {
+				"formatMessage": {
+					"name": "Format message",
+					"description": "Fill a vue-i18n message's parameters and choose its plural form",
+					"fields": {
+						"message": "The vue-i18n message to fill"
+					}
+				},
+				"checkMessage": {
+					"name": "Check translation",
+					"description": "Check a translated text against its base text the way the review queue does",
+					"fields": {
+						"baseText": "Base text to compare with; empty checks the text alone",
+						"text": "Text to check"
+					}
+				},
+				"languageName": {
+					"name": "Language name",
+					"description": "The name of a language from its code, in that language or another",
+					"fields": {
+						"code": "Language code, e.g. pt-BR",
+						"inLanguage": "Language to write the name in; empty for the language itself",
+						"siblings": "Other codes shown together: the region is added when two share a language"
+					}
+				}
+			}
 		}
 	}
 }

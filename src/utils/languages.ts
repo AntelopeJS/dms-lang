@@ -77,17 +77,22 @@ function displayName(
 }
 
 /**
- * The name of a language in that language, without its region ("Português")
- * unless another of `siblings` is the same language ("Português (Brasil)").
+ * The name of a language in that language (or in `display`), without its
+ * region ("Português") unless another of `siblings` is the same language
+ * ("Português (Brasil)").
  */
-export function nativeName(code: string, siblings: string[] = []): string {
+export function nativeName(
+  code: string,
+  siblings: string[] = [],
+  display = code,
+): string {
   const language = languageOf(code);
   const isShared = siblings.some(
     (other) => other !== code && languageOf(other) === language,
   );
   return isShared
-    ? displayName(code, code, REGIONAL_NAME)
-    : displayName(code, language, LANGUAGE_NAME);
+    ? displayName(display, code, REGIONAL_NAME)
+    : displayName(display, language, LANGUAGE_NAME);
 }
 
 interface WorkspaceRights {

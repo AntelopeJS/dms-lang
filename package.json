@@ -105,6 +105,9 @@
     "typescript": "^6.0.3",
     "vue": "^3.5.0"
   },
+  "optionalDependencies": {
+    "@antelopejs/interface-dms-automation": ">=0.7.0 <0.8.0"
+  },
   "packageManager": "pnpm@10.2.0",
   "pnpm": {
     "overrides": {

@@ -41,7 +41,7 @@ export interface WriteOptions {
   dryRun?: boolean;
 }
 
-export function originOf(writer: Writer): ChangeOrigin {
+function originOf(writer: Writer): ChangeOrigin {
   return writer.kind === "user"
     ? { origin: "user", actorId: writer.actor._id }
     : {

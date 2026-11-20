@@ -64,7 +64,7 @@ export interface CompletionEvent {
 type Listener<T> = (event: T) => void;
 
 /** The listeners of one kind of event; a throwing listener never fails the write. */
-export class LangChannel<T> {
+class LangChannel<T> {
   private readonly listeners = new Set<Listener<T>>();
 
   constructor(private readonly name: string) {}

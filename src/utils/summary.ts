@@ -105,6 +105,22 @@ export function summarizeWorkspaces(
   );
 }
 
+/**
+ * The figures of one workspace as /summary lists them; the project files
+ * count the module keys they override.
+ */
+export function workspaceStats(
+  workspace: WorkspaceSummary,
+  publicUrlOf?: PublicUrlOf,
+): WorkspaceStats {
+  const stats = describeWorkspace(workspace, publicUrlOf);
+  if (workspace.id !== DEFAULT_WORKSPACE) return stats;
+  return {
+    ...stats,
+    overrides: countOverrides(resolveFlat(MODULES_WORKSPACE)),
+  };
+}
+
 export function countDefaultMissing(): number {
   return sumMissing(resolveFlat(DEFAULT_WORKSPACE));
 }

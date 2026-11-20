@@ -269,3 +269,40 @@ export function resolveRow(
 ): FlatRow | undefined {
   return resolveFlat(workspace).rows.find((row) => row.key === key);
 }
+
+/** The texts of one key in every language of a workspace, read straight from its files. */
+export interface KeyTexts {
+  baseLocale: string;
+  locales: string[];
+  /** Language to the text it shows: in the project files, the project's text over the module's. */
+  texts: Record<string, string>;
+  isNamespace: boolean;
+}
+
+function shownText(value: TranslationValue): string | undefined {
+  return isMissing(value) || value === undefined || value === null
+    ? undefined
+    : String(value);
+}
+
+/** The texts a key shows in each language of a workspace, without computing its rows. */
+export function lookupTexts(workspace: string, key: string): KeyTexts {
+  const context = contextOf(workspace);
+  const texts: Record<string, string> = {};
+  for (const locale of context.locales) {
+    const text =
+      shownText(textAtPath(context.presence[locale], key)) ??
+      shownText(textAtPath(context.inherited?.[locale], key));
+    if (text !== undefined) texts[locale] = text;
+  }
+  const layers = [
+    ...Object.values(context.presence),
+    ...Object.values(context.inherited ?? {}),
+  ];
+  return {
+    baseLocale: context.defaultLocale,
+    locales: context.locales,
+    texts,
+    isNamespace: layers.some((data) => isJsonObject(getValueAtPath(data, key))),
+  };
+}

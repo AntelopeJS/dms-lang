@@ -12,7 +12,7 @@ import { isString } from "./guards";
 const SESSION_HEADER = "x-realtime-session";
 const REALTIME_CHANGE = "changed";
 /** The actor a write made by a procedure is announced with. */
-export const AUTOMATION_ACTOR_ID = "dms:automation";
+const AUTOMATION_ACTOR_ID = "dms:automation";
 
 /** A write to a workspace, as the open pages hear about it. */
 export interface WorkspaceChange {

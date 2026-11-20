@@ -1,4 +1,5 @@
 import { createParser, NodeTypes } from "@intlify/message-compiler";
+import { messageIssues } from "./message-syntax";
 import { isMissing, type TranslationValue } from "./tree";
 import { isNumberOrBoolean, isObject, isString } from "./guards";
 
@@ -127,4 +128,47 @@ export function hasMessageIssue(
   const verdict = checkPair(textOf(base), textOf(value));
   verdicts.set(pair, verdict);
   return verdict;
+}
+
+/** Why a text is or is not an issue, reason by reason. */
+export interface MessageCheck {
+  hasIssue: boolean;
+  compiles: boolean;
+  problems: string[];
+  missingParams: string[];
+  unknownParams: string[];
+  pluralFormsDiffer: boolean;
+  extraSpaces: boolean;
+  isEmpty: boolean;
+}
+
+/**
+ * The reasons behind {@link hasMessageIssue}: whether the text compiles and
+ * the compiler's problems, base variables left out, variables the base lacks,
+ * another number of plural forms, spaces at an end. An empty base checks the
+ * text alone; an empty text has no issue, it is missing.
+ */
+export function messageCheck(base: string, value: string): MessageCheck {
+  const isEmpty = isMissing(value);
+  const compiled = compile(value);
+  const baseCompiled = isMissing(base) ? undefined : compile(base);
+  const implicit = compiled.forms > SINGLE_FORM ? IMPLICIT_PLURAL_NAMES : [];
+  const baseNames = baseCompiled?.names ?? new Set<string>();
+  const comparable = !isEmpty && baseCompiled !== undefined;
+  return {
+    hasIssue: hasMessageIssue(base, value),
+    compiles: isEmpty || compiled.compiles,
+    problems: isEmpty ? [] : messageIssues(value).map((issue) => issue.problem),
+    missingParams: comparable
+      ? [...baseNames].filter((name) => !compiled.names.has(name))
+      : [],
+    unknownParams: comparable
+      ? [...compiled.names].filter(
+          (name) => !baseNames.has(name) && !implicit.includes(name),
+        )
+      : [],
+    pluralFormsDiffer: comparable && baseCompiled.forms !== compiled.forms,
+    extraSpaces: !isEmpty && hasExtraSpaces(base, value),
+    isEmpty,
+  };
 }

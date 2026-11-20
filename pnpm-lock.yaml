@@ -118,6 +118,10 @@ importers:
       vue:
         specifier: ^3.5.0
         version: 3.5.42(typescript@6.0.3)
+    optionalDependencies:
+      '@antelopejs/interface-dms-automation':
+        specifier: '>=0.7.0 <0.8.0'
+        version: 0.7.0(@antelopejs/interface-core@0.5.1)
 
   frontend-vue:
     dependencies:

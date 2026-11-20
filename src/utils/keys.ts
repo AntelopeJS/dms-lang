@@ -363,9 +363,10 @@ export function updateKey(
     "last_value",
     { path: key },
   );
+  const change = baseChange(store, next, key);
   applyTexts(store, segments, texts);
   store.track?.({ path: key, texts, messages: next });
-  return baseChange(store, next, key);
+  return change;
 }
 
 function assertOwnKey(store: KeyStore, segments: string[]): void {
@@ -445,20 +446,20 @@ export function removeOverride(
   const segments = validateKeyPath(path);
   const key = segments.join(".");
   check(hasLeaf(store.reference, segments), "not_an_override", { path });
-  const removed: string[] = [];
-  for (const locale of targetLocales(store, locales)) {
-    if (nodeKindAt(store.messages[locale], segments) !== "leaf") continue;
-    const data = store.load(locale, segments);
-    deleteAtPath(data, segments);
-    store.save(locale, data, segments);
-    removed.push(locale);
-  }
+  const removed = targetLocales(store, locales).filter(
+    (locale) => nodeKindAt(store.messages[locale], segments) === "leaf",
+  );
   const next = applyInMemory(
     store.messages,
     segments,
     Object.fromEntries(removed.map((locale) => [locale, null])),
   );
   const change = baseChange(store, next, key);
+  for (const locale of removed) {
+    const data = store.load(locale, segments);
+    deleteAtPath(data, segments);
+    store.save(locale, data, segments);
+  }
   return change
     ? { locales: removed, baseChange: change }
     : { locales: removed };
