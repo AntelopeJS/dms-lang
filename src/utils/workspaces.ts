@@ -153,6 +153,17 @@ export function hasWorkspace(id: string): boolean {
   return workspaceFolders().has(normalizeWorkspaceId(id));
 }
 
+/** The id of a workspace that can be created, normalized; 400 or 409 otherwise, nothing written. */
+export function checkNewWorkspace(id: string): string {
+  return newWorkspaceDir(id).id;
+}
+
+/** The normalized id of an existing added workspace; 404 otherwise, nothing written. */
+export function checkWorkspace(id: string): string {
+  workspaceDir(id);
+  return normalizeWorkspaceId(id);
+}
+
 /** The folder of an existing added workspace, or 404 without any disk path. */
 function workspaceDir(id: string): string {
   const folder = workspaceFolders().get(normalizeWorkspaceId(id));
@@ -451,7 +462,14 @@ export interface AddedLocale {
   sameLanguage: string[];
 }
 
-export function addLocale(id: string, locale: WorkspaceLocale): AddedLocale {
+interface LocaleAddition {
+  dir: string;
+  manifest: WorkspaceManifest;
+  entry: WorkspaceLocale;
+  added: AddedLocale;
+}
+
+function planAddLocale(id: string, locale: WorkspaceLocale): LocaleAddition {
   const entry = validateLocaleEntry(locale);
   const dir = workspaceDir(id);
   const manifest = manifestForWrite(dir);
@@ -460,15 +478,33 @@ export function addLocale(id: string, locale: WorkspaceLocale): AddedLocale {
   check(existing === undefined, "locale_exists", {
     locale: existing ?? entry.code,
   });
+  const language = languageOf(entry.code);
+  return {
+    dir,
+    manifest,
+    entry,
+    added: {
+      code: entry.code,
+      sameLanguage: codes.filter((code) => languageOf(code) === language),
+    },
+  };
+}
+
+/** What {@link addLocale} would answer, with every refusal it makes, writing nothing. */
+export function checkAddLocale(
+  id: string,
+  locale: WorkspaceLocale,
+): AddedLocale {
+  return planAddLocale(id, locale).added;
+}
+
+export function addLocale(id: string, locale: WorkspaceLocale): AddedLocale {
+  const { dir, manifest, entry, added } = planAddLocale(id, locale);
   writeJson(localeFile(dir, entry.code), {});
   manifest.locales.push(entry);
   if (!manifest.defaultLocale) manifest.defaultLocale = entry.code;
   writeManifestAt(dir, manifest);
-  const language = languageOf(entry.code);
-  return {
-    code: entry.code,
-    sameLanguage: codes.filter((code) => languageOf(code) === language),
-  };
+  return added;
 }
 
 /** The stored code of a locale of a workspace, matched on its canonical form; 404 when absent. */
@@ -482,16 +518,37 @@ function workspaceLocaleCode(
   return found;
 }
 
+/** The stored code {@link removeLocale} would remove, with every refusal it makes, writing nothing. */
+export function checkRemoveLocale(id: string, code: string): string {
+  const manifest = manifestForWrite(workspaceDir(id));
+  const stored = workspaceLocaleCode(manifest, code);
+  check(stored !== manifest.defaultLocale, "base_locale", { locale: stored });
+  return stored;
+}
+
 export function removeLocale(id: string, code: string): void {
   const dir = workspaceDir(id);
   const manifest = manifestForWrite(dir);
-  const stored = workspaceLocaleCode(manifest, code);
-  check(stored !== manifest.defaultLocale, "base_locale", { locale: stored });
+  const stored = checkRemoveLocale(id, code);
   const filePath = localeFile(dir, stored);
   if (existsSync(filePath)) unlinkSync(filePath);
   manifest.locales = manifest.locales.filter((l) => l.code !== stored);
   if (manifest.sources) delete manifest.sources[stored];
   writeManifestAt(dir, manifest);
+}
+
+/** The base language of a workspace, and the stored code `code` names in it; 404 when it has no such language. */
+export interface BaseLocaleChoice {
+  stored: string;
+  previous: string;
+}
+
+export function checkBaseLocale(id: string, code: string): BaseLocaleChoice {
+  const manifest = manifestForWrite(workspaceDir(id));
+  return {
+    stored: workspaceLocaleCode(manifest, code),
+    previous: manifest.defaultLocale,
+  };
 }
 
 export function setWorkspaceDefaultLocale(id: string, code: string): string {
@@ -517,6 +574,7 @@ export function workspaceKeyStore(id: string): KeyStore {
     messages: readMessagesAt(dir, locales),
     reference: {},
     load: (code) => readJsonForWrite(localeFile(dir, code)),
+    fileOf: (code) => localeFile(dir, code),
     save: (code, data) => writeJson(localeFile(dir, code), data),
   };
 }

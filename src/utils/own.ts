@@ -18,6 +18,7 @@ export function ownKeyStore(): KeyStore {
     messages: loadMessages("own"),
     reference: loadMessages("external"),
     load: (locale, segments) => readJsonForWrite(writeTarget(locale, segments)),
+    fileOf: writeTarget,
     save: (locale, data, segments) =>
       writeJson(writeTarget(locale, segments), data),
   };
