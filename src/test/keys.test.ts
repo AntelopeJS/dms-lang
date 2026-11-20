@@ -14,6 +14,7 @@ import {
   type KeyChange,
   type KeyStore,
   markReviewed,
+  previewStore,
   removeOverride,
   renameKey,
   updateKey,
@@ -245,6 +246,37 @@ describe("[unit] key updates never lose a text", () => {
       404,
       "not_an_override",
     );
+  });
+
+  it("answers the change of the effective base text: the module text before an override, none for a target language or the same text", () => {
+    const files: LocaleMessages = { en: {}, fr: {} };
+    const reference = { en: { banner: "Module" } };
+    expect(
+      updateKey(memoryStore(files, reference), "banner", { fr: "Bannière" }),
+    ).to.equal(undefined);
+    expect(
+      updateKey(memoryStore(files, reference), "banner", { en: "Ours" }),
+    ).to.deep.equal({
+      previousText: "Module",
+      text: "Ours",
+    });
+    expect(
+      updateKey(memoryStore(files, reference), "banner", { en: "Ours" }),
+    ).to.equal(undefined);
+    expect(
+      removeOverride(memoryStore(files, reference), "banner"),
+    ).to.deep.equal({
+      locales: ["en", "fr"],
+      baseChange: { previousText: "Ours", text: "Module" },
+    });
+  });
+
+  it("a preview store runs every check and writes nothing", () => {
+    const files: LocaleMessages = { en: { a: "A" }, fr: {} };
+    const preview = previewStore(memoryStore(files));
+    updateKey(preview, "a", { fr: "Ah" });
+    expect(files).to.deep.equal({ en: { a: "A" }, fr: {} });
+    expectError(() => updateKey(preview, "a", { en: null }), 409, "last_value");
   });
 
   it("refuses to clear the last text of a key", () => {
