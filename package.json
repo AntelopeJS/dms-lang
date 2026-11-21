@@ -69,14 +69,14 @@
   "dependencies": {
     "@antelopejs/interface-api": ">=0.3.3 <0.4.0",
     "@antelopejs/interface-core": ">=0.5.1 <0.6.0",
-    "@antelopejs/interface-dms": "0.14.7-next.1011.g9a5478b",
+    "@antelopejs/interface-dms": ">=0.15.0 <0.16.0",
     "@intlify/message-compiler": "^11.1.12",
     "zod": "^3.24.2"
   },
   "devDependencies": {
     "@antelopejs/api": "~1.7.5",
     "@antelopejs/core": "~1.24.5",
-    "@antelopejs/dms": "0.21.4-next.1013.gf74dda7",
+    "@antelopejs/dms": ">=0.22.0 <0.23.0",
     "@antelopejs/dms-frontend": ">=0.11.8 <0.12.0",
     "@antelopejs/interface-data-api": ">=0.8.0 <0.9.0",
     "@antelopejs/interface-database": ">=0.4.0 <0.5.0",
@@ -108,8 +108,8 @@
   "packageManager": "pnpm@10.2.0",
   "pnpm": {
     "overrides": {
-      "@antelopejs/interface-dms": "0.14.7-next.1011.g9a5478b",
-      "@antelopejs/interface-dms-builder": "0.6.2-next.987.gb437fd0"
+      "@antelopejs/interface-dms": ">=0.15.0 <0.16.0",
+      "@antelopejs/interface-dms-builder": "0.6.2"
     }
   },
   "antelopeJs": {
