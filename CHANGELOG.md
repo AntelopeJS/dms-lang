@@ -1,5 +1,38 @@
 # Changelog
 
+## v0.7.2
+
+[compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.7.1...v0.7.2)
+
+### 🩹 Fixes
+
+- **test:** Read the packed tarball from its folder on Windows ([#161](https://github.com/AntelopeJS/dms-lang/pull/161))
+
+### 📦 Build
+
+- **deps:** Depend on the interface-dms 0.15 preview for the release train ([#162](https://github.com/AntelopeJS/dms-lang/pull/162))
+- **deps:** Move the dms previews to the released stable versions ([#164](https://github.com/AntelopeJS/dms-lang/pull/164))
+
+### 🏡 Chore
+
+- Promote next to main ([#154](https://github.com/AntelopeJS/dms-lang/pull/154))
+- Promote next to main ([#155](https://github.com/AntelopeJS/dms-lang/pull/155))
+- Delete the verify harness skills ([#159](https://github.com/AntelopeJS/dms-lang/pull/159))
+
+### ✅ Tests
+
+- **e2e:** Cover the remaining flows and run the suite in the merge queue ([#156](https://github.com/AntelopeJS/dms-lang/pull/156))
+- Port the dms-lang inventory lines off dms-control ([#157](https://github.com/AntelopeJS/dms-lang/pull/157))
+- Run the e2e suite and the node tests without the verify harness ([#158](https://github.com/AntelopeJS/dms-lang/pull/158))
+
+### 🤖 CI
+
+- Export and cache both the dms-control and dms-e2e names ([#160](https://github.com/AntelopeJS/dms-lang/pull/160))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli
+
 ## v0.7.1
 
 [compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.7.0...v0.7.1)
