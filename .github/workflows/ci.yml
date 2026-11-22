@@ -44,8 +44,6 @@ jobs:
       extra-commands-job: true
     permissions:
       contents: read
-    secrets:
-      NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
 
   # Which journeys of e2e/ run: none on a draft, the @smoke ones on a ready
   # pull request, every journey in shards in the merge queue, nightly, on a
