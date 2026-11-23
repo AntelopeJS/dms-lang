@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { resolveWorkspaceId } from "../../utils/catalog";
 import { coveragePercent } from "../../utils/coverage";
+import { fail } from "../../utils/errors";
 import { findLocale } from "../../utils/locale-codes";
 import { namespaceCoverage } from "../../utils/namespaces";
 import {
@@ -65,12 +66,21 @@ export const namespaceCoverageAction = readAction({
   run(request) {
     const heatmap = namespaceCoverage(resolveWorkspaceId(request.workspace));
     const wanted = request.locale;
-    const locales = wanted
-      ? heatmap.locales.filter(
-          (locale) => findLocale([locale], wanted) !== undefined,
-        )
-      : heatmap.locales;
-    const namespaces = heatmap.namespaces.map((row) => ({
+    const chosen = wanted ? findLocale(heatmap.locales, wanted) : undefined;
+    if (wanted && chosen === undefined)
+      fail("unknown_locale", { locale: wanted });
+    const locales = chosen === undefined ? heatmap.locales : [chosen];
+    const rows =
+      chosen === undefined
+        ? heatmap.namespaces
+        : [...heatmap.namespaces].sort(
+            (left, right) =>
+              (right.missing[chosen] ?? 0) / right.keys -
+                (left.missing[chosen] ?? 0) / left.keys ||
+              (right.missing[chosen] ?? 0) - (left.missing[chosen] ?? 0) ||
+              left.namespace.localeCompare(right.namespace),
+          );
+    const namespaces = rows.map((row) => ({
       namespace: row.namespace,
       keys: row.keys,
       missing: Object.fromEntries(

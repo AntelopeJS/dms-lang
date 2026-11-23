@@ -5,6 +5,7 @@ import {
   NodeTypes,
   type PluralNode,
 } from "@intlify/message-compiler";
+import { isNumber } from "./guards";
 
 /** The values a message's placeholders read: `{name}` reads `name`, `{0}` reads `"0"`. */
 export type MessageParams = Record<string, string | number | boolean>;
@@ -23,10 +24,12 @@ export type LinkedResolver = (key: string) => string | undefined;
 const PLURAL_NAMES = ["count", "n"];
 const TWO_FORMS = 2;
 const MANY_FORM = 2;
+const NO_CHOICE = -1;
 
 /**
  * The plural form vue-i18n's default rule picks for `choice`: with two
- * forms, `0` and above `1` pick the second; with three, `0`, `1`, then many.
+ * forms, the first for exactly 1 and the second otherwise; with three,
+ * `0`, `1`, then many.
  */
 function pluralIndex(choice: number, forms: number): number {
   const count = Math.abs(choice);
@@ -34,12 +37,13 @@ function pluralIndex(choice: number, forms: number): number {
   return Math.min(count, MANY_FORM);
 }
 
+/** The choice vue-i18n reads: the number `count`, else the number `n`, else -1. */
 function pluralChoice(params: MessageParams): number {
   for (const name of PLURAL_NAMES) {
-    const value = Number(params[name]);
-    if (Object.hasOwn(params, name) && Number.isFinite(value)) return value;
+    const value = Object.hasOwn(params, name) ? params[name] : undefined;
+    if (isNumber(value)) return value;
   }
-  return 1;
+  return NO_CHOICE;
 }
 
 const MODIFIERS = new Map<string, (text: string) => string>([

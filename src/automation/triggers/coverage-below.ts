@@ -162,6 +162,7 @@ export const coverageBelowTrigger: TriggerType<
     const previous = new Map<string, number>();
     let seeded = false;
     let stopped = false;
+    let lastFailure: string | undefined;
     const fire = (reading: Reading, at: string, previousCoverage?: number) => {
       const payload: CoverageBelowPayload = {
         deliveryId: `${reading.workspace}:${reading.locale}:${threshold}:${at}`,
@@ -196,9 +197,13 @@ export const coverageBelowTrigger: TriggerType<
         for (const id of previous.keys())
           if (!seen.has(id)) previous.delete(id);
         seeded = true;
+        lastFailure = undefined;
       } catch (error) {
         previous.clear();
-        Logging.Error("[dms-lang] coverage-below poll failed:", error);
+        const message = error instanceof Error ? error.message : String(error);
+        if (message !== lastFailure)
+          Logging.Error("[dms-lang] coverage-below poll failed:", error);
+        lastFailure = message;
       }
     };
     poll();
