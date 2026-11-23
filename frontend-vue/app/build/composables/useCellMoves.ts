@@ -21,12 +21,12 @@ type MoveTarget = (options: CellMovesOptions, cell: CellRef) => CellRef | null
 
 const TYPING_FIELDS = 'input, textarea, select, [contenteditable]'
 const GRID_CELL = 'td[data-row]'
-const ARROW_STEPS: Record<string, [number, number]> = {
-  ArrowUp: [-1, 0],
-  ArrowDown: [1, 0],
-  ArrowLeft: [0, -1],
-  ArrowRight: [0, 1],
-}
+const ARROW_STEPS = new Map<string, [number, number]>([
+  ['ArrowUp', [-1, 0]],
+  ['ArrowDown', [1, 0]],
+  ['ArrowLeft', [0, -1]],
+  ['ArrowRight', [0, 1]],
+])
 
 function navigableCodes(options: CellMovesOptions, code: string): string[] {
   const base = options.baseLocale()
@@ -126,7 +126,7 @@ export function focusNeighbourCell(
   event: KeyboardEvent,
   grid: HTMLElement | undefined,
 ) {
-  const step = ARROW_STEPS[event.key]
+  const step = ARROW_STEPS.get(event.key)
   const cell =
     event.target instanceof HTMLElement
       ? event.target.closest<HTMLElement>(GRID_CELL)

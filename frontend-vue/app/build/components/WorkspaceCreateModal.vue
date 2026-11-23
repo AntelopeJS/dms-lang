@@ -72,10 +72,10 @@ function close(workspace: string | null) {
 
 function detailsOf(): WorkspaceDetails {
   const text = description.value.trim()
-  return {
-    ...(text ? { description: text } : {}),
-    ...(type.value ? { type: type.value } : {}),
-  }
+  const details: WorkspaceDetails = {}
+  if (text) details.description = text
+  if (type.value) details.type = type.value
+  return details
 }
 
 /** The backup with the details as the form leaves them: a field emptied clears the backup's. */
@@ -88,10 +88,12 @@ function importOf(backup: WorkspaceBackup) {
   }
 }
 
-function send(id: string): Promise<unknown> {
-  if (!props.backup)
-    return createWorkspace(id, { code: base.value }, detailsOf())
-  return importWorkspace(id, importOf(props.backup))
+async function send(id: string): Promise<void> {
+  if (!props.backup) {
+    await createWorkspace(id, { code: base.value }, detailsOf())
+    return
+  }
+  await importWorkspace(id, importOf(props.backup))
 }
 
 async function submit() {

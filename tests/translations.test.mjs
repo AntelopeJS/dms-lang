@@ -132,6 +132,10 @@ void test("a value a module gives a project key is not missing", () => {
   assert.equal(isRowValueMissing({ key: "menu.home", values: {} }, "fr"), true);
 });
 
+/**
+ * @param {string | null | undefined} base
+ * @param {string | null | undefined} value
+ */
 const issueSummary = (base, value) =>
   checkMessage(base, value).map(({ kind, tokens, count, expected }) => {
     const summary = { kind, tokens, count };
@@ -155,6 +159,7 @@ void test("variables a translation drops or invents are reported", () => {
 });
 
 void test("a variable name follows the vue-i18n rule the server applies", () => {
+  /** @param {string} value */
   const syntax = (value) => issueSummary("", value).map((issue) => issue.kind);
   for (const name of ["prénom", "user.name", "名前", "$amount", "1a", "a b"])
     assert.deepEqual(syntax(`Hi {${name}}`), ["invalidPlaceholder"], name);
@@ -192,6 +197,7 @@ void test("a translation keeps the number of plural forms of the base", () => {
 });
 
 void test("syntax vue-i18n cannot compile is an error", () => {
+  /** @param {string} value */
   const syntax = (value) => issueSummary("", value).map((issue) => issue.kind);
   assert.deepEqual(syntax("Écrivez à contact@exemple.com"), ["bareAt"]);
   assert.deepEqual(syntax("Mail {email} @ ons"), ["bareAt"]);
@@ -339,6 +345,7 @@ void test("a key path is dot-separated safe segments", () => {
 });
 
 void test("the vue-i18n compiler decides what does not compile", () => {
+  /** @param {string} value */
   const syntax = (value) => issueSummary("", value).map((issue) => issue.kind);
   assert.deepEqual(syntax("a | | b"), ["emptyPlural"]);
   assert.deepEqual(syntax("{'a\\q'}"), ["invalidEscape"]);

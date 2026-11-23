@@ -1,6 +1,5 @@
 import { h } from 'vue'
 import UButton from '@nuxt/ui/components/Button.vue'
-import type { WorkspaceKind, WorkspaceType } from '../../types/lang'
 import {
   parseBackup,
   type DetailsChange,
@@ -16,24 +15,6 @@ import { useMutationToast } from './useMutationToast.ts'
 import { useWorkspaceRoute } from './useWorkspaceRoute.ts'
 
 const JSON_FILE_TYPES = '.json,application/json'
-const WORKSPACE_DESCRIPTION_MAX = 500
-
-const TYPE_ICONS: Record<WorkspaceType, string> = {
-  dms: 'i-ph-squares-four',
-  website: 'i-ph-globe',
-  mobile: 'i-ph-device-mobile',
-  other: 'i-ph-shapes',
-}
-
-const KIND_ICONS: Record<WorkspaceKind, string> = {
-  default: 'i-ph-file-code',
-  added: 'i-ph-stack',
-  modules: 'i-ph-puzzle-piece',
-}
-
-function isWorkspaceType(value: unknown): value is WorkspaceType {
-  return typeof value === 'string' && Object.hasOwn(TYPE_ICONS, value)
-}
 
 interface DeleteImpact {
   files: number
@@ -49,31 +30,6 @@ function pickFile(accept: string): Promise<File | null> {
     input.addEventListener('cancel', () => resolve(null))
     input.click()
   })
-}
-
-/** The kinds of app a workspace serves, as a picker offers them, and the icon of each kind of workspace. */
-export const useWorkspaceTypes = () => {
-  const { t } = useI18n()
-  const typeItems = computed(() =>
-    (Object.keys(TYPE_ICONS) as WorkspaceType[]).map((value) => ({
-      value,
-      label: t(`dms_lang.workspace_types.${value}`),
-      icon: TYPE_ICONS[value],
-    })),
-  )
-  const typeIcon = (type: WorkspaceType) => TYPE_ICONS[type]
-  const typeOf = (value: unknown): WorkspaceType | undefined =>
-    isWorkspaceType(value) ? value : undefined
-  const typeLabel = (type: WorkspaceType) =>
-    t(`dms_lang.workspace_types.${type}`)
-  return {
-    typeItems,
-    typeIcon,
-    typeLabel,
-    typeOf,
-    kindIcon: (kind: WorkspaceKind) => KIND_ICONS[kind],
-    descriptionMax: WORKSPACE_DESCRIPTION_MAX,
-  }
 }
 
 /** What the workspace actions share: the workspaces, the routes and the DMS helpers. */
@@ -100,7 +56,7 @@ async function openCreate(
   const modal = context.overlay.create(WorkspaceCreateModal, {
     props: { backup },
   })
-  const created = (await modal.open()) as string | null
+  const created = await modal.open()
   if (!created) return null
   await context.workspaces.fetchWorkspaces()
   const texts = backup ? 'workspace_import' : 'workspace_create'
@@ -135,7 +91,7 @@ async function renameWorkspace(
   const modal = context.overlay.create(WorkspaceRenameModal, {
     props: { workspace },
   })
-  const renamed = (await modal.open()) as string | null
+  const renamed = await modal.open()
   if (!renamed) return null
   await context.workspaces.fetchWorkspaces()
   succeed(

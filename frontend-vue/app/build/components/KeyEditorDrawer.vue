@@ -266,7 +266,6 @@ function overwrite(code: string) {
   save([code])
 }
 
-// Labels a language's field with its name, for assistive technologies.
 function fieldIdOf(code: string): string {
   return `${fieldIds}-${code}`
 }
@@ -293,11 +292,13 @@ function knownInheritedOf(path: string) {
 
 function settle(codes: string[], values: Record<string, string>) {
   const rest = new Map(Object.entries(drafts.value))
+  const texts = new Map(Object.entries(values))
   for (const code of codes) {
-    const isDone = rest.get(code) === values[code]
+    const text = texts.get(code)
+    const isDone = rest.get(code) === text
     if (isDone) rest.delete(code)
     if (isDone) editStarts.end(code)
-    else editStarts.set(code, storedText(values[code]))
+    else editStarts.set(code, storedText(text ?? ''))
     setFieldState(code, 'idle')
     states.flashSaved(code)
   }
@@ -515,9 +516,6 @@ watch(
   },
 )
 
-// The drawer's X, Escape and a click outside close it through its guards:
-// the panel saves first and stays open on what it could not save, the
-// field that holds it saying why.
 if (props.containerId)
   onScopeDispose(useLeaveGuard().addGuard(props.containerId, flush))
 

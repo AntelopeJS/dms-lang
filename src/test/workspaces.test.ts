@@ -243,7 +243,6 @@ function describeLanguages(): void {
       return { ok: file !== null, json: async () => file?.messages };
     };
     const { code } = workspaceSnippet(WORKSPACE, "fetch", API_BASE);
-    /** The snippet as an app runs it, with the files of the workspace served. */
     const run = async (language: string) => {
       const messages: unknown = await runInNewContext(
         `(async () => { ${code}

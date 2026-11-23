@@ -29,11 +29,13 @@ export function saveIdPrefix(workspace: string, key: string): string {
   return saveIdOf(workspace, key, '')
 }
 
+function isTextValue(value: TranslationValue): value is string {
+  return typeof value === 'string'
+}
+
 /** A stored value as the server compares it: a text, else no text (`null`). */
 export function savedText(value: TranslationValue): string | null {
-  return typeof value === 'string' && !isLocaleValueMissing(value)
-    ? value
-    : null
+  return isTextValue(value) && !isLocaleValueMissing(value) ? value : null
 }
 
 /** What a typed text stores: a text made of spaces only is no text. */
@@ -77,14 +79,14 @@ export function queueTexts<T>(
   send: (expected: ExpectedText[]) => Promise<T>,
   isLanded: (outcome: T) => boolean,
 ): Promise<T> {
-  const run = Promise.all(texts.map((entry) => links.get(entry.id))).then(
-    async (earlier): Promise<SentTexts<T>> => {
-      const expected = texts.map((entry, index) =>
-        carriedExpected(entry.expected, earlier[index]),
-      )
-      return { expected, outcome: await send(expected) }
-    },
-  )
+  const run = Promise.all(
+    texts.map((entry) => links.get(entry.id) ?? Promise.resolve(undefined)),
+  ).then(async (earlier): Promise<SentTexts<T>> => {
+    const expected = texts.map((entry, index) =>
+      carriedExpected(entry.expected, earlier[index]),
+    )
+    return { expected, outcome: await send(expected) }
+  })
   texts.forEach((entry, index) =>
     links.set(
       entry.id,

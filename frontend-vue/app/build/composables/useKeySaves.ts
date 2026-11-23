@@ -1,6 +1,7 @@
 import type { Ref } from 'vue'
 import type { FlatTranslationRow, KeyRowResponse } from '../../types/lang'
 import {
+  isKeySaveError,
   keySaveFailure,
   type KeySaveFailure,
   type KeySaveFailureKind,
@@ -45,7 +46,7 @@ export interface KeyWriteFailed {
   message: string
   /** What the write expected: a later attempt expects the same. */
   expected: Record<string, ExpectedText>
-  error: unknown
+  error: Error
 }
 
 export type KeyWriteOutcome = KeyWriteSaved | KeyWriteFailed
@@ -54,7 +55,7 @@ interface KeySaveContext {
   updateKey: ReturnType<typeof useI18nWorkspaces>['updateKey']
   postReviewed: ReturnType<typeof useI18nWorkspaces>['markReviewed']
   translations: ReturnType<typeof useWorkspaceFlat>
-  errorMessage: (error: unknown) => string
+  errorMessage: (error: Error) => string
   translate: ApiMessageTranslate
 }
 
@@ -74,10 +75,12 @@ function applyCurrent(
   row: FlatTranslationRow,
   failure: KeySaveFailure,
 ): FlatTranslationRow {
-  const current = Object.entries(failure.current).map(([code, value]) => [
-    code,
-    savedText(value) ?? undefined,
-  ])
+  const current = Object.entries(failure.current).map(
+    ([code, value]): [string, string | undefined] => [
+      code,
+      savedText(value) ?? undefined,
+    ],
+  )
   return { ...row, values: { ...row.values, ...Object.fromEntries(current) } }
 }
 
@@ -85,19 +88,17 @@ const FAILURE_CHANGES: Partial<Record<KeySaveFailureKind, FailureChange>> = {
   conflict: applyCurrent,
 }
 
-function textsOf(values: Record<string, string>): Record<string, unknown> {
+function textsOf(values: Record<string, string>) {
   return Object.fromEntries(
     Object.entries(values).map(([code, text]) => [code, storedText(text)]),
   )
 }
 
-function checksOf(
-  expected: Record<string, ExpectedText>,
-): Record<string, unknown> | undefined {
-  const checks = Object.entries(expected).filter(
-    ([, text]) => text !== undefined,
-  )
-  return checks.length ? Object.fromEntries(checks) : undefined
+function checksOf(expected: Record<string, ExpectedText>) {
+  const checks: Record<string, string | null> = {}
+  for (const [code, text] of Object.entries(expected))
+    if (text !== undefined) checks[code] = text
+  return Object.keys(checks).length ? checks : undefined
 }
 
 function applyResponse(
@@ -113,9 +114,12 @@ function failed(
   context: KeySaveContext,
   target: KeyTarget,
   expected: Record<string, ExpectedText>,
-  error: unknown,
+  error: Error,
 ): KeyWriteFailed {
-  const failure = keySaveFailure(error, context.translate)
+  const failure = keySaveFailure(
+    isKeySaveError(error) ? error : undefined,
+    context.translate,
+  )
   const change = FAILURE_CHANGES[failure.kind]
   const row = context.translations
     .flatOf(target.workspace)
@@ -143,7 +147,8 @@ async function send(
       checksOf(expected),
     )
     return applyResponse(context, request, response)
-  } catch (error) {
+  } catch (caught) {
+    const error = caught instanceof Error ? caught : new Error(String(caught))
     return failed(context, request, expected, error)
   }
 }
@@ -182,7 +187,8 @@ async function markReviewed(
       code,
     ])
     return applyResponse(context, target, response)
-  } catch (error) {
+  } catch (caught) {
+    const error = caught instanceof Error ? caught : new Error(String(caught))
     return failed(context, target, {}, error)
   }
 }

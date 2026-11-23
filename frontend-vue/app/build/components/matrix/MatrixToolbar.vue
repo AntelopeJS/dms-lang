@@ -27,6 +27,12 @@ interface Props {
 const SEARCH_DELAY_MS = 200
 const ANY_LANGUAGE = '*'
 const ALL_NAMESPACES = '*'
+const FILTER_ORDER: TranslationFilter[] = [
+  'all',
+  'missing',
+  'complete',
+  'issues',
+]
 const FILTER_LABELS: Record<TranslationFilter, string> = {
   all: 'dms_lang.matrix.filter_all',
   missing: 'dms_lang.matrix.filter_missing',
@@ -43,7 +49,7 @@ const { formatCount } = useLangFormat()
 const searchInput = ref(filters.value.search)
 
 const filterItems = computed(() =>
-  (Object.keys(FILTER_LABELS) as TranslationFilter[]).map((value) => ({
+  FILTER_ORDER.map((value) => ({
     value,
     label: t(
       value === 'missing' && props.countedLanguages > 1

@@ -33,9 +33,7 @@ function filtersOf(
   }
 }
 
-function queryOf(
-  filters: MatrixFilterState,
-): Record<string, string | undefined> {
+function queryOf(filters: MatrixFilterState) {
   return {
     [QUERY_NAMES.filter]:
       filters.filter === DEFAULT_FILTER ? undefined : filters.filter,
@@ -46,8 +44,11 @@ function queryOf(
 }
 
 function sameFilters(a: MatrixFilterState, b: MatrixFilterState): boolean {
-  return (Object.keys(QUERY_NAMES) as (keyof MatrixFilterState)[]).every(
-    (name) => a[name] === b[name],
+  return (
+    a.filter === b.filter &&
+    a.missingIn === b.missingIn &&
+    a.namespace === b.namespace &&
+    a.search === b.search
   )
 }
 

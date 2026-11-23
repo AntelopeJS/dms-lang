@@ -3,6 +3,7 @@ import type {
   FlatCounts,
   KeyRowResponse,
   ScopedWorkspace,
+  TranslationValue,
   WorkspaceDetails,
   WorkspaceLocale,
   WorkspacePermissionIds,
@@ -28,7 +29,27 @@ interface SummaryResponse {
   workspaces: WorkspaceStats[]
 }
 
-type KeyValues = Record<string, unknown>
+type KeyValues = Record<string, TranslationValue>
+
+/** The JSON body of a write to one key. */
+interface KeyWriteBody {
+  workspace: string
+  path: string
+  values?: KeyValues
+  before?: string
+  expected?: KeyValues
+  locales?: string[]
+  newPath?: string
+}
+
+/** The JSON body of a write to a workspace or one of its languages. */
+interface WorkspaceWriteBody
+  extends WorkspaceDetails, Partial<WorkspaceLocale> {
+  id?: string
+  newId?: string
+  workspace?: string
+  locale?: WorkspaceLocale
+}
 
 /** The routes of the module's API. */
 export const LANG_API = '/api/lang/translations'
@@ -94,7 +115,7 @@ function useWorkspacesState() {
 
 function useKeyWrites() {
   const { $authFetch } = useAuthFetch()
-  const send = (url: string, method: string, body: Record<string, unknown>) =>
+  const send = (url: string, method: string, body: KeyWriteBody) =>
     $authFetch<KeyRowResponse>(url, { method, body })
 
   return {
@@ -126,7 +147,7 @@ function useKeyWrites() {
 
 function useWorkspaceWrites() {
   const { $authFetch } = useAuthFetch()
-  const send = (url: string, method: string, body: Record<string, unknown>) =>
+  const send = (url: string, method: string, body: WorkspaceWriteBody) =>
     $authFetch(url, { method, body })
 
   return {
@@ -205,7 +226,6 @@ export const useI18nWorkspaces = () => {
     }
   }
 
-  /** Takes the figures a key write answered into the workspace list (the scope bar). */
   function patchCounts(id: string, counts: FlatCounts): void {
     mapWorkspace(id, (workspace) => ({
       ...workspace,
@@ -214,7 +234,6 @@ export const useI18nWorkspaces = () => {
     }))
   }
 
-  /** Takes the workspace a details write answered into the list, its figures kept. */
   function patchSummary(summary: WorkspaceSummary): void {
     mapWorkspace(summary.id, (workspace) => ({
       ...summary,
@@ -224,12 +243,10 @@ export const useI18nWorkspaces = () => {
     }))
   }
 
-  /** Remembers the workspace a page without `?workspace=` opens on (a new tab, a menu link). */
   function rememberWorkspace(id: string): void {
     if (state.lastWorkspace.value !== id) state.lastWorkspace.value = id
   }
 
-  /** Reads the list again, after a write or a change heard from elsewhere. */
   async function fetchWorkspaces(): Promise<ScopedWorkspace[]> {
     await list.refresh()
     return workspaces.value

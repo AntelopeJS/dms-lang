@@ -161,12 +161,12 @@ function useCellReports(
   retry: (address: CellAddress) => void,
   discard: (address: CellAddress) => void,
 ) {
-  const { presentError } = useApiErrorPresenter()
+  const presenter = useApiErrorPresenter()
   const { reportFailure } = useMutationToast()
 
   return {
-    conflict(address: CellAddress, error: unknown) {
-      presentError(error, {
+    conflict(address: CellAddress, error: Error) {
+      presenter.presentError(error, {
         fallbackKey: 'dms_lang.matrix.conflict',
         params: { ...address },
         actions: [
@@ -181,7 +181,7 @@ function useCellReports(
         ],
       })
     },
-    failure(address: CellAddress, error: unknown, canRetry = true) {
+    failure(address: CellAddress, error: Error, canRetry = true) {
       reportFailure(error, {
         fallbackKey: 'dms_lang.matrix.save_failed',
         params: { ...address },

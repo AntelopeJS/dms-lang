@@ -99,10 +99,10 @@ function languageRoute(context: LanguageActionsContext, code: string): string {
  * runs once the dialog has left the screen (the Language page leaves for
  * the overview there), before the data of the page is read again.
  */
-async function removeLanguage(
+async function removeLanguage<AfterResult>(
   context: LanguageActionsContext,
   code: string,
-  afterRemove?: () => Promise<unknown>,
+  afterRemove?: () => Promise<AfterResult>,
 ): Promise<boolean> {
   const workspace = context.workspaces.selectedWorkspace.value
   const route = languageRoute(context, code)
@@ -164,8 +164,10 @@ export const useLanguageActions = () => {
   }
   return {
     addLanguage: () => addLanguage(context),
-    removeLanguage: (code: string, afterRemove?: () => Promise<unknown>) =>
-      removeLanguage(context, code, afterRemove),
+    removeLanguage: <AfterResult>(
+      code: string,
+      afterRemove?: () => Promise<AfterResult>,
+    ) => removeLanguage(context, code, afterRemove),
     makeBase: (code: string) => makeBase(context, code),
   }
 }

@@ -143,14 +143,17 @@ function findLanguages(search: string, uiLocales: string[]): LanguageOption[] {
   )
 }
 
+function isLocaleText(entry: string | InterfaceLocale): entry is string {
+  return typeof entry === 'string'
+}
+
 /** Names and code tiles of languages, without flags: a language is not a country. */
 export const useLocaleNames = () => {
   const { locale, locales } = useI18n()
-  /** The interface language first, then every other one ("en-GB", "fr-FR"). */
   const uiLocales = () => [
     locale.value,
     ...locales.value.map((entry: string | InterfaceLocale) =>
-      typeof entry === 'string' ? entry : entry.code,
+      isLocaleText(entry) ? entry : entry.code,
     ),
   ]
   return {

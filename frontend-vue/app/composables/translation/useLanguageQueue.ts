@@ -58,7 +58,6 @@ function useQueueQuery() {
   const { route } = useWorkspaceRoute()
   const router = useDmsRouter()
 
-  /** Replaces the given parameters of the page URL (an empty one is removed). */
   function replaceQuery(change: PageQuery): Promise<void> {
     if (import.meta.env.SSR) return Promise.resolve()
     return router.replace(

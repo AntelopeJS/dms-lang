@@ -1,23 +1,27 @@
-interface MutationError {
-  data?: unknown
-}
-
-interface ErrorBody {
-  code?: unknown
-}
-
 interface MutationToastOptions {
   fallbackKey?: string
   params?: Record<string, string | number | boolean>
   retry?: () => void
 }
 
+/** A value a failed request threw. */
+export type RequestFailure = {} | null | undefined
+
+interface FailureBody {
+  data?: { code?: string }
+}
+
+function isFailureBody(value: RequestFailure): value is FailureBody {
+  if (typeof value !== 'object' || value === null) return false
+  if (!('data' in value)) return true
+  const { data } = value
+  if (typeof data !== 'object' || data === null) return false
+  return !('code' in data) || typeof data.code === 'string'
+}
+
 /** The error code the server gave a failed request (`key_exists`, …). */
-export function serverErrorCode(error: unknown): string {
-  const data = (error as MutationError | undefined)?.data
-  if (typeof data !== 'object' || data === null) return ''
-  const { code } = data as ErrorBody
-  return typeof code === 'string' ? code : ''
+export function serverErrorCode(error: RequestFailure): string {
+  return isFailureBody(error) ? (error.data?.code ?? '') : ''
 }
 
 /**
@@ -25,27 +29,29 @@ export function serverErrorCode(error: unknown): string {
  * `$dms_lang.errors.*` key the server answers, with a Retry action.
  */
 export const useMutationToast = () => {
-  const { presentError, resolveError } = useApiErrorPresenter()
+  const presenter = useApiErrorPresenter()
   const fallbackKey = 'error.500.description'
 
-  /** The server's message, translated; the generic server error otherwise. */
-  function errorMessage(error: unknown): string {
-    return resolveError(error, { fallbackKey })?.message ?? ''
+  function errorMessage(error: RequestFailure): string {
+    return presenter.resolveError(error, { fallbackKey })?.message ?? ''
   }
 
-  function reportFailure(error: unknown, options: MutationToastOptions = {}) {
+  function reportFailure(
+    error: RequestFailure,
+    options: MutationToastOptions = {},
+  ) {
     const actions = options.retry
       ? [{ labelKey: 'dms_lang.actions.retry', onSelect: options.retry }]
       : undefined
-    presentError(error, {
+    presenter.presentError(error, {
       fallbackKey: options.fallbackKey ?? fallbackKey,
       params: options.params,
       actions,
     })
   }
 
-  async function tryMutate(
-    fn: () => Promise<unknown>,
+  async function tryMutate<Result>(
+    fn: () => Promise<Result>,
     options?: MutationToastOptions,
   ): Promise<boolean> {
     try {

@@ -13,7 +13,7 @@ const props = defineProps<{
   canManageKeys: boolean
   formatCount: (value: number) => string
   resetFilters: () => void
-  addKey: () => unknown
+  addKey: () => void
 }>()
 
 const { t } = useI18n()

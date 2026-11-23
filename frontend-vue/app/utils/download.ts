@@ -1,3 +1,5 @@
+import type { WorkspaceBackup } from './workspaceBackup.ts'
+
 const JSON_INDENT = 2
 const JSON_TYPE = 'application/json'
 /** Long enough for the browser to start the download before the URL goes. */
@@ -11,6 +13,6 @@ export function downloadText(name: string, content: string, type: string) {
 }
 
 /** Downloads data as an indented JSON file. */
-export function downloadJson(name: string, data: unknown) {
+export function downloadJson(name: string, data: WorkspaceBackup) {
   downloadText(name, JSON.stringify(data, null, JSON_INDENT), JSON_TYPE)
 }

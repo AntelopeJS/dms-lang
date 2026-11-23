@@ -83,7 +83,7 @@ export function settledDrafts(
   id: string,
   sent: SentDraft,
 ): QueueDrafts {
-  const draft = drafts[id]
+  const draft = Object.hasOwn(drafts, id) ? drafts[id] : undefined
   if (!draft || draft.value === sent.typed) return withoutDraft(drafts, id)
   return withDraft(drafts, id, { value: draft.value, start: sent.stored })
 }

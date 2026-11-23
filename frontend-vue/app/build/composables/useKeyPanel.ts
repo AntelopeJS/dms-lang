@@ -37,7 +37,22 @@ export interface PanelOptions {
 }
 
 type DrawerOverlay = ReturnType<ReturnType<typeof useDrawer>['open']>
-type PanelProps = Record<string, unknown>
+interface PanelProps {
+  keys: string[]
+  startIndex: number
+  workspace: string
+  editable: boolean
+  manageKeys: boolean
+  canOverride: boolean
+  seed: FlatTranslationRow | undefined
+  focusLocale: string | undefined
+  initialDrafts: Record<string, string> | undefined
+  onNavigate: (key: string) => void
+  onOverride: (key: string) => void
+  onKeep: (holds: CellHold[]) => void
+  onHeader: (header: KeyPanelHeader) => void
+  open: boolean
+}
 
 interface PendingSwitch {
   key: string
@@ -48,7 +63,7 @@ interface PanelState {
   shownWorkspace: string
   drawer: DrawerOverlay | null
   /** The props the open panel's body was last given. */
-  props: PanelProps
+  props: Partial<PanelProps>
   pendingSwitch: PendingSwitch | null
   isDisposed: boolean
 }
@@ -66,15 +81,9 @@ interface PanelContext {
 
 const KEY_QUERY = 'key'
 const DRAWER_DIRECTION = 'right'
-// Every key opens the same drawer, under one id: the DMS keeps the width the
-// user drags it to under its `sizeKey`, on this device. One panel is open at
-// a time, so the id stays unique.
 const DRAWER_ID = 'dms-lang-key-panel'
 const POSITION_LABEL = '$dms_lang.drawer.position'
 
-// The key keeps its look in the DMS row header: in mono, wrapped only after
-// its separators, the namespaces above it after its place among the keys,
-// what it misses, its issues and its placeholders under them.
 const KEY_LOOK = {
   titleClass: 'font-mono',
   titleBreakAfter: NAMESPACE_SEPARATOR,
@@ -137,7 +146,7 @@ function dropSeed(context: PanelContext, key: string) {
   if (dropped) context.seeds.value = rest
 }
 
-function propsFor(context: PanelContext, request: PanelRequest): PanelProps {
+function propsFor(context: PanelContext, request: PanelRequest) {
   const { options } = context
   const keys = options.keys()
   const index = keys.indexOf(request.key)
@@ -160,7 +169,7 @@ function propsFor(context: PanelContext, request: PanelRequest): PanelProps {
 }
 
 /** Changes some of the open panel's props, keeping the others. */
-function patchPanel(context: PanelContext, props: PanelProps) {
+function patchPanel(context: PanelContext, props: Partial<PanelProps>) {
   const { state } = context
   state.props = { ...state.props, ...props }
   state.drawer?.patch({ componentOptions: state.props })
@@ -198,8 +207,6 @@ function show(context: PanelContext, request: PanelRequest): Promise<boolean> {
   if (state.drawer) return switchKey(context, request)
   context.shownKey.value = request.key
   state.props = propsFor(context, request)
-  // The DMS row header names the key; the body hands over its place among
-  // the keys as it shows one (`onHeader`).
   state.drawer = context.drawers.open({
     direction: DRAWER_DIRECTION,
     containerId: DRAWER_ID,
@@ -240,9 +247,6 @@ function onClosed(context: PanelContext) {
   if (!state.isDisposed) dropSeed(context, context.shownKey.value)
   context.shownKey.value = ''
   if (state.isDisposed || !route.query[KEY_QUERY]) return
-  // Replaced, not left by going Back: a history step back renders the page
-  // anew (Inertia restores it from the history), which would fold the
-  // matrix's groups and lose its scroll.
   void context.router.replace(linkWithKey(context, undefined))
 }
 

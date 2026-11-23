@@ -1,4 +1,4 @@
-import type { FlatTranslationRow } from '../types/lang'
+import type { FlatTranslationRow, TranslationValue } from '../types/lang'
 import { stringValue } from './translations.ts'
 
 const BYTE_ORDER_MARK = '﻿'
@@ -8,7 +8,7 @@ const SEPARATOR = ','
 const FORMULA_START = /^[=+\-@\t\r]/
 const FORMULA_GUARD = "'"
 
-function csvCell(value: unknown): string {
+function csvCell(value: TranslationValue): string {
   const text = stringValue(value)
   const safe = FORMULA_START.test(text) ? `${FORMULA_GUARD}${text}` : text
   return `"${safe.replaceAll('"', '""')}"`

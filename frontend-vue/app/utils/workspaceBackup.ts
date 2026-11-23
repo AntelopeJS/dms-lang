@@ -5,8 +5,17 @@ import type {
 } from '../types/lang'
 import { typedLocaleCode } from './languages.ts'
 
+/** Any value `JSON.parse` returns. */
+export type JsonValue =
+  string | number | boolean | null | JsonValue[] | JsonObject
+
+/** A JSON object. */
+export interface JsonObject {
+  [key: string]: JsonValue
+}
+
 /** The messages of each language of a workspace. */
-export type LocaleMessages = Record<string, Record<string, unknown>>
+export type LocaleMessages = Record<string, JsonObject>
 
 /** A workspace saved as one JSON file: its manifest and every language file. */
 export interface WorkspaceBackup extends WorkspaceDetails {
@@ -54,7 +63,7 @@ export const BACKUP_VERSION = 1
 const JSON_EXTENSION_RE = /\.json$/i
 const INVALID: BackupRead = { problem: 'invalid' }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: unknown): value is JsonObject {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
@@ -69,7 +78,7 @@ function isLocaleMessages(value: unknown): value is LocaleMessages {
   )
 }
 
-function isKnownVersion(version: unknown): version is number {
+function isKnownVersion(version: JsonValue): version is number {
   return typeof version === 'number' && Number.isInteger(version) && version > 0
 }
 
@@ -78,9 +87,7 @@ function isKnownVersion(version: unknown): version is number {
  * version that is no version, or one newer than this module reads. Both may
  * be left out (a backup written by hand).
  */
-function backupProblem(
-  content: Record<string, unknown>,
-): BackupProblem | undefined {
+function backupProblem(content: JsonObject): BackupProblem | undefined {
   const { format, version } = content
   if (format !== undefined && format !== BACKUP_FORMAT) return 'invalid'
   if (version === undefined) return undefined
@@ -88,10 +95,10 @@ function backupProblem(
   return version > BACKUP_VERSION ? 'newer' : undefined
 }
 
-function backupRead(content: Record<string, unknown>): BackupRead {
+function backupRead(content: JsonObject, messages: LocaleMessages): BackupRead {
   const problem = backupProblem(content)
   if (problem) return { problem }
-  return { backup: content as unknown as WorkspaceBackup }
+  return { backup: { ...content, messages } }
 }
 
 /**
@@ -101,12 +108,13 @@ function backupRead(content: Record<string, unknown>): BackupRead {
  * code (`it.json`).
  */
 export function readBackup(content: unknown, fileName = ''): BackupRead {
-  if (isRecord(content) && isLocaleMessages(content.messages))
-    return backupRead(content)
-  if (isLocaleMessages(content)) return { backup: { messages: content } }
-  const code = typedLocaleCode(fileName.replace(JSON_EXTENSION_RE, ''))
-  if (code && isRecord(content))
-    return { backup: { messages: { [code]: content } } }
+  if (isRecord(content)) {
+    if (isLocaleMessages(content.messages))
+      return backupRead(content, content.messages)
+    if (isLocaleMessages(content)) return { backup: { messages: content } }
+    const code = typedLocaleCode(fileName.replace(JSON_EXTENSION_RE, ''))
+    if (code) return { backup: { messages: { [code]: content } } }
+  }
   return INVALID
 }
 

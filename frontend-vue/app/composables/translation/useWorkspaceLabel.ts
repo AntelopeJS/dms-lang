@@ -21,7 +21,6 @@ export const useWorkspaceLabel = () => {
     })
   }
 
-  /** The name of the selected workspace, its id until the list is in. */
   const label = computed(() =>
     current.value ? labelOf(current.value) : selectedWorkspace.value,
   )

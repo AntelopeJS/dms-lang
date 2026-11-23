@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import PlaceholderText from './PlaceholderText.vue'
 
-// Under the key in the DMS row header of the key panel: what the key
-// misses, its issues and its base text's placeholders.
 interface Props {
   missingCount: number
   issueCount: number

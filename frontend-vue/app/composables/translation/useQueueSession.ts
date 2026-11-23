@@ -121,7 +121,6 @@ export const useQueueSession = (upNextSize: number) => {
   }
   const view = passView(pass, rowsByKey, isOpen, upNextSize)
   const moves = passMoves(pass, isOpen)
-  /** Starts a new pass, on `key` when it is in it, with the keys holding a draft. */
   const start = (key = '') => {
     pass.value = startPass(
       language.passOf((row) => drafts.has(row.key)),

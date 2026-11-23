@@ -6,6 +6,6 @@ import {
 
 export default defineConfig({
   extends: [antelopePreset()],
-  ignorePatterns: [...ANTELOPE_IGNORE_PATTERNS],
+  ignorePatterns: [...ANTELOPE_IGNORE_PATTERNS, "**/.dms-types/**"],
   options: { typeAware: true, maxWarnings: 0 },
 });

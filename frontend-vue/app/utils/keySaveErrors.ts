@@ -17,29 +17,78 @@ interface KeySaveErrorBody {
   details?: string[]
 }
 
-interface KeySaveError {
-  data?: KeySaveErrorBody | string | null
+/** A failed request as the server answers it: its body, when it has one. */
+export interface KeySaveError {
+  data?: object | string | null
+}
+
+/** Whether a failure carries a body the server may have answered. */
+export function isKeySaveError(error: unknown): error is KeySaveError {
+  if (typeof error !== 'object' || error === null) return false
+  if (!('data' in error)) return true
+  const { data } = error
+  return (
+    data === undefined ||
+    data === null ||
+    typeof data === 'string' ||
+    typeof data === 'object'
+  )
+}
+
+function isText(value: unknown): value is string {
+  return typeof value === 'string'
+}
+
+function isTranslationValue(value: unknown): value is TranslationValue {
+  return (
+    value === null ||
+    value === undefined ||
+    isText(value) ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  )
+}
+
+function isTranslationRecord(
+  value: unknown,
+): value is Record<string, TranslationValue> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    Object.values(value).every(isTranslationValue)
+  )
+}
+
+function isStringList(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every(isText)
+}
+
+function isBodyObject(value: KeySaveError['data']): value is object {
+  return typeof value === 'object' && value !== null
 }
 
 /** Translates an i18n key with its parameters, as `t` does. */
-export type ApiMessageTranslate = (
-  key: string,
-  params: Record<string, unknown>,
-) => string
+export type ApiMessageTranslate = Parameters<typeof resolveApiMessage>[0]
 
-const FAILURE_KINDS: Record<string, KeySaveFailureKind> = {
-  conflict: 'conflict',
-  key_not_found: 'deleted',
-  invalid_message: 'invalid',
-}
+const FAILURE_KINDS = new Map<string, KeySaveFailureKind>([
+  ['conflict', 'conflict'],
+  ['key_not_found', 'deleted'],
+  ['invalid_message', 'invalid'],
+])
 
-function bodyOf(error: unknown): KeySaveErrorBody {
-  const data = (error as KeySaveError | undefined)?.data
-  return typeof data === 'object' && data !== null ? data : {}
+function bodyOf(error: KeySaveError | undefined): KeySaveErrorBody {
+  const data = error?.data
+  const body: KeySaveErrorBody = {}
+  if (!isBodyObject(data)) return body
+  if ('current' in data && isTranslationRecord(data.current))
+    body.current = data.current
+  if ('details' in data && isStringList(data.details))
+    body.details = data.details
+  return body
 }
 
 function kindOf(code: string): KeySaveFailureKind {
-  return Object.hasOwn(FAILURE_KINDS, code) ? FAILURE_KINDS[code] : 'other'
+  return FAILURE_KINDS.get(code) ?? 'other'
 }
 
 /**
@@ -48,7 +97,7 @@ function kindOf(code: string): KeySaveFailureKind {
  * keys) come back translated.
  */
 export function keySaveFailure(
-  error: unknown,
+  error: KeySaveError | undefined,
   translate: ApiMessageTranslate,
 ): KeySaveFailure {
   const body = bodyOf(error)
