@@ -17,11 +17,9 @@ export const useWorkspaceContext = () => {
       ) ?? null,
   )
 
-  /** The URL names a workspace the server does not have. */
   const isUnknown = computed(
     () => isLoaded.value && !!selectedWorkspace.value && !current.value,
   )
-  /** The workspace is in, with its figures. */
   const isResolved = computed(() => current.value !== null)
 
   const isDefault = computed(() => current.value?.kind === 'default')
@@ -33,7 +31,6 @@ export const useWorkspaceContext = () => {
   const canEditValues = computed(() => isEditable.value && !isModules.value)
   const canManage = computed(() => isAdded.value && isEditable.value)
 
-  /** Whether the user holds the DMS permission guarding a kind of write. */
   function allows(permission: WorkspacePermission): boolean {
     const id = permissions.value?.[permission]
     return id ? hasPermission(id) : true

@@ -49,17 +49,18 @@ function copyAction(context: ToastContext, draftText: string) {
 function announceDeleted(context: ToastContext, key: string, draftText = '') {
   const { t, toast } = context
   const hasDraft = !!draftText.trim()
-  toast.add({
+  const notice = {
     title: t('dms_lang.queue.deleted_title', { key }),
     description: t(
       hasDraft
         ? 'dms_lang.queue.deleted_draft'
         : 'dms_lang.queue.deleted_description',
     ),
-    color: 'warning',
+    color: 'warning' as const,
     icon: 'i-ph-trash',
-    ...(hasDraft ? copyAction(context, draftText) : {}),
-  })
+  }
+  if (hasDraft) toast.add({ ...notice, ...copyAction(context, draftText) })
+  else toast.add(notice)
 }
 
 function showStep({ t, toast }: ToastContext, step: QueueStep | undefined) {

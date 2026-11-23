@@ -10,16 +10,15 @@ const components = import.meta.glob<VueModule>(
 )
 
 function componentName(path: string): string {
-  return path
-    .split('/')
-    .at(-1)!
-    .replace(/\.vue$/, '')
+  return (path.split('/').at(-1) ?? path).replace(/\.vue$/, '')
 }
 
 const frontendModule: DmsFrontendModule = {
   componentPrefix: 'DmsLang',
   setup(sdk) {
-    for (const [path, loader] of Object.entries(components).sort()) {
+    for (const [path, loader] of Object.entries(components).sort(
+      ([left], [right]) => left.localeCompare(right),
+    )) {
       sdk.registerComponent(
         componentName(path),
         defineAsyncComponent(async () => (await loader()).default),

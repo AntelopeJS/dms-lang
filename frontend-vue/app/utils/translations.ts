@@ -1,5 +1,5 @@
 import { baseCompile, CompileErrorCodes } from '@intlify/message-compiler'
-import type { FlatTranslationRow } from '../types/lang'
+import type { FlatTranslationRow, TranslationValue } from '../types/lang'
 
 export type MessagePartKind =
   'text' | 'placeholder' | 'literal' | 'linked' | 'pipe'
@@ -67,10 +67,13 @@ export interface KeyPathConflict {
   keys: string[]
 }
 
+/** The named values a message interpolates. */
+export type MessageParams = Record<string, string | number>
+
 /** The `t` of vue-i18n: key, named values and the count that picks the plural. */
 export type MessageTranslate = (
   key: string,
-  named: Record<string, unknown>,
+  named: MessageParams,
   plural: number,
 ) => string
 
@@ -120,9 +123,8 @@ const SYNTAX_ESCAPES: Partial<Record<MessageIssueKind, string>> = {
 }
 
 /** No value, or a text made of spaces only: the server stores neither. */
-export function isLocaleValueMissing(value: unknown): boolean {
-  if (typeof value === 'string') return value.trim() === ''
-  return value === undefined || value === null
+export function isLocaleValueMissing(value: TranslationValue): boolean {
+  return stringValue(value).trim() === ''
 }
 
 /**
@@ -139,7 +141,7 @@ export function isRowValueMissing(
   )
 }
 
-export function stringValue(value: unknown): string {
+export function stringValue(value: TranslationValue): string {
   return value === undefined || value === null ? '' : String(value)
 }
 
@@ -232,15 +234,15 @@ function readStrayBrace(_text: string, start: number): ScanStep {
   return syntaxStep('strayBrace', CLOSE_BRACE, start)
 }
 
-const SPECIAL_READERS: Record<
+const SPECIAL_READERS = new Map<
   string,
   (text: string, start: number) => ScanStep
-> = {
-  [OPEN_BRACE]: readBrace,
-  [CLOSE_BRACE]: readStrayBrace,
-  [LINKED_MARK]: readLinked,
-  [PLURAL_SEPARATOR]: readPipe,
-}
+>([
+  [OPEN_BRACE, readBrace],
+  [CLOSE_BRACE, readStrayBrace],
+  [LINKED_MARK, readLinked],
+  [PLURAL_SEPARATOR, readPipe],
+])
 
 /**
  * Splits a message written in the vue-i18n syntax into text, `{name}`
@@ -249,13 +251,13 @@ const SPECIAL_READERS: Record<
  * the parts' `raw` gives the text back. Whether a message compiles is the
  * vue-i18n compiler's call (see {@link checkMessage}).
  */
-export function scanMessage(message: unknown): MessageScan {
+export function scanMessage(message: TranslationValue): MessageScan {
   const text = stringValue(message)
   const scan: MessageScan = { parts: [], errors: [] }
   let textStart = 0
   let index = 0
   while (index < text.length) {
-    const reader = SPECIAL_READERS[text[index]]
+    const reader = SPECIAL_READERS.get(text[index])
     if (!reader) {
       index += 1
       continue
@@ -347,35 +349,28 @@ export function nextSiblingPath(
   return nextSegments.slice(0, segments.length).join(NAMESPACE_SEPARATOR)
 }
 
-export function placeholdersOf(text: unknown): string[] {
+export function placeholdersOf(text: TranslationValue): string[] {
   return namesOf(scanMessage(text))
 }
 
-type CompileErrorName = keyof typeof CompileErrorCodes
-
 /** What each error of the vue-i18n compiler means to a translator; any other is `invalidSyntax`. */
-const COMPILE_ERROR_KINDS: Partial<
-  Record<CompileErrorName, MessageSyntaxKind>
-> = {
-  INVALID_TOKEN_IN_PLACEHOLDER: 'invalidPlaceholder',
-  UNTERMINATED_SINGLE_QUOTE_IN_PLACEHOLDER: 'unclosedLiteral',
-  UNKNOWN_ESCAPE_SEQUENCE: 'invalidEscape',
-  INVALID_UNICODE_ESCAPE_SEQUENCE: 'invalidEscape',
-  UNBALANCED_CLOSING_BRACE: 'strayBrace',
-  UNTERMINATED_CLOSING_BRACE: 'unclosedBrace',
-  NOT_ALLOW_NEST_PLACEHOLDER: 'unclosedBrace',
-  EMPTY_PLACEHOLDER: 'emptyPlaceholder',
-  INVALID_LINKED_FORMAT: 'bareAt',
-  UNEXPECTED_EMPTY_LINKED_KEY: 'bareAt',
-  UNEXPECTED_EMPTY_LINKED_MODIFIER: 'bareAt',
-  MUST_HAVE_MESSAGES_IN_PLURAL: 'emptyPlural',
-}
+const COMPILE_ERROR_KINDS = new Map<string, MessageSyntaxKind>([
+  ['INVALID_TOKEN_IN_PLACEHOLDER', 'invalidPlaceholder'],
+  ['UNTERMINATED_SINGLE_QUOTE_IN_PLACEHOLDER', 'unclosedLiteral'],
+  ['UNKNOWN_ESCAPE_SEQUENCE', 'invalidEscape'],
+  ['INVALID_UNICODE_ESCAPE_SEQUENCE', 'invalidEscape'],
+  ['UNBALANCED_CLOSING_BRACE', 'strayBrace'],
+  ['UNTERMINATED_CLOSING_BRACE', 'unclosedBrace'],
+  ['NOT_ALLOW_NEST_PLACEHOLDER', 'unclosedBrace'],
+  ['EMPTY_PLACEHOLDER', 'emptyPlaceholder'],
+  ['INVALID_LINKED_FORMAT', 'bareAt'],
+  ['UNEXPECTED_EMPTY_LINKED_KEY', 'bareAt'],
+  ['UNEXPECTED_EMPTY_LINKED_MODIFIER', 'bareAt'],
+  ['MUST_HAVE_MESSAGES_IN_PLURAL', 'emptyPlural'],
+])
 
-const COMPILE_ERROR_NAMES = new Map<number, CompileErrorName>(
-  Object.entries(CompileErrorCodes).map(([name, code]) => [
-    code,
-    name as CompileErrorName,
-  ]),
+const COMPILE_ERROR_NAMES = new Map<number, string>(
+  Object.entries(CompileErrorCodes).map(([name, code]) => [code, name]),
 )
 
 const FIXED_TOKENS: Partial<Record<MessageSyntaxKind, string>> = {
@@ -396,7 +391,7 @@ function compileErrors(text: string): CompileIssue[] {
     onError: (error) => {
       const name = COMPILE_ERROR_NAMES.get(error.code)
       errors.push({
-        kind: (name && COMPILE_ERROR_KINDS[name]) || 'invalidSyntax',
+        kind: (name && COMPILE_ERROR_KINDS.get(name)) || 'invalidSyntax',
         offset: error.location?.start.offset ?? 0,
       })
     },
@@ -508,7 +503,10 @@ function edgeSpaces(text: string): [boolean, boolean] {
  * Spaces or line breaks at the start or the end of a text the base does not
  * have there (any of them when there is no base): they show in the app.
  */
-function spacesIssue(base: unknown, value: unknown): MessageIssue[] {
+function spacesIssue(
+  base: TranslationValue,
+  value: TranslationValue,
+): MessageIssue[] {
   const [leading, trailing] = edgeSpaces(stringValue(value))
   const [baseLeading, baseTrailing] = edgeSpaces(stringValue(base))
   const count =
@@ -546,7 +544,10 @@ function comparisonIssues(
  * the base text itself (syntax and spaces at its ends only). An empty value
  * has no issue: it is missing.
  */
-export function checkMessage(base: unknown, value: unknown): MessageIssue[] {
+export function checkMessage(
+  base: TranslationValue,
+  value: TranslationValue,
+): MessageIssue[] {
   if (isLocaleValueMissing(value)) return []
   const scan = scanMessage(value)
   const issues = [
@@ -592,7 +593,7 @@ export function messageIssueText(
 }
 
 /** Writes bare `@` and lone braces as vue-i18n literals: `{'@'}`. */
-export function escapeMessage(message: unknown): string {
+export function escapeMessage(message: TranslationValue): string {
   const scan = scanMessage(message)
   const errorKinds = new Map(
     scan.errors.map((error) => [error.start, error.kind]),
@@ -607,7 +608,7 @@ export function escapeMessage(message: unknown): string {
 
 /** Renames a variable everywhere it appears in a message. */
 export function replacePlaceholder(
-  message: unknown,
+  message: TranslationValue,
   from: string,
   to: string,
 ): string {

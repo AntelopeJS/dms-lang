@@ -33,10 +33,11 @@ function isFocusElsewhere(
   targets: QueueShortcutTargets,
 ): boolean {
   if (isFocusInsideOverlay(active)) return true
-  return isTypingTarget(active ?? null) && !targets.root()?.contains(active!)
+  if (!active) return false
+  return isTypingTarget(active) && !targets.root()?.contains(active)
 }
 
-function savingBindings(actions: QueueShortcutActions): ShortcutBindings {
+function savingBindings(actions: QueueShortcutActions) {
   return {
     [shortcutName(QUEUE_KEYS.saveNext)]: {
       usingInput: IN_FIELD,
@@ -52,14 +53,14 @@ function savingBindings(actions: QueueShortcutActions): ShortcutBindings {
 function movingBindings(
   actions: QueueShortcutActions,
   browse: (action: () => void) => () => void,
-): ShortcutBindings {
+) {
   return {
     [shortcutName(QUEUE_KEYS.skip)]: { handler: browse(actions.skip) },
     [shortcutName(QUEUE_KEYS.previous)]: { handler: browse(actions.previous) },
   }
 }
 
-function leavingBindings(field: HTMLElement): ShortcutBindings {
+function leavingBindings(field: HTMLElement) {
   return {
     [shortcutName(QUEUE_KEYS.leaveField)]: {
       usingInput: IN_FIELD,
@@ -94,12 +95,13 @@ export function useQueueShortcuts(
     if (!actions.isActive() || isFocusElsewhere(active.value, targets))
       return {}
     const field = targets.field()
-    const isInField = !!field && active.value === field
-    return {
+    const base = {
       ...savingBindings(actions),
       ...movingBindings(actions, browse),
-      ...(isInField ? leavingBindings(field) : {}),
     }
+    if (field && active.value === field)
+      return { ...base, ...leavingBindings(field) }
+    return base
   })
   defineShortcuts(bindings)
   return { isBrowsing: () => isBrowsing }

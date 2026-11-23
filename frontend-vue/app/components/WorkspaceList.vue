@@ -4,10 +4,8 @@ import {
   PAGE_ACTIONS,
   useLangLinks,
 } from '../composables/translation/useLangLinks'
-import {
-  useWorkspaceActions,
-  useWorkspaceTypes,
-} from '../composables/translation/useWorkspaceActions'
+import { useWorkspaceActions } from '../composables/translation/useWorkspaceActions'
+import { useWorkspaceTypes } from '../composables/translation/useWorkspaceTypes'
 import { useWorkspaceContext } from '../composables/translation/useWorkspaceContext'
 import { useWorkspaceLabel } from '../composables/translation/useWorkspaceLabel'
 import { useWorkspaceRoute } from '../composables/translation/useWorkspaceRoute'
@@ -50,6 +48,7 @@ const OPEN_LABELS: Record<WorkspaceKind, string> = {
   added: 'dms_lang.workspaces.switch',
   modules: 'dms_lang.workspaces.browse',
 }
+const SORT_ORDER: WorkspaceSort[] = ['kind', 'name', 'coverage']
 const SORT_LABELS: Record<WorkspaceSort, string> = {
   kind: 'dms_lang.workspaces.sort_kind',
   name: 'dms_lang.workspaces.sort_name',
@@ -69,14 +68,12 @@ const { getPreference, setPreference } = usePreferences()
 
 const canCreate = computed(() => editable.value && allows('createWorkspace'))
 
-// The workspaces' figures, read with the page.
 const summaryRead = useWorkspaceSummary()
 const summary = computed<WorkspaceStats[]>(
   () => summaryRead.data.value?.workspaces ?? [],
 )
 const isLoaded = computed(() => summaryRead.data.value !== null)
 const isLoading = computed(() => summaryRead.pending.value)
-// A failure kept while it is tried again still shows the skeleton.
 const hasError = computed(
   () => summaryRead.error.value != null && !isLoading.value,
 )
@@ -90,7 +87,7 @@ const sort = computed<WorkspaceSort>({
 })
 
 const sortItems = computed(() =>
-  (Object.keys(SORT_LABELS) as WorkspaceSort[]).map((value) => ({
+  SORT_ORDER.map((value) => ({
     value,
     label: t(SORT_LABELS[value]),
   })),

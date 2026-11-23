@@ -9,7 +9,7 @@ import {
 } from '../composables/translation/useLangLinks'
 import { useLanguageActions } from '../composables/translation/useLanguageActions'
 import { useLocaleNames } from '../composables/translation/useLocaleNames'
-import { useWorkspaceTypes } from '../composables/translation/useWorkspaceActions'
+import { useWorkspaceTypes } from '../composables/translation/useWorkspaceTypes'
 import { useWorkspaceContext } from '../composables/translation/useWorkspaceContext'
 import { useWorkspaceFill } from '../composables/translation/useWorkspaceFill'
 import { useWorkspaceLabel } from '../composables/translation/useWorkspaceLabel'

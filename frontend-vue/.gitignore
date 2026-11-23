@@ -27,3 +27,4 @@ logs
 generated-layers.json
 i18n-registry.generated.ts
 .dms-lang-i18n-registry.json
+.dms-types

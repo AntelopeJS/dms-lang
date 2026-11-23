@@ -126,7 +126,7 @@ function moveFrom(
   move: CellMove,
 ) {
   const target = context.options.targetOf({ key, code }, move)
-  if (target) nextTick(() => startEdit(context, target.key, target.code))
+  if (target) void nextTick(() => startEdit(context, target.key, target.code))
   else if (move !== 'stay') context.options.onMoveEnd({ key, code })
 }
 

@@ -170,21 +170,24 @@ function openPanel() {
   emit('openPanel', props.rowKey, props.code, draft.value)
 }
 
-const KEY_HANDLERS: Record<string, KeyHandler> = {
-  Escape: () => cancel,
-  Tab: (event) => () => commit(event.shiftKey ? 'previous' : 'next'),
-  Enter: (event) => {
-    if (event.altKey) return undefined
-    const hasModifier = event.ctrlKey || event.metaKey
-    if (hasModifier && event.shiftKey) return openPanel
-    if (hasModifier) return () => commit('stay')
-    return event.shiftKey ? undefined : () => commit('down')
-  },
-}
+const KEY_HANDLERS = new Map<string, KeyHandler>([
+  ['Escape', () => cancel],
+  ['Tab', (event) => () => commit(event.shiftKey ? 'previous' : 'next')],
+  [
+    'Enter',
+    (event) => {
+      if (event.altKey) return undefined
+      const hasModifier = event.ctrlKey || event.metaKey
+      if (hasModifier && event.shiftKey) return openPanel
+      if (hasModifier) return () => commit('stay')
+      return event.shiftKey ? undefined : () => commit('down')
+    },
+  ],
+])
 
 function onKeydown(event: KeyboardEvent) {
   if (event.isComposing) return
-  const action = KEY_HANDLERS[event.key]?.(event)
+  const action = KEY_HANDLERS.get(event.key)?.(event)
   if (!action) return
   event.preventDefault()
   event.stopPropagation()

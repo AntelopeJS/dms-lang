@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { VNode } from 'vue'
+
 /**
  * One field of a hand-built form, drawn as a DMS form draws its rows
  * (`FormEntries` / `FormFieldControl`): a `DmsFieldRow` holding the label,
@@ -25,9 +27,9 @@ interface FormFieldRowControl {
 
 interface FormFieldRowSlots {
   /** The control; bind `id` onto it. */
-  default?: (control: FormFieldRowControl) => unknown
+  default?: (control: FormFieldRowControl) => VNode[]
   /** Inline after the label (a badge). */
-  'label-extra'?: () => unknown
+  'label-extra'?: () => VNode[]
 }
 
 const props = withDefaults(defineProps<FormFieldRowProps>(), {

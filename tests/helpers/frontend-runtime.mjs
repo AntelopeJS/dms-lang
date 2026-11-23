@@ -94,7 +94,6 @@ registerHooks({
         },
       },
     );
-    /** Vite's build flags, which the test sets per side. */
     const source = outputText.replaceAll(
       "import.meta.env",
       "globalThis.__VITE_ENV__",

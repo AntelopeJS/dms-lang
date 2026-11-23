@@ -59,7 +59,6 @@ const listed = (workspaces) =>
 void test("the blocks of a page read the workspace list once, on the server, and hand it over", async () => {
   const render = await serverRender(
     () => {
-      /** The scope bar and the page's block, each with the list. */
       const scope = useI18nWorkspaces();
       const block = useI18nWorkspaces();
       return () =>

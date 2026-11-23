@@ -57,7 +57,6 @@ export const useWorkspaceRoute = () => {
     }
   })
 
-  /** The language the queue opens on in a workspace: the current one when it is there, else its first translation. */
   function queueLocaleOf(workspace: string, locale: string): string {
     const target = workspaces.value.find((entry) => entry.id === workspace)
     const codes = (target?.locales ?? [])
@@ -66,8 +65,6 @@ export const useWorkspaceRoute = () => {
     return codes.includes(locale) ? locale : (codes[0] ?? '')
   }
 
-  // The language page stays the language page: it keeps its language when the
-  // target workspace has it, else opens on one the target has (or asks for one).
   function targetOf(workspace: string, options: SelectWorkspaceOptions) {
     const page = options.page ?? currentPage.value
     if (page !== 'language' || options.page || options.query?.[LOCALE_QUERY]) {
@@ -77,7 +74,6 @@ export const useWorkspaceRoute = () => {
     return { page, query: locale ? { [LOCALE_QUERY]: locale } : {} }
   }
 
-  /** The URL `selectWorkspace` goes to, for a link (`to:`). */
   function switchLink(
     workspace: string,
     options: SelectWorkspaceOptions = {},
@@ -90,10 +86,6 @@ export const useWorkspaceRoute = () => {
     })
   }
 
-  /**
-   * Selects a workspace: the state at once, then the URL. Filters, the open
-   * key and a pending dialog belong to the workspace left, so they are dropped.
-   */
   async function selectWorkspace(
     workspace: string,
     options: SelectWorkspaceOptions = {},

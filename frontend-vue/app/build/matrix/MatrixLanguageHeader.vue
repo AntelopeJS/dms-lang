@@ -3,7 +3,6 @@ import type { LanguageCoverage } from '../../types/lang'
 import { coverageTone } from '../../utils/coverage'
 import LocaleTile from '../components/LocaleTile.vue'
 
-/** The head of a language column of the matrix: the language, its missing texts and its coverage. */
 defineProps<{
   column: LanguageCoverage
   columnSiblings: string[]

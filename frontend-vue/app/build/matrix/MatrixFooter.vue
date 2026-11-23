@@ -3,7 +3,6 @@ import { MATRIX_KEYS } from '../../utils/shortcuts'
 import ShortcutKbds from '../components/ShortcutKbds.vue'
 import type { MatrixCounts } from '../composables/useMatrixFilters'
 
-/** The foot of the matrix: what is left to translate, and the keyboard shortcuts of its cells. */
 defineProps<{
   counts: MatrixCounts
   countedLabel: string

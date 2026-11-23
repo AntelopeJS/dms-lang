@@ -36,12 +36,12 @@ interface KeyRemoval {
 }
 
 /** The written values of a row, without the languages it lacks. */
-export function filledValues(row: FlatTranslationRow): Record<string, string> {
-  const values: Record<string, string> = {}
-  for (const [locale, value] of Object.entries(row.values)) {
-    if (!isLocaleValueMissing(value)) values[locale] = stringValue(value)
-  }
-  return values
+export function filledValues(row: FlatTranslationRow) {
+  return Object.fromEntries(
+    Object.entries(row.values)
+      .filter(([, value]) => !isLocaleValueMissing(value))
+      .map(([locale, value]) => [locale, stringValue(value)]),
+  )
 }
 
 function rowsOf(context: KeyActionsContext): FlatTranslationRow[] {
@@ -68,7 +68,7 @@ async function addKey(context: KeyActionsContext): Promise<string[]> {
     },
     destroyOnClose: true,
   })
-  return ((await modal.open()) as string[] | undefined) ?? []
+  return (await modal.open()) ?? []
 }
 
 function notify(context: KeyActionsContext, title: string, icon: string) {
@@ -90,7 +90,7 @@ async function renameKey(
     },
     destroyOnClose: true,
   })
-  const renamed = (await modal.open()) as string | null
+  const renamed = await modal.open()
   if (!renamed) return null
   notify(
     context,

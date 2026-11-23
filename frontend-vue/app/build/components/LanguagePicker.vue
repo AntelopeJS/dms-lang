@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { VNode } from 'vue'
 import { useLocaleNames } from '../../composables/translation/useLocaleNames'
 import type { SelectMenuItem } from '@nuxt/ui'
 import { typedLocaleCode, type LanguageOption } from '../../utils/languages'
@@ -24,10 +25,13 @@ interface Emits {
 
 interface Slots {
   /** What the list says when the search finds nothing. */
-  empty?: () => unknown
+  empty?: () => VNode[]
 }
 
-const STEP_KEYS: Record<string, number> = { ArrowDown: 1, ArrowUp: -1 }
+const STEP_KEYS = new Map([
+  ['ArrowDown', 1],
+  ['ArrowUp', -1],
+])
 const LISTBOX_ID = 'language-picker-options'
 
 const props = withDefaults(defineProps<Props>(), {
@@ -83,7 +87,6 @@ function optionId(value: string): string {
   return `${LISTBOX_ID}-${value}`
 }
 
-/** Typing a code the list offers picks it. */
 watch(search, () => {
   if (!props.isOpen) return
   const exact = typedLocaleCode(search.value)
@@ -92,7 +95,7 @@ watch(search, () => {
 })
 
 function step(event: KeyboardEvent) {
-  const delta = STEP_KEYS[event.key]
+  const delta = STEP_KEYS.get(event.key)
   const list = free.value
   if (!delta || !list.length) return
   event.preventDefault()

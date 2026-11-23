@@ -33,10 +33,15 @@ export function linkWithQuery(path: string, query: PageQuery): string {
   return search ? `${path}?${search}` : path
 }
 
+function isLangPage(name: string): name is LangPage {
+  return Object.hasOwn(LANG_PAGES, name)
+}
+
 /** The module page a path shows, if it is one. */
 export function langPageOf(path: string): LangPage | undefined {
-  const entries = Object.entries(LANG_PAGES) as [LangPage, string][]
-  return entries.find(([, pagePath]) => pagePath === path)?.[0]
+  return Object.keys(LANG_PAGES)
+    .filter(isLangPage)
+    .find((page) => LANG_PAGES[page] === path)
 }
 
 /**
@@ -46,11 +51,6 @@ export function langPageOf(path: string): LangPage | undefined {
 export const useLangLinks = () => {
   const { selectedWorkspace, workspaces, publicBaseUrl } = useI18nWorkspaces()
 
-  /**
-   * The URL another app loads a language from: the one the server computed
-   * for an existing workspace, built on the server's base for a name being
-   * chosen. Empty for the workspaces `/i18n` does not serve.
-   */
   function publicLocaleUrl(workspace: string, locale = LOCALE_PLACEHOLDER) {
     const known = workspaces.value.find((entry) => entry.id === workspace)
     if (known && known.kind !== 'added') return ''

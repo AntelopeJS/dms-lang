@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { useLanguageActions } from '../composables/translation/useLanguageActions'
 import { useLocaleNames } from '../composables/translation/useLocaleNames'
-import {
-  useWorkspaceActions,
-  useWorkspaceTypes,
-} from '../composables/translation/useWorkspaceActions'
+import { useWorkspaceActions } from '../composables/translation/useWorkspaceActions'
+import { useWorkspaceTypes } from '../composables/translation/useWorkspaceTypes'
 import { useWorkspaceContext } from '../composables/translation/useWorkspaceContext'
 import { useWorkspaceRoute } from '../composables/translation/useWorkspaceRoute'
 import UButton from '@nuxt/ui/components/Button.vue'
@@ -100,8 +98,7 @@ function saveType(type: WorkspaceType) {
   void track('type', () => updateDetails(workspaceId.value, { type }))
 }
 
-function pickType(value: unknown) {
-  const type = typeOf(value)
+function pickType(type: WorkspaceType | undefined) {
   if (type && type !== current.value?.type) saveType(type)
 }
 
@@ -194,7 +191,7 @@ usePageHeaderActions(() =>
           :model-value="current?.type"
           :items="typeItems"
           :disabled="!canEditDetails"
-          @update:model-value="pickType"
+          @update:model-value="(value: unknown) => pickType(typeOf(value))"
         />
         <template #label-extra>
           <DmsSaveStatus

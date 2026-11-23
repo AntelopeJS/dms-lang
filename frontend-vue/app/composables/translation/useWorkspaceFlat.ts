@@ -6,6 +6,7 @@ import type {
   FlatTranslations,
   KeyRowResponse,
 } from '../../types/lang'
+import type { JsonObject, JsonValue } from '../../utils/workspaceBackup'
 import { EMPTY_FLAT, withRow } from '../../utils/coverage'
 import {
   ENDPOINTS,
@@ -27,6 +28,22 @@ interface ChangedPayload {
   workspace?: string
   session?: string
   keys?: string[]
+}
+
+function isText(value: JsonValue | undefined): value is string {
+  return typeof value === 'string'
+}
+
+function changedPayloadOf(
+  payload: JsonObject | undefined,
+): ChangedPayload | undefined {
+  if (!payload) return undefined
+  const { workspace, session, keys } = payload
+  return {
+    workspace: isText(workspace) ? workspace : undefined,
+    session: isText(session) ? session : undefined,
+    keys: Array.isArray(keys) ? keys.filter(isText) : undefined,
+  }
 }
 
 /** The keys a realtime change named, or `null` to read the workspace whole. */
@@ -118,23 +135,22 @@ function useFlatRead(
     const id = toValue(workspace)
     return id ? flatKey(id) : null
   }
-  // The first run starts within the call, before its result is returned.
-  const holder: { read?: FlatRead } = {}
+  const latest = shallowRef<FlatRead>()
   const read = useApiData<FlatTranslations>(
     key,
     ({ $authFetch, signal }): Promise<FlatTranslations> =>
       readFlat({
         workspace: toValue(workspace),
         current:
-          holder.read && !holder.read.placeholder.value
-            ? holder.read.data.value
+          latest.value && !latest.value.placeholder.value
+            ? latest.value.data.value
             : null,
         authFetch: $authFetch,
         signal,
       }),
     { immediate: options.immediate, refreshOnPageRefresh: false },
   )
-  holder.read = read
+  latest.value = read
   return read
 }
 
@@ -176,7 +192,7 @@ function startSync(selectedWorkspace: Ref<string>): EffectScope {
       if ('type' in event)
         onRealtimeChange(
           selectedWorkspace.value,
-          event.payload as ChangedPayload | undefined,
+          changedPayloadOf(event.payload),
           sessionId.value,
         )
     })
@@ -221,7 +237,6 @@ export const useWorkspaceFlat = () => {
     if (read?.data.value) read.data.value = flat
   }
 
-  /** Puts a row in place without new figures: a text read from a refusal, a key gone elsewhere. */
   function replaceRow(
     workspace: string,
     key: string,
@@ -230,10 +245,6 @@ export const useWorkspaceFlat = () => {
     setFlat(workspace, withRow(flatOf(workspace), key, row))
   }
 
-  /**
-   * Puts what a key write answered in place of `key`: its row (a new one
-   * before the `before` sibling) and the figures it changed.
-   */
   function applyRow(
     workspace: string,
     key: string,
@@ -309,6 +320,6 @@ export function useLangChanges(): void {
  */
 export function useWorkspaceFlatSync(): void {
   const { selectedWorkspace } = useI18nWorkspaces()
-  useFlatRead(selectedWorkspace)
+  void useFlatRead(selectedWorkspace)
   useLangChanges()
 }

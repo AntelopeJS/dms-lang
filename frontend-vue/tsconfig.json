@@ -1,0 +1,6 @@
+{
+  "extends": "./.dms-types/tsconfig.json",
+  "compilerOptions": { "allowJs": true },
+  "include": ["./**/*.ts", "./**/*.vue", "./eslint.config.mjs"],
+  "exclude": ["./node_modules", "./.dms-types"]
+}

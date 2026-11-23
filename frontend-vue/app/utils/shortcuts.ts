@@ -12,9 +12,7 @@ const KEYBOARD_TEXTS = '$keyboard.'
 const TEXTS = '$dms_lang.shortcuts'
 const COMBINATION_SEPARATOR = '_'
 /** Named keys the DMS keyboard texts do not cover. */
-const OWN_KEY_TEXTS: Record<string, string> = {
-  tab: `${TEXTS}.keys.tab`,
-}
+const OWN_KEY_TEXTS = new Map([['tab', `${TEXTS}.keys.tab`]])
 
 /** The keys of the translation queue. */
 export const QUEUE_KEYS = {
@@ -49,20 +47,18 @@ export function shortcutName(keys: ShortcutKeys): string {
 /** A key as the Shortcuts settings page prints it: named keys through the DMS keyboard texts. */
 function registryKey(key: string): string {
   if (key.length === 1) return key
-  return Object.hasOwn(OWN_KEY_TEXTS, key)
-    ? OWN_KEY_TEXTS[key]
-    : `${KEYBOARD_TEXTS}${key}`
+  return OWN_KEY_TEXTS.get(key) ?? `${KEYBOARD_TEXTS}${key}`
 }
 
 function metadataOf(component: string, text: ShortcutText): ShortcutMetadata {
-  return {
+  const metadata: ShortcutMetadata = {
     key: text.keys.map(registryKey),
     descriptionKey: `${TEXTS}.${text.description}`,
     component,
-    ...(text.condition
-      ? { condition: { descriptionKey: `${TEXTS}.${text.condition}` } }
-      : {}),
   }
+  if (text.condition)
+    metadata.condition = { descriptionKey: `${TEXTS}.${text.condition}` }
+  return metadata
 }
 
 /** The shortcuts of a component, as the DMS shortcuts registry lists them. */
