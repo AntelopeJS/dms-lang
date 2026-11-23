@@ -48,11 +48,12 @@ Restart the backend, then the frontend, and open **Modules › Translations** (`
 
 <!-- antelopejs-docs-compat:start -->
 
-| Package                      | Supported          | Tested with |
-| ---------------------------- | ------------------ | ----------- |
-| `@antelopejs/interface-api`  | `>=0.3.3 <0.4.0`   | `0.3.3`     |
-| `@antelopejs/interface-core` | `>=0.5.2 <0.6.0`   | `0.5.2`     |
-| `@antelopejs/interface-dms`  | `>=0.16.0 <0.17.0` | `0.16.0`    |
+| Package                                | Supported          | Tested with |
+| -------------------------------------- | ------------------ | ----------- |
+| `@antelopejs/interface-api`            | `>=0.3.3 <0.4.0`   | `0.3.3`     |
+| `@antelopejs/interface-core`           | `>=0.5.2 <0.6.0`   | `0.5.2`     |
+| `@antelopejs/interface-dms`            | `>=0.16.0 <0.17.0` | `0.16.0`    |
+| `@antelopejs/interface-dms-automation` | `>=0.7.0 <0.8.0`   | `0.7.0`     |
 
 <!-- antelopejs-docs-compat:end -->
 
