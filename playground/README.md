@@ -8,13 +8,13 @@ A DMS project that loads `@antelopejs/dms-lang` from the parent folder, with edi
 
 | Package                                     | Supported          | Tested with |
 | ------------------------------------------- | ------------------ | ----------- |
-| `@antelopejs/dms`                           | `>=0.22.0 <0.23.0` | `0.22.0`    |
+| `@antelopejs/dms`                           | `>=0.23.0 <0.24.0` | `0.23.0`    |
 | `@antelopejs/interface-api`                 | `>=0.3.3 <0.4.0`   | `0.3.3`     |
 | `@antelopejs/interface-api-util`            | `>=0.3.2 <0.4.0`   | `0.3.2`     |
-| `@antelopejs/interface-core`                | `>=0.5.1 <0.6.0`   | `0.5.1`     |
+| `@antelopejs/interface-core`                | `>=0.5.2 <0.6.0`   | `0.5.2`     |
 | `@antelopejs/interface-data-api`            | `>=0.8.0 <0.9.0`   | `0.8.0`     |
 | `@antelopejs/interface-database`            | `>=0.4.0 <0.5.0`   | `0.4.0`     |
 | `@antelopejs/interface-database-decorators` | `>=0.5.2 <0.6.0`   | `0.5.2`     |
-| `@antelopejs/interface-dms`                 | `>=0.15.0 <0.16.0` | `0.15.0`    |
+| `@antelopejs/interface-dms`                 | `>=0.16.0 <0.17.0` | `0.16.0`    |
 
 <!-- antelopejs-docs-compat:end -->
