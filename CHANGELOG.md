@@ -1,5 +1,31 @@
 # Changelog
 
+## v0.8.0
+
+[compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.7.2...v0.8.0)
+
+### 📦 Build
+
+- **deps:** Move to @antelopejs/dms 0.23, interface-dms 0.16 and zod 4 ([#168](https://github.com/AntelopeJS/dms-lang/pull/168))
+
+### 🏡 Chore
+
+- Adopt tooling-configs 0.10 and lint frontend-vue ([#169](https://github.com/AntelopeJS/dms-lang/pull/169))
+
+### 🤖 CI
+
+- Drop the dms-control cache names ([#165](https://github.com/AntelopeJS/dms-lang/pull/165))
+- Re-sync the AntelopeJS pack for the release app ([#166](https://github.com/AntelopeJS/dms-lang/pull/166))
+- Stop forwarding the retired RELEASE_GITHUB_TOKEN ([#167](https://github.com/AntelopeJS/dms-lang/pull/167))
+
+#### ⚠️ Breaking Changes
+
+- **deps:** Move to @antelopejs/dms 0.23, interface-dms 0.16 and zod 4 ([#168](https://github.com/AntelopeJS/dms-lang/pull/168))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli
+
 ## v0.7.2
 
 [compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.7.1...v0.7.2)
