@@ -286,7 +286,7 @@ function summaryOf(id: string, manifest: WorkspaceManifest): WorkspaceSummary {
   return {
     id,
     kind: "added",
-    editable: true,
+    editable: getTranslationConfig().editable,
     defaultLocale,
     locales,
     ...storedDetails({ description, type }),
