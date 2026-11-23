@@ -3,7 +3,8 @@ import { deleteKeyService } from "../../services/keys";
 import { resolveWorkspaceId } from "../../utils/catalog";
 import { currentText, hasLeaf, type KeyStore } from "../../utils/keys";
 import { ownDefinitions } from "../../utils/registry";
-import { resolveFlat, resolveRow } from "../../utils/resolve";
+import { keyStoreOf } from "../../utils/key-stores";
+import { resolveFlat } from "../../utils/resolve";
 import { workspaceKind } from "../../utils/workspaces";
 import {
   BOOLEAN,
@@ -19,15 +20,14 @@ import { objectSchema, writeAction } from "../support";
 
 const input = z.object({ workspace: workspaceField, key: keyField });
 
-/** Whether the key still shows once the file that defines it loses it: a module or another project file has it. */
-function staysVisible(
+/** Whether another project file still defines the key once the file it is written to loses it. */
+function definedElsewhere(
   workspace: string,
   store: KeyStore,
   key: string,
 ): boolean {
-  const segments = key.split(".");
-  if (hasLeaf(store.reference, segments)) return true;
   if (workspaceKind(workspace) !== "default") return false;
+  const segments = key.split(".");
   return store.locales.some((locale) => ownDefinitions(locale, segments) > 1);
 }
 
@@ -47,16 +47,18 @@ export const deleteKeyAction = writeAction({
   }),
   input,
   run(request, writer, options) {
-    const before = resolveFlat(resolveWorkspaceId(request.workspace));
+    const workspace = resolveWorkspaceId(request.workspace);
+    const before = resolveFlat(workspace);
+    const preview = keyStoreOf(workspace);
+    const elsewhere = definedElsewhere(workspace, preview, request.key);
+    const stillVisible =
+      elsewhere || hasLeaf(preview.reference, request.key.split("."));
     const write = deleteKeyService(
       { workspace: request.workspace, path: request.key },
       writer,
       options,
     );
-    const { store, workspace, key } = write;
-    const stillVisible = options.dryRun
-      ? staysVisible(workspace, store, key)
-      : resolveRow(workspace, key) !== undefined;
+    const { store, key } = write;
     return {
       workspace,
       key,
@@ -65,7 +67,7 @@ export const deleteKeyAction = writeAction({
       ),
       stillVisible,
       totalKeys: options.dryRun
-        ? before.totalKeys - (stillVisible ? 0 : 1)
+        ? before.totalKeys - (elsewhere ? 0 : 1)
         : resolveFlat(workspace).totalKeys,
     };
   },
