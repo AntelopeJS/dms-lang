@@ -60,7 +60,7 @@ export default defineConfig({
       source: {
         type: "package",
         package: "@antelopejs/mongodb",
-        version: "1.8.4",
+        version: "1.8.13",
       },
     },
     "auth-jwt": {
