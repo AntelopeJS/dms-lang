@@ -37,6 +37,34 @@ export function watchedWorkspace(workspace: string | undefined): string {
   return normalizeWorkspaceId(workspace);
 }
 
+const MAX_REMEMBERED_VERDICTS = 1000;
+const breakerVerdicts = new Map<string, boolean>();
+
+/**
+ * The circuit breaker's verdict on one change for one trigger type, asked
+ * once per change: every activation of the trigger shares it, so the number
+ * of procedures listening does not change when the breaker trips.
+ */
+function breakerAdmits(
+  triggerId: string,
+  change: LangChange,
+  subject: string,
+): boolean {
+  const id = `${triggerId}|${change.writeId}`;
+  const known = breakerVerdicts.get(id);
+  if (known !== undefined) return known;
+  if (breakerVerdicts.size >= MAX_REMEMBERED_VERDICTS) {
+    const oldest = breakerVerdicts.keys().next().value;
+    if (oldest !== undefined) breakerVerdicts.delete(oldest);
+  }
+  const verdict = admitAutomationEvent(
+    triggerId,
+    `${change.workspace}|${subject}`,
+  );
+  breakerVerdicts.set(id, verdict);
+  return verdict;
+}
+
 /**
  * Whether a change may reach a trigger: a write made by a procedure only with
  * `includeAutomationWrites`, and then only while the circuit breaker admits it.
@@ -49,7 +77,7 @@ export function admits(
 ): boolean {
   if (change.origin.origin !== "automation") return true;
   if (includeAutomationWrites !== true) return false;
-  return admitAutomationEvent(triggerId, `${change.workspace}|${subject}`);
+  return breakerAdmits(triggerId, change, subject);
 }
 
 /** A list capped for a payload, and whether it lost items. */
