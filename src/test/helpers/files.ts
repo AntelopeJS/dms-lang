@@ -57,19 +57,24 @@ export function withoutFileReads<T>(work: () => T): T {
   }
 }
 
-function leafKeys(value: JsonValue, prefix: string): string[] {
-  if (!isJsonObject(value)) return isString(value) ? [prefix] : [];
+function leafTexts(value: JsonValue, prefix: string): [string, string][] {
+  if (!isJsonObject(value)) return isString(value) ? [[prefix, value]] : [];
   return Object.entries(value).flatMap(([name, child]) =>
-    leafKeys(child, prefix ? `${prefix}.${name}` : name),
+    leafTexts(child, prefix ? `${prefix}.${name}` : name),
   );
+}
+
+/** A frontend locale file as JSON. */
+export function localeFile(file: string): JsonValue {
+  return readJson(join(__dirname, "../../../frontend-vue/i18n/locales", file));
+}
+
+/** Every text of a frontend locale file, by key. */
+export function localeTexts(file: string): Map<string, string> {
+  return new Map(leafTexts(localeFile(file), ""));
 }
 
 /** The keys of a frontend locale file that hold a text. */
 export function localeTextKeys(file: string): Set<string> {
-  return new Set(
-    leafKeys(
-      readJson(join(__dirname, "../../../frontend-vue/i18n/locales", file)),
-      "",
-    ),
-  );
+  return new Set(localeTexts(file).keys());
 }

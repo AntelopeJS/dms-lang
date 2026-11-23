@@ -52,6 +52,9 @@ importers:
       '@antelopejs/tooling-configs':
         specifier: '>=0.10.0 <0.11.0'
         version: 0.10.0(@nuxt/eslint-config@1.17.0(@typescript-eslint/utils@8.70.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3))(@vue/compiler-sfc@3.5.42)(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3))(knip@6.34.0)(mongodb-memory-server@11.3.0(bare-buffer@3.7.1)(socks@2.8.8))(oxfmt@0.66.0)(oxlint@1.81.0(oxlint-tsgolint@7.0.2001))(pixelmatch@8.0.0)(playwright-core@1.65.1)(sharp@0.35.5(@types/node@24.13.3))
+      '@intlify/core-base':
+        specifier: ^11.1.12
+        version: 11.4.23
       '@playwright/test':
         specifier: ~1.65.0
         version: 1.65.1
@@ -121,7 +124,7 @@ importers:
     optionalDependencies:
       '@antelopejs/interface-dms-automation':
         specifier: '>=0.7.0 <0.8.0'
-        version: 0.7.0(@antelopejs/interface-core@0.5.1)
+        version: 0.7.0(@antelopejs/interface-core@0.5.2)
 
   frontend-vue:
     dependencies:
@@ -1042,12 +1045,28 @@ packages:
   '@internationalized/number@3.6.8':
     resolution: {integrity: sha512-8UmMFia46DUt+k97zKd9fKWXcWHR+k8ae3eYzILETuT2KbIvLyOfac7zesw+sJdRAAZ7Q9pM1Mk22aXp2LD0Ig==}
 
+  '@intlify/core-base@11.4.23':
+    resolution: {integrity: sha512-V8a3BQ7iTVPDetJ/LJfGn3lDx4Ir35OjjO4BLgVrFuL+0egWzwUyfdLIPAEYWlMGdo14eC5p6uk3tSlTYY0YmQ==}
+    engines: {node: '>= 22'}
+
+  '@intlify/devtools-types@11.4.23':
+    resolution: {integrity: sha512-zuWkolaeK8ej5z7L9Ss7FLIBHgE8ZF+XcwV1o/vQ7IKagiDg/IosA7fOa2HUFVMW5yT2ugph9rshevHGzcowBQ==}
+    engines: {node: '>= 22'}
+
   '@intlify/message-compiler@11.4.14':
     resolution: {integrity: sha512-y79GatHfMhN672Vooxw0v6mgX/vclFHggO1ENL6aH/QubLXiV529WXu/+FhVUbYF+HLTeDDkQpmnpfvSJddBCg==}
     engines: {node: '>= 22'}
 
+  '@intlify/message-compiler@11.4.23':
+    resolution: {integrity: sha512-HgmnQV/lBBX8KgxoNwngzzq8DLw/jECJgz9eBfQGdkEYte7Bw1RSqhIskcWp0DEWrSg2wijUi6dJjpq1WUD+zg==}
+    engines: {node: '>= 22'}
+
   '@intlify/shared@11.4.14':
     resolution: {integrity: sha512-f8zSlPs4+Yd9za3CPQfW9OHxAJBOeRQzB/hhOhkbGA7hlqWk0W0bUtSV/LmyrGNwdl8JriBnFtJqZyF140bjGg==}
+    engines: {node: '>= 22'}
+
+  '@intlify/shared@11.4.23':
+    resolution: {integrity: sha512-1iqGalDCOlHZ8y7LOC3yisSm52K5AmkTmaNO23XGFYWU6Z1oIX8VeAGRq9rn2KrDFb8nMtQaxNyMa1n8EeDm5g==}
     engines: {node: '>= 22'}
 
   '@ioredis/commands@1.10.0':
@@ -6717,12 +6736,30 @@ snapshots:
     dependencies:
       '@swc/helpers': 0.5.23
 
+  '@intlify/core-base@11.4.23':
+    dependencies:
+      '@intlify/devtools-types': 11.4.23
+      '@intlify/message-compiler': 11.4.23
+      '@intlify/shared': 11.4.23
+
+  '@intlify/devtools-types@11.4.23':
+    dependencies:
+      '@intlify/core-base': 11.4.23
+      '@intlify/shared': 11.4.23
+
   '@intlify/message-compiler@11.4.14':
     dependencies:
       '@intlify/shared': 11.4.14
       source-map-js: 1.2.1
 
+  '@intlify/message-compiler@11.4.23':
+    dependencies:
+      '@intlify/shared': 11.4.23
+      source-map-js: 1.2.1
+
   '@intlify/shared@11.4.14': {}
+
+  '@intlify/shared@11.4.23': {}
 
   '@ioredis/commands@1.10.0':
     optional: true
