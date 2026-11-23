@@ -8,7 +8,7 @@ const ERROR_BODY = z
   .object({
     code: z.string(),
     message: z.string(),
-    current: z.record(z.string().nullable()).optional(),
+    current: z.record(z.string(), z.string().nullable()).optional(),
     id: z.string().optional(),
     locale: z.string().optional(),
     problems: z.array(z.string()).optional(),
@@ -16,7 +16,7 @@ const ERROR_BODY = z
     /** Zod issues on a refused input, message issues on a refused text. */
     issues: z.unknown().optional(),
   })
-  .passthrough();
+  .loose();
 
 type ErrorBody = z.infer<typeof ERROR_BODY>;
 

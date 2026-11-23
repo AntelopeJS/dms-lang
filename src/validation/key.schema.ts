@@ -7,9 +7,11 @@ const workspace = z.string().trim().min(1);
 const keyPath = z.string().min(1);
 
 /** Texts by locale: a string is written, `null` (or an empty text) removes the value. */
-const localeTexts = z.record(z.string({ message: INVALID_VALUE }).nullable(), {
-  message: INVALID_VALUE,
-});
+const localeTexts = z.record(
+  z.string(),
+  z.string({ message: INVALID_VALUE }).nullable(),
+  { message: INVALID_VALUE },
+);
 
 const localeCodes = z.array(z.string());
 

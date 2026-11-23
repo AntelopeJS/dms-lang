@@ -49,7 +49,7 @@ export const workspaceSchema = {
   remove: z.object({ id }),
   import: z.object({
     id,
-    messages: z.record(jsonValue, {
+    messages: z.record(z.string(), jsonValue, {
       message: errorMessage("invalid_value"),
     }),
     locales: z.array(localeEntry).optional(),

@@ -47,7 +47,7 @@ describe("[unit] route inputs are validated at the entry", () => {
       if (error instanceof HTTPResult) body = error.getBody();
     }
     expect(body).to.equal(
-      '{"issues":[{"code":"invalid_union","unionErrors":[{"issues":[{"expected":"\'dms\' | \'website\' | \'mobile\' | \'other\'","received":"number","code":"invalid_type","path":["type"],"message":"Expected \'dms\' | \'website\' | \'mobile\' | \'other\', received number"}],"name":"ZodError"},{"issues":[{"received":5,"code":"invalid_literal","expected":"","path":["type"],"message":"Invalid literal value, expected \\"\\""}],"name":"ZodError"}],"path":["type"],"message":"Invalid input"}],"message":"$dms_lang.errors.invalid_body","code":"invalid_body"}',
+      '{"issues":[{"code":"invalid_union","errors":[[{"code":"invalid_value","values":["dms","website","mobile","other"],"path":[],"message":"Invalid option: expected one of \\"dms\\"|\\"website\\"|\\"mobile\\"|\\"other\\""}],[{"code":"invalid_value","values":[""],"path":[],"message":"Invalid input: expected \\"\\""}]],"path":["type"],"message":"Invalid input"}],"message":"$dms_lang.errors.invalid_body","code":"invalid_body"}',
     );
   });
 
