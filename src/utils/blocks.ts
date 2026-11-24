@@ -200,11 +200,30 @@ function countIssues(flat: FlatResult, locale: string): number {
   return flat.rows.filter((row) => needsReview(row, locale)).length;
 }
 
-function localeStatItems(flat: FlatResult, locale: string): StatGroupItem[] {
+/** The raw figures of one language of a workspace: what the Language page shows. */
+export interface LocaleFigures {
+  total: number;
+  translated: number;
+  missing: number;
+  coverage: number;
+  /** Texts to review: an issue, or translated from an older base text. */
+  issues: number;
+}
+
+export function localeFigures(flat: FlatResult, locale: string): LocaleFigures {
   const missing = flat.localeMissing[locale] ?? 0;
   const translated = flat.rows.length - missing;
-  const coverage = coveragePercent(translated, flat.rows.length);
-  const issues = countIssues(flat, locale);
+  return {
+    total: flat.rows.length,
+    translated,
+    missing,
+    coverage: coveragePercent(translated, flat.rows.length),
+    issues: countIssues(flat, locale),
+  };
+}
+
+function localeStatItems(flat: FlatResult, locale: string): StatGroupItem[] {
+  const { missing, translated, coverage, issues } = localeFigures(flat, locale);
   return [
     {
       id: "coverage",

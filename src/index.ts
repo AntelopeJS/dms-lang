@@ -3,6 +3,10 @@ import { AddFrontendModule } from "@antelopejs/interface-dms/page";
 import { setTranslationConfig } from "./utils/config";
 import { initializeLocaleRegistry, stopLocaleRegistry } from "./utils/registry";
 import { frontendModule } from "./frontend-module";
+import {
+  registerAutomationNodes,
+  unregisterAutomationNodes,
+} from "./automation";
 
 export * from "./pages";
 export * from "./routes";
@@ -35,8 +39,10 @@ export async function construct(config: DmsLangConfig = {}): Promise<void> {
 
 export async function start(): Promise<void> {
   await initializeLocaleRegistry();
+  await registerAutomationNodes();
 }
 
-export function stop(): void {
+export async function stop(): Promise<void> {
   stopLocaleRegistry();
+  await unregisterAutomationNodes();
 }

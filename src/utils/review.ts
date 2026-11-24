@@ -61,6 +61,10 @@ export function trackSources(store: KeyStore, workspace: string): KeyStore {
     ...store,
     track: (change) =>
       updateManifest(workspace, (manifest) => applyChange(manifest, change)),
+    trackAll: (changes) =>
+      updateManifest(workspace, (manifest) => {
+        for (const change of changes) applyChange(manifest, change);
+      }),
   };
 }
 

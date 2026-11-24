@@ -14,12 +14,14 @@ import { findLocale } from "./locale-codes";
 import { loadMessages } from "./registry";
 import { leafPaths, type LocaleMessages } from "./tree";
 import {
+  checkNewWorkspace,
   loadWorkspaceMessages,
   type WorkspaceDetails,
   type WorkspaceKind,
   type WorkspaceLocale,
   validateLocaleEntry,
   workspaceKind,
+  type WorkspaceSeed,
   writeNewWorkspace,
 } from "./workspaces";
 import { isString } from "./guards";
@@ -175,11 +177,17 @@ function importedMessages(
   return result;
 }
 
+/** A validated backup: the id it creates and what the new workspace holds. */
+export interface PreparedImport {
+  id: string;
+  seed: WorkspaceSeed;
+}
+
 /**
- * Creates an added workspace from a backup (or from an older export `{ <locale>: messages }`
- * passed as `messages`). Returns the id of the new workspace.
+ * Validates a backup as {@link importWorkspace} does, every refusal included
+ * (the id taken among them), and answers what it would write, writing nothing.
  */
-export function importWorkspace(backup: ImportInput): string {
+export function prepareImport(backup: ImportInput): PreparedImport {
   const locales = importedLocales(backup);
   const codes = locales.map((locale) => locale.code);
   const base =
@@ -192,11 +200,21 @@ export function importWorkspace(backup: ImportInput): string {
     { locale: backup.defaultLocale },
     "unknown_base_locale",
   );
-  return writeNewWorkspace(backup.id, {
+  const seed: WorkspaceSeed = {
     defaultLocale: base,
     locales,
     messages: importedMessages(backup.messages, locales),
     description: backup.description,
     type: backup.type,
-  });
+  };
+  return { id: checkNewWorkspace(backup.id), seed };
+}
+
+/**
+ * Creates an added workspace from a backup (or from an older export `{ <locale>: messages }`
+ * passed as `messages`). Returns the id of the new workspace.
+ */
+export function importWorkspace(backup: ImportInput): string {
+  const { id, seed } = prepareImport(backup);
+  return writeNewWorkspace(id, seed);
 }

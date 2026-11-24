@@ -43,7 +43,32 @@ export interface KeyStore {
   load(locale: string, segments: string[]): JsonObject;
   /** Writes back what {@link KeyStore.load} returned for the same locale and key. */
   save(locale: string, data: JsonObject, segments: string[]): void;
+  /** The file a key of a locale is written to, so a batch loads and saves each file once. */
+  fileOf?(locale: string, segments: string[]): string;
   track?(change: KeyChange): void;
+  /** Records several changes at once; {@link KeyStore.track} each otherwise. */
+  trackAll?(changes: KeyChange[]): void;
+}
+
+/** The effective base text of a key before and after a write that changed it. */
+export interface BaseTextChange {
+  previousText: string;
+  text: string;
+}
+
+/**
+ * The store as a dry run sees it: every read and check runs, the writes stay
+ * in memory and nothing is tracked.
+ */
+export function previewStore(store: KeyStore): KeyStore {
+  return {
+    locales: store.locales,
+    baseLocale: store.baseLocale,
+    messages: store.messages,
+    reference: store.reference,
+    load: (locale, segments) => structuredClone(store.load(locale, segments)),
+    save: () => undefined,
+  };
 }
 
 function layersOf(messages: LocaleMessages): JsonObject[] {
@@ -54,11 +79,14 @@ function kindsAt(messages: LocaleMessages, segments: string[]): NodeKind[] {
   return layersOf(messages).map((data) => nodeKindAt(data, segments));
 }
 
-function hasLeaf(messages: LocaleMessages, segments: string[]): boolean {
+export function hasLeaf(messages: LocaleMessages, segments: string[]): boolean {
   return kindsAt(messages, segments).includes("leaf");
 }
 
-function hasBranch(messages: LocaleMessages, segments: string[]): boolean {
+export function hasBranch(
+  messages: LocaleMessages,
+  segments: string[],
+): boolean {
   return kindsAt(messages, segments).includes("branch");
 }
 
@@ -88,7 +116,7 @@ function leafPrefix(
 }
 
 /** 409 unless a key can be written at `segments` without overwriting a key or a namespace. */
-function assertFreePath(
+export function assertFreePath(
   messages: LocaleMessages,
   reference: LocaleMessages,
   segments: string[],
@@ -114,13 +142,13 @@ function prefixed(messages: LocaleMessages, tag: string): LocaleMessages {
   );
 }
 
-function storeLocale(store: KeyStore, code: string): string {
+export function storeLocale(store: KeyStore, code: string): string {
   const found = findLocale(store.locales, code);
   if (found === undefined) fail("undeclared_locale", { locale: code });
   return found;
 }
 
-function textOf(value: string | null): string | null {
+export function textOf(value: string | null): string | null {
   return value === null || value.trim() === "" ? null : value;
 }
 
@@ -140,7 +168,7 @@ function validateTexts(store: KeyStore, values: LocaleTexts): LocaleTexts {
   return texts;
 }
 
-function currentText(
+export function currentText(
   data: JsonObject | undefined,
   path: string,
 ): string | null {
@@ -165,7 +193,7 @@ function assertExpected(
   fail("conflict", { path, current });
 }
 
-function countTexts(messages: LocaleMessages, path: string): number {
+export function countTexts(messages: LocaleMessages, path: string): number {
   return layersOf(messages).filter((data) => currentText(data, path) !== null)
     .length;
 }
@@ -226,6 +254,29 @@ function applyInMemory(
   return next;
 }
 
+/** The text a key shows in the base language: the store's own, else the read-only layer's. */
+function effectiveBase(
+  store: KeyStore,
+  messages: LocaleMessages,
+  path: string,
+): string {
+  return (
+    currentText(messages[store.baseLocale], path) ??
+    currentText(store.reference[store.baseLocale], path) ??
+    ""
+  );
+}
+
+function baseChange(
+  store: KeyStore,
+  next: LocaleMessages,
+  path: string,
+): BaseTextChange | undefined {
+  const previousText = effectiveBase(store, store.messages, path);
+  const text = effectiveBase(store, next, path);
+  return previousText === text ? undefined : { previousText, text };
+}
+
 /**
  * Creates a key with its texts, right before the sibling path `before` when
  * given; 409 when it exists or would overwrite a key or a namespace.
@@ -271,7 +322,7 @@ function assertKeyOf(store: KeyStore, segments: string[]): void {
   fail("key_not_found", { path });
 }
 
-function assertWritable(
+export function assertWritable(
   store: KeyStore,
   segments: string[],
   texts: LocaleTexts,
@@ -288,13 +339,16 @@ function assertWritable(
   }
 }
 
-/** Changes the texts of an existing key; 404 when it no longer exists, 409 when `expected` is stale. */
+/**
+ * Changes the texts of an existing key; 404 when it no longer exists, 409
+ * when `expected` is stale. Answers the change of its base text, if any.
+ */
 export function updateKey(
   store: KeyStore,
   path: string,
   values: LocaleTexts,
   expected?: LocaleTexts,
-): void {
+): BaseTextChange | undefined {
   const segments = validateKeyPath(path);
   const key = segments.join(".");
   assertKeyOf(store, segments);
@@ -309,8 +363,10 @@ export function updateKey(
     "last_value",
     { path: key },
   );
+  const change = baseChange(store, next, key);
   applyTexts(store, segments, texts);
   store.track?.({ path: key, texts, messages: next });
+  return change;
 }
 
 function assertOwnKey(store: KeyStore, segments: string[]): void {
@@ -375,20 +431,38 @@ function targetLocales(store: KeyStore, locales?: string[]): string[] {
     : store.locales;
 }
 
+/** What {@link removeOverride} removed: the locales, and the change of the base text when it was one. */
+export interface RemovedOverride {
+  locales: string[];
+  baseChange?: BaseTextChange;
+}
+
 /** Removes the project values of a module key so the module text shows again. */
 export function removeOverride(
   store: KeyStore,
   path: string,
   locales?: string[],
-): void {
+): RemovedOverride {
   const segments = validateKeyPath(path);
+  const key = segments.join(".");
   check(hasLeaf(store.reference, segments), "not_an_override", { path });
-  for (const locale of targetLocales(store, locales)) {
-    if (nodeKindAt(store.messages[locale], segments) !== "leaf") continue;
+  const removed = targetLocales(store, locales).filter(
+    (locale) => nodeKindAt(store.messages[locale], segments) === "leaf",
+  );
+  const next = applyInMemory(
+    store.messages,
+    segments,
+    Object.fromEntries(removed.map((locale) => [locale, null])),
+  );
+  const change = baseChange(store, next, key);
+  for (const locale of removed) {
     const data = store.load(locale, segments);
     deleteAtPath(data, segments);
     store.save(locale, data, segments);
   }
+  return change
+    ? { locales: removed, baseChange: change }
+    : { locales: removed };
 }
 
 /**
@@ -401,7 +475,7 @@ export function markReviewed(
   store: KeyStore,
   path: string,
   locales?: string[],
-): void {
+): string[] {
   const segments = validateKeyPath(path);
   const key = segments.join(".");
   assertKeyOf(store, segments);
@@ -410,5 +484,10 @@ export function markReviewed(
     const text = currentText(store.messages[locale], key);
     if (locale !== store.baseLocale && text !== null) texts[locale] = text;
   }
+  const reviewed =
+    currentText(store.messages[store.baseLocale], key) === null
+      ? []
+      : Object.keys(texts);
   store.track?.({ path: key, texts, messages: store.messages });
+  return reviewed;
 }

@@ -795,6 +795,401 @@
 			"keys": {
 				"tab": "Tab"
 			}
+		},
+		"automation": {
+			"fields": {
+				"actorId": "Id de l'auteur",
+				"at": "Quand",
+				"backup": "Sauvegarde",
+				"baseLanguageName": "Nom de la langue de base",
+				"baseLocale": "Langue de base",
+				"baseMissing": "Clés sans texte de base",
+				"baseText": "Texte de base",
+				"before": "Avant la clé",
+				"bytes": "Taille en octets",
+				"changed": "Modifié",
+				"checkExpected": "Vérifier le texte actuel",
+				"cleared": "Effacés",
+				"code": "Code de langue",
+				"compiles": "Compile",
+				"complete": "Complète",
+				"confirm": "Confirmation",
+				"coverage": "Couverture",
+				"createKeys": "Créer les clés manquantes",
+				"created": "Clés créées",
+				"data": "Données",
+				"deliveryId": "Id de livraison",
+				"description": "Description",
+				"editable": "Modifiable",
+				"exists": "Existe",
+				"expectedText": "Texte attendu",
+				"extraSpaces": "Espaces en trop",
+				"fallback": "Utiliser les replis",
+				"fallbackLocale": "Langue de repli",
+				"fireOnStart": "Déclencher au démarrage",
+				"flag": "Drapeau",
+				"format": "Format",
+				"found": "Trouvé",
+				"hasIssue": "A un problème",
+				"hasMore": "Il en reste",
+				"id": "Id de l'espace de traduction",
+				"inLanguage": "Nom dans la langue",
+				"includeAutomationWrites": "Inclure les écritures des procédures",
+				"includeStats": "Inclure les chiffres",
+				"incompleteKeys": "Clés incomplètes",
+				"inherited": "Textes des modules",
+				"intervalSeconds": "Intervalle (secondes)",
+				"isBase": "Est la langue de base",
+				"isEmpty": "Vide",
+				"isNamespace": "Est un espace de noms",
+				"issue": "Problème",
+				"issues": "Problèmes",
+				"items": "Éléments",
+				"key": "Clé de traduction",
+				"keyCount": "Nombre de clés",
+				"keyPrefix": "Préfixe de clé",
+				"keys": "Clés",
+				"keysAdded": "Clés ajoutées",
+				"keysChanged": "Clés modifiées",
+				"keysRemoved": "Clés retirées",
+				"keysTruncated": "Clés tronquées",
+				"kind": "Genre",
+				"kinds": "Genres",
+				"language": "Sous-étiquette de langue",
+				"limit": "Limite",
+				"linkedKeys": "Clés liées",
+				"locale": "Langue",
+				"localeMissing": "Manquants par langue",
+				"localeProgress": "Couverture par langue",
+				"locales": "Langues",
+				"maxBytes": "Taille maximale (octets)",
+				"message": "Message",
+				"messages": "Textes",
+				"missing": "Manquants",
+				"missingLocales": "Langues sans texte",
+				"missingParams": "Paramètres manquants",
+				"mode": "Mode",
+				"moduleTexts": "Textes des modules",
+				"modulesAdded": "Modules ajoutés",
+				"modulesRemoved": "Modules retirés",
+				"name": "Nom",
+				"namespace": "Espace de noms",
+				"namespaces": "Espaces de noms",
+				"newId": "Nouvel id",
+				"newKey": "Nouvelle clé",
+				"offset": "Décalage",
+				"onMissing": "Si absent",
+				"operation": "Opération",
+				"operations": "Opérations",
+				"origin": "Origine",
+				"originProcedureId": "Id de la procédure d'origine",
+				"originRunId": "Id de l'exécution d'origine",
+				"outdated": "Obsolètes",
+				"overridden": "Remplacé",
+				"overriddenChanged": "Clés remplacées modifiées",
+				"overrides": "Remplacements",
+				"params": "Paramètres",
+				"pluralFormsDiffer": "Formes plurielles différentes",
+				"previousBaseLocale": "Ancienne langue de base",
+				"previousCoverage": "Couverture précédente",
+				"previousKey": "Ancienne clé",
+				"previousText": "Texte précédent",
+				"previousWorkspace": "Ancien espace de traduction",
+				"problems": "Erreurs",
+				"publicUrl": "URL publique",
+				"reason": "Motif",
+				"removed": "Retiré",
+				"removedLocales": "Langues retirées",
+				"reviewTrackingCleared": "Suivi de relecture effacé",
+				"reviewed": "Relues",
+				"sameLanguage": "Même langue",
+				"served": "Servi",
+				"servedLocale": "Langue servie",
+				"siblings": "Affichées ensemble",
+				"skipped": "Clés ignorées",
+				"staleLocales": "Langues à relire",
+				"stillOutdated": "Encore obsolètes",
+				"stillVisible": "Encore visible",
+				"targets": "Langues cibles",
+				"template": "Modèle",
+				"text": "Texte",
+				"texts": "Traductions",
+				"textsRemoved": "Textes retirés",
+				"threshold": "Seuil",
+				"toReview": "À relire",
+				"total": "Total",
+				"totalKeys": "Nombre total de clés",
+				"translated": "Traduits",
+				"translatedStrings": "Textes traduits",
+				"truncated": "Tronqué",
+				"type": "Type",
+				"unchanged": "Inchangés",
+				"unknownParams": "Paramètres inconnus",
+				"url": "URL",
+				"usedFallback": "Repli utilisé",
+				"valid": "Valide",
+				"values": "Textes",
+				"workspace": "Espace de traduction",
+				"workspaceKind": "Genre d'espace de traduction",
+				"workspaces": "Espaces de traduction",
+				"written": "Écrits"
+			},
+			"hints": {
+				"workspace": "Le catalogue de traductions (pas un locataire) : default pour les fichiers du projet, modules, ou l'id d'un espace de traduction ajouté",
+				"key": "Chemin à points de la clé, par exemple emails.welcome.subject",
+				"locale": "Code de langue, par exemple fr ou fr-BE",
+				"keyPrefix": "Seulement les clés égales à ce préfixe ou dessous comme espace de noms ; vide pour toutes les clés",
+				"includeAutomationWrites": "Déclencher aussi pour les écritures faites par des procédures ; désactivé par défaut pour qu'une procédure ne se déclenche pas elle-même",
+				"intervalSeconds": "Fréquence de vérification, en secondes",
+				"params": "Valeurs des paramètres du message : name remplit le paramètre name, 0 le premier de la liste ; count ou n choisit la forme plurielle",
+				"limit": "Nombre d'éléments à renvoyer",
+				"offset": "Nombre d'éléments correspondants à sauter"
+			},
+			"triggers": {
+				"translationsChanged": {
+					"name": "Traductions modifiées",
+					"description": "Une écriture faite via Lang dans un espace de traduction : un texte, une clé, une langue ou l'espace de traduction lui-même",
+					"fields": {
+						"workspace": "Déclencher seulement pour cet espace de traduction ; vide pour tous",
+						"operations": "Déclencher seulement pour ces opérations ; vide pour toutes"
+					}
+				},
+				"baseTextChanged": {
+					"name": "Texte de base modifié",
+					"description": "Le texte en langue de base d'une clé d'un espace de traduction a changé ; ses traductions sont peut-être obsolètes",
+					"fields": {
+						"workspace": "Déclencher seulement pour cet espace de traduction ; vide pour tous"
+					}
+				},
+				"languageCompleted": {
+					"name": "Langue complétée",
+					"description": "Une langue d'un espace de traduction atteint une couverture complète : chaque clé a un texte. Se déclenche aussi pour les écritures des procédures",
+					"fields": {
+						"workspace": "Déclencher seulement pour cet espace de traduction ; vide pour tous",
+						"locale": "Déclencher seulement pour cette langue ; vide pour toutes les langues cibles"
+					}
+				},
+				"coverageBelow": {
+					"name": "Couverture de langue en baisse",
+					"description": "Vérifie un espace de traduction à intervalle régulier et se déclenche quand la couverture d'une langue passe sous un seuil",
+					"fields": {
+						"workspace": "Espace de traduction à surveiller ; vide pour les fichiers du projet et tous les espaces ajoutés",
+						"locale": "Langue à surveiller ; vide pour toutes les langues cibles",
+						"threshold": "Déclencher quand la couverture passe d'au moins ce pourcentage à moins ; 100 se déclenche quand une langue complète cesse de l'être",
+						"fireOnStart": "Déclencher aussi, à la première vérification, pour les langues déjà sous le seuil"
+					}
+				},
+				"moduleTextsChanged": {
+					"name": "Textes des modules modifiés",
+					"description": "Les textes fournis par les modules installés ont changé : un module a été ajouté ou retiré, ou ses fichiers de langue ont changé",
+					"fields": {
+						"intervalSeconds": "Fréquence de vérification des fichiers de langue des modules, en secondes ; 0 suit seulement les ajouts et retraits de modules"
+					}
+				}
+			},
+			"actions": {
+				"setTranslation": {
+					"name": "Définir une traduction",
+					"description": "Écrire ou effacer le texte d'une clé dans une langue d'un espace de traduction",
+					"fields": {
+						"text": "Nouveau texte ; vide ou seulement des espaces l'efface",
+						"checkExpected": "Refuser l'écriture si le texte actuel n'est pas le texte attendu",
+						"expectedText": "Texte attendu actuellement, vide pour aucun texte ; lu seulement si Vérifier le texte actuel est activé"
+					}
+				},
+				"createKey": {
+					"name": "Créer une clé de traduction",
+					"description": "Ajouter une clé à un espace de traduction avec son texte de base, et éventuellement ses traductions",
+					"fields": {
+						"baseText": "Texte dans la langue de base",
+						"texts": "Textes des autres langues, par code de langue",
+						"before": "Clé sœur devant laquelle placer la nouvelle clé ; vide l'ajoute à la fin"
+					}
+				},
+				"markReviewed": {
+					"name": "Marquer les traductions comme relues",
+					"description": "Enregistrer que les traductions d'une clé ont été vérifiées par rapport au texte de base actuel, pour qu'elles quittent la file de relecture (espaces de traduction ajoutés seulement)",
+					"fields": {
+						"locales": "Langues à marquer ; vide pour toutes celles qui ont un texte"
+					}
+				},
+				"addLanguage": {
+					"name": "Ajouter une langue",
+					"description": "Ajouter une langue à un espace de traduction ajouté",
+					"fields": {
+						"name": "Nom affiché ; vide utilise le nom propre de la langue",
+						"flag": "Emoji de drapeau affiché à côté de la langue"
+					}
+				},
+				"importLanguage": {
+					"name": "Importer les textes d'une langue",
+					"description": "Écrire de nombreux textes d'une langue dans un espace de traduction existant à partir d'un objet JSON imbriqué ou à plat",
+					"fields": {
+						"messages": "Textes en arbre imbriqué ou en chemins à plat, 5000 au plus",
+						"mode": "merge écrit chaque texte donné ; fillMissing seulement les clés sans texte ; replace efface aussi les autres textes de la langue",
+						"createKeys": "Créer les clés absentes de l'espace de traduction au lieu de les ignorer"
+					}
+				},
+				"createWorkspace": {
+					"name": "Créer un espace de traduction",
+					"description": "Créer un espace de traduction ajouté avec sa langue de base",
+					"fields": {
+						"id": "Id du nouvel espace de traduction : lettres minuscules, chiffres, _ et -",
+						"baseLanguageName": "Nom affiché de la langue de base",
+						"description": "À quoi sert l'espace de traduction",
+						"type": "Genre d'application à laquelle servent les traductions"
+					}
+				},
+				"importWorkspace": {
+					"name": "Restaurer un espace de traduction",
+					"description": "Créer un espace de traduction ajouté à partir d'une sauvegarde faite par Exporter un espace de traduction",
+					"fields": {
+						"backup": "Objet de sauvegarde, tel que le donne Exporter un espace de traduction au format backup",
+						"id": "Id à créer ; vide utilise l'id de la sauvegarde"
+					}
+				},
+				"renameKey": {
+					"name": "Renommer une clé de traduction",
+					"description": "Déplacer une clé vers un nouveau chemin dans toutes les langues d'un espace de traduction"
+				},
+				"deleteKey": {
+					"name": "Supprimer une clé de traduction",
+					"description": "Supprimer une clé dans toutes les langues d'un espace de traduction"
+				},
+				"removeOverride": {
+					"name": "Retirer le remplacement d'un texte de module",
+					"description": "Retirer le texte propre au projet d'une clé de module pour que le texte du module s'affiche de nouveau (espace de traduction des fichiers du projet)",
+					"fields": {
+						"locales": "Langues à restaurer ; vide pour toutes"
+					}
+				},
+				"removeLanguage": {
+					"name": "Retirer une langue",
+					"description": "Retirer une langue et tous ses textes d'un espace de traduction ajouté"
+				},
+				"setBaseLanguage": {
+					"name": "Définir la langue de base",
+					"description": "Faire d'une autre langue la base d'un espace de traduction ajouté ; le suivi de relecture repart de zéro"
+				},
+				"updateWorkspace": {
+					"name": "Modifier un espace de traduction",
+					"description": "Modifier la description ou le type d'un espace de traduction ajouté. Un champ laissé intact garde sa valeur ; un champ vidé l'efface",
+					"fields": {
+						"description": "Nouvelle description ; une valeur vide l'efface",
+						"type": "Nouveau type ; une valeur vide l'efface"
+					}
+				},
+				"renameWorkspace": {
+					"name": "Renommer un espace de traduction",
+					"description": "Changer l'id d'un espace de traduction ajouté ; son URL publique change avec lui, les applications qui chargent l'ancienne URL cessent de fonctionner",
+					"fields": {
+						"newId": "Nouvel id : lettres minuscules, chiffres, _ et -"
+					}
+				},
+				"deleteWorkspace": {
+					"name": "Supprimer un espace de traduction",
+					"description": "Supprimer un espace de traduction ajouté avec toutes ses langues et tous ses textes. Irréversible",
+					"fields": {
+						"confirm": "Répéter l'id de l'espace de traduction pour confirmer"
+					}
+				},
+				"translate": {
+					"name": "Traduire un texte",
+					"description": "Lire le texte d'une clé dans une langue d'un espace de traduction, avec repli, et remplir ses paramètres",
+					"fields": {
+						"fallbackLocale": "Essayée quand la langue et sa sous-étiquette n'ont pas de texte ; vide passe à la langue de base",
+						"fallback": "Désactivé : seulement la langue et sa sous-étiquette",
+						"onMissing": "Quand aucune langue essayée n'a de texte : faire échouer l'étape, renvoyer un texte vide ou renvoyer la clé"
+					}
+				},
+				"getKey": {
+					"name": "Lire une clé de traduction",
+					"description": "Lire le texte de chaque langue d'une clé d'un espace de traduction, avec son état de relecture"
+				},
+				"missingKeys": {
+					"name": "Lister les traductions manquantes",
+					"description": "Lister les clés d'un espace de traduction qui n'ont pas de texte dans une langue, avec leur texte de base",
+					"fields": {
+						"locale": "Langue dont lister les textes manquants"
+					}
+				},
+				"keysToReview": {
+					"name": "Lister les traductions à relire",
+					"description": "Lister les textes d'une langue d'un espace de traduction à revoir : un problème de message, ou une traduction d'un ancien texte de base",
+					"fields": {
+						"locale": "Langue dont lister les textes",
+						"reason": "any, outdated (traduit d'un ancien texte de base) ou issue (un problème de message)"
+					}
+				},
+				"languageCoverage": {
+					"name": "Couverture d'une langue",
+					"description": "Chiffres de couverture d'une langue d'un espace de traduction",
+					"fields": {
+						"locale": "Langue ; correspondance exacte, sinon par sa sous-étiquette"
+					}
+				},
+				"namespaceCoverage": {
+					"name": "Couverture par espace de noms",
+					"description": "Textes manquants par espace de noms de premier niveau et par langue d'un espace de traduction",
+					"fields": {
+						"locale": "Une langue cible ; vide pour toutes"
+					}
+				},
+				"workspaceSummary": {
+					"name": "Résumé d'un espace de traduction",
+					"description": "Langues, taille et couverture d'un espace de traduction"
+				},
+				"exportWorkspace": {
+					"name": "Exporter un espace de traduction",
+					"description": "Les textes d'un espace de traduction, ou d'une langue, en JSON ; ou une sauvegarde qu'accepte Restaurer un espace de traduction",
+					"fields": {
+						"locale": "Le fichier d'une langue ; vide pour toutes",
+						"format": "messages pour les textes, backup pour une sauvegarde complète",
+						"maxBytes": "Échouer au-delà de cette taille, pour que le journal d'exécution reste petit"
+					}
+				},
+				"listWorkspaces": {
+					"name": "Lister les espaces de traduction",
+					"description": "Tous les espaces de traduction : fichiers du projet, espaces ajoutés et textes des modules",
+					"fields": {
+						"kinds": "Genres à lister ; vide pour tous",
+						"includeStats": "Ajouter le nombre de clés et la couverture de chacun"
+					}
+				},
+				"publicUrl": {
+					"name": "URL d'un fichier de traduction",
+					"description": "L'URL publique d'où une application charge une langue d'un espace de traduction ajouté",
+					"fields": {
+						"locale": "Langue ; vide donne le modèle d'URL"
+					}
+				}
+			},
+			"data": {
+				"formatMessage": {
+					"name": "Formater un message",
+					"description": "Remplir les paramètres d'un message vue-i18n et choisir sa forme plurielle",
+					"fields": {
+						"message": "Le message vue-i18n à remplir"
+					}
+				},
+				"checkMessage": {
+					"name": "Vérifier une traduction",
+					"description": "Vérifier un texte traduit par rapport à son texte de base comme le fait la file de relecture",
+					"fields": {
+						"baseText": "Texte de base à comparer ; vide vérifie le texte seul",
+						"text": "Texte à vérifier"
+					}
+				},
+				"languageName": {
+					"name": "Nom d'une langue",
+					"description": "Le nom d'une langue à partir de son code, dans cette langue ou une autre",
+					"fields": {
+						"code": "Code de langue, par exemple pt-BR",
+						"inLanguage": "Langue dans laquelle écrire le nom ; vide pour la langue elle-même",
+						"siblings": "Autres codes affichés ensemble : la région est ajoutée quand deux partagent une langue"
+					}
+				}
+			}
 		}
 	}
 }

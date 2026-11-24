@@ -82,6 +82,7 @@
     "@antelopejs/interface-database": ">=0.4.0 <0.5.0",
     "@antelopejs/interface-database-decorators": ">=0.5.2 <0.6.0",
     "@antelopejs/tooling-configs": ">=0.10.0 <0.11.0",
+    "@intlify/core-base": "^11.1.12",
     "@playwright/test": "~1.65.0",
     "@types/chai": "^5.2.3",
     "@types/mocha": "^10.0.10",
@@ -104,6 +105,9 @@
     "sharp": "^0.35.5",
     "typescript": "^6.0.3",
     "vue": "^3.5.0"
+  },
+  "optionalDependencies": {
+    "@antelopejs/interface-dms-automation": ">=0.7.0 <0.8.0"
   },
   "packageManager": "pnpm@10.2.0",
   "pnpm": {

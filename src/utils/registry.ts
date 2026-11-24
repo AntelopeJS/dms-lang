@@ -5,7 +5,7 @@ import {
 } from "@antelopejs/interface-dms/page";
 import { createMemo, filesStamp, settledStamp } from "./cache";
 import { discoverLocaleRegistry, watchedFolders } from "./locale-discovery";
-import { readJson } from "./json";
+import { nodeKindAt, readJson } from "./json";
 import { deepMerge, type LocaleMessages } from "./tree";
 import { writeTargetOf } from "./write-target";
 
@@ -24,6 +24,20 @@ let directories: string[] = [];
 let directoriesStamp: string | null = null;
 let registry: I18nRegistry = {};
 const memoizeMessages = createMemo<LocaleMessages>();
+const registryListeners = new Set<() => void>();
+
+/** Calls `listener` whenever the list of frontend modules changed; answers how to stop. */
+export function onRegistryChanged(listener: () => void): () => void {
+  registryListeners.add(listener);
+  return () => {
+    registryListeners.delete(listener);
+  };
+}
+
+/** The names of the frontend modules whose language files are listed. */
+export function frontendModuleNames(): string[] {
+  return modules.map((module) => module.name);
+}
 
 function onModulesChanged(): void {
   void refreshModules();
@@ -71,6 +85,7 @@ async function refreshModules(): Promise<void> {
   modules = next;
   modulesStamp = stamp;
   scanRegistry();
+  for (const listener of registryListeners) listener();
 }
 
 function scanRegistry(): void {
@@ -137,4 +152,12 @@ export function getOwnWriteTarget(
     .filter((e) => e.origin === "own")
     .map(({ path }) => ({ path, data: readJson(path) }));
   return writeTargetOf(files, segments) ?? null;
+}
+
+/** How many project files of a locale define the key at `segments`: more than one keeps it shown when one loses it. */
+export function ownDefinitions(localeCode: string, segments: string[]): number {
+  return (currentRegistry()[localeCode] ?? [])
+    .filter((e) => e.origin === "own")
+    .filter(({ path }) => nodeKindAt(readJson(path), segments) === "leaf")
+    .length;
 }

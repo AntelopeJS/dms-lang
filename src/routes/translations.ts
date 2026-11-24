@@ -20,7 +20,27 @@ import {
   manageLanguagesAction,
   renameWorkspaceAction,
 } from "../pages/actions";
-import { announce, RealtimeSession } from "../utils/announce";
+import {
+  createKeyService,
+  deleteKeyService,
+  type KeyWrite,
+  markReviewedService,
+  removeOverrideService,
+  renameKeyService,
+  updateKeyService,
+} from "../services/keys";
+import {
+  addLanguageService,
+  createWorkspaceService,
+  deleteWorkspaceService,
+  importWorkspaceService,
+  removeLanguageService,
+  renameWorkspaceService,
+  setBaseLanguageService,
+  updateWorkspaceService,
+} from "../services/workspaces";
+import type { UserWriter } from "../services/writer";
+import { RealtimeSession } from "../utils/announce";
 import { localeStats, workspaceAbout, workspaceKpis } from "../utils/blocks";
 import { JsonBody } from "../utils/body";
 import { queryText } from "../utils/query";
@@ -35,7 +55,6 @@ import {
   backupWorkspace,
   exportLanguage,
   exportWorkspace,
-  importWorkspace,
 } from "../utils/export";
 import { baseConfirm, removalConfirm } from "../utils/dialogs";
 import { workspaceNotice } from "../utils/notices";
@@ -46,15 +65,6 @@ import {
 } from "../utils/public-url";
 import { workspaceSnippet } from "../utils/snippets";
 import { listLanguages } from "../utils/languages";
-import { keyStoreOf, reviewStoreOf } from "../utils/key-stores";
-import {
-  createKey,
-  deleteKey,
-  markReviewed,
-  removeOverride,
-  renameKey,
-  updateKey,
-} from "../utils/keys";
 import { namespaceCoverage } from "../utils/namespaces";
 import {
   type FlatCounts,
@@ -66,16 +76,7 @@ import {
 import { countTranslated, summarizeWorkspaces } from "../utils/summary";
 import {
   type AddedLocale,
-  addLocale,
-  assertEditable,
-  createWorkspace,
-  deleteWorkspace,
   getWorkspaceSummary,
-  normalizeWorkspaceId,
-  removeLocale,
-  renameWorkspace,
-  setWorkspaceDefaultLocale,
-  updateWorkspaceDetails,
   type WorkspaceSummary,
 } from "../utils/workspaces";
 import { keySchema } from "../validation/key.schema";
@@ -93,30 +94,18 @@ interface DefaultLocaleResult {
   defaultLocale: string;
 }
 
-/** Who writes, from which tab: what a change is announced with. */
-interface Writer {
-  actor: User;
-  session?: string;
-}
-
-function editableWorkspace(workspace: string): string {
-  assertEditable();
-  return resolveWorkspaceId(workspace);
+/** A dashboard user writing from the tab of `session`. */
+function userWriter(actor: User, session: string | undefined): UserWriter {
+  return { kind: "user", actor, session };
 }
 
 function rowResult(workspace: string, path: string): KeyResult {
   return { row: resolveRow(workspace, path), counts: flatCounts(workspace) };
 }
 
-/** Announces the keys a write changed, then answers the row of `path` as it is now. */
-function keyResult(
-  writer: Writer,
-  workspace: string,
-  keys: string[],
-  path = keys[0] ?? "",
-): KeyResult {
-  announce({ ...writer, workspace, keys });
-  return rowResult(workspace, path);
+/** The row of the key a write left, as it is now. */
+function keyResult(write: KeyWrite): KeyResult {
+  return rowResult(write.workspace, write.key);
 }
 
 /** The permission of each write, for the frontend to show only what the user may do. */
@@ -261,10 +250,11 @@ export class TranslationsController extends Controller(LANG_API) {
     @Parameter("code", "param") code: string,
   ): DefaultLocaleResult {
     validated(workspaceSchema.language.safeParse({ workspace, code }));
-    const id = editableWorkspace(workspace);
-    const defaultLocale = setWorkspaceDefaultLocale(id, code);
-    announce({ actor, session, workspace: id });
-    return { defaultLocale };
+    const { baseLocale } = setBaseLanguageService(
+      { workspace, code },
+      userWriter(actor, session),
+    );
+    return { defaultLocale: baseLocale };
   }
 
   @Delete("/languages/:workspace/:code")
@@ -275,9 +265,7 @@ export class TranslationsController extends Controller(LANG_API) {
     @Parameter("code", "param") code: string,
   ) {
     validated(workspaceSchema.language.safeParse({ workspace, code }));
-    const id = editableWorkspace(workspace);
-    removeLocale(id, code);
-    announce({ actor, session, workspace: id });
+    removeLanguageService({ workspace, code }, userWriter(actor, session));
   }
 
   @Get("/endpoint")
@@ -355,10 +343,11 @@ export class TranslationsController extends Controller(LANG_API) {
     const { id, locale, ...details } = validated(
       workspaceSchema.create.safeParse(body),
     );
-    assertEditable();
-    const created = createWorkspace(id, locale, details);
-    announce({ actor, session, workspace: created });
-    return getWorkspaceSummary(created);
+    const { workspace } = createWorkspaceService(
+      { id, locale, details },
+      userWriter(actor, session),
+    );
+    return getWorkspaceSummary(workspace);
   }
 
   @Route("handler", "patch", "/workspace")
@@ -370,10 +359,7 @@ export class TranslationsController extends Controller(LANG_API) {
     const { id, ...details } = validated(
       workspaceSchema.update.safeParse(body),
     );
-    assertEditable();
-    const summary = updateWorkspaceDetails(id, details);
-    announce({ actor, session, workspace: summary.id });
-    return summary;
+    return updateWorkspaceService({ id, details }, userWriter(actor, session));
   }
 
   @Post("/workspace/rename")
@@ -382,14 +368,12 @@ export class TranslationsController extends Controller(LANG_API) {
     @RealtimeSession() session: string | undefined,
     @JsonBody() body: unknown,
   ): WorkspaceSummary {
-    const { id: previous, newId } = validated(
-      workspaceSchema.rename.safeParse(body),
+    const { id, newId } = validated(workspaceSchema.rename.safeParse(body));
+    const { workspace } = renameWorkspaceService(
+      { id, newId },
+      userWriter(actor, session),
     );
-    assertEditable();
-    const id = renameWorkspace(previous, newId);
-    announce({ actor, session, workspace: normalizeWorkspaceId(previous) });
-    announce({ actor, session, workspace: id });
-    return getWorkspaceSummary(id);
+    return getWorkspaceSummary(workspace);
   }
 
   @Delete("/workspace")
@@ -399,9 +383,7 @@ export class TranslationsController extends Controller(LANG_API) {
     @JsonBody() body: unknown,
   ) {
     const { id } = validated(workspaceSchema.remove.safeParse(body));
-    assertEditable();
-    deleteWorkspace(id);
-    announce({ actor, session, workspace: normalizeWorkspaceId(id) });
+    deleteWorkspaceService({ id }, userWriter(actor, session));
   }
 
   @Post("/import")
@@ -411,9 +393,7 @@ export class TranslationsController extends Controller(LANG_API) {
     @JsonBody() body: unknown,
   ): WorkspaceSummary {
     const backup = validated(workspaceSchema.import.safeParse(body));
-    assertEditable();
-    const id = importWorkspace(backup);
-    announce({ actor, session, workspace: id });
+    const { id } = importWorkspaceService(backup, userWriter(actor, session));
     return getWorkspaceSummary(id);
   }
 
@@ -426,10 +406,11 @@ export class TranslationsController extends Controller(LANG_API) {
     const { workspace, ...locale } = validated(
       workspaceSchema.addLocale.safeParse(body),
     );
-    const id = editableWorkspace(workspace);
-    const added = addLocale(id, locale);
-    announce({ actor, session, workspace: id });
-    return added;
+    const { code, sameLanguage } = addLanguageService(
+      { workspace, locale },
+      userWriter(actor, session),
+    );
+    return { code, sameLanguage };
   }
 
   @Post("/key")
@@ -439,9 +420,7 @@ export class TranslationsController extends Controller(LANG_API) {
     @JsonBody() body: unknown,
   ): KeyResult {
     const input = validated(keySchema.create.safeParse(body));
-    const id = editableWorkspace(input.workspace);
-    createKey(keyStoreOf(id), input.path, input.values, input.before);
-    return keyResult({ actor, session }, id, [input.path]);
+    return keyResult(createKeyService(input, userWriter(actor, session)));
   }
 
   @Put("/key")
@@ -451,9 +430,7 @@ export class TranslationsController extends Controller(LANG_API) {
     @JsonBody() body: unknown,
   ): KeyResult {
     const input = validated(keySchema.update.safeParse(body));
-    const id = editableWorkspace(input.workspace);
-    updateKey(keyStoreOf(id), input.path, input.values, input.expected);
-    return keyResult({ actor, session }, id, [input.path]);
+    return keyResult(updateKeyService(input, userWriter(actor, session)));
   }
 
   @Delete("/key/override")
@@ -463,9 +440,7 @@ export class TranslationsController extends Controller(LANG_API) {
     @JsonBody() body: unknown,
   ): KeyResult {
     const input = validated(keySchema.locales.safeParse(body));
-    const id = editableWorkspace(input.workspace);
-    removeOverride(keyStoreOf(id), input.path, input.locales);
-    return keyResult({ actor, session }, id, [input.path]);
+    return keyResult(removeOverrideService(input, userWriter(actor, session)));
   }
 
   @Post("/key/reviewed")
@@ -475,9 +450,7 @@ export class TranslationsController extends Controller(LANG_API) {
     @JsonBody() body: unknown,
   ): KeyResult {
     const input = validated(keySchema.locales.safeParse(body));
-    const id = editableWorkspace(input.workspace);
-    markReviewed(reviewStoreOf(id), input.path, input.locales);
-    return keyResult({ actor, session }, id, [input.path]);
+    return keyResult(markReviewedService(input, userWriter(actor, session)));
   }
 
   @Post("/key/rename")
@@ -487,9 +460,7 @@ export class TranslationsController extends Controller(LANG_API) {
     @JsonBody() body: unknown,
   ): KeyResult {
     const input = validated(keySchema.rename.safeParse(body));
-    const id = editableWorkspace(input.workspace);
-    const path = renameKey(keyStoreOf(id), input.path, input.newPath);
-    return keyResult({ actor, session }, id, [input.path, path], path);
+    return keyResult(renameKeyService(input, userWriter(actor, session)));
   }
 
   @Delete("/key")
@@ -499,8 +470,6 @@ export class TranslationsController extends Controller(LANG_API) {
     @JsonBody() body: unknown,
   ): KeyResult {
     const input = validated(keySchema.remove.safeParse(body));
-    const id = editableWorkspace(input.workspace);
-    deleteKey(keyStoreOf(id), input.path);
-    return keyResult({ actor, session }, id, [input.path]);
+    return keyResult(deleteKeyService(input, userWriter(actor, session)));
   }
 }

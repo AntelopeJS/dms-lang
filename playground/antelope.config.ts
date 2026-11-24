@@ -39,6 +39,13 @@ export default defineConfig({
         },
       },
     },
+    "dms-automation": {
+      source: {
+        type: "package",
+        package: "@antelopejs/dms-automation",
+        version: "~0.11.6",
+      },
+    },
     mongodb: {
       source: {
         type: "package",

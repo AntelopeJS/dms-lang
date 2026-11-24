@@ -12,3 +12,8 @@ export function isNumberOrBoolean(value: unknown): value is number | boolean {
 export function isObject(value: unknown): value is object {
   return typeof value === "object" && value !== null;
 }
+
+/** Whether a value is a number. */
+export function isNumber(value: unknown): value is number {
+  return typeof value === "number";
+}

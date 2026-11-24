@@ -11,12 +11,14 @@ import { isString } from "./guards";
 /** The header the DMS frontend sends its realtime session id in, with every request. */
 const SESSION_HEADER = "x-realtime-session";
 const REALTIME_CHANGE = "changed";
+/** The actor a write made by a procedure is announced with. */
+const AUTOMATION_ACTOR_ID = "dms:automation";
 
 /** A write to a workspace, as the open pages hear about it. */
 export interface WorkspaceChange {
   workspace: string;
-  /** Who wrote it. */
-  actor: User;
+  /** Who wrote it; a procedure when absent. */
+  actor?: User;
   /** The realtime session of the tab that wrote it, which reads its own answer instead. */
   session?: string;
   /** The keys it changed, when it changed only keys: the pages read just those rows again. */
@@ -51,7 +53,7 @@ export function announce(change: WorkspaceChange): void {
   if (change.session) payload.session = change.session;
   if (change.keys) payload.keys = change.keys;
   PublishMessage(LANG_REALTIME_TOPIC, REALTIME_CHANGE, {
-    actorId: change.actor._id,
+    actorId: change.actor?._id ?? AUTOMATION_ACTOR_ID,
     payload,
   }).catch(() => undefined);
 }
