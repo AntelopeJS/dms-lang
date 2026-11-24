@@ -23,7 +23,7 @@ const MAX_PARAMS = 50;
 const ON_MISSING = ["fail", "empty", "key"] as const;
 
 export const messageParamsField = z
-  .record(z.union([z.string(), z.number(), z.boolean()]))
+  .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
   .refine((value) => Object.keys(value).length <= MAX_PARAMS, {
     message: `at most ${MAX_PARAMS} parameters`,
   })

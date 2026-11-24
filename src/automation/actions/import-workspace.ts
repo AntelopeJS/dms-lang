@@ -18,7 +18,7 @@ const texts = nodeTexts("actions", ID);
 const MAX_BACKUP_BYTES = 3_000_000;
 
 const input = z.object({
-  backup: z.record(z.unknown()),
+  backup: z.record(z.string(), z.unknown()),
   id: z.string().trim().max(MAX_WORKSPACE_LENGTH).optional(),
 });
 

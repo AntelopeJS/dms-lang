@@ -6,7 +6,7 @@ import type {
   JsonSchema,
 } from "@antelopejs/interface-dms-automation";
 import { HTTPResult } from "@antelopejs/interface-api";
-import type { ZodType, ZodTypeDef } from "zod";
+import type { ZodType } from "zod";
 import type { AutomationWriter, WriteOptions } from "../services/writer";
 import {
   assertEditable,
@@ -64,7 +64,7 @@ export function objectSchema(
 /** Checks a node's input, failing the step with the node id and each refused field. */
 function parseInput<T>(
   nodeId: string,
-  schema: ZodType<T, ZodTypeDef, unknown>,
+  schema: ZodType<T>,
   value: JsonObject | undefined,
 ): T {
   const parsed = schema.safeParse(value ?? {});
@@ -124,7 +124,7 @@ export interface WriteDefinition<I, O extends JsonObject> extends Omit<
   NodeIdentity,
   "kind"
 > {
-  input: ZodType<I, ZodTypeDef, unknown>;
+  input: ZodType<I>;
   run(
     input: I,
     writer: AutomationWriter,
@@ -160,7 +160,7 @@ export interface ReadDefinition<I, O extends JsonObject> extends Omit<
   NodeIdentity,
   "kind"
 > {
-  input: ZodType<I, ZodTypeDef, unknown>;
+  input: ZodType<I>;
   run(input: I): O | Promise<O>;
 }
 
@@ -182,7 +182,7 @@ export interface DataDefinition<I, O extends JsonObject> extends Omit<
   NodeIdentity,
   "kind"
 > {
-  input: ZodType<I, ZodTypeDef, unknown>;
+  input: ZodType<I>;
   evaluate(input: I): O;
 }
 

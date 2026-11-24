@@ -26,7 +26,7 @@ const input = z.object({
   key: keyField,
   baseText: z.string().min(1).max(MAX_TEXT_LENGTH),
   texts: z
-    .record(z.string().max(MAX_TEXT_LENGTH))
+    .record(z.string(), z.string().max(MAX_TEXT_LENGTH))
     .refine((value) => Object.keys(value).length <= MAX_LIST_ITEMS, {
       message: `at most ${MAX_LIST_ITEMS} languages`,
     })

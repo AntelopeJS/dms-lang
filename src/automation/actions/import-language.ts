@@ -32,7 +32,7 @@ interface MessageTree {
 }
 
 const messageTree: z.ZodType<MessageTree> = z.lazy(() =>
-  z.record(z.union([z.string().max(MAX_TEXT_LENGTH), messageTree])),
+  z.record(z.string(), z.union([z.string().max(MAX_TEXT_LENGTH), messageTree])),
 );
 
 const input = z.object({
