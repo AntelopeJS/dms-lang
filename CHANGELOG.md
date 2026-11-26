@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.9.0
+
+[compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.8.0...v0.9.0)
+
+### 📦 Build
+
+- **deps:** Move to @antelopejs/dms 0.24 and interface-dms 0.17 ([#171](https://github.com/AntelopeJS/dms-lang/pull/171))
+
+#### ⚠️ Breaking Changes
+
+- **deps:** Move to @antelopejs/dms 0.24 and interface-dms 0.17 ([#171](https://github.com/AntelopeJS/dms-lang/pull/171))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli
+
 ## v0.8.0
 
 [compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.7.2...v0.8.0)
