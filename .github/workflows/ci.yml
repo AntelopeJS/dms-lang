@@ -9,6 +9,11 @@ on:
   schedule:
     - cron: "17 2 * * *"
   workflow_dispatch:
+    inputs:
+      nightly:
+        description: Run the nightly tier, with the Windows jobs and Stress
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -42,6 +47,7 @@ jobs:
       # the `@antelopejs/dms` devDependency: no running backend needed.
       extra-commands: pnpm test:frontend
       extra-commands-job: true
+      nightly: ${{ inputs.nightly == true }}
     permissions:
       contents: read
 
@@ -212,3 +218,19 @@ jobs:
       actions: write
       statuses: write
     uses: AntelopeJS/.github/.github/workflows/ci-renovate-sync.yml@v2
+  verdict:
+    needs: [ci, select, e2e, e2e-report, ubuntu, renovate-sync]
+    if: ${{ !cancelled() }}
+    runs-on: ${{ vars.RUNNER_CI || 'ubuntu-latest' }}
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Fail when a job failed or was cancelled
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          failed=$(jq -r 'to_entries[] | select(.value.result == "failure" or .value.result == "cancelled") | "\(.key): \(.value.result)"' <<< "$NEEDS")
+          if [ -n "$failed" ]; then
+            echo "$failed"
+            exit 1
+          fi
