@@ -52,7 +52,7 @@ Restart the backend, then the frontend, and open **Modules › Translations** (`
 | ---------------------------- | ------------------ | --------------------------- |
 | `@antelopejs/interface-api`  | `>=0.3.4 <0.4.0`   | `0.3.5`                     |
 | `@antelopejs/interface-core` | `>=0.5.2 <0.6.0`   | `0.5.2`                     |
-| `@antelopejs/interface-dms`  | `>=0.17.0 <0.18.0` | `0.17.2-next.1066.g4f2d355` |
+| `@antelopejs/interface-dms`  | `>=0.17.2 <0.18.0` | `0.17.2`                    |
 
 <!-- antelopejs-docs-compat:end -->
 
