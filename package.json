@@ -109,8 +109,7 @@
   "pnpm": {
     "overrides": {
       "@antelopejs/interface-dms": "0.17.2-next.1064.gb3934da",
-      "@antelopejs/interface-dms-builder": "0.6.4-next.1064.gb3934da",
-      "vite": ">=8.3.4 <8.4.0"
+      "@antelopejs/interface-dms-builder": "0.6.4-next.1064.gb3934da"
     }
   },
   "antelopeJs": {
