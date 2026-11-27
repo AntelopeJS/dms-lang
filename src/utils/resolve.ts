@@ -144,12 +144,21 @@ function addOverrides(row: FlatRow, context: FlatContext): void {
   if (row.overridden) row.overrides = overrides;
 }
 
+function own<T>(
+  table: Record<string, T> | undefined,
+  key: string,
+): T | undefined {
+  return table !== undefined && Object.hasOwn(table, key)
+    ? table[key]
+    : undefined;
+}
+
 function issueLocales(context: FlatContext, row: FlatRow): string[] {
-  const base = row.values[context.defaultLocale];
+  const base = own(row.values, context.defaultLocale);
   return context.locales.filter((locale) =>
     hasMessageIssue(
       locale === context.defaultLocale ? "" : base,
-      row.values[locale],
+      own(row.values, locale),
     ),
   );
 }
@@ -188,7 +197,9 @@ export function needsReview(row: FlatRow, locale: string): boolean {
 }
 
 export function isRowMissing(row: FlatRow, locale: string): boolean {
-  return isMissing(row.values[locale]) && isMissing(row.inherited?.[locale]);
+  return (
+    isMissing(own(row.values, locale)) && isMissing(own(row.inherited, locale))
+  );
 }
 
 function countMissing(rows: FlatRow[], locale: string): number {

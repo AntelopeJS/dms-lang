@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { HTTPResult } from "@antelopejs/interface-api";
+import { IsHTTPResult } from "@antelopejs/interface-api";
 import { z } from "zod";
 
 const MESSAGE_KEY_RE = /^\$dms_lang\.errors\.[a-z_]+$/;
@@ -30,8 +30,8 @@ function errorOf(run: () => void): HttpError {
   try {
     run();
   } catch (error) {
-    expect(error).to.be.instanceOf(HTTPResult);
-    if (error instanceof HTTPResult)
+    expect(IsHTTPResult(error)).to.equal(true);
+    if (IsHTTPResult(error))
       return {
         status: error.getStatus(),
         body: ERROR_BODY.parse(JSON.parse(z.string().parse(error.getBody()))),

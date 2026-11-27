@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { HTTPResult } from "@antelopejs/interface-api";
+import { IsHTTPResult } from "@antelopejs/interface-api";
 import {
   createKey,
   deepMerge,
@@ -414,9 +414,9 @@ function judge(scope, start, reference, op) {
     op.run(storeOver(files, reference));
   } catch (error) {
     const untouched = JSON.stringify(files) === JSON.stringify(start);
-    const status = error instanceof HTTPResult ? error.getStatus() : 500;
+    const status = IsHTTPResult(error) ? error.getStatus() : 500;
     if (status < 500 && untouched) return "refused";
-    const what = error instanceof HTTPResult ? `answers ${status} ${error.getBody()}` : `throws ${String(error)}`;
+    const what = IsHTTPResult(error) ? `answers ${status} ${error.getBody()}` : `throws ${String(error)}`;
     return { rule: `${op.rule}${scope.suffix}`, why: `the API ${what}${untouched ? "" : " and changed the files"}` };
   }
   const why = difference(texts(merged(files)), op.expect(start));

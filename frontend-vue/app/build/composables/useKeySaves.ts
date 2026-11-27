@@ -161,7 +161,9 @@ function queueWrite(
   const texts = codes.map((code) => ({
     id: saveIdOf(request.workspace, request.key, code),
     text: request.values[code],
-    expected: request.expected[code],
+    expected: Object.hasOwn(request.expected, code)
+      ? request.expected[code]
+      : undefined,
   }))
   const sendCarried = (expected: ExpectedText[]) =>
     send(
@@ -300,11 +302,11 @@ export function useEditStarts() {
   const starts = ref<Record<string, ExpectedText>>({})
 
   return {
-    has: (id: string) => id in starts.value,
+    has: (id: string) => Object.hasOwn(starts.value, id),
     of: (id: string): ExpectedText => starts.value[id],
     /** Remembers what a text shows as its edit begins (once per edit). */
     begin(id: string, text: ExpectedText) {
-      if (!(id in starts.value))
+      if (!Object.hasOwn(starts.value, id))
         starts.value = withEntry(starts.value, id, text)
     },
     set(id: string, text: ExpectedText) {

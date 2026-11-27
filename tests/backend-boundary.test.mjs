@@ -34,8 +34,11 @@ registerHooks({
 });
 const { build: viteBuild } = await import("vite");
 
-/** A scratch repository: the backend package with its frontend module inside, and another package. */
-/** @type {string} */
+/**
+ * A scratch repository: the backend package with its frontend module inside, and another package.
+ *
+ * @type {string}
+ */
 let repository;
 /** @type {string} */
 let frontend;

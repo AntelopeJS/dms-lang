@@ -64,7 +64,8 @@ function announceDeleted(context: ToastContext, key: string, draftText = '') {
 }
 
 function showStep({ t, toast }: ToastContext, step: QueueStep | undefined) {
-  const title = step ? STEP_TOASTS[step] : undefined
+  const title =
+    step && Object.hasOwn(STEP_TOASTS, step) ? STEP_TOASTS[step] : undefined
   if (!title) return
   toast.add({ title: t(title), color: 'neutral', icon: 'i-ph-arrow-u-up-left' })
 }

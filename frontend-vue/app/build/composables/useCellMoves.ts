@@ -149,7 +149,8 @@ export function focusNeighbourCell(
  */
 export function useCellMoves(options: CellMovesOptions) {
   return {
-    targetOf: (cell: CellRef, move: CellMove) => MOVES[move](options, cell),
+    targetOf: (cell: CellRef, move: CellMove) =>
+      Object.hasOwn(MOVES, move) ? MOVES[move](options, cell) : null,
     nextMissing: (from: CellRef | null, step: JumpStep) =>
       pickMissing(options, from, step),
   }

@@ -200,8 +200,11 @@ function openPanel() {
   );
 }
 
-/** What the panel's body reports of the key it shows, as `KeyEditorDrawer` does. */
-/** @param {number} index */
+/**
+ * What the panel's body reports of the key it shows, as `KeyEditorDrawer` does.
+ *
+ * @param {number} index
+ */
 const header = (index) => ({
   key: "home.cta",
   crumbs: "home",

@@ -96,7 +96,8 @@ function failureExpected(
   outcome: KeyWriteFailed,
 ): ExpectedText {
   const { current, kind } = outcome.failure
-  const isOverwritable = kind === 'conflict' && address.code in current
+  const isOverwritable =
+    kind === 'conflict' && Object.hasOwn(current, address.code)
   return isOverwritable
     ? savedText(current[address.code])
     : outcome.expected[address.code]
@@ -209,7 +210,10 @@ function useCellView(
       store.failures.value[idOfCell(address)],
     isPending(address: CellAddress): boolean {
       const id = idOfCell(address)
-      return id in store.pending.value || id in store.failures.value
+      return (
+        Object.hasOwn(store.pending.value, id) ||
+        Object.hasOwn(store.failures.value, id)
+      )
     },
     /** A text of the row that could not be saved: the row is not done. */
     hasRowFailure: (workspace: string, key: string): boolean =>
@@ -252,7 +256,8 @@ function changedElsewhere(
   row: FlatTranslationRow | undefined,
 ): string | undefined {
   const id = idOfCell(address)
-  if (!starts.has(id) || id in store.pending.value || !row) return undefined
+  if (!starts.has(id) || Object.hasOwn(store.pending.value, id) || !row)
+    return undefined
   const current = savedText(row.values[address.code])
   return current === starts.of(id) ? undefined : (current ?? '')
 }
