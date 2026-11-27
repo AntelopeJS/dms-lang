@@ -6,8 +6,6 @@ import { join } from "node:path";
  * @typedef {import("./lang.mjs").Tab} Tab
  */
 
-/** Files the browser saves or asks for, driven through the tab's Playwright page. */
-
 const FILE_ATTEMPTS = 4;
 const FILE_WAIT_MS = 8000;
 

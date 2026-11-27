@@ -15,6 +15,10 @@ const KIND_ICONS: Record<WorkspaceKind, string> = {
   modules: 'i-ph-puzzle-piece',
 }
 
+function iconOf(icons: Record<string, string>, key: string): string {
+  return Object.hasOwn(icons, key) ? icons[key] : ''
+}
+
 function isWorkspaceType(value: unknown): value is WorkspaceType {
   return typeof value === 'string' && Object.hasOwn(TYPE_ICONS, value)
 }
@@ -28,10 +32,10 @@ export const useWorkspaceTypes = () => {
       .map((value) => ({
         value,
         label: t(`dms_lang.workspace_types.${value}`),
-        icon: TYPE_ICONS[value],
+        icon: iconOf(TYPE_ICONS, value),
       })),
   )
-  const typeIcon = (type: WorkspaceType) => TYPE_ICONS[type]
+  const typeIcon = (type: WorkspaceType) => iconOf(TYPE_ICONS, type)
   const typeOf = (value: unknown): WorkspaceType | undefined =>
     isWorkspaceType(value) ? value : undefined
   const typeLabel = (type: WorkspaceType) =>
@@ -41,7 +45,7 @@ export const useWorkspaceTypes = () => {
     typeIcon,
     typeLabel,
     typeOf,
-    kindIcon: (kind: WorkspaceKind) => KIND_ICONS[kind],
+    kindIcon: (kind: WorkspaceKind) => iconOf(KIND_ICONS, kind),
     descriptionMax: WORKSPACE_DESCRIPTION_MAX,
   }
 }

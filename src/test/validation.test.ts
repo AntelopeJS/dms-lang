@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { HTTPResult } from "@antelopejs/interface-api";
+import { IsHTTPResult } from "@antelopejs/interface-api";
 import { keySchema } from "../validation/key.schema";
 import { querySchema } from "../validation/query.schema";
 import { validated } from "../validation/validate";
@@ -44,7 +44,7 @@ describe("[unit] route inputs are validated at the entry", () => {
     try {
       validated(workspaceSchema.update.safeParse({ id: "shop", type: 5 }));
     } catch (error) {
-      if (error instanceof HTTPResult) body = error.getBody();
+      if (IsHTTPResult(error)) body = error.getBody();
     }
     expect(body).to.equal(
       '{"issues":[{"code":"invalid_union","errors":[[{"code":"invalid_value","values":["dms","website","mobile","other"],"path":[],"message":"Invalid option: expected one of \\"dms\\"|\\"website\\"|\\"mobile\\"|\\"other\\""}],[{"code":"invalid_value","values":[""],"path":[],"message":"Invalid input: expected \\"\\""}]],"path":["type"],"message":"Invalid input"}],"message":"$dms_lang.errors.invalid_body","code":"invalid_body"}',

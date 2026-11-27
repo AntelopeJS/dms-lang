@@ -47,7 +47,11 @@ export function isPendingKey(
   key: string | undefined,
   isOpen: KeyIsOpen,
 ): boolean {
-  if (key === undefined || pass.status[key] === 'done') return false
+  if (
+    key === undefined ||
+    (Object.hasOwn(pass.status, key) && pass.status[key] === 'done')
+  )
+    return false
   return isOpen(key)
 }
 
