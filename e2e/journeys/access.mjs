@@ -18,7 +18,7 @@ function projectOverride(ctx) {
 export const journeys = guarded([
   {
     id: "anonymous-callers-are-refused",
-    title: "the API answers 401 to a visitor, while the public files stay open",
+    title: "the API answers 401 with the no-token refusal key to a visitor, while the public files stay open",
     entryPoint: "GET and POST /api/lang/translations/* without a session",
     async run(/** @type {Ctx} */ ctx) {
       const id = freshId(ctx, "shop");
@@ -34,7 +34,7 @@ export const journeys = guarded([
       ];
       for (const [label, method, path, body] of calls) {
         const answer = await ctx.api(label, { method, path: `/api/lang/translations${path}`, body, as: "anon" });
-        await ctx.verify(`as a visitor: ${label}`, [ctx.status(answer, 401)]);
+        await ctx.verify(`as a visitor: ${label}`, [ctx.status(answer, 401), ctx.equal("message", answer.body, "$dms.refusals.auth.no_token_provided")]);
       }
       const owner = await lang(ctx, "read the keys as the owner", "GET", `/flat?workspace=${id}`);
       const publicRead = await raw(ctx, "read the public file as a visitor", { path: `/i18n/${id}/en.json` });
@@ -48,7 +48,7 @@ export const journeys = guarded([
   },
   {
     id: "a-member-who-is-not-the-owner-is-refused",
-    title: "a member who joined through an invitation, with a role holding every Lang permission, gets 403 Owner-only from the API and a Forbidden page for Lang, while the owner's workspace stays as it was",
+    title: "a member who joined through an invitation, with a role holding every Lang permission, gets 403 with the owner-only refusal key from the API and a Forbidden page for Lang, while the owner's workspace stays as it was",
     entryPoint: "Settings > Members > Invite members, then the member's session on /modules/lang and /api/lang/translations/*",
     async run(/** @type {Ctx} */ ctx) {
       const id = freshId(ctx, "shop");
@@ -97,7 +97,7 @@ export const journeys = guarded([
       ];
       for (const [label, method, path, body] of calls) {
         const answer = await ctx.api(label, { method, path: `/api/lang/translations${path}`, body, as: "member" });
-        await ctx.verify(`as the member: ${label}`, [ctx.status(answer, 403), ctx.equal("message", answer.body, "Owner-only")]);
+        await ctx.verify(`as the member: ${label}`, [ctx.status(answer, 403), ctx.equal("message", answer.body, "$dms.refusals.auth.owner_only")]);
       }
       await admin.goto(`/modules/lang/overview?workspace=${id}`);
       await ctx.verify("the owner's Lang menu lists the matrix", [admin.visible({ role: "link", name: /^Translation matrix/ })], { critical: true });
