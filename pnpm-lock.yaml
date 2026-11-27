@@ -30,7 +30,7 @@ importers:
     devDependencies:
       '@antelopejs/api':
         specifier: ~1.7.5
-        version: 1.7.5(@antelopejs/core@1.24.7)
+        version: 1.7.10(@antelopejs/core@1.24.7)
       '@antelopejs/core':
         specifier: ~1.24.7
         version: 1.24.7
@@ -217,10 +217,10 @@ packages:
     resolution: {integrity: sha512-U4+70Pc5ZS9osnCBCE5Jha/ciHM+Yp+CNMNC/7HvYbNRk1Ldd+f7qO65W5qfhu/TCv+/ozljlXXe9Nj8419DMA==}
     engines: {node: '>=10'}
 
-  '@antelopejs/api@1.7.5':
-    resolution: {integrity: sha512-bm34I2PvIW795Tk5WTFx5VeTv/J+RSTla6U9naOUh4BmFyfy4oO7A2j0+twQD5KFmXnkIweevhHQ+bVvcnUUrg==}
+  '@antelopejs/api@1.7.10':
+    resolution: {integrity: sha512-LFA29M5mvj9wNMVjDUfe+bPEEQ0QaqU3fS2lcoHmJX9XNfmqOV4efZw+thYP4VvTZKl606xV7NO5fkaCP1Th5A==}
     peerDependencies:
-      '@antelopejs/core': ~1.24.0
+      '@antelopejs/core': ~1.24.4
     peerDependenciesMeta:
       '@antelopejs/core':
         optional: true
@@ -251,12 +251,6 @@ packages:
         optional: true
       typescript:
         optional: true
-
-  '@antelopejs/interface-api-util@0.3.2':
-    resolution: {integrity: sha512-bNzujj2Jf9VM+XYSO0QcrD3SUmOk5TcWncGioCWnlWnfGvuPgeWE8T58+SMYyfzmPalQQa0JUed/+6k+e59lZw==}
-    peerDependencies:
-      '@antelopejs/interface-api': '>=0.3.0 <1.0.0'
-      '@antelopejs/interface-core': '>=0.2.4 <1.0.0'
 
   '@antelopejs/interface-api-util@0.3.3':
     resolution: {integrity: sha512-jk5uRMjjjkRm/vOoB1NCvtcgjQYvI27y2/4O+5cLlrryKpOd52amkQIJKbdX/n/bkxdx19oUGkwYLyFwxyaXNw==}
@@ -5956,8 +5950,8 @@ packages:
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
 
-  ws@8.22.1:
-    resolution: {integrity: sha512-oyL6OPYme/CmiFvNuGzeoxCJ4nOrZE2O1FwM9MWM1AsGri6nLXB2pg+lNA8aLeXMSav0J6eIVS1j6vUPzUtK9g==}
+  ws@8.23.0:
+    resolution: {integrity: sha512-wCkmX8QMOrKjgO8HW2WyDbTSGeqkocxgDzS9iR79rEAexty6/2qzilx3Ag8Tqf9ykop3irLKle0MtVn5qjVnoQ==}
     engines: {node: '>=10.0.0'}
     peerDependencies:
       bufferutil: ^4.0.1
@@ -6048,13 +6042,13 @@ snapshots:
 
   '@alloc/quick-lru@5.3.0': {}
 
-  '@antelopejs/api@1.7.5(@antelopejs/core@1.24.7)':
+  '@antelopejs/api@1.7.10(@antelopejs/core@1.24.7)':
     dependencies:
       '@antelopejs/interface-api': 0.3.5(@antelopejs/interface-core@0.5.2)
-      '@antelopejs/interface-api-util': 0.3.2(@antelopejs/interface-api@0.3.5(@antelopejs/interface-core@0.5.2))(@antelopejs/interface-core@0.5.2)
+      '@antelopejs/interface-api-util': 0.3.3(@antelopejs/interface-api@0.3.5(@antelopejs/interface-core@0.5.2))(@antelopejs/interface-core@0.5.2)
       '@antelopejs/interface-core': 0.5.2
       reflect-metadata: 0.2.2
-      ws: 8.22.1
+      ws: 8.23.0
     optionalDependencies:
       '@antelopejs/core': 1.24.7
     transitivePeerDependencies:
@@ -6142,11 +6136,6 @@ snapshots:
       - canvas
       - react-native-b4a
       - supports-color
-
-  '@antelopejs/interface-api-util@0.3.2(@antelopejs/interface-api@0.3.5(@antelopejs/interface-core@0.5.2))(@antelopejs/interface-core@0.5.2)':
-    dependencies:
-      '@antelopejs/interface-api': 0.3.5(@antelopejs/interface-core@0.5.2)
-      '@antelopejs/interface-core': 0.5.2
 
   '@antelopejs/interface-api-util@0.3.3(@antelopejs/interface-api@0.3.5(@antelopejs/interface-core@0.5.2))(@antelopejs/interface-core@0.5.2)':
     dependencies:
@@ -11634,7 +11623,7 @@ snapshots:
 
   wrappy@1.0.2: {}
 
-  ws@8.22.1: {}
+  ws@8.23.0: {}
 
   wsl-utils@0.1.0:
     dependencies:
