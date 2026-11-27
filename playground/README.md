@@ -15,6 +15,6 @@ A DMS project that loads `@antelopejs/dms-lang` from the parent folder, with edi
 | `@antelopejs/interface-data-api`            | `>=0.8.2 <0.9.0`            | `0.8.2`                     |
 | `@antelopejs/interface-database`            | `>=0.4.3 <0.5.0`            | `0.4.4`                     |
 | `@antelopejs/interface-database-decorators` | `>=0.5.4 <0.6.0`            | `0.5.4`                     |
-| `@antelopejs/interface-dms`                 | `0.17.2-next.1066.g4f2d355` | `0.17.2-next.1066.g4f2d355` |
+| `@antelopejs/interface-dms`                 | `>=0.17.0 <0.18.0`          | `0.17.2-next.1066.g4f2d355` |
 
 <!-- antelopejs-docs-compat:end -->
