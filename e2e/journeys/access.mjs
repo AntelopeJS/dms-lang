@@ -48,7 +48,7 @@ export const journeys = guarded([
   },
   {
     id: "a-member-who-is-not-the-owner-is-refused",
-    title: "a member who joined through an invitation, with a role holding every Lang permission, gets 403 Owner-only from the API and a Forbidden page for Lang, while the owner's workspace stays as it was",
+    title: "a member who joined through an invitation, with a role holding every Lang permission, gets 403 with the owner-only refusal key from the API and a Forbidden page for Lang, while the owner's workspace stays as it was",
     entryPoint: "Settings > Members > Invite members, then the member's session on /modules/lang and /api/lang/translations/*",
     async run(/** @type {Ctx} */ ctx) {
       const id = freshId(ctx, "shop");
@@ -97,7 +97,7 @@ export const journeys = guarded([
       ];
       for (const [label, method, path, body] of calls) {
         const answer = await ctx.api(label, { method, path: `/api/lang/translations${path}`, body, as: "member" });
-        await ctx.verify(`as the member: ${label}`, [ctx.status(answer, 403), ctx.equal("message", answer.body, "Owner-only")]);
+        await ctx.verify(`as the member: ${label}`, [ctx.status(answer, 403), ctx.equal("message", answer.body, "$dms.refusals.auth.owner_only")]);
       }
       await admin.goto(`/modules/lang/overview?workspace=${id}`);
       await ctx.verify("the owner's Lang menu lists the matrix", [admin.visible({ role: "link", name: /^Translation matrix/ })], { critical: true });
