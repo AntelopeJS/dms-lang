@@ -18,7 +18,7 @@ function projectOverride(ctx) {
 export const journeys = guarded([
   {
     id: "anonymous-callers-are-refused",
-    title: "the API answers 401 to a visitor, while the public files stay open",
+    title: "the API answers 401 with the no-token refusal key to a visitor, while the public files stay open",
     entryPoint: "GET and POST /api/lang/translations/* without a session",
     async run(/** @type {Ctx} */ ctx) {
       const id = freshId(ctx, "shop");
@@ -34,7 +34,7 @@ export const journeys = guarded([
       ];
       for (const [label, method, path, body] of calls) {
         const answer = await ctx.api(label, { method, path: `/api/lang/translations${path}`, body, as: "anon" });
-        await ctx.verify(`as a visitor: ${label}`, [ctx.status(answer, 401)]);
+        await ctx.verify(`as a visitor: ${label}`, [ctx.status(answer, 401), ctx.equal("message", answer.body, "$dms.refusals.auth.no_token_provided")]);
       }
       const owner = await lang(ctx, "read the keys as the owner", "GET", `/flat?workspace=${id}`);
       const publicRead = await raw(ctx, "read the public file as a visitor", { path: `/i18n/${id}/en.json` });
