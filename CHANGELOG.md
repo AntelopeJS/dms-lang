@@ -1,5 +1,38 @@
 # Changelog
 
+## v0.9.1
+
+[compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.9.0...v0.9.1)
+
+### 📦 Build
+
+- **deps:** Adopt tooling-configs 0.10.7 and pnpm 10.34.9 with a 24 hour release age ([#172](https://github.com/AntelopeJS/dms-lang/pull/172))
+- **deps:** Pin dms 0.24.3 and interface-dms 0.17.2 stable ranges ([#176](https://github.com/AntelopeJS/dms-lang/pull/176))
+- **ci:** Sync tooling-configs 0.10.12 ([#179](https://github.com/AntelopeJS/dms-lang/pull/179))
+- **deps:** Move to @antelopejs/dms 0.25.0 ([#184](https://github.com/AntelopeJS/dms-lang/pull/184))
+
+### 🏡 Chore
+
+- **deps:** Update dependency @antelopejs/api to v1.7.10 ([#174](https://github.com/AntelopeJS/dms-lang/pull/174))
+- **deps:** Pin dependencies ([#173](https://github.com/AntelopeJS/dms-lang/pull/173))
+- **deps:** Update dependency @antelopejs/core to v1.24.9 ([#178](https://github.com/AntelopeJS/dms-lang/pull/178))
+- **deps:** Update antelopejs tooling configs ([#180](https://github.com/AntelopeJS/dms-lang/pull/180))
+- **deps:** Update dependency @vueuse/core to v15 ([#182](https://github.com/AntelopeJS/dms-lang/pull/182))
+- **deps:** Update dependency eslint to v10 ([#183](https://github.com/AntelopeJS/dms-lang/pull/183))
+- **deps:** Move to @antelopejs/tooling-configs 0.10.14 ([#186](https://github.com/AntelopeJS/dms-lang/pull/186))
+
+### ✅ Tests
+
+- **e2e:** Assert dms refusal keys and move to dms-frontend 0.11.11 and vite 8.4 ([#175](https://github.com/AntelopeJS/dms-lang/pull/175))
+
+### 🤖 CI
+
+- **e2e:** Run the full suite in three shards of two workers ([#185](https://github.com/AntelopeJS/dms-lang/pull/185))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli
+
 ## v0.9.0
 
 [compare changes](https://github.com/AntelopeJS/dms-lang/compare/v0.8.0...v0.9.0)
