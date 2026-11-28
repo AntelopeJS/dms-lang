@@ -94,7 +94,7 @@ jobs:
           echo "e2e suite \`${suite}\`" >> "$GITHUB_STEP_SUMMARY"
 
   # The journeys of e2e/ as a Playwright suite. Its global setup prepares and
-  # starts one run per shard.
+  # starts one run per Playwright worker, two per shard.
   e2e:
     needs: select
     if: needs.select.outputs.suite != 'none'
@@ -103,7 +103,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: ${{ fromJSON(needs.select.outputs.suite == 'all' && '[1, 2]' || '[1]') }}
+        shard: ${{ fromJSON(needs.select.outputs.suite == 'all' && '[1, 2, 3]' || '[1]') }}
     env:
       SUITE: ${{ needs.select.outputs.suite }}
     steps:
@@ -145,7 +145,7 @@ jobs:
       # The blob report keeps each test's steps, attachments and traces, so
       # e2e-report merges the shards into one.
       - if: env.SUITE == 'all'
-        run: pnpm e2e --shard=${{ matrix.shard }}/2 --reporter=blob
+        run: pnpm e2e --shard=${{ matrix.shard }}/3--reporter=blob
         env:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: e2e/blob-report
       - if: success() || failure()
