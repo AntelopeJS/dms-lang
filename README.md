@@ -50,9 +50,9 @@ Restart the backend, then the frontend, and open **Modules › Translations** (`
 
 | Package                      | Supported          | Tested with |
 | ---------------------------- | ------------------ | ----------- |
-| `@antelopejs/interface-api`  | `>=0.3.4 <0.4.0`   | `0.3.5`     |
+| `@antelopejs/interface-api`  | `>=0.3.5 <0.4.0`   | `0.3.5`     |
 | `@antelopejs/interface-core` | `>=0.5.2 <0.6.0`   | `0.5.2`     |
-| `@antelopejs/interface-dms`  | `>=0.17.2 <0.18.0` | `0.17.2`    |
+| `@antelopejs/interface-dms`  | `>=0.17.3 <0.18.0` | `0.17.3`    |
 
 <!-- antelopejs-docs-compat:end -->
 
