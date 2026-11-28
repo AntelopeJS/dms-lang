@@ -145,7 +145,7 @@ jobs:
       # The blob report keeps each test's steps, attachments and traces, so
       # e2e-report merges the shards into one.
       - if: env.SUITE == 'all'
-        run: pnpm e2e --shard=${{ matrix.shard }}/3--reporter=blob
+        run: pnpm e2e --shard=${{ matrix.shard }}/3 --reporter=blob
         env:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: e2e/blob-report
       - if: success() || failure()
