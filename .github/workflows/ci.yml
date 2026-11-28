@@ -143,11 +143,13 @@ jobs:
       - if: env.SUITE == 'smoke'
         run: pnpm e2e --grep @smoke
       # The blob report keeps each test's steps, attachments and traces, so
-      # e2e-report merges the shards into one.
+      # e2e-report merges the shards into one. The kit orders the journeys by
+      # DMS_E2E_SHUFFLE, a seed picked for equal journey time per shard.
       - if: env.SUITE == 'all'
         run: pnpm e2e --shard=${{ matrix.shard }}/3 --reporter=blob
         env:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: e2e/blob-report
+          DMS_E2E_SHUFFLE: lang-773
       - if: success() || failure()
         run: pnpm exec tsc --noEmit -p e2e
       - if: always() && env.SUITE == 'all'
